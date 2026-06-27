@@ -42,7 +42,7 @@ export function Header() {
           onClick={() => {
             window.location.href = "/";
           }}
-          className="flex min-w-0 shrink-0 items-center rounded-md focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+          className="flex min-w-0 shrink-0 cursor-pointer items-center rounded-md focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
           aria-label="Go to homepage"
         >
           <Image
