@@ -4,7 +4,7 @@ import { Footer } from "@/components/layout/Footer";
 import { Header } from "@/components/layout/Header";
 import { AppChatWidget } from "@/components/chat/AppChatWidget";
 import { Toaster } from "@/components/ui/sonner";
-import { siteConfig } from "@/lib/seo";
+import { absoluteUrl, siteConfig } from "@/lib/seo";
 
 import "./globals.css";
 
@@ -44,7 +44,7 @@ export const metadata: Metadata = {
     locale: "en_US",
     title: siteConfig.title,
     description: siteConfig.socialDescription,
-    url: siteConfig.url,
+    url: absoluteUrl("/"),
     images: [
       {
         url: "/og-image.png",

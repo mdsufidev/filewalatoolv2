@@ -80,9 +80,19 @@ export default function AboutPage() {
               Fast file tools for everyday work
             </h1>
             <p className="mt-4 max-w-2xl text-base leading-7 text-muted-foreground">
-              FileWalaTool is built for common image, PDF, conversion, and document tasks that should not require
-              heavy software or complicated steps. Open the tool, upload your file, make the change, and download the
-              result.
+              FileWalaTool, also known as FileWala, is an online toolkit for image, PDF, conversion, and
+              document-related tasks. The official website is{" "}
+              <Link
+                href="/"
+                className="font-medium text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+              >
+                https://www.filewalatool.com
+              </Link>
+              .
+            </p>
+            <p className="mt-3 max-w-2xl text-base leading-7 text-muted-foreground">
+              The platform focuses on practical browser-based file tools that help users resize images, edit PDFs,
+              convert files, and prepare document photos without heavy software or complicated steps.
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
               <Link

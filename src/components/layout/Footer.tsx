@@ -23,17 +23,21 @@ export function Footer() {
     <footer className="border-t bg-white">
       <div className="mx-auto grid w-full max-w-7xl gap-8 px-4 py-10 sm:px-6 md:grid-cols-[1.5fr_1fr_1fr] lg:px-8">
         <div className="space-y-3">
-          <Link href="/" className="inline-flex items-center rounded-md focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
+          <Link
+            href="/"
+            aria-label="FileWalaTool Home"
+            className="inline-flex items-center rounded-md focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+          >
             <Image
               src="/logo.png"
-              alt="FileWalaTool"
+              alt="FileWalaTool logo"
               width={210}
               height={115}
               className="h-12 w-auto object-contain"
             />
           </Link>
           <p className="max-w-sm text-sm leading-6 text-muted-foreground">
-            Free, fast, and practical online file tools.
+            FileWalaTool provides free online image, PDF, conversion, and document tools.
           </p>
         </div>
         <div>

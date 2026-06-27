@@ -43,11 +43,11 @@ export function Header() {
             window.location.href = "/";
           }}
           className="flex min-w-0 shrink-0 cursor-pointer items-center rounded-md focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-          aria-label="Go to homepage"
+          aria-label="FileWalaTool Home"
         >
           <Image
             src="/logo.png"
-            alt="FileWalaTool"
+            alt="FileWalaTool logo"
             width={190}
             height={104}
             priority

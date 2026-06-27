@@ -47,7 +47,7 @@ export function MobileNav() {
           <div className="flex items-center">
             <Image
               src="/logo.png"
-              alt="FileWalaTool"
+              alt="FileWalaTool logo"
               width={190}
               height={104}
               className="h-10 w-auto object-contain"

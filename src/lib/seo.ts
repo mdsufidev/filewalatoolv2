@@ -2,14 +2,16 @@ import type { Metadata } from "next";
 
 export const siteConfig = {
   name: "FileWalaTool",
-  url: "https://filewalatoolv2.vercel.app",
+  alternateNames: ["FileWala", "File Wala", "File Wala Tool"],
+  organizationAlternateNames: ["FileWala", "File Wala Tool"],
+  url: (process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.filewalatool.com").replace(/\/$/, ""),
   description:
     "Resize, compress, convert and edit images, PDFs and documents online for free. Fast, private browser-based file tools.",
   logo: "/logo.png",
   ogImage: "/og-image.png",
-  title: "FileWalaTool – Free Online Image, PDF & Document Tools",
+  title: "Free PDF Tools, Image Compressor & File Converter Online | FileWalaTool",
   socialDescription:
-    "Resize, compress, convert and edit images, PDFs and documents online for free. Fast, private browser-based file tools.",
+    "Free online image tools, PDF tools, file converters, and document photo resizing tools.",
   founderName: "Muhammad Sufiyan",
   founderPortfolio: "https://mdsufidev.vercel.app/",
 };
@@ -37,7 +39,7 @@ export const publicRoutes: PublicRoute[] = [
     description:
       "Browse all FileWalaTool image, PDF, conversion, and document tools in one place.",
     changeFrequency: "weekly",
-    priority: 0.92,
+    priority: 0.9,
   },
   {
     path: "/image-tools",
@@ -273,7 +275,7 @@ export function absoluteUrl(path = "/") {
   }
 
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
-  return `${siteConfig.url}${normalizedPath === "/" ? "" : normalizedPath}`;
+  return `${siteConfig.url}${normalizedPath === "/" ? "/" : normalizedPath}`;
 }
 
 export function createPageMetadata({
@@ -291,7 +293,7 @@ export function createPageMetadata({
     title,
     description,
     alternates: {
-      canonical: path,
+      canonical: absoluteUrl(path),
     },
     openGraph: {
       type: "website",
@@ -373,7 +375,7 @@ export function webApplicationJsonLd({
     publisher: {
       "@type": "Organization",
       name: siteConfig.name,
-      url: siteConfig.url,
+      url: absoluteUrl("/"),
     },
   };
 }
@@ -382,8 +384,10 @@ export function organizationJsonLd() {
   return {
     "@context": "https://schema.org",
     "@type": "Organization",
+    "@id": absoluteUrl("/#organization"),
     name: siteConfig.name,
-    url: siteConfig.url,
+    alternateName: siteConfig.organizationAlternateNames,
+    url: absoluteUrl("/"),
     logo: absoluteUrl(siteConfig.logo),
     founder: {
       "@type": "Person",
@@ -399,9 +403,11 @@ export function websiteJsonLd() {
   return {
     "@context": "https://schema.org",
     "@type": "WebSite",
+    "@id": absoluteUrl("/#website"),
     name: siteConfig.name,
-    url: siteConfig.url,
-    description: siteConfig.description,
+    alternateName: siteConfig.alternateNames,
+    url: absoluteUrl("/"),
+    description: siteConfig.socialDescription,
   };
 }
 
@@ -420,7 +426,7 @@ export function founderProfileJsonLd() {
       worksFor: {
         "@type": "Organization",
         name: siteConfig.name,
-        url: siteConfig.url,
+        url: absoluteUrl("/"),
       },
       description:
         "Muhammad Sufiyan is the founder of FileWalaTool. He built the platform to provide simple browser-based tools for image, PDF, and document tasks.",

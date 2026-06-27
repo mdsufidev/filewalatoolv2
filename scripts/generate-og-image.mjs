@@ -57,7 +57,7 @@ const svg = `<?xml version="1.0" encoding="UTF-8"?>
     <circle cx="36" cy="8" r="6" fill="#FBBF24"/>
     <circle cx="58" cy="8" r="6" fill="#34D399"/>
     <rect x="94" y="-2" width="180" height="22" rx="11" fill="#F5F5F5"/>
-    <text x="114" y="14" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="700" fill="#5F6673">filewalatoolv2.vercel.app</text>
+    <text x="114" y="14" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="700" fill="#5F6673">www.filewalatool.com</text>
 
     <rect x="18" y="64" width="132" height="22" rx="11" fill="#FFF1F2"/>
     <text x="34" y="80" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="800" fill="#D9232E">Browser-based</text>

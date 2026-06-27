@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   description:
     "Create and crop passport-size photos online. Use India Passport Seva digital, 35 × 45 mm print, and custom photo presets. Download JPG photos in seconds.",
   alternates: {
-    canonical: "/passport-photo",
+    canonical: absoluteUrl("/passport-photo"),
   },
   openGraph: {
     type: "website",
@@ -60,7 +60,7 @@ export default function PassportPhotoPage() {
     name: "Passport Photo Maker Online",
     applicationCategory: "MultimediaApplication",
     operatingSystem: "Any",
-    url: "/passport-photo",
+    url: absoluteUrl("/passport-photo"),
     description:
       "Create and crop passport-size photos online with India Passport Seva digital, 35 x 45 mm print, and custom photo presets.",
   };

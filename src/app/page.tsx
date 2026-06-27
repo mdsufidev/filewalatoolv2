@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { JsonLd } from "@/components/seo/JsonLd";
+import { BrandIntro } from "@/components/home/BrandIntro";
 import { BottomCTA } from "@/components/home/BottomCTA";
 import { HeroSection } from "@/components/home/HeroSection";
 import { HowItWorks } from "@/components/home/HowItWorks";
@@ -24,6 +25,7 @@ export default function Home() {
       <HeroSection />
       <PopularTools />
       <ToolCategories />
+      <BrandIntro />
       <TrustSection />
       <HowItWorks />
       <BottomCTA />
