@@ -4,10 +4,10 @@ import { ChevronRight, Crop, FileImage, ImageIcon, Minimize2, ScanLine } from "l
 
 import { JsonLd } from "@/components/seo/JsonLd";
 import { PassportPhotoTool } from "@/components/tools/PassportPhotoTool";
-import { breadcrumbJsonLd } from "@/lib/seo";
+import { absoluteUrl, breadcrumbJsonLd, siteConfig } from "@/lib/seo";
 
 export const metadata: Metadata = {
-  title: "Passport Photo Maker Online | India Passport Size Photo | FileWalaTool",
+  title: "Passport Photo Maker Online | India Passport Size Photo",
   description:
     "Create and crop passport-size photos online. Use India Passport Seva digital, 35 × 45 mm print, and custom photo presets. Download JPG photos in seconds.",
   alternates: {
@@ -15,19 +15,32 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: "website",
-    siteName: "FileWalaTool",
+    siteName: siteConfig.name,
+    locale: "en_US",
     title: "Passport Photo Maker Online | Passport Size Photo",
     description:
       "Create passport-size photos online with digital, print, and custom presets. Crop, center, and download a JPG passport photo in your browser.",
-    url: "https://www.filewalatool.com/passport-photo",
-    images: [{ url: "/logo.png", width: 512, height: 512, alt: "FileWalaTool" }],
+    url: absoluteUrl("/passport-photo"),
+    images: [
+      {
+        url: absoluteUrl(siteConfig.ogImage),
+        width: 1200,
+        height: 630,
+        alt: "FileWalaTool social preview showing online image, PDF, convert and document tools.",
+      },
+    ],
   },
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     title: "Passport Photo Maker Online | Passport Size Photo",
     description:
       "Create passport-size photos online with digital, print, and custom presets. Crop, center, and download a JPG passport photo in your browser.",
-    images: ["/logo.png"],
+    images: [
+      {
+        url: absoluteUrl(siteConfig.ogImage),
+        alt: "FileWalaTool social preview showing online image, PDF, convert and document tools.",
+      },
+    ],
   },
 };
 

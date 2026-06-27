@@ -37,10 +37,13 @@ export function Header() {
   return (
     <header className="sticky top-0 z-40 border-b border-[#E5E7EB] bg-white">
       <div className="mx-auto flex h-16 w-full max-w-7xl items-center gap-3 px-4 sm:px-6 lg:px-8">
-        <Link
-          href="/"
+        <button
+          type="button"
+          onClick={() => {
+            window.location.href = "/";
+          }}
           className="flex min-w-0 shrink-0 items-center rounded-md focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-          aria-label="FileWalaTool home"
+          aria-label="Go to homepage"
         >
           <Image
             src="/logo.png"
@@ -50,7 +53,7 @@ export function Header() {
             priority
             className="h-10 w-auto object-contain sm:h-11"
           />
-        </Link>
+        </button>
 
         {/* Desktop navigation */}
         <nav className="ml-4 hidden shrink-0 lg:block xl:ml-5" aria-label="Primary desktop navigation">

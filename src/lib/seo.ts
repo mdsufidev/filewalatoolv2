@@ -2,10 +2,14 @@ import type { Metadata } from "next";
 
 export const siteConfig = {
   name: "FileWalaTool",
-  url: "https://www.filewalatool.com",
+  url: "https://filewalatoolv2.vercel.app",
   description:
-    "Free browser-based tools for image, PDF, conversion, and document tasks.",
+    "Resize, compress, convert and edit images, PDFs and documents online for free. Fast, private browser-based file tools.",
   logo: "/logo.png",
+  ogImage: "/og-image.png",
+  title: "FileWalaTool – Free Online Image, PDF & Document Tools",
+  socialDescription:
+    "Resize, compress, convert and edit images, PDFs and documents online for free. Fast, private browser-based file tools.",
   founderName: "Muhammad Sufiyan",
   founderPortfolio: "https://mdsufidev.vercel.app/",
 };
@@ -21,9 +25,9 @@ export type PublicRoute = {
 export const publicRoutes: PublicRoute[] = [
   {
     path: "/",
-    title: "FileWalaTool - Free Online Image, PDF and Document Tools",
+    title: siteConfig.title,
     description:
-      "Use FileWalaTool for free browser-based image, PDF, conversion, and document tools. Resize, compress, crop, convert, and prepare files online.",
+      siteConfig.socialDescription,
     changeFrequency: "weekly",
     priority: 1,
   },
@@ -276,7 +280,7 @@ export function createPageMetadata({
   path,
   title,
   description,
-  image = siteConfig.logo,
+  image = siteConfig.ogImage,
 }: {
   path: string;
   title: string;
@@ -292,23 +296,29 @@ export function createPageMetadata({
     openGraph: {
       type: "website",
       siteName: siteConfig.name,
+      locale: "en_US",
       title,
       description,
       url: absoluteUrl(path),
       images: [
         {
           url: absoluteUrl(image),
-          width: 512,
-          height: 512,
-          alt: siteConfig.name,
+          width: 1200,
+          height: 630,
+          alt: "FileWalaTool social preview showing online image, PDF, convert and document tools.",
         },
       ],
     },
     twitter: {
-      card: "summary",
+      card: "summary_large_image",
       title,
       description,
-      images: [absoluteUrl(image)],
+      images: [
+        {
+          url: absoluteUrl(image),
+          alt: "FileWalaTool social preview showing online image, PDF, convert and document tools.",
+        },
+      ],
     },
   };
 }

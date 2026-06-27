@@ -12,11 +12,10 @@ export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
   applicationName: "FileWalaTool",
   title: {
-    default: "FileWalaTool - Free Online File Tools",
+    default: siteConfig.title,
     template: "%s | FileWalaTool",
   },
-  description:
-    "Free, fast, and private online tools to resize, compress, convert, and manage images and PDFs.",
+  description: siteConfig.socialDescription,
   manifest: "/manifest.webmanifest",
   icons: {
     icon: [
@@ -42,25 +41,29 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     siteName: siteConfig.name,
-    title: "FileWalaTool - Free Online File Tools",
-    description:
-      "Free, fast, and private online tools to resize, compress, convert, and manage images and PDFs.",
+    locale: "en_US",
+    title: siteConfig.title,
+    description: siteConfig.socialDescription,
     url: siteConfig.url,
     images: [
       {
-        url: "/logo.png",
-        width: 512,
-        height: 512,
-        alt: "FileWalaTool",
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "FileWalaTool social preview showing online image, PDF, convert and document tools.",
       },
     ],
   },
   twitter: {
-    card: "summary",
-    title: "FileWalaTool - Free Online File Tools",
-    description:
-      "Free, fast, and private online tools to resize, compress, convert, and manage images and PDFs.",
-    images: ["/logo.png"],
+    card: "summary_large_image",
+    title: siteConfig.title,
+    description: siteConfig.socialDescription,
+    images: [
+      {
+        url: "/og-image.png",
+        alt: "FileWalaTool social preview showing online image, PDF, convert and document tools.",
+      },
+    ],
   },
 };
 
