@@ -1,0 +1,13 @@
+[
+  {
+    "id": "cca60150-058a-40e3-9a3b-69471d3a2a8d",
+    "name": "Test User",
+    "email": "test@example.com",
+    "topic": "Tool not working",
+    "relatedTool": "Crop Image",
+    "message": "This is a test message for the contact form.",
+    "technicalDetails": "Browser: Test\nOS: Test\nScreen: 1920 x 1080\nViewport: 1200 x 800",
+    "createdAt": "2026-06-26T14:56:37.351Z",
+    "status": "new"
+  }
+]
