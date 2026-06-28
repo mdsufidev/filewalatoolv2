@@ -22,6 +22,7 @@ export type PublicRoute = {
   description: string;
   changeFrequency: "weekly" | "monthly" | "yearly";
   priority: number;
+  lastModified?: string;
 };
 
 export const publicRoutes: PublicRoute[] = [
@@ -178,6 +179,14 @@ export const publicRoutes: PublicRoute[] = [
     priority: 0.78,
   },
   {
+    path: "/image-to-pdf",
+    title: "Image to PDF Converter Online | FileWalaTool",
+    description:
+      "Convert JPG, PNG, and WebP images into one PDF online. Combine images into a PDF file directly in your browser.",
+    changeFrequency: "monthly",
+    priority: 0.8,
+  },
+  {
     path: "/batch-image-cropper",
     title: "Batch Image Cropper Online | Crop Multiple Images",
     description:
@@ -264,6 +273,24 @@ export const publicRoutes: PublicRoute[] = [
       "Contact FileWalaTool for tool support, bug reports, feedback, feature requests, or general questions.",
     changeFrequency: "monthly",
     priority: 0.7,
+  },
+  {
+    path: "/privacy",
+    title: "Privacy Policy | FileWalaTool",
+    description:
+      "Read how FileWalaTool handles browser-based file processing, uploaded data, cookies, and contact requests.",
+    changeFrequency: "yearly",
+    priority: 0.4,
+    lastModified: "2026-06-28",
+  },
+  {
+    path: "/terms",
+    title: "Terms of Use | FileWalaTool",
+    description:
+      "Read the terms that apply when using FileWalaTool’s image, PDF, conversion, and document tools.",
+    changeFrequency: "yearly",
+    priority: 0.4,
+    lastModified: "2026-06-28",
   },
 ];
 

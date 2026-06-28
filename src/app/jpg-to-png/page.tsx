@@ -19,6 +19,7 @@ import {
 import { JpgToPngTool } from "@/components/tools/JpgToPngTool";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { ToolSeoJsonLd } from "@/components/seo/ToolSeoJsonLd";
 import { metadataForPath } from "@/lib/seo";
 import type { Tool } from "@/types/tool";
 
@@ -90,6 +91,7 @@ const relatedTools: Tool[] = [
 export default function JpgToPngPage() {
   return (
     <div className="bg-[#FAFAFA]">
+      <ToolSeoJsonLd path="/jpg-to-png" name="JPG to PNG" categoryName="Convert Tools" categoryPath="/convert-tools" />
       <section className="mx-auto w-full max-w-[1160px] px-4 pb-5 pt-3 sm:px-5 lg:px-5 lg:pb-6 lg:pt-3.5">
         <nav className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground" aria-label="Breadcrumb">
           <Link

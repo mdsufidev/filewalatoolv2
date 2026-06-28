@@ -20,6 +20,7 @@ import {
 import { CompressPdfTool } from "@/components/tools/CompressPdfTool";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { ToolSeoJsonLd } from "@/components/seo/ToolSeoJsonLd";
 import { metadataForPath } from "@/lib/seo";
 import type { Tool } from "@/types/tool";
 
@@ -89,7 +90,7 @@ const relatedTools: Tool[] = [
   {
     name: "Image to PDF",
     description: "Convert images into PDF.",
-    href: "/convert-tools",
+    href: "/image-to-pdf",
     icon: FileOutput,
   },
   {
@@ -103,6 +104,7 @@ const relatedTools: Tool[] = [
 export default function CompressPdfPage() {
   return (
     <div className="bg-[#FAFAFA]">
+      <ToolSeoJsonLd path="/compress-pdf" name="Compress PDF" categoryName="PDF Tools" categoryPath="/pdf-tools" />
       <section className="mx-auto w-full max-w-[1160px] px-4 pb-5 pt-3 sm:px-5 lg:px-5 lg:pb-6 lg:pt-3.5">
         <nav className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground" aria-label="Breadcrumb">
           <Link

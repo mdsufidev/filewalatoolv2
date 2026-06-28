@@ -22,10 +22,10 @@ import {
 import type { Tool, ToolCategory } from "@/types/tool";
 
 export const navLinks = [
-  { label: "Image Tools", href: "#image-tools" },
-  { label: "PDF Tools", href: "#pdf-tools" },
-  { label: "Convert", href: "#convert-tools" },
-  { label: "Document Tools", href: "#document-tools" },
+  { label: "Image Tools", href: "/image-tools" },
+  { label: "PDF Tools", href: "/pdf-tools" },
+  { label: "Convert", href: "/convert-tools" },
+  { label: "Document Tools", href: "/document-tools" },
 ];
 
 export const popularTools: Tool[] = [
@@ -92,6 +92,7 @@ const pdfTools: Tool[] = [
 
 const convertTools: Tool[] = [
   { name: "Word to PDF", description: "Document to PDF", href: "/word-to-pdf", icon: FileOutput },
+  { name: "Image to PDF", description: "Images to PDF", href: "/image-to-pdf", icon: FileOutput },
   { name: "JPG to PNG", description: "JPG to PNG", href: "/jpg-to-png", icon: Images },
   { name: "PNG to JPG", description: "PNG to JPG", href: "/png-to-jpg", icon: FileImage },
   { name: "PDF to Image", description: "PDF pages to images", href: "/pdf-to-image", icon: ImageIcon },

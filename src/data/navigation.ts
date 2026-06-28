@@ -73,11 +73,10 @@ export const navigationCategories: NavigationCategory[] = [
     },
     tools: [
       { name: "Word to PDF", description: "Create a PDF from Word.", href: "/word-to-pdf", icon: FileOutput },
+      { name: "Image to PDF", description: "Combine images into PDF.", href: "/image-to-pdf", icon: FileOutput },
       { name: "JPG to PNG", description: "Convert JPG into PNG.", href: "/jpg-to-png", icon: Images },
       { name: "PNG to JPG", description: "Convert PNG into JPG.", href: "/png-to-jpg", icon: FileImage },
       { name: "PDF to Image", description: "Turn pages into images.", href: "/pdf-to-image", icon: ImageIcon },
-      { name: "Image Resizer", description: "Resize images to exact dimensions.", href: "/image-resizer", icon: Maximize2 },
-      { name: "Compress Image", description: "Reduce image size quickly.", href: "/compress-image", icon: Minimize2 },
     ],
   },
   {

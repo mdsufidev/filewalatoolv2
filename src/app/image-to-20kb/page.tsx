@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 
 import { KbResizerTool } from "@/components/tools/KbResizerTool";
+import { ToolSeoJsonLd } from "@/components/seo/ToolSeoJsonLd";
 import { metadataForPath } from "@/lib/seo";
 import type { Tool } from "@/types/tool";
 
@@ -45,6 +46,7 @@ const relatedTools: Tool[] = [
 export default function ImageTo20KbPage() {
   return (
     <div className="bg-[#FAFAFA]">
+      <ToolSeoJsonLd path="/image-to-20kb" name="Image to 20KB" categoryName="Document Tools" categoryPath="/document-tools" />
       <section className="mx-auto w-full max-w-[1160px] px-4 pb-5 pt-3 sm:px-5 lg:px-5 lg:pb-6 lg:pt-3.5">
         <nav className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground" aria-label="Breadcrumb">
           <Link href="/" className="rounded-md hover:text-[#B91C1C] focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50">

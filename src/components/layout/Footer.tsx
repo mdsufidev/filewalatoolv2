@@ -2,10 +2,10 @@ import Link from "next/link";
 import Image from "next/image";
 
 const productLinks = [
-  { label: "Image Tools", href: "#image-tools" },
-  { label: "PDF Tools", href: "#pdf-tools" },
-  { label: "Convert", href: "#convert-tools" },
-  { label: "Document Tools", href: "#document-tools" },
+  { label: "Image Tools", href: "/image-tools" },
+  { label: "PDF Tools", href: "/pdf-tools" },
+  { label: "Convert", href: "/convert-tools" },
+  { label: "Document Tools", href: "/document-tools" },
 ];
 
 const companyLinks = [

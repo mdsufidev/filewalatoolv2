@@ -91,7 +91,7 @@ const relatedTools: Tool[] = [
   {
     name: "Image to PDF",
     description: "Convert images into PDF.",
-    href: "/convert-tools",
+    href: "/image-to-pdf",
     icon: FileOutput,
   },
   {
