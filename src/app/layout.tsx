@@ -8,7 +8,8 @@ import { absoluteUrl, siteConfig } from "@/lib/seo";
 
 import "./globals.css";
 
-const googleAdSenseClient = process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_CLIENT;
+const googleAdSenseClient =
+  process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_CLIENT ?? "ca-pub-2241216694217592";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
