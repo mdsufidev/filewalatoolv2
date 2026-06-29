@@ -8,6 +8,8 @@ import { absoluteUrl, siteConfig } from "@/lib/seo";
 
 import "./globals.css";
 
+const googleAdSenseClient = process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_CLIENT;
+
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
   applicationName: "FileWalaTool",
@@ -74,6 +76,16 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="h-full antialiased" suppressHydrationWarning>
+      <head>
+        {googleAdSenseClient ? <meta name="google-adsense-account" content={googleAdSenseClient} /> : null}
+        {googleAdSenseClient ? (
+          <script
+            async
+            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${googleAdSenseClient}`}
+            crossOrigin="anonymous"
+          />
+        ) : null}
+      </head>
       <body className="flex min-h-full flex-col bg-background text-foreground" suppressHydrationWarning>
         <Header />
         <main className="min-w-0 flex-1">{children}</main>
