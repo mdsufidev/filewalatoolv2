@@ -4,7 +4,7 @@ import { Footer } from "@/components/layout/Footer";
 import { Header } from "@/components/layout/Header";
 import { AppChatWidget } from "@/components/chat/AppChatWidget";
 import { Toaster } from "@/components/ui/sonner";
-import { absoluteUrl, siteConfig } from "@/lib/seo";
+import { absoluteUrl, homeMetadata, siteConfig } from "@/lib/seo";
 
 import "./globals.css";
 
@@ -13,12 +13,15 @@ const googleAdSenseClient =
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
-  applicationName: "FileWalaTool",
+  applicationName: siteConfig.name,
   title: {
-    default: siteConfig.title,
+    default: homeMetadata.title,
     template: "%s | FileWalaTool",
   },
-  description: siteConfig.socialDescription,
+  description: homeMetadata.description,
+  alternates: {
+    canonical: absoluteUrl("/"),
+  },
   manifest: "/manifest.webmanifest",
   icons: {
     icon: [
@@ -45,12 +48,12 @@ export const metadata: Metadata = {
     type: "website",
     siteName: siteConfig.name,
     locale: "en_US",
-    title: siteConfig.title,
-    description: siteConfig.socialDescription,
-    url: absoluteUrl("/"),
+    title: homeMetadata.title,
+    description: homeMetadata.description,
+    url: siteConfig.url,
     images: [
       {
-        url: "/og-image.png",
+        url: siteConfig.ogImage,
         width: 1200,
         height: 630,
         alt: "FileWalaTool social preview showing online image, PDF, convert and document tools.",
@@ -59,11 +62,11 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: siteConfig.title,
-    description: siteConfig.socialDescription,
+    title: homeMetadata.title,
+    description: homeMetadata.description,
     images: [
       {
-        url: "/og-image.png",
+        url: siteConfig.ogImage,
         alt: "FileWalaTool social preview showing online image, PDF, convert and document tools.",
       },
     ],

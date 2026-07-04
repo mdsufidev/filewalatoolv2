@@ -1,5 +1,13 @@
 import type { Metadata } from "next";
 
+import { portfolioAbsoluteUrl, portfolioConfig } from "@/lib/portfolio";
+
+export const homeMetadata = {
+  title: "Free PDF & Image Tools Online | FileWalaTool",
+  description:
+    "Free online PDF tools, image compressor, file converter, image resizer, and document tools.",
+};
+
 export const siteConfig = {
   name: "FileWalaTool",
   alternateNames: ["FileWala", "File Wala", "File Wala Tool"],
@@ -9,7 +17,7 @@ export const siteConfig = {
     "Resize, compress, convert and edit images, PDFs and documents online for free. Fast, private browser-based file tools.",
   logo: "/logo.png",
   ogImage: "/og-image.png",
-  title: "Free PDF Tools, Image Compressor & File Converter Online | FileWalaTool",
+  title: homeMetadata.title,
   socialDescription:
     "Free online image tools, PDF tools, file converters, and document photo resizing tools.",
   founderName: "Muhammad Sufiyan",
@@ -28,11 +36,26 @@ export type PublicRoute = {
 export const publicRoutes: PublicRoute[] = [
   {
     path: "/",
-    title: siteConfig.title,
-    description:
-      siteConfig.socialDescription,
+    title: homeMetadata.title,
+    description: homeMetadata.description,
     changeFrequency: "weekly",
     priority: 1,
+  },
+  {
+    path: "/projects",
+    title: "Projects by Muhammad Sufiyan",
+    description:
+      "Explore real projects by Muhammad Sufiyan, including browser-based file tools built with React, TypeScript, and modern web development workflows.",
+    changeFrequency: "monthly",
+    priority: 0.88,
+  },
+  {
+    path: "/projects/filewalatool",
+    title: "FileWalaTool Project | Muhammad Sufiyan",
+    description:
+      "FileWalaTool is a browser-based image, PDF, conversion, and document tools platform created by Muhammad Sufiyan.",
+    changeFrequency: "monthly",
+    priority: 0.82,
   },
   {
     path: "/tools",
@@ -260,17 +283,17 @@ export const publicRoutes: PublicRoute[] = [
   },
   {
     path: "/about",
-    title: "About FileWalaTool and Founder Muhammad Sufiyan",
+    title: "About Muhammad Sufiyan",
     description:
-      "Learn about FileWalaTool, its browser-based file tools, and founder Muhammad Sufiyan.",
+      "Learn about Muhammad Sufiyan, a Java Full Stack Developer focused on Java, Spring Boot, React, REST APIs, MySQL, and practical web applications.",
     changeFrequency: "monthly",
     priority: 0.72,
   },
   {
     path: "/contact",
-    title: "Contact FileWalaTool | Support and Feedback",
+    title: "Contact Muhammad Sufiyan",
     description:
-      "Contact FileWalaTool for tool support, bug reports, feedback, feature requests, or general questions.",
+      "Contact Muhammad Sufiyan about FileWalaTool, developer work, project feedback, bug reports, or practical web application ideas.",
     changeFrequency: "monthly",
     priority: 0.7,
   },
@@ -316,8 +339,10 @@ export function createPageMetadata({
   description: string;
   image?: string;
 }): Metadata {
+  const pageUrl = path === "/" ? siteConfig.url : absoluteUrl(path);
+
   return {
-    title,
+    title: path === "/" ? { absolute: title } : title,
     description,
     alternates: {
       canonical: absoluteUrl(path),
@@ -328,7 +353,7 @@ export function createPageMetadata({
       locale: "en_US",
       title,
       description,
-      url: absoluteUrl(path),
+      url: pageUrl,
       images: [
         {
           url: absoluteUrl(image),
@@ -348,6 +373,39 @@ export function createPageMetadata({
           alt: "FileWalaTool social preview showing online image, PDF, convert and document tools.",
         },
       ],
+    },
+  };
+}
+
+export function personJsonLd() {
+  return {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    "@id": portfolioAbsoluteUrl("/#person"),
+    name: portfolioConfig.ownerName,
+    alternateName: portfolioConfig.alternateNames,
+    jobTitle: portfolioConfig.role,
+    url: portfolioAbsoluteUrl("/"),
+    image: portfolioAbsoluteUrl(portfolioConfig.ogImage),
+    address: {
+      "@type": "PostalAddress",
+      addressCountry: portfolioConfig.country,
+    },
+    sameAs: [portfolioConfig.githubUrl],
+    knowsAbout: portfolioConfig.knowsAbout,
+  };
+}
+
+export function profilePageJsonLd() {
+  return {
+    "@context": "https://schema.org",
+    "@type": "ProfilePage",
+    "@id": portfolioAbsoluteUrl("/#profile"),
+    name: `${portfolioConfig.ownerName} - ${portfolioConfig.role}`,
+    url: portfolioAbsoluteUrl("/"),
+    description: portfolioConfig.description,
+    mainEntity: {
+      "@id": portfolioAbsoluteUrl("/#person"),
     },
   };
 }
