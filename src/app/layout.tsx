@@ -6,6 +6,7 @@ import { AppChatWidget } from "@/components/chat/AppChatWidget";
 import { ToolEditorialContent } from "@/components/seo/ToolEditorialContent";
 import { Toaster } from "@/components/ui/sonner";
 import { absoluteUrl, homeMetadata, siteConfig } from "@/lib/seo";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 import "./globals.css";
 
@@ -100,6 +101,7 @@ export default function RootLayout({
         <Footer />
         <AppChatWidget />
         <Toaster position="top-right" richColors closeButton />
+        <SpeedInsights />
       </body>
     </html>
   );
