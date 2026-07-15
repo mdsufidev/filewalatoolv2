@@ -127,7 +127,11 @@ export async function appendContactMessage(message: ContactMessage) {
 
 export async function readContactMessages() {
   if (hasSupabase) {
-    return readContactMessagesFromSupabase();
+    try {
+      return await readContactMessagesFromSupabase();
+    } catch (error) {
+      console.error("Supabase contact message read failed; using the local fallback store.", error);
+    }
   }
 
   return readMessagesFile();

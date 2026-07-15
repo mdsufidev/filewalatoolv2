@@ -42,22 +42,6 @@ export const publicRoutes: PublicRoute[] = [
     priority: 1,
   },
   {
-    path: "/projects",
-    title: "Projects by Muhammad Sufiyan",
-    description:
-      "Explore real projects by Muhammad Sufiyan, including browser-based file tools built with React, TypeScript, and modern web development workflows.",
-    changeFrequency: "monthly",
-    priority: 0.88,
-  },
-  {
-    path: "/projects/filewalatool",
-    title: "FileWalaTool Project | Muhammad Sufiyan",
-    description:
-      "FileWalaTool is a browser-based image, PDF, conversion, and document tools platform created by Muhammad Sufiyan.",
-    changeFrequency: "monthly",
-    priority: 0.82,
-  },
-  {
     path: "/tools",
     title: "All Online File Tools | FileWalaTool",
     description:
@@ -342,7 +326,7 @@ export function createPageMetadata({
   const pageUrl = path === "/" ? siteConfig.url : absoluteUrl(path);
 
   return {
-    title: path === "/" ? { absolute: title } : title,
+    title: { absolute: title },
     description,
     alternates: {
       canonical: absoluteUrl(path),

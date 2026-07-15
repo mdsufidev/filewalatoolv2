@@ -5,15 +5,15 @@ import { ADMIN_COOKIE_NAME, ADMIN_LOGIN_PATH } from "@/lib/admin-auth";
 export function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
-  if (!pathname.startsWith("/admin")) {
+  if (!pathname.startsWith("/sufi")) {
     return NextResponse.next();
   }
 
-  if (pathname === ADMIN_LOGIN_PATH || pathname === "/admin/auth") {
+  if (pathname === ADMIN_LOGIN_PATH) {
     return NextResponse.next();
   }
 
-  if (pathname === "/admin/logout") {
+  if (pathname === "/sufi/logout") {
     return NextResponse.next();
   }
 
@@ -28,5 +28,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin", "/admin/:path*"],
+  matcher: ["/sufi", "/sufi/:path*"],
 };

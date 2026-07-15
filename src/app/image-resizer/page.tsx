@@ -49,6 +49,29 @@ const steps: Step[] = [
   },
 ];
 
+const faqs = [
+  {
+    question: "Which image formats can I resize?",
+    answer:
+      "FileWalaTool supports JPG, PNG, and WebP images up to 25 MB. You can keep the original format or export the resized image as JPG, PNG, or WebP.",
+  },
+  {
+    question: "Will resizing an image reduce its quality?",
+    answer:
+      "Making an image smaller usually keeps it looking clear at its intended display size. Enlarging a small image can reveal blur or pixelation because resizing cannot create missing detail. For JPG and WebP output, use the quality control to balance clarity and file size.",
+  },
+  {
+    question: "How do I resize an image without stretching it?",
+    answer:
+      "Leave Keep aspect ratio enabled. When you change the width or height, FileWalaTool calculates the other dimension from the image's original proportions, helping prevent a squeezed or stretched result.",
+  },
+  {
+    question: "Are my uploaded images private?",
+    answer:
+      "Yes. The Image Resizer reads and processes your image locally in your browser using your device. The image is not uploaded to FileWalaTool's server, and the temporary browser preview is cleared when you remove the image or leave the page.",
+  },
+];
+
 const relatedTools: Tool[] = [
   {
     name: "Compress Image",
@@ -105,6 +128,18 @@ export default function ImageResizerPage() {
             path: "/image-resizer",
             applicationCategory: "MultimediaApplication",
           }),
+          {
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            mainEntity: faqs.map((faq) => ({
+              "@type": "Question",
+              name: faq.question,
+              acceptedAnswer: {
+                "@type": "Answer",
+                text: faq.answer,
+              },
+            })),
+          },
         ]}
       />
       <section className="mx-auto w-full max-w-[1160px] px-4 pb-5 pt-3 sm:px-5 lg:px-5 lg:pb-6 lg:pt-3.5">
@@ -206,28 +241,64 @@ export default function ImageResizerPage() {
               );
             })}
           </div>
+          <div className="mt-8 max-w-4xl space-y-5 text-sm leading-7 text-muted-foreground sm:text-base">
+            <p>
+              Select a JPG, PNG, or WebP image up to 25 MB. FileWalaTool reads its current pixel dimensions and shows
+              a preview, giving you a useful reference before you make any changes.
+            </p>
+            <ol className="grid gap-3">
+              <li><strong className="text-[#171717]">1. Choose the target size.</strong> Enter an exact width and height in pixels, resize by percentage, or select a preset for an Instagram post, YouTube thumbnail, passport photo, website banner, or HD image.</li>
+              <li><strong className="text-[#171717]">2. Protect the proportions.</strong> Keep the aspect-ratio option enabled when you want the tool to calculate the matching dimension automatically. Enable “Do not enlarge” if you want to avoid scaling a smaller source beyond its original size.</li>
+              <li><strong className="text-[#171717]">3. Select an output format.</strong> Keep the source format or choose JPG, PNG, or WebP. JPG and WebP also include a quality setting for controlling the trade-off between visual detail and file size.</li>
+              <li><strong className="text-[#171717]">4. Resize and review.</strong> Select Resize Image, compare the before and after previews, and check the output dimensions, format, and size shown below the preview.</li>
+              <li><strong className="text-[#171717]">5. Download the result.</strong> Save the resized image to your device. If it needs adjustment, change the settings and create another version.</li>
+            </ol>
+          </div>
         </div>
       </section>
 
       <section className="border-t border-primary/10 bg-white">
-        <div className="mx-auto grid w-full max-w-7xl gap-5 px-4 py-10 sm:px-6 md:grid-cols-3 lg:px-8">
-          <div>
-            <h2 className="text-lg font-semibold text-[#171717]">What this tool does</h2>
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              Image Resizer changes image dimensions for forms, websites, documents, and social sharing.
-            </p>
-          </div>
-          <div>
-            <h2 className="text-lg font-semibold text-[#171717]">Supported formats</h2>
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              Upload JPG, PNG, or WebP images and download the resized result from your browser.
-            </p>
-          </div>
-          <div>
-            <h2 className="text-lg font-semibold text-[#171717]">Privacy and files</h2>
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              Use only files you are allowed to edit. Review the final image before uploading it anywhere important.
-            </p>
+        <div className="mx-auto w-full max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+          <div className="max-w-4xl">
+            <h2 className="text-2xl font-semibold tracking-normal text-[#171717] sm:text-3xl">
+              Why image resizing matters in everyday digital work
+            </h2>
+            <div className="mt-5 space-y-4 text-sm leading-7 text-muted-foreground sm:text-base">
+              <p>
+                Image dimensions affect how quickly a page loads, how neatly a photo fits into a form, and how clearly
+                a graphic appears on different screens. A large camera photo may be unnecessary for an online profile,
+                while a banner or thumbnail often needs an exact width and height. Resizing the image before uploading
+                it can make websites faster, emails lighter, documents easier to share, and social posts more consistent.
+              </p>
+              <p>
+                Pixel dimensions and file size are related but not identical. Resizing changes the number of pixels;
+                format and quality settings also influence storage size. For the best result, begin with the dimensions
+                required by the website or document, preserve the aspect ratio, and then adjust output quality only if
+                you need a smaller file. Always check the downloaded image at the size where it will actually be used.
+              </p>
+            </div>
+
+            <h2 className="mt-10 text-2xl font-semibold tracking-normal text-[#171717] sm:text-3xl">
+              Benefits of using FileWalaTool Image Resizer
+            </h2>
+            <ul className="mt-5 grid gap-3 text-sm leading-7 text-muted-foreground sm:text-base md:grid-cols-2">
+              <li className="rounded-xl border border-[#E5E7EB] bg-[#FAFAFA] p-4"><strong className="text-[#171717]">Private browser processing:</strong> resizing happens locally on your device. This image tool does not send your file to our server.</li>
+              <li className="rounded-xl border border-[#E5E7EB] bg-[#FAFAFA] p-4"><strong className="text-[#171717]">Fast workflow:</strong> preview, resize, compare, and download without waiting for an upload or server queue.</li>
+              <li className="rounded-xl border border-[#E5E7EB] bg-[#FAFAFA] p-4"><strong className="text-[#171717]">No signup:</strong> use the online image resizer immediately without creating an account or providing an email address.</li>
+              <li className="rounded-xl border border-[#E5E7EB] bg-[#FAFAFA] p-4"><strong className="text-[#171717]">Useful controls:</strong> work in pixels or percentages, preserve proportions, prevent enlargement, use presets, and choose the output format.</li>
+            </ul>
+
+            <h2 className="mt-10 text-2xl font-semibold tracking-normal text-[#171717] sm:text-3xl">
+              Frequently asked questions
+            </h2>
+            <div className="mt-5 divide-y divide-[#E5E7EB] rounded-xl border border-[#E5E7EB] bg-white px-5">
+              {faqs.map((faq) => (
+                <div key={faq.question} className="py-5">
+                  <h3 className="text-base font-semibold text-[#171717]">{faq.question}</h3>
+                  <p className="mt-2 text-sm leading-6 text-muted-foreground">{faq.answer}</p>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>

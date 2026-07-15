@@ -18,6 +18,21 @@ const nextConfig: NextConfig = {
         destination: "/pdf-to-image",
         statusCode: 301,
       },
+      {
+        source: "/kb-editor.html",
+        destination: "/kb-resizer",
+        statusCode: 301,
+      },
+      {
+        source: "/admin",
+        destination: "/sufi",
+        statusCode: 301,
+      },
+      {
+        source: "/admin/:path*",
+        destination: "/sufi/:path*",
+        statusCode: 301,
+      },
     ];
   },
   async headers() {

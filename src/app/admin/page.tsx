@@ -67,7 +67,7 @@ export default async function AdminPage() {
               </span>
             )}
             <Link
-              href="/admin/logout"
+              href="/sufi/logout"
               className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-[#E5E7EB] bg-white px-3 text-sm font-medium text-[#171717] transition-colors hover:border-primary/35 hover:bg-[#FFF1F2] hover:text-[#B91C1C] focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
             >
               <LogOut className="size-4" />
@@ -102,7 +102,7 @@ export default async function AdminPage() {
               <p className="text-xs leading-4 text-muted-foreground">Newest messages first.</p>
             </div>
             <Link
-              href="/admin"
+              href="/sufi"
               className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-[#E5E7EB] bg-white px-3 text-sm font-medium text-[#171717] transition-colors hover:border-primary/35 hover:bg-[#FFF1F2] hover:text-[#B91C1C] focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
             >
               <RefreshCw className="size-4" aria-hidden="true" />

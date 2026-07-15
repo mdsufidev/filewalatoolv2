@@ -20,7 +20,10 @@ import { ToolSeoJsonLd } from "@/components/seo/ToolSeoJsonLd";
 import { metadataForPath } from "@/lib/seo";
 import type { Tool } from "@/types/tool";
 
-export const metadata: Metadata = metadataForPath("/image-to-20kb");
+export const metadata: Metadata = {
+  ...metadataForPath("/image-to-20kb"),
+  robots: { index: false, follow: true },
+};
 
 type Step = {
   title: string;

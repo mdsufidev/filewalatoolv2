@@ -43,6 +43,6 @@ async function AdminLoginFormWrapper({
   searchParams?: Promise<{ next?: string | string[] }>;
 }) {
   const params = searchParams ? await searchParams : undefined;
-  const nextPath = Array.isArray(params?.next) ? params?.next[0] ?? "/admin" : params?.next ?? "/admin";
+  const nextPath = Array.isArray(params?.next) ? params?.next[0] ?? "/sufi" : params?.next ?? "/sufi";
   return <AdminLoginForm nextPath={nextPath} />;
 }
