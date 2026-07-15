@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { Footer } from "@/components/layout/Footer";
 import { Header } from "@/components/layout/Header";
 import { AppChatWidget } from "@/components/chat/AppChatWidget";
+import { ToolEditorialContent } from "@/components/seo/ToolEditorialContent";
 import { Toaster } from "@/components/ui/sonner";
 import { absoluteUrl, homeMetadata, siteConfig } from "@/lib/seo";
 
@@ -92,7 +93,10 @@ export default function RootLayout({
       </head>
       <body className="flex min-h-full flex-col bg-background text-foreground" suppressHydrationWarning>
         <Header />
-        <main className="min-w-0 flex-1">{children}</main>
+        <main className="min-w-0 flex-1">
+          {children}
+          <ToolEditorialContent />
+        </main>
         <Footer />
         <AppChatWidget />
         <Toaster position="top-right" richColors closeButton />
