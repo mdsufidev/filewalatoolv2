@@ -109,6 +109,8 @@ export const SignInModal: React.FC<SignInModalProps> = ({
         return 'Network connection error. Please check your internet connection.';
       case 'auth/too-many-requests':
         return 'Too many requests. Please wait a moment before trying again.';
+      case 'auth/unauthorized-domain':
+        return 'Domain Unauthorized: Please add your domain (filewalatool.com / vercel.app) in Firebase Console > Authentication > Settings > Authorized Domains.';
       default:
         return err?.message || 'Authentication request failed. Please try again.';
     }
