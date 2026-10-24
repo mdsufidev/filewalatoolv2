@@ -1,0 +1,57 @@
+{
+  "cleanUrls": true,
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Strict-Transport-Security",
+          "value": "max-age=63072000; includeSubDomains; preload"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "SAMEORIGIN"
+        },
+        {
+          "key": "X-XSS-Protection",
+          "value": "1; mode=block"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        }
+      ]
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/download/v1.0.0/FileWala-TOOL-Setup-1.0.0.exe",
+      "destination": "https://github.com/mdsufidev/pixcutbgremover/releases/download/v1.0.0/FileWala-TOOL-Setup-1.0.0.exe",
+      "permanent": false
+    },
+    {
+      "source": "/download/latest",
+      "destination": "https://github.com/mdsufidev/pixcutbgremover/releases/download/v1.0.0/FileWala-TOOL-Setup-1.0.0.exe",
+      "permanent": false
+    },
+    {
+      "source": "/download/windows",
+      "destination": "https://github.com/mdsufidev/pixcutbgremover/releases/download/v1.0.0/FileWala-TOOL-Setup-1.0.0.exe",
+      "permanent": false
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/site.xml",
+      "destination": "/sitemap.xml"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
