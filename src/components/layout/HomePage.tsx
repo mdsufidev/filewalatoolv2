@@ -696,17 +696,20 @@ export const HomePage: React.FC<HomePageProps> = ({
                 <span className="text-[10px] text-zinc-400">Windows 64-bit</span>
               </div>
 
-              <img
-                src="/filewala-desktop-app.png"
-                alt="FileWala TOOL v1.0.0 Desktop Application showing AI Picture Enhancer Hybrid Pro with 4x Ultra HD upscaling and U2Net background remover on Windows"
-                title="FileWala Desktop App Interface - Offline AI Picture Enhancer & BG Remover"
-                width={1024}
-                height={667}
-                loading="lazy"
-                decoding="async"
-                className="w-full h-auto object-cover block cursor-pointer transition-transform duration-150 hover:scale-[1.01]"
-                onClick={() => onNavigatePage?.('desktop')}
-              />
+              <picture>
+                <source srcSet="/filewala-desktop-app.webp" type="image/webp" />
+                <img
+                  src="/filewala-desktop-app.png"
+                  alt="FileWala TOOL v1.0.0 Desktop Application showing AI Picture Enhancer Hybrid Pro with 4x Ultra HD upscaling and U2Net background remover on Windows"
+                  title="FileWala Desktop App Interface - Offline AI Picture Enhancer & BG Remover"
+                  width={1024}
+                  height={667}
+                  loading="lazy"
+                  decoding="async"
+                  className="w-full h-auto object-cover block cursor-pointer transition-transform duration-150 hover:scale-[1.01]"
+                  onClick={() => onNavigatePage?.('desktop')}
+                />
+              </picture>
 
               <figcaption className="p-3 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-[11px] text-zinc-500 flex items-center justify-between">
                 <span>Direct Split-Slider preview with face pore restoration and NVIDIA CUDA acceleration.</span>

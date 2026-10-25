@@ -228,15 +228,18 @@ export const DesktopAppPage: React.FC<DesktopAppPageProps> = ({ onBackHome }) =>
 
           {/* Screenshot Image with high-fidelity SEO attributes */}
           <div className="relative w-full bg-zinc-900 flex items-center justify-center overflow-hidden">
-            <img
-              src="/filewala-desktop-app.png"
-              alt="FileWala Desktop Windows App v1.0.0 showing AI Picture Enhancer with split-slider face restoration, Ultra-Fast Preview V3 model, 4x Ultra HD upscaling, and NVIDIA GeForce GTX 1650 GPU acceleration"
-              title="FileWala Desktop Application v1.0.0 - Offline AI Photo Enhancer & U2Net Background Remover"
-              width={1024}
-              height={667}
-              loading="eager"
-              className="w-full h-auto object-contain block select-none"
-            />
+            <picture>
+              <source srcSet="/filewala-desktop-app.webp" type="image/webp" />
+              <img
+                src="/filewala-desktop-app.png"
+                alt="FileWala Desktop Windows App v1.0.0 showing AI Picture Enhancer with split-slider face restoration, Ultra-Fast Preview V3 model, 4x Ultra HD upscaling, and NVIDIA GeForce GTX 1650 GPU acceleration"
+                title="FileWala Desktop Application v1.0.0 - Offline AI Photo Enhancer & U2Net Background Remover"
+                width={1024}
+                height={667}
+                loading="eager"
+                className="w-full h-auto object-contain block select-none"
+              />
+            </picture>
           </div>
 
           {/* Screenshot Detailed Caption */}

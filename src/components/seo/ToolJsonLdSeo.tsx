@@ -219,7 +219,7 @@ export const ToolJsonLdSeo: React.FC<ToolJsonLdSeoProps> = ({
             softwareVersion: '1.0.0',
             fileSize: '80.4MB',
             downloadUrl:
-              'https://filewalatool.com/download/v1.0.0/FileWala-TOOL-Setup-1.0.0.exe',
+              'https://www.filewalatool.com/download/v1.0.0/FileWala-TOOL-Setup-1.0.0.exe',
             offers: {
               '@type': 'Offer',
               price: '0',

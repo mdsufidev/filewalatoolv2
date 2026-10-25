@@ -27,7 +27,7 @@ export const FLAGSHIP_SEO_TOOLS: Record<string, FlagshipSeoConfig> = {
     slug: '/compress-image',
     title: 'Compress Image Online - Reduce PNG, JPEG, WebP | FileWala',
     description: 'Compress JPG, PNG & WebP images in seconds without losing quality. 100% free, client-side in-browser tool with zero server uploads by mdsufidev.',
-    canonicalUrl: 'https://filewalatool.com/compress-image',
+    canonicalUrl: 'https://www.filewalatool.com/compress-image',
     intro: 'Reduce the file size of your photos, screenshots, and web graphics in milliseconds without sacrificing visual sharpness. FileWala Image Compressor runs entirely inside your browser, compressing PNG, JPEG, and WebP images with zero cloud uploads and complete privacy. Achieve optimal file weights for websites, job portals, and email attachments effortlessly.',
     category: 'image-tools',
     matchingSubToolIds: ['compressor'],
@@ -50,9 +50,9 @@ export const FLAGSHIP_SEO_TOOLS: Record<string, FlagshipSeoConfig> = {
       '@graph': [
         {
           '@type': 'WebApplication',
-          '@id': 'https://filewalatool.com/compress-image#app',
+          '@id': 'https://www.filewalatool.com/compress-image#app',
           name: 'FileWala Image Compressor',
-          url: 'https://filewalatool.com/compress-image',
+          url: 'https://www.filewalatool.com/compress-image',
           applicationCategory: 'MultimediaApplication',
           operatingSystem: 'All (Modern Web Browser)',
           browserRequirements: 'Requires JavaScript. Runs 100% in-browser.',
@@ -65,13 +65,13 @@ export const FLAGSHIP_SEO_TOOLS: Record<string, FlagshipSeoConfig> = {
           author: {
             '@type': 'Person',
             name: 'mdsufidev',
-            url: 'https://filewalatool.com/about'
+            url: 'https://www.filewalatool.com/about'
           },
           description: 'Client-side image compression tool that reduces JPEG, PNG, and WebP file sizes in browser memory using HTML5 Canvas with zero server uploads.'
         },
         {
           '@type': 'FAQPage',
-          '@id': 'https://filewalatool.com/compress-image#faq',
+          '@id': 'https://www.filewalatool.com/compress-image#faq',
           mainEntity: [
             {
               '@type': 'Question',
@@ -109,7 +109,7 @@ export const FLAGSHIP_SEO_TOOLS: Record<string, FlagshipSeoConfig> = {
     slug: '/merge-pdf',
     title: 'Merge PDF Files Online - 100% Free & Private | FileWala',
     description: 'Combine multiple PDF files into one seamless document in your browser. 100% client-side, zero server uploads, and ultra-fast by mdsufidev.',
-    canonicalUrl: 'https://filewalatool.com/merge-pdf',
+    canonicalUrl: 'https://www.filewalatool.com/merge-pdf',
     intro: 'Combine reports, receipts, and multi-page records into a single streamlined PDF document in seconds. FileWala Merge PDF executes directly inside your browser using client-side WebAssembly, ensuring rapid assembly with zero data uploads. Keep your confidential financial and legal documents 100% private and protected.',
     category: 'pdf-tools',
     matchingSubToolIds: ['merge-pdf'],
@@ -132,9 +132,9 @@ export const FLAGSHIP_SEO_TOOLS: Record<string, FlagshipSeoConfig> = {
       '@graph': [
         {
           '@type': 'WebApplication',
-          '@id': 'https://filewalatool.com/merge-pdf#app',
+          '@id': 'https://www.filewalatool.com/merge-pdf#app',
           name: 'FileWala PDF Merger',
-          url: 'https://filewalatool.com/merge-pdf',
+          url: 'https://www.filewalatool.com/merge-pdf',
           applicationCategory: 'UtilitiesApplication',
           operatingSystem: 'All (Modern Web Browser)',
           browserRequirements: 'Requires JavaScript and WebAssembly support.',
@@ -147,13 +147,13 @@ export const FLAGSHIP_SEO_TOOLS: Record<string, FlagshipSeoConfig> = {
           author: {
             '@type': 'Person',
             name: 'mdsufidev',
-            url: 'https://filewalatool.com/about'
+            url: 'https://www.filewalatool.com/about'
           },
           description: 'Combine multiple PDF documents into a single consolidated file using client-side WebAssembly and pdf-lib with zero server uploads.'
         },
         {
           '@type': 'FAQPage',
-          '@id': 'https://filewalatool.com/merge-pdf#faq',
+          '@id': 'https://www.filewalatool.com/merge-pdf#faq',
           mainEntity: [
             {
               '@type': 'Question',
@@ -191,7 +191,7 @@ export const FLAGSHIP_SEO_TOOLS: Record<string, FlagshipSeoConfig> = {
     slug: '/compress-pdf',
     title: 'Compress PDF Online - Reduce File Size Privately | FileWala',
     description: 'Reduce PDF file size under 100KB, 200KB or 500KB directly in your browser. 100% client-side with zero data uploads, built by mdsufidev.',
-    canonicalUrl: 'https://filewalatool.com/compress-pdf',
+    canonicalUrl: 'https://www.filewalatool.com/compress-pdf',
     intro: 'Shrink heavy PDF files down to precise target sizes like under 100KB, 200KB, or 500KB without compromising document readability. FileWala PDF Compressor is engineered for zero-telemetry in-browser execution, safeguarding sensitive banking, tax, and educational papers. Optimize your documents instantly for email limits and government portal requirements.',
     category: 'pdf-tools',
     matchingSubToolIds: ['compress-pdf'],
@@ -214,9 +214,9 @@ export const FLAGSHIP_SEO_TOOLS: Record<string, FlagshipSeoConfig> = {
       '@graph': [
         {
           '@type': 'WebApplication',
-          '@id': 'https://filewalatool.com/compress-pdf#app',
+          '@id': 'https://www.filewalatool.com/compress-pdf#app',
           name: 'FileWala PDF Compressor',
-          url: 'https://filewalatool.com/compress-pdf',
+          url: 'https://www.filewalatool.com/compress-pdf',
           applicationCategory: 'UtilitiesApplication',
           operatingSystem: 'All (Modern Web Browser)',
           offers: {
@@ -227,13 +227,13 @@ export const FLAGSHIP_SEO_TOOLS: Record<string, FlagshipSeoConfig> = {
           author: {
             '@type': 'Person',
             name: 'mdsufidev',
-            url: 'https://filewalatool.com/about'
+            url: 'https://www.filewalatool.com/about'
           },
           description: 'Compress and optimize PDF file sizes down to strict thresholds (under 100KB, 200KB, 500KB) directly in browser memory without sending files over the internet.'
         },
         {
           '@type': 'FAQPage',
-          '@id': 'https://filewalatool.com/compress-pdf#faq',
+          '@id': 'https://www.filewalatool.com/compress-pdf#faq',
           mainEntity: [
             {
               '@type': 'Question',
@@ -271,7 +271,7 @@ export const FLAGSHIP_SEO_TOOLS: Record<string, FlagshipSeoConfig> = {
     slug: '/heic-to-jpg',
     title: 'HEIC to JPG Converter - Convert iPhone Photos | FileWala',
     description: 'Convert Apple iPhone HEIC and HEIF photos to high-quality JPG instantly. 100% client-side in your browser with zero server uploads by mdsufidev.',
-    canonicalUrl: 'https://filewalatool.com/heic-to-jpg',
+    canonicalUrl: 'https://www.filewalatool.com/heic-to-jpg',
     intro: 'Transform Apple iPhone HEIC and HEIF photos into universally compatible JPG images in milliseconds. FileWala HEIC to JPG converter handles high-resolution camera assets directly in browser memory without sending a single byte to external servers. Experience instant batch conversion for smooth sharing across Windows, Android, and online portals.',
     category: 'convert',
     matchingSubToolIds: ['heic-to-jpg', 'heic-to-jpg-img', 'convert-heic-jpg'],
@@ -294,9 +294,9 @@ export const FLAGSHIP_SEO_TOOLS: Record<string, FlagshipSeoConfig> = {
       '@graph': [
         {
           '@type': 'WebApplication',
-          '@id': 'https://filewalatool.com/heic-to-jpg#app',
+          '@id': 'https://www.filewalatool.com/heic-to-jpg#app',
           name: 'FileWala HEIC to JPG Converter',
-          url: 'https://filewalatool.com/heic-to-jpg',
+          url: 'https://www.filewalatool.com/heic-to-jpg',
           applicationCategory: 'MultimediaApplication',
           operatingSystem: 'All (Modern Web Browser)',
           offers: {
@@ -307,13 +307,13 @@ export const FLAGSHIP_SEO_TOOLS: Record<string, FlagshipSeoConfig> = {
           author: {
             '@type': 'Person',
             name: 'mdsufidev',
-            url: 'https://filewalatool.com/about'
+            url: 'https://www.filewalatool.com/about'
           },
           description: 'Convert Apple iOS HEIC/HEIF images to standard JPG format client-side using WebAssembly decoders with zero server uploads.'
         },
         {
           '@type': 'FAQPage',
-          '@id': 'https://filewalatool.com/heic-to-jpg#faq',
+          '@id': 'https://www.filewalatool.com/heic-to-jpg#faq',
           mainEntity: [
             {
               '@type': 'Question',
@@ -351,7 +351,7 @@ export const FLAGSHIP_SEO_TOOLS: Record<string, FlagshipSeoConfig> = {
     slug: '/image-to-pdf',
     title: 'Image to PDF Converter - Convert JPG & PNG to PDF | FileWala',
     description: 'Convert JPG, PNG, and WebP images into a single PDF document in seconds. 100% free client-side tool with custom margins and page sizes by mdsufidev.',
-    canonicalUrl: 'https://filewalatool.com/image-to-pdf',
+    canonicalUrl: 'https://www.filewalatool.com/image-to-pdf',
     intro: 'Turn your receipts, notes, and photos into polished, print-ready PDF files in a single click. FileWala Image to PDF allows you to combine multiple JPG, PNG, or WebP images into one organized document with customizable page sizes and margins. Enjoy instant document creation running 100% locally on your machine with zero server uploads.',
     category: 'pdf-tools',
     matchingSubToolIds: ['image-to-pdf', 'convert-img-pdf'],
@@ -374,9 +374,9 @@ export const FLAGSHIP_SEO_TOOLS: Record<string, FlagshipSeoConfig> = {
       '@graph': [
         {
           '@type': 'WebApplication',
-          '@id': 'https://filewalatool.com/image-to-pdf#app',
+          '@id': 'https://www.filewalatool.com/image-to-pdf#app',
           name: 'FileWala Image to PDF Converter',
-          url: 'https://filewalatool.com/image-to-pdf',
+          url: 'https://www.filewalatool.com/image-to-pdf',
           applicationCategory: 'UtilitiesApplication',
           operatingSystem: 'All (Modern Web Browser)',
           offers: {
@@ -387,13 +387,13 @@ export const FLAGSHIP_SEO_TOOLS: Record<string, FlagshipSeoConfig> = {
           author: {
             '@type': 'Person',
             name: 'mdsufidev',
-            url: 'https://filewalatool.com/about'
+            url: 'https://www.filewalatool.com/about'
           },
           description: 'Convert JPG, PNG, and WebP picture files into clean standardized PDF documents client-side with zero data uploads.'
         },
         {
           '@type': 'FAQPage',
-          '@id': 'https://filewalatool.com/image-to-pdf#faq',
+          '@id': 'https://www.filewalatool.com/image-to-pdf#faq',
           mainEntity: [
             {
               '@type': 'Question',
@@ -1023,7 +1023,7 @@ export const FLAGSHIP_SEO_TOOLS: Record<string, FlagshipSeoConfig> = {
     slug: '/pdf-to-word',
     title: 'PDF to Word Converter - Client-Side DOCX Export | FileWala',
     description: 'Convert PDF documents to editable DOCX Word files directly in your browser. 100% client-side privacy with zero server uploads, by mdsufidev.',
-    canonicalUrl: 'https://filewalatool.com/pdf-to-word',
+    canonicalUrl: 'https://www.filewalatool.com/pdf-to-word',
     intro: 'Convert PDF documents into fully editable Microsoft Word (.docx) files directly in your web browser. FileWala PDF to Word converter parses document text, paragraphs, and structural layouts client-side, eliminating the privacy risks of cloud conversions. Edit, update, and repurpose your business, academic, and legal documents with guaranteed zero server transmission.',
     category: 'pdf-tools',
     matchingSubToolIds: ['pdf-to-word'],
@@ -1046,9 +1046,9 @@ export const FLAGSHIP_SEO_TOOLS: Record<string, FlagshipSeoConfig> = {
       '@graph': [
         {
           '@type': 'WebApplication',
-          '@id': 'https://filewalatool.com/pdf-to-word#app',
+          '@id': 'https://www.filewalatool.com/pdf-to-word#app',
           name: 'FileWala PDF to Word Converter',
-          url: 'https://filewalatool.com/pdf-to-word',
+          url: 'https://www.filewalatool.com/pdf-to-word',
           applicationCategory: 'UtilitiesApplication',
           operatingSystem: 'All (Modern Web Browser)',
           offers: {
@@ -1059,13 +1059,13 @@ export const FLAGSHIP_SEO_TOOLS: Record<string, FlagshipSeoConfig> = {
           author: {
             '@type': 'Person',
             name: 'mdsufidev',
-            url: 'https://filewalatool.com/about'
+            url: 'https://www.filewalatool.com/about'
           },
           description: 'Convert PDF documents into editable Microsoft Word (.docx) documents directly inside your browser using client-side text layout extractors with zero server uploads.'
         },
         {
           '@type': 'FAQPage',
-          '@id': 'https://filewalatool.com/pdf-to-word#faq',
+          '@id': 'https://www.filewalatool.com/pdf-to-word#faq',
           mainEntity: [
             {
               '@type': 'Question',
