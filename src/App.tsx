@@ -631,6 +631,7 @@ function MainApp({ initialPath, toolComponents }: { initialPath?: string; toolCo
             ? (selectedCategory as MainNavSection)
             : null
         }
+        activeToolId={activeTool?.subToolId}
         onSelectSection={handleSelectNavbarSection}
         onGoHome={() => handleGoHome('all')}
         currentUser={currentUser}

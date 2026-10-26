@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
 import { MainNavSection } from '../layout/Navbar';
+import { getToolRouteUrl } from '../../core/urlRoutes';
 
 export interface MasterNavTool {
   id: string;
@@ -79,23 +80,41 @@ export const MASTER_NAV_DATA: MasterNavCategory[] = [
   },
 ];
 
-interface MasterDetailNavMenuProps {
+export interface MasterDetailNavMenuProps {
   initialCategory?: MainNavSection;
+  activeToolId?: string;
+  activeSection?: MainNavSection | null;
   onSelectTool: (section: MainNavSection, subToolId: string) => void;
   onSelectCategoryHub: (section: MainNavSection) => void;
   onClose?: () => void;
   className?: string;
+  mobileDrilldownCat?: MasterNavCategory | null;
+  onMobileDrilldownChange?: (cat: MasterNavCategory | null) => void;
 }
 
 export const MasterDetailNavMenu: React.FC<MasterDetailNavMenuProps> = ({
   initialCategory = 'document-tools',
+  activeToolId,
+  activeSection,
   onSelectTool,
   onSelectCategoryHub,
   onClose,
   className = '',
+  mobileDrilldownCat,
+  onMobileDrilldownChange,
 }) => {
   const [activeCategoryId, setActiveCategoryId] = useState<MainNavSection>(initialCategory);
-  const [mobileDrilldownCat, setMobileDrilldownCat] = useState<MasterNavCategory | null>(null);
+  const [internalMobileDrilldown, setInternalMobileDrilldown] = useState<MasterNavCategory | null>(null);
+
+  const effectiveDrilldownCat =
+    mobileDrilldownCat !== undefined ? mobileDrilldownCat : internalMobileDrilldown;
+
+  const setDrilldownCat = (cat: MasterNavCategory | null) => {
+    if (onMobileDrilldownChange) {
+      onMobileDrilldownChange(cat);
+    }
+    setInternalMobileDrilldown(cat);
+  };
 
   useEffect(() => {
     setActiveCategoryId(initialCategory);
@@ -165,28 +184,42 @@ export const MasterDetailNavMenu: React.FC<MasterDetailNavMenuProps> = ({
 
           {/* Sub-tools List */}
           <div className="py-1 space-y-0.5">
-            {activeCategory.tools.map((tool) => (
-              <button
-                key={tool.id}
-                type="button"
-                onClick={() => handleToolClick(tool.section, tool.subToolId)}
-                className="w-full text-left px-3.5 py-2 rounded-lg text-sm text-zinc-700 dark:text-zinc-300 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-50 dark:hover:bg-zinc-850 transition-colors cursor-pointer truncate font-medium block"
-              >
-                {tool.name}
-              </button>
-            ))}
+            {activeCategory.tools.map((tool) => {
+              const toolUrl = getToolRouteUrl(tool.section, tool.subToolId);
+              const isCurrentTool = activeToolId === tool.subToolId;
+              return (
+                <a
+                  key={tool.id}
+                  href={toolUrl}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleToolClick(tool.section, tool.subToolId);
+                  }}
+                  className={`w-full text-left px-3.5 py-2 rounded-lg text-sm transition-colors cursor-pointer truncate block ${
+                    isCurrentTool
+                      ? 'bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400 font-semibold'
+                      : 'text-zinc-700 dark:text-zinc-300 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-50 dark:hover:bg-zinc-850 font-medium'
+                  }`}
+                >
+                  {tool.name}
+                </a>
+              );
+            })}
           </div>
 
           {/* Footer Link: View all → */}
           <div className="pt-2 border-t border-zinc-100 dark:border-zinc-800 px-3.5 pb-1">
-            <button
-              type="button"
-              onClick={() => handleHubClick(activeCategory.id)}
+            <a
+              href={activeCategory.hubUrl}
+              onClick={(e) => {
+                e.preventDefault();
+                handleHubClick(activeCategory.id);
+              }}
               className="text-sm font-semibold text-red-600 dark:text-red-400 hover:underline inline-flex items-center gap-1 cursor-pointer"
             >
               <span>View all</span>
               <span>→</span>
-            </button>
+            </a>
           </div>
         </div>
       </div>
@@ -195,45 +228,59 @@ export const MasterDetailNavMenu: React.FC<MasterDetailNavMenuProps> = ({
       {/* MOBILE VIEW: Drill-down Flow (< 768px)                     */}
       {/* ========================================================= */}
       <div className="md:hidden w-full bg-white dark:bg-zinc-950 p-1">
-        {mobileDrilldownCat ? (
+        {effectiveDrilldownCat ? (
           /* Step 2: Selected Category Tool List */
           <div className="space-y-2 animate-in slide-in-from-right-4 duration-150">
             <div className="flex items-center gap-2 pb-2 border-b border-zinc-100 dark:border-zinc-800 px-1">
               <button
                 type="button"
-                onClick={() => setMobileDrilldownCat(null)}
+                onClick={() => setDrilldownCat(null)}
                 className="p-1 rounded-md text-zinc-500 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer"
                 aria-label="Back to Main Tools"
               >
                 <ChevronLeft className="w-5 h-5" />
               </button>
               <h3 className="font-bold text-base text-zinc-950 dark:text-white">
-                {mobileDrilldownCat.name}
+                {effectiveDrilldownCat.name}
               </h3>
             </div>
 
             <div className="space-y-1 py-1">
-              {mobileDrilldownCat.tools.map((tool) => (
-                <button
-                  key={tool.id}
-                  type="button"
-                  onClick={() => handleToolClick(tool.section, tool.subToolId)}
-                  className="w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium text-zinc-800 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-850 cursor-pointer"
-                >
-                  {tool.name}
-                </button>
-              ))}
+              {effectiveDrilldownCat.tools.map((tool) => {
+                const toolUrl = getToolRouteUrl(tool.section, tool.subToolId);
+                const isCurrentTool = activeToolId === tool.subToolId;
+                return (
+                  <a
+                    key={tool.id}
+                    href={toolUrl}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleToolClick(tool.section, tool.subToolId);
+                    }}
+                    className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-colors cursor-pointer block ${
+                      isCurrentTool
+                        ? 'bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400 font-semibold'
+                        : 'text-zinc-800 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-850 font-medium'
+                    }`}
+                  >
+                    {tool.name}
+                  </a>
+                );
+              })}
             </div>
 
             <div className="pt-2 border-t border-zinc-100 dark:border-zinc-800 px-3 pb-2">
-              <button
-                type="button"
-                onClick={() => handleHubClick(mobileDrilldownCat.id)}
+              <a
+                href={effectiveDrilldownCat.hubUrl}
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleHubClick(effectiveDrilldownCat.id);
+                }}
                 className="text-sm font-semibold text-red-600 dark:text-red-400 flex items-center gap-1 cursor-pointer hover:underline"
               >
-                <span>View all {mobileDrilldownCat.name}</span>
+                <span>View all {effectiveDrilldownCat.name}</span>
                 <ArrowRight className="w-4 h-4" />
-              </button>
+              </a>
             </div>
           </div>
         ) : (
@@ -247,7 +294,7 @@ export const MasterDetailNavMenu: React.FC<MasterDetailNavMenuProps> = ({
               <button
                 key={cat.id}
                 type="button"
-                onClick={() => setMobileDrilldownCat(cat)}
+                onClick={() => setDrilldownCat(cat)}
                 className="w-full flex items-center justify-between px-3.5 py-3 rounded-xl text-sm font-medium text-zinc-800 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-850 cursor-pointer"
               >
                 <span>{cat.name}</span>
