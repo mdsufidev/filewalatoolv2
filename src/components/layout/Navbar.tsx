@@ -1,18 +1,19 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { createPortal } from 'react-dom';
 import {
-  ChevronLeft,
-  Search,
   X,
   User,
-  Image as ImageIcon,
   Sun,
   Moon,
+  ChevronDown,
+  LayoutDashboard,
+  Settings,
+  LogOut,
+  ShieldCheck,
 } from 'lucide-react';
 import { checkIsAdmin } from '../../core/firebase';
 import { UserAvatar } from '../ui/UserAvatar';
 import { useTheme } from '../../core/themeContext';
-import { MasterDetailNavMenu, MasterNavCategory } from '../navigation/MasterDetailNavMenu';
+import { MasterDetailNavMenu } from '../navigation/MasterDetailNavMenu';
 
 export type MainNavSection =
   | 'image-tools'
@@ -47,9 +48,6 @@ export const Navbar: React.FC<NavbarProps> = ({
   onSignOut,
   onOpenAccountSettings,
   onOpenAdmin,
-  onOpenCommandPalette,
-  onOpenShortcutsHelp,
-  onNavigatePage,
 }) => {
   const isAdmin = Boolean(currentUser && checkIsAdmin(currentUser.email, currentUser.role));
   const { theme, toggleTheme } = useTheme();
@@ -57,47 +55,26 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [isMasterNavOpen, setIsMasterNavOpen] = useState(false);
   const [isMenuPinned, setIsMenuPinned] = useState(false);
   const [masterNavCategory, setMasterNavCategory] = useState<MainNavSection>('document-tools');
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [mobileDrilldownCat, setMobileDrilldownCat] = useState<MasterNavCategory | null>(null);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const navContainerRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
-  // Synchronize resize / orientation change between desktop & mobile
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth >= 768) {
-        setIsMobileMenuOpen(false);
-        setMobileDrilldownCat(null);
-      } else {
-        setIsMasterNavOpen(false);
-        setIsMenuPinned(false);
-      }
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
   // Close menus on click-outside or Escape key
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+      const target = event.target as Node;
       if (
         navContainerRef.current &&
-        !navContainerRef.current.contains(event.target as Node)
+        !navContainerRef.current.contains(target)
       ) {
         setIsMasterNavOpen(false);
         setIsMenuPinned(false);
       }
       if (
         userMenuRef.current &&
-        !userMenuRef.current.contains(event.target as Node)
+        !userMenuRef.current.contains(target)
       ) {
         setIsUserMenuOpen(false);
       }
@@ -106,8 +83,6 @@ export const Navbar: React.FC<NavbarProps> = ({
       if (e.key === 'Escape') {
         setIsMasterNavOpen(false);
         setIsMenuPinned(false);
-        setIsMobileMenuOpen(false);
-        setMobileDrilldownCat(null);
         setIsUserMenuOpen(false);
       }
     };
@@ -120,17 +95,6 @@ export const Navbar: React.FC<NavbarProps> = ({
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, []);
-
-  // Prevent body scroll when right-to-left drawer is open
-  useEffect(() => {
-    if (isMobileMenuOpen) {
-      const originalOverflow = document.body.style.overflow;
-      document.body.style.overflow = 'hidden';
-      return () => {
-        document.body.style.overflow = originalOverflow;
-      };
-    }
-  }, [isMobileMenuOpen]);
 
   const handleMouseEnterCategory = (category: MainNavSection) => {
     if (hoverTimeoutRef.current) {
@@ -164,51 +128,38 @@ export const Navbar: React.FC<NavbarProps> = ({
     }
     setIsMasterNavOpen(false);
     setIsMenuPinned(false);
-    setIsMobileMenuOpen(false);
-    setMobileDrilldownCat(null);
+    setIsUserMenuOpen(false);
     onSelectSection(section);
   };
 
-  const handleSubToolClick = (section: MainNavSection, subToolId: string) => {
-    if (hoverTimeoutRef.current) {
-      clearTimeout(hoverTimeoutRef.current);
-    }
-    setIsMasterNavOpen(false);
-    setIsMenuPinned(false);
-    setIsMobileMenuOpen(false);
-    setMobileDrilldownCat(null);
-    onSelectSection(section, subToolId);
+  const handleToggleMenu = () => {
+    setIsUserMenuOpen(false);
+    setIsMasterNavOpen((prev) => !prev);
+    setIsMenuPinned((prev) => !prev);
   };
 
-  const handleToggleMenu = () => {
-    if (typeof window !== 'undefined' && window.innerWidth >= 768) {
-      if (isMasterNavOpen) {
-        setIsMasterNavOpen(false);
-        setIsMenuPinned(false);
-      } else {
-        setIsMasterNavOpen(true);
-        setIsMenuPinned(true);
-      }
-    } else {
-      setIsMobileMenuOpen((prev) => !prev);
-      setMobileDrilldownCat(null);
-    }
+  const handleToggleUserMenu = () => {
+    setIsMasterNavOpen(false);
+    setIsMenuPinned(false);
+    setIsUserMenuOpen((prev) => !prev);
   };
 
   return (
-    <>
-      <nav
-        ref={navContainerRef}
+    <nav
+      ref={navContainerRef}
       className="sticky top-0 z-50 w-full transition-colors duration-150 border-b border-zinc-200 dark:border-zinc-800 bg-white/95 dark:bg-zinc-950/95 text-zinc-900 dark:text-zinc-100 backdrop-blur-sm select-none"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full flex items-center justify-between h-16 relative">
         {/* ========================================================= */}
-        {/* 1. LEFT: LOGO BRANDMARK ([F] Logo + ileWala TOOL, Location Unchanged) */}
+        {/* 1. LEFT: LOGO BRANDMARK ([F] Logo + ileWala TOOL)          */}
         {/* ========================================================= */}
         <a
           href="/"
           onClick={(e) => {
             e.preventDefault();
+            setIsMasterNavOpen(false);
+            setIsMenuPinned(false);
+            setIsUserMenuOpen(false);
             onGoHome();
           }}
           className="flex items-center gap-0.5 sm:gap-1 cursor-pointer shrink-0 select-none group py-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950 dark:focus-visible:ring-zinc-100 rounded-md"
@@ -234,9 +185,9 @@ export const Navbar: React.FC<NavbarProps> = ({
         </a>
 
         {/* ========================================================= */}
-        {/* 2. RIGHT: FRONT NAVIGATION (Govt & Exam Forms + Image Tools + Sign In + All Tools Menu) */}
+        {/* 2. RIGHT: NAVIGATION & PROFILE CONTROLS                    */}
         {/* ========================================================= */}
-        <div className="flex items-center gap-3 sm:gap-4 md:gap-5 lg:gap-6 shrink-0">
+        <div className="flex items-center gap-2.5 sm:gap-4 md:gap-5 lg:gap-6 shrink-0">
           {/* Desktop Direct Links: Govt & Exam Forms & Image Tools */}
           <div className="hidden md:flex items-center gap-5 lg:gap-7 h-full">
             {/* Govt & Exam Forms */}
@@ -284,21 +235,146 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
           </div>
 
-          {/* Sign In / Account Option (Bich me: Image Tools ke Right me, All Tools Menu ke Left me) */}
+          {/* User Profile / Sign In Option */}
           {currentUser ? (
-            <button
-              type="button"
-              onClick={onOpenAccountSettings}
-              className="flex items-center gap-2 py-1 px-2.5 rounded-md border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer text-xs font-semibold text-zinc-800 dark:text-zinc-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950 dark:focus-visible:ring-zinc-100"
-              title="Account Settings"
-            >
-              <UserAvatar
-                src={currentUser.avatarUrl}
-                name={currentUser.name}
-                size="xs"
-              />
-              <span className="hidden sm:inline max-w-[100px] truncate">{currentUser.name || 'Account'}</span>
-            </button>
+            <div className="relative" ref={userMenuRef}>
+              <button
+                type="button"
+                onClick={handleToggleUserMenu}
+                className="flex items-center gap-1.5 sm:gap-2 py-1 px-1.5 sm:px-2.5 rounded-full sm:rounded-md border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer text-xs font-semibold text-zinc-800 dark:text-zinc-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950 dark:focus-visible:ring-zinc-100"
+                title="Account & Profile Menu"
+                aria-label="User Profile Menu"
+                aria-expanded={isUserMenuOpen}
+              >
+                <UserAvatar
+                  src={currentUser.avatarUrl}
+                  name={currentUser.name}
+                  size="xs"
+                />
+                <span className="hidden sm:inline max-w-[100px] truncate">{currentUser.name || 'Account'}</span>
+                <ChevronDown className="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500 shrink-0" />
+              </button>
+
+              {/* USER PROFILE DROPDOWN (Admin Panel + Settings + Logout) */}
+              {isUserMenuOpen && (
+                <div className="absolute right-0 top-full mt-2 w-72 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/90 dark:border-zinc-800 shadow-2xl p-2.5 z-50 animate-in fade-in-0 zoom-in-95 duration-150">
+                  {/* User Profile Header */}
+                  <div className="px-3 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-850/60 flex items-center gap-3">
+                    <UserAvatar
+                      src={currentUser.avatarUrl}
+                      name={currentUser.name}
+                      size="md"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100 truncate">
+                          {currentUser.name || 'User'}
+                        </p>
+                        {isAdmin && (
+                          <span className="text-[9px] font-mono px-1.5 py-0.2 rounded font-semibold bg-amber-100 dark:bg-amber-950/70 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 shrink-0">
+                            Admin
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate">
+                        {currentUser.email}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="my-1.5 border-t border-zinc-100 dark:border-zinc-800" />
+
+                  {/* Actions List */}
+                  <div className="space-y-0.5">
+                    {/* Admin Panel Link */}
+                    {onOpenAdmin && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsUserMenuOpen(false);
+                          onOpenAdmin();
+                        }}
+                        className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold text-zinc-800 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-950 dark:hover:text-white transition-colors cursor-pointer group"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-7 h-7 rounded-lg bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                            <LayoutDashboard className="w-4 h-4" />
+                          </div>
+                          <div className="text-left">
+                            <div className="font-semibold text-zinc-900 dark:text-zinc-100">Admin Panel</div>
+                            <div className="text-[10px] text-zinc-400 dark:text-zinc-500 font-normal">Manage users & database</div>
+                          </div>
+                        </div>
+                        <span className="text-[10px] font-mono font-medium px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-500 group-hover:bg-amber-100 dark:group-hover:bg-amber-900/60 group-hover:text-amber-700 dark:group-hover:text-amber-300 transition-colors">
+                          Console
+                        </span>
+                      </button>
+                    )}
+
+                    {/* Account Settings */}
+                    {onOpenAccountSettings && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsUserMenuOpen(false);
+                          onOpenAccountSettings();
+                        }}
+                        className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs sm:text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-950 dark:hover:text-white transition-colors cursor-pointer"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-7 h-7 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 flex items-center justify-center shrink-0">
+                            <Settings className="w-4 h-4" />
+                          </div>
+                          <div className="text-left">
+                            <div className="font-semibold text-zinc-900 dark:text-zinc-100">Account Settings</div>
+                            <div className="text-[10px] text-zinc-400 dark:text-zinc-500 font-normal">Password, avatar & details</div>
+                          </div>
+                        </div>
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="my-1.5 border-t border-zinc-100 dark:border-zinc-800" />
+
+                  {/* Theme Mode & Sign Out */}
+                  <div className="space-y-0.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        toggleTheme();
+                      }}
+                      className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs sm:text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-7 h-7 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 flex items-center justify-center shrink-0">
+                          {isDark ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-zinc-600" />}
+                        </div>
+                        <span>{isDark ? 'Light Mode' : 'Dark Mode'}</span>
+                      </div>
+                      <span className="text-[10px] font-mono text-zinc-400">
+                        {isDark ? 'Dark' : 'Light'}
+                      </span>
+                    </button>
+
+                    {onSignOut && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsUserMenuOpen(false);
+                          onSignOut();
+                        }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+                      >
+                        <div className="w-7 h-7 rounded-lg bg-rose-50 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
+                          <LogOut className="w-4 h-4" />
+                        </div>
+                        <span>Sign Out</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
           ) : (
             onOpenSignIn && (
               <button
@@ -316,15 +392,15 @@ export const Navbar: React.FC<NavbarProps> = ({
             type="button"
             onClick={handleToggleMenu}
             className={`p-1.5 sm:p-2 -mr-1.5 rounded-md transition-colors duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950 dark:focus-visible:ring-zinc-100 ${
-              isMasterNavOpen || isMobileMenuOpen
+              isMasterNavOpen
                 ? 'bg-zinc-100 dark:bg-zinc-800 text-zinc-950 dark:text-white'
                 : 'text-zinc-700 dark:text-zinc-300 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800'
             }`}
             title="All Tools Menu"
             aria-label="Toggle menu"
-            aria-expanded={isMasterNavOpen || isMobileMenuOpen}
+            aria-expanded={isMasterNavOpen}
           >
-            {isMobileMenuOpen || isMasterNavOpen ? (
+            {isMasterNavOpen ? (
               <X className="w-6 h-6 sm:w-7 sm:h-7" />
             ) : (
               <svg
@@ -344,12 +420,11 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
 
         {/* ========================================================= */}
-        {/* DESKTOP MASTER-DETAIL CASCADING FLYOUT (Matches Reference UI) */}
-        {/* Inside max-w-7xl so it aligns perfectly with header controls */}
+        {/* ALL TOOLS DROPDOWN (Desktop: 2-Card Cascading Flyout, Mobile: Floating Card) */}
         {/* ========================================================= */}
         {isMasterNavOpen && (
           <div
-            className="hidden md:block absolute top-full right-4 sm:right-6 lg:right-8 pt-2 z-50 animate-in fade-in-0 duration-150"
+            className="absolute top-full right-3 sm:right-6 lg:right-8 pt-2 z-50 animate-in fade-in-0 zoom-in-95 duration-150"
             onMouseEnter={handleMenuMouseEnter}
             onMouseLeave={handleMouseLeaveCategory}
           >
@@ -376,284 +451,5 @@ export const Navbar: React.FC<NavbarProps> = ({
         )}
       </div>
     </nav>
-
-    {/* ========================================================= */}
-    {/* PORTALED RIGHT-TO-LEFT SIDEBAR DRAWER (Matching Reference Image 2) */}
-    {/* ========================================================= */}
-    {mounted && typeof document !== 'undefined' && isMobileMenuOpen
-      ? createPortal(
-          <div className="fixed inset-0 z-[100] overflow-hidden select-none">
-            {/* Smooth Backdrop Overlay */}
-            <div
-              className="fixed inset-0 bg-black/40 backdrop-blur-xs animate-backdrop-in"
-              onClick={() => setIsMobileMenuOpen(false)}
-              aria-hidden="true"
-            />
-
-            {/* Slide-over Aside Panel */}
-            <div className="fixed inset-y-0 right-0 max-w-full flex z-[101]">
-              <aside
-                className="w-screen max-w-[340px] sm:max-w-[380px] bg-white dark:bg-zinc-950 border-l border-zinc-200 dark:border-zinc-800 shadow-2xl flex flex-col h-[100dvh] max-h-[100dvh] animate-drawer-in sm:rounded-l-2xl overflow-hidden"
-                role="dialog"
-                aria-modal="true"
-                aria-label="Navigation Menu"
-              >
-                {/* 1. Header Bar with [ < ] Back Button (Matching Image 2) */}
-                <div className="flex items-center justify-between px-5 py-3.5 border-b border-zinc-100 dark:border-zinc-800 shrink-0 bg-white dark:bg-zinc-950">
-                  <div className="flex items-center gap-2.5">
-                    {mobileDrilldownCat ? (
-                      <button
-                        type="button"
-                        onClick={() => setMobileDrilldownCat(null)}
-                        className="w-8 h-8 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 flex items-center justify-center text-zinc-700 dark:text-zinc-300 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer shadow-xs"
-                        aria-label="Back to Main Tools"
-                        title="Back to Main Tools"
-                      >
-                        <ChevronLeft className="w-4 h-4" />
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsMobileMenuOpen(false);
-                          setMobileDrilldownCat(null);
-                        }}
-                        className="w-8 h-8 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 flex items-center justify-center text-zinc-700 dark:text-zinc-300 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer shadow-xs"
-                        aria-label="Close menu"
-                        title="Close menu"
-                      >
-                        <ChevronLeft className="w-4 h-4" />
-                      </button>
-                    )}
-                    <h2 className="font-bold text-base text-zinc-900 dark:text-white truncate max-w-[190px]">
-                      {mobileDrilldownCat ? mobileDrilldownCat.name : 'Navigation'}
-                    </h2>
-                  </div>
-
-                  <div className="flex items-center gap-1">
-                    <button
-                      type="button"
-                      onClick={toggleTheme}
-                      className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-850 transition-colors cursor-pointer"
-                      title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-                      aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-                    >
-                      {isDark ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-zinc-600" />}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsMobileMenuOpen(false);
-                        setMobileDrilldownCat(null);
-                      }}
-                      className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-850 transition-colors cursor-pointer"
-                      aria-label="Close menu"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-
-                {/* 2. Fast Search Trigger */}
-                <div className="px-5 pt-3 pb-2 shrink-0">
-                  {onOpenCommandPalette && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsMobileMenuOpen(false);
-                        setMobileDrilldownCat(null);
-                        onOpenCommandPalette();
-                      }}
-                      className="w-full flex items-center justify-between px-3 py-2 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400 text-xs hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors cursor-pointer"
-                    >
-                      <div className="flex items-center gap-2">
-                        <Search className="w-3.5 h-3.5 text-zinc-400" />
-                        <span>Search all 44+ tools...</span>
-                      </div>
-                      <kbd className="px-1.5 py-0.5 rounded font-mono text-[10px] border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-500">
-                        ⌘K
-                      </kbd>
-                    </button>
-                  )}
-                </div>
-
-                {/* 3. Master-Detail Tool Navigation (Clean Drill-Down Flow) */}
-                <div className="flex-1 overflow-y-auto px-3 py-2 space-y-4">
-                  <MasterDetailNavMenu
-                    activeToolId={activeToolId}
-                    activeSection={activeSection}
-                    mobileDrilldownCat={mobileDrilldownCat}
-                    onMobileDrilldownChange={setMobileDrilldownCat}
-                    onSelectTool={(section, subToolId) => {
-                      setIsMobileMenuOpen(false);
-                      setMobileDrilldownCat(null);
-                      onSelectSection(section, subToolId);
-                    }}
-                    onSelectCategoryHub={(section) => {
-                      setIsMobileMenuOpen(false);
-                      setMobileDrilldownCat(null);
-                      onSelectSection(section);
-                    }}
-                    onClose={() => {
-                      setIsMobileMenuOpen(false);
-                      setMobileDrilldownCat(null);
-                    }}
-                  />
-
-                  {/* Section 5: Account & Workspace (Matching Image 2 Section 2) */}
-                  <div className="space-y-1 pt-2 border-t border-zinc-100 dark:border-zinc-800">
-                    <div className="flex items-center gap-2.5 text-zinc-900 dark:text-white font-semibold text-sm py-1">
-                      <User className="w-4 h-4 text-zinc-500 dark:text-zinc-400" />
-                      <span>Account &amp; Workspace</span>
-                    </div>
-                    <div className="space-y-0.5 pl-6 pt-0.5 border-l border-zinc-100 dark:border-zinc-800/80 ml-2">
-                      {currentUser ? (
-                        <>
-                          {isAdmin && onOpenAdmin && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setIsMobileMenuOpen(false);
-                                setMobileDrilldownCat(null);
-                                onOpenAdmin();
-                              }}
-                              className="w-full text-left py-1.5 px-2.5 rounded-md text-xs sm:text-[13px] text-amber-600 dark:text-amber-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/70 transition-colors cursor-pointer flex items-center justify-between"
-                            >
-                              <span>Admin Console</span>
-                              <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300">
-                                Admin
-                              </span>
-                            </button>
-                          )}
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setIsMobileMenuOpen(false);
-                              setMobileDrilldownCat(null);
-                              onOpenAccountSettings?.();
-                            }}
-                            className="w-full text-left py-1.5 px-2.5 rounded-md text-xs sm:text-[13px] text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800/70 transition-colors cursor-pointer"
-                          >
-                            Profile &amp; Settings ({currentUser.name})
-                          </button>
-                          {onSignOut && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setIsMobileMenuOpen(false);
-                                setMobileDrilldownCat(null);
-                                onSignOut();
-                              }}
-                              className="w-full text-left py-1.5 px-2.5 rounded-md text-xs sm:text-[13px] text-rose-600 dark:text-rose-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/70 transition-colors cursor-pointer"
-                            >
-                              Sign Out
-                            </button>
-                          )}
-                        </>
-                      ) : (
-                        onOpenSignIn && (
-                          <>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setIsMobileMenuOpen(false);
-                                setMobileDrilldownCat(null);
-                                onOpenSignIn();
-                              }}
-                              className="w-full text-left py-1.5 px-2.5 rounded-md text-xs sm:text-[13px] text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800/70 transition-colors cursor-pointer"
-                            >
-                              Sign In / Login
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setIsMobileMenuOpen(false);
-                                setMobileDrilldownCat(null);
-                                onOpenSignIn();
-                              }}
-                              className="w-full text-left py-1.5 px-2.5 rounded-md text-xs sm:text-[13px] text-zinc-900 dark:text-zinc-100 font-semibold hover:bg-zinc-100 dark:hover:bg-zinc-800/70 transition-colors cursor-pointer"
-                            >
-                              Create Free Account
-                            </button>
-                          </>
-                        )
-                      )}
-                      {onNavigatePage && (
-                        <>
-                          <a
-                            href="/desktop"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              setIsMobileMenuOpen(false);
-                              setMobileDrilldownCat(null);
-                              onNavigatePage('desktop');
-                            }}
-                            className="w-full text-left py-1.5 px-2.5 rounded-md text-xs sm:text-[13px] font-semibold text-zinc-900 dark:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800/70 transition-colors cursor-pointer flex items-center justify-between"
-                          >
-                            <span>Desktop App (.exe)</span>
-                            <span className="text-[9px] font-mono px-1 py-0.2 rounded border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-500">
-                              Free
-                            </span>
-                          </a>
-                          <a
-                            href="/about"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              setIsMobileMenuOpen(false);
-                              setMobileDrilldownCat(null);
-                              onNavigatePage('about');
-                            }}
-                            className="w-full text-left py-1.5 px-2.5 rounded-md text-xs sm:text-[13px] text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800/70 transition-colors cursor-pointer block"
-                          >
-                            About Us
-                          </a>
-                          <a
-                            href="/terms"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              setIsMobileMenuOpen(false);
-                              setMobileDrilldownCat(null);
-                              onNavigatePage('terms');
-                            }}
-                            className="w-full text-left py-1.5 px-2.5 rounded-md text-xs sm:text-[13px] text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800/70 transition-colors cursor-pointer block"
-                          >
-                            Terms of Service
-                          </a>
-                          <a
-                            href="/disclaimer"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              setIsMobileMenuOpen(false);
-                              setMobileDrilldownCat(null);
-                              onNavigatePage('disclaimer');
-                            }}
-                            className="w-full text-left py-1.5 px-2.5 rounded-md text-xs sm:text-[13px] text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800/70 transition-colors cursor-pointer block"
-                          >
-                            Privacy Policy &amp; Disclaimer
-                          </a>
-                          <a
-                            href="/contact"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              setIsMobileMenuOpen(false);
-                              setMobileDrilldownCat(null);
-                              onNavigatePage('contact');
-                            }}
-                            className="w-full text-left py-1.5 px-2.5 rounded-md text-xs sm:text-[13px] text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800/70 transition-colors cursor-pointer block"
-                          >
-                            Contact Support
-                          </a>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </aside>
-            </div>
-          </div>,
-          document.body
-        )
-      : null}
-    </>
   );
 };

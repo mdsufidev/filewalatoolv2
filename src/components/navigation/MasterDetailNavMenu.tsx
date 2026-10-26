@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { MainNavSection } from '../layout/Navbar';
 import { getToolRouteUrl } from '../../core/urlRoutes';
 
@@ -88,8 +88,6 @@ export interface MasterDetailNavMenuProps {
   onSelectCategoryHub: (section: MainNavSection) => void;
   onClose?: () => void;
   className?: string;
-  mobileDrilldownCat?: MasterNavCategory | null;
-  onMobileDrilldownChange?: (cat: MasterNavCategory | null) => void;
 }
 
 export const MasterDetailNavMenu: React.FC<MasterDetailNavMenuProps> = ({
@@ -100,21 +98,8 @@ export const MasterDetailNavMenu: React.FC<MasterDetailNavMenuProps> = ({
   onSelectCategoryHub,
   onClose,
   className = '',
-  mobileDrilldownCat,
-  onMobileDrilldownChange,
 }) => {
   const [activeCategoryId, setActiveCategoryId] = useState<MainNavSection>(initialCategory);
-  const [internalMobileDrilldown, setInternalMobileDrilldown] = useState<MasterNavCategory | null>(null);
-
-  const effectiveDrilldownCat =
-    mobileDrilldownCat !== undefined ? mobileDrilldownCat : internalMobileDrilldown;
-
-  const setDrilldownCat = (cat: MasterNavCategory | null) => {
-    if (onMobileDrilldownChange) {
-      onMobileDrilldownChange(cat);
-    }
-    setInternalMobileDrilldown(cat);
-  };
 
   useEffect(() => {
     setActiveCategoryId(initialCategory);
@@ -225,84 +210,70 @@ export const MasterDetailNavMenu: React.FC<MasterDetailNavMenuProps> = ({
       </div>
 
       {/* ========================================================= */}
-      {/* MOBILE VIEW: Drill-down Flow (< 768px)                     */}
+      {/* MOBILE VIEW: Instant Category Tabs + Tool List (< 768px)  */}
+      {/* No drilldowns, no page shifting, identical to Desktop     */}
       {/* ========================================================= */}
-      <div className="md:hidden w-full bg-white dark:bg-zinc-950 p-1">
-        {effectiveDrilldownCat ? (
-          /* Step 2: Selected Category Tool List */
-          <div className="space-y-2 animate-in slide-in-from-right-4 duration-150">
-            <div className="flex items-center gap-2 pb-2 border-b border-zinc-100 dark:border-zinc-800 px-1">
-              <button
-                type="button"
-                onClick={() => setDrilldownCat(null)}
-                className="p-1 rounded-md text-zinc-500 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer"
-                aria-label="Back to Main Tools"
-              >
-                <ChevronLeft className="w-5 h-5" />
-              </button>
-              <h3 className="font-bold text-base text-zinc-950 dark:text-white">
-                {effectiveDrilldownCat.name}
-              </h3>
-            </div>
-
-            <div className="space-y-1 py-1">
-              {effectiveDrilldownCat.tools.map((tool) => {
-                const toolUrl = getToolRouteUrl(tool.section, tool.subToolId);
-                const isCurrentTool = activeToolId === tool.subToolId;
-                return (
-                  <a
-                    key={tool.id}
-                    href={toolUrl}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      handleToolClick(tool.section, tool.subToolId);
-                    }}
-                    className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-colors cursor-pointer block ${
-                      isCurrentTool
-                        ? 'bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400 font-semibold'
-                        : 'text-zinc-800 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-850 font-medium'
-                    }`}
-                  >
-                    {tool.name}
-                  </a>
-                );
-              })}
-            </div>
-
-            <div className="pt-2 border-t border-zinc-100 dark:border-zinc-800 px-3 pb-2">
-              <a
-                href={effectiveDrilldownCat.hubUrl}
-                onClick={(e) => {
-                  e.preventDefault();
-                  handleHubClick(effectiveDrilldownCat.id);
-                }}
-                className="text-sm font-semibold text-red-600 dark:text-red-400 flex items-center gap-1 cursor-pointer hover:underline"
-              >
-                <span>View all {effectiveDrilldownCat.name}</span>
-                <ArrowRight className="w-4 h-4" />
-              </a>
-            </div>
-          </div>
-        ) : (
-          /* Step 1: Main Tools Menu */
-          <div className="space-y-1">
-            <div className="px-3 py-1.5 text-[11px] font-mono font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
-              MAIN TOOLS
-            </div>
-
-            {MASTER_NAV_DATA.map((cat) => (
+      <div className="md:hidden w-full max-w-[340px] sm:max-w-[360px] bg-white dark:bg-zinc-900 border border-zinc-200/90 dark:border-zinc-800 rounded-2xl shadow-2xl p-2.5">
+        {/* Category Selector Tabs */}
+        <div className="flex items-center gap-1 overflow-x-auto pb-2 border-b border-zinc-100 dark:border-zinc-800 scrollbar-none">
+          {MASTER_NAV_DATA.map((cat) => {
+            const isActive = cat.id === activeCategoryId;
+            return (
               <button
                 key={cat.id}
                 type="button"
-                onClick={() => setDrilldownCat(cat)}
-                className="w-full flex items-center justify-between px-3.5 py-3 rounded-xl text-sm font-medium text-zinc-800 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-850 cursor-pointer"
+                onClick={() => setActiveCategoryId(cat.id)}
+                className={`shrink-0 px-2.5 py-1.5 rounded-lg text-xs transition-colors cursor-pointer whitespace-nowrap ${
+                  isActive
+                    ? 'bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400 font-semibold'
+                    : 'text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 font-medium'
+                }`}
               >
-                <span>{cat.name}</span>
-                <ChevronRight className="w-4 h-4 text-zinc-400" />
+                {cat.name}
               </button>
-            ))}
-          </div>
-        )}
+            );
+          })}
+        </div>
+
+        {/* Active Category Tool List */}
+        <div className="py-1.5 space-y-0.5 max-h-[300px] overflow-y-auto">
+          {activeCategory.tools.map((tool) => {
+            const toolUrl = getToolRouteUrl(tool.section, tool.subToolId);
+            const isCurrentTool = activeToolId === tool.subToolId;
+            return (
+              <a
+                key={tool.id}
+                href={toolUrl}
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleToolClick(tool.section, tool.subToolId);
+                }}
+                className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors cursor-pointer truncate block ${
+                  isCurrentTool
+                    ? 'bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400 font-semibold'
+                    : 'text-zinc-800 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 font-medium'
+                }`}
+              >
+                {tool.name}
+              </a>
+            );
+          })}
+        </div>
+
+        {/* Category Footer: View all → */}
+        <div className="pt-2 border-t border-zinc-100 dark:border-zinc-800 px-3 pb-1">
+          <a
+            href={activeCategory.hubUrl}
+            onClick={(e) => {
+              e.preventDefault();
+              handleHubClick(activeCategory.id);
+            }}
+            className="text-sm font-semibold text-red-600 dark:text-red-400 hover:underline inline-flex items-center gap-1 cursor-pointer"
+          >
+            <span>View all {activeCategory.name}</span>
+            <span>→</span>
+          </a>
+        </div>
       </div>
     </div>
   );
