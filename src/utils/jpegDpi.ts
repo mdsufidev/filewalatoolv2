@@ -139,11 +139,18 @@ export async function padJpegToMinBytes(blob: Blob, minBytes: number): Promise<B
     comSegment[4 + i] = 0x20; // fill with spaces
   }
 
-  // Insert COM segment right before SOS (0xFF 0xDA) or after SOI/APP0
+  let insertPos = 2;
+  // If bytes[2] and bytes[3] are APP0 (0xFF, 0xE0), insert COM after APP0 so JFIF strictly stays directly after SOI
+  if (bytes.length > 5 && bytes[2] === 0xFF && bytes[3] === 0xE0) {
+    const app0Length = (bytes[4] << 8) | bytes[5];
+    insertPos = 4 + app0Length;
+  }
+
+  // Insert COM segment right after APP0 (or SOI if no APP0)
   const output = new Uint8Array(bytes.length + comSegment.length);
-  output.set(bytes.subarray(0, 2), 0);
-  output.set(comSegment, 2);
-  output.set(bytes.subarray(2), 2 + comSegment.length);
+  output.set(bytes.subarray(0, insertPos), 0);
+  output.set(comSegment, insertPos);
+  output.set(bytes.subarray(insertPos), insertPos + comSegment.length);
 
   return new Blob([output], { type: 'image/jpeg' });
 }

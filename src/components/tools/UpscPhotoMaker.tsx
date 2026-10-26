@@ -356,17 +356,23 @@ export const UpscPhotoMaker: React.FC<UpscPhotoMakerProps> = ({ onNotify }) => {
         ctx.fillStyle = bannerStyle === 'white-bg' ? '#CBD5E1' : '#334155';
         ctx.fillRect(0, bannerY, targetW, 1);
 
-        // Candidate Name
+        // Candidate Name with dynamic auto-scaling to prevent border clipping on long names
+        const nameText = (candidateName || 'CANDIDATE NAME').toUpperCase();
+        let nameFontSize = 15;
+        ctx.font = `bold ${nameFontSize}px sans-serif`;
+        while (ctx.measureText(nameText).width > targetW - 20 && nameFontSize > 9) {
+          nameFontSize -= 1;
+          ctx.font = `bold ${nameFontSize}px sans-serif`;
+        }
         ctx.fillStyle = bannerStyle === 'white-bg' ? '#0F172A' : '#FFFFFF';
-        ctx.font = 'bold 15px sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText((candidateName || 'CANDIDATE NAME').toUpperCase(), targetW / 2, bannerY + 18);
+        ctx.fillText(nameText, targetW / 2, bannerY + 18, targetW - 16);
 
         // Date of Photograph (DOP)
         ctx.font = 'bold 13px sans-serif';
         ctx.fillStyle = bannerStyle === 'white-bg' ? '#334155' : '#E2E8F0';
-        ctx.fillText(`DOP: ${photoDate}`, targetW / 2, bannerY + 39);
+        ctx.fillText(`DOP: ${photoDate}`, targetW / 2, bannerY + 39, targetW - 16);
       }
 
       const compressionResult = await compressCanvasToPortalSpecs(canvas, {

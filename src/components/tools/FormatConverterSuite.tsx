@@ -213,6 +213,10 @@ export const FormatConverterSuite: React.FC<FormatConverterSuiteProps> = ({
       setImgDimensions({ width: img.naturalWidth, height: img.naturalHeight });
       runConversion(img, file, quality);
     };
+    img.onerror = () => {
+      onNotify('File Error', 'Could not decode image. The file might be corrupted or unsupported.', 'error');
+      setIsProcessing(false);
+    };
     img.src = preview;
   };
 
