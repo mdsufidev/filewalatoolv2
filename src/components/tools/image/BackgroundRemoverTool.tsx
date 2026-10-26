@@ -6,7 +6,6 @@ import {
   Eraser,
   Paintbrush,
   Eye,
-  Check,
   ShieldCheck,
   Copy,
   Share2,
@@ -15,9 +14,17 @@ import {
   Zap,
   Cpu,
   Sliders,
-  AlertCircle,
-  HelpCircle,
-  Layers,
+  ZoomIn,
+  ZoomOut,
+  Maximize2,
+  Hand,
+  Undo2,
+  Redo2,
+  Upload,
+  Image as ImageIcon,
+  Columns2,
+  Check,
+  SlidersHorizontal,
 } from 'lucide-react';
 import { Dropzone } from '../../ui/Dropzone';
 import { ImageToolGuideSection } from './ImageToolGuideSection';
@@ -37,9 +44,21 @@ interface BackgroundRemoverToolProps {
   initialFiles?: File[] | null;
 }
 
-export type RemovalEngine = 'fast' | 'ai';
-export type BgReplacement = 'transparent' | 'white' | 'blue' | 'grey' | 'custom' | 'blur';
-export type ToolMode = 'wand' | 'erase' | 'restore';
+export type RemovalEngine = 'ai' | 'fast';
+export type ToolMode = 'wand' | 'erase' | 'restore' | 'hand';
+export type BgReplacement =
+  | 'transparent'
+  | 'white'
+  | 'passport-blue'
+  | 'visa-grey'
+  | 'portrait-beige'
+  | 'custom-color'
+  | 'gradient-vignette'
+  | 'gradient-soft'
+  | 'gradient-warm'
+  | 'gradient-cool'
+  | 'custom-image'
+  | 'blur';
 
 // Dynamic CDN configurations for Zero-Vercel-Bundle-Bloat
 const ORT_CDN_URL = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/ort.all.min.js';
@@ -56,37 +75,75 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
   const isDark = theme === 'dark';
   const { currentImage, loadFile, reset: resetImage } = useImageUpload();
 
-  // Dual-Engine Mode: Fast (Canvas 2D + BFS) vs AI Smart (WebGPU + ONNX RMBG-1.4)
-  const [engineMode, setEngineMode] = useState<RemovalEngine>('fast');
+  // Engine Mode
+  const [engineMode, setEngineMode] = useState<RemovalEngine>('ai');
   const [hasWebGPU, setHasWebGPU] = useState<boolean | null>(null);
 
-  // Active Tool Mode (Manual Brush / Wand)
-  const [activeToolMode, setActiveToolMode] = useState<ToolMode>('wand');
+  // Active Tool Mode
+  const [activeToolMode, setActiveToolMode] = useState<ToolMode>('erase');
+  const [prevToolBeforeHand, setPrevToolBeforeHand] = useState<ToolMode>('erase');
 
-  // Fast Algorithm Settings
+  // Brush & Wand Settings
+  const [brushSize, setBrushSize] = useState<number>(36); // 5 to 120px
+  const [brushHardness, setBrushHardness] = useState<number>(75); // 0 to 100%
   const [tolerance, setTolerance] = useState<number>(28); // 5 to 75%
-  const [brushSize, setBrushSize] = useState<number>(28); // 5 to 80px
 
-  // Background Replacement
+  // Edge Refinement Controls
+  const [feather, setFeather] = useState<number>(0); // 0 to 10px
+  const [shiftEdge, setShiftEdge] = useState<number>(0); // -5 to +5px
+
+  // Background Replacement Settings
   const [bgMode, setBgMode] = useState<BgReplacement>('transparent');
   const [customBgColor, setCustomBgColor] = useState<string>('#ffffff');
+  const [customBackdropImg, setCustomBackdropImg] = useState<HTMLImageElement | null>(null);
+
+  // Realistic Drop Shadow
+  const [dropShadow, setDropShadow] = useState<boolean>(false);
+  const [shadowBlur, setShadowBlur] = useState<number>(14);
+  const [shadowOpacity, setShadowOpacity] = useState<number>(35);
+  const [shadowOffsetY, setShadowOffsetY] = useState<number>(8);
+
+  // Comparison & View Modes
+  const [isSplitView, setIsSplitView] = useState<boolean>(false);
+  const [splitPos, setSplitPos] = useState<number>(50); // 0 to 100%
   const [showOriginal, setShowOriginal] = useState<boolean>(false);
 
-  // Result state
-  const [resultBlob, setResultBlob] = useState<Blob | null>(null);
-  const [removedObjectCount, setRemovedObjectCount] = useState<number>(0);
+  // Viewport Zoom & Pan State
+  const [zoom, setZoom] = useState<number>(1.0);
+  const [pan, setPan] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [isPanning, setIsPanning] = useState<boolean>(false);
+  const panStartRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
-  // AI Pipeline State
+  // Floating Cursor Ring
+  const [cursorPos, setCursorPos] = useState<{ x: number; y: number; visible: boolean }>({
+    x: 0,
+    y: 0,
+    visible: false,
+  });
+
+  // Undo / Redo History State
+  const historyRef = useRef<ImageData[]>([]);
+  const historyIndexRef = useRef<number>(-1);
+  const [canUndo, setCanUndo] = useState<boolean>(false);
+  const [canRedo, setCanRedo] = useState<boolean>(false);
+
+  // Result & AI State
+  const [resultBlob, setResultBlob] = useState<Blob | null>(null);
   const [aiStatus, setAiStatus] = useState<string>('Ready');
   const [aiProgress, setAiProgress] = useState<number>(0);
   const [isAiProcessing, setIsAiProcessing] = useState<boolean>(false);
   const [aiInferenceTimeMs, setAiInferenceTimeMs] = useState<number | null>(null);
 
   // Refs
+  const viewportRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const maskCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const isDrawingRef = useRef<boolean>(false);
+  const lastDrawPosRef = useRef<{ x: number; y: number } | null>(null);
   const aiSessionRef = useRef<any>(null);
+  const isSpacePressedRef = useRef<boolean>(false);
+  const backdropInputRef = useRef<HTMLInputElement>(null);
+  const splitDragRef = useRef<boolean>(false);
 
   // Detect WebGPU hardware availability on mount
   useEffect(() => {
@@ -172,21 +229,72 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
   }, []);
 
   /* -------------------------------------------------------------
-     COMPOSITING RENDER PIPELINE
+     HISTORY STACK MANAGER (20-Step Undo / Redo)
+  ------------------------------------------------------------- */
+  const pushHistorySnapshot = useCallback(() => {
+    if (!maskCanvasRef.current) return;
+    const mctx = maskCanvasRef.current.getContext('2d');
+    if (!mctx) return;
+    const w = maskCanvasRef.current.width;
+    const h = maskCanvasRef.current.height;
+    const snapshot = mctx.getImageData(0, 0, w, h);
+
+    const newHistory = historyRef.current.slice(0, historyIndexRef.current + 1);
+    newHistory.push(snapshot);
+    if (newHistory.length > 20) {
+      newHistory.shift();
+    }
+    historyRef.current = newHistory;
+    historyIndexRef.current = newHistory.length - 1;
+    setCanUndo(historyIndexRef.current > 0);
+    setCanRedo(false);
+  }, []);
+
+  /* -------------------------------------------------------------
+     COMPOSITING RENDER PIPELINE (Hardware 8-bit Alpha Destination-In)
   ------------------------------------------------------------- */
   const renderCompositedResult = useCallback(() => {
-    if (!currentImage || !canvasRef.current) return;
+    if (!currentImage || !canvasRef.current || !maskCanvasRef.current) return;
     const img = currentImage.imageElement;
     const canvas = canvasRef.current;
-    canvas.width = img.naturalWidth;
-    canvas.height = img.naturalHeight;
+    const w = img.naturalWidth;
+    const h = img.naturalHeight;
+
+    canvas.width = w;
+    canvas.height = h;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const w = canvas.width;
-    const h = canvas.height;
+    // 1. Prepare Refined Mask (Feather and Shift Edge if active)
+    let activeMask: HTMLCanvasElement = maskCanvasRef.current;
+    if (feather > 0 || shiftEdge !== 0) {
+      const refinedCanvas = document.createElement('canvas');
+      refinedCanvas.width = w;
+      refinedCanvas.height = h;
+      const rctx = refinedCanvas.getContext('2d');
+      if (rctx) {
+        if (feather > 0) {
+          rctx.filter = `blur(${feather}px)`;
+        }
+        rctx.drawImage(maskCanvasRef.current, 0, 0);
+        rctx.filter = 'none';
 
-    // 1. Draw source image onto offscreen canvas
+        if (shiftEdge !== 0) {
+          const imgData = rctx.getImageData(0, 0, w, h);
+          const { data } = imgData;
+          const shiftDelta = shiftEdge * 22;
+          for (let i = 3; i < data.length; i += 4) {
+            if (data[i] > 0) {
+              data[i] = Math.min(255, Math.max(0, data[i] + shiftDelta));
+            }
+          }
+          rctx.putImageData(imgData, 0, 0);
+        }
+        activeMask = refinedCanvas;
+      }
+    }
+
+    // 2. Foreground Cutout via Hardware Destination-In Blending
     const fgCanvas = document.createElement('canvas');
     fgCanvas.width = w;
     fgCanvas.height = h;
@@ -194,66 +302,165 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
     if (!fgCtx) return;
 
     fgCtx.drawImage(img, 0, 0, w, h);
-    const fgImgData = fgCtx.getImageData(0, 0, w, h);
-    const data = fgImgData.data;
+    fgCtx.globalCompositeOperation = 'destination-in';
+    fgCtx.drawImage(activeMask, 0, 0, w, h);
+    fgCtx.globalCompositeOperation = 'source-over';
 
-    // 2. Apply Mask if present
-    if (maskCanvasRef.current) {
-      const mctx = maskCanvasRef.current.getContext('2d');
-      if (mctx) {
-        const maskData = mctx.getImageData(0, 0, w, h).data;
-        for (let i = 0; i < data.length; i += 4) {
-          if (maskData[i + 3] > 0) {
-            if (maskData[i] > 200) {
-              // Red = Erased -> Transparent
-              data[i + 3] = 0;
-            } else if (maskData[i + 2] > 200) {
-              // Blue = Restored -> Full opacity
-              data[i + 3] = 255;
-            }
-          }
-        }
-      }
-    }
-
-    fgCtx.putImageData(fgImgData, 0, 0);
-
-    // 3. Clear base canvas
+    // 3. Clear Base Canvas
     ctx.clearRect(0, 0, w, h);
 
-    // 4. Render Background Layer
-    if (bgMode === 'white') {
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, w, h);
-    } else if (bgMode === 'blue') {
-      ctx.fillStyle = '#0077cc';
-      ctx.fillRect(0, 0, w, h);
-    } else if (bgMode === 'grey') {
-      ctx.fillStyle = '#334155';
-      ctx.fillRect(0, 0, w, h);
-    } else if (bgMode === 'custom') {
-      ctx.fillStyle = customBgColor;
-      ctx.fillRect(0, 0, w, h);
-    } else if (bgMode === 'blur') {
+    // 4. Split Comparison View Rendering
+    if (isSplitView) {
+      const splitX = Math.round((splitPos / 100) * w);
+
+      // Left: Original image
       ctx.save();
-      ctx.filter = 'blur(14px)';
-      ctx.drawImage(img, -20, -20, w + 40, h + 40);
+      ctx.beginPath();
+      ctx.rect(0, 0, splitX, h);
+      ctx.clip();
+      ctx.drawImage(img, 0, 0, w, h);
       ctx.restore();
+
+      // Right: Cutout with background
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(splitX, 0, w - splitX, h);
+      ctx.clip();
+
+      drawBackgroundToContext(ctx, w, h, img, bgMode, customBgColor, customBackdropImg);
+
+      if (dropShadow && bgMode !== 'transparent') {
+        ctx.save();
+        ctx.shadowColor = `rgba(0, 0, 0, ${shadowOpacity / 100})`;
+        ctx.shadowBlur = shadowBlur;
+        ctx.shadowOffsetY = shadowOffsetY;
+        ctx.drawImage(fgCanvas, 0, 0);
+        ctx.restore();
+      }
+      ctx.drawImage(fgCanvas, 0, 0);
+      ctx.restore();
+
+      // Divider line
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(splitX, 0);
+      ctx.lineTo(splitX, h);
+      ctx.lineWidth = Math.max(2, Math.round(w / 400));
+      ctx.strokeStyle = '#ffffff';
+      ctx.shadowColor = 'rgba(0,0,0,0.5)';
+      ctx.shadowBlur = 4;
+      ctx.stroke();
+      ctx.restore();
+    } else {
+      // Standard composited render
+      drawBackgroundToContext(ctx, w, h, img, bgMode, customBgColor, customBackdropImg);
+
+      if (dropShadow && bgMode !== 'transparent') {
+        ctx.save();
+        ctx.shadowColor = `rgba(0, 0, 0, ${shadowOpacity / 100})`;
+        ctx.shadowBlur = shadowBlur;
+        ctx.shadowOffsetY = shadowOffsetY;
+        ctx.drawImage(fgCanvas, 0, 0);
+        ctx.restore();
+      }
+
+      ctx.drawImage(fgCanvas, 0, 0);
     }
 
-    // 5. Draw transparent cutout foreground
-    ctx.drawImage(fgCanvas, 0, 0);
-
-    // 6. Generate output Blob
+    // 5. Generate high-res Blob
     canvas.toBlob((blob) => {
       setResultBlob(blob);
     }, 'image/png');
-  }, [currentImage, bgMode, customBgColor]);
+  }, [
+    currentImage,
+    bgMode,
+    customBgColor,
+    customBackdropImg,
+    feather,
+    shiftEdge,
+    dropShadow,
+    shadowBlur,
+    shadowOpacity,
+    shadowOffsetY,
+    isSplitView,
+    splitPos,
+  ]);
+
+  // Helper: Draw Background onto 2D Context
+  function drawBackgroundToContext(
+    ctx: CanvasRenderingContext2D,
+    w: number,
+    h: number,
+    img: HTMLImageElement,
+    mode: BgReplacement,
+    color: string,
+    backdrop: HTMLImageElement | null
+  ) {
+    if (mode === 'white') {
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, w, h);
+    } else if (mode === 'passport-blue') {
+      ctx.fillStyle = '#0077cc';
+      ctx.fillRect(0, 0, w, h);
+    } else if (mode === 'visa-grey') {
+      ctx.fillStyle = '#e2e8f0';
+      ctx.fillRect(0, 0, w, h);
+    } else if (mode === 'portrait-beige') {
+      ctx.fillStyle = '#f5ebe0';
+      ctx.fillRect(0, 0, w, h);
+    } else if (mode === 'custom-color') {
+      ctx.fillStyle = color;
+      ctx.fillRect(0, 0, w, h);
+    } else if (mode === 'gradient-vignette') {
+      const grad = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.1, w / 2, h / 2, Math.max(w, h) * 0.7);
+      grad.addColorStop(0, '#475569');
+      grad.addColorStop(1, '#0f172a');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, w, h);
+    } else if (mode === 'gradient-soft') {
+      const grad = ctx.createLinearGradient(0, 0, 0, h);
+      grad.addColorStop(0, '#f8fafc');
+      grad.addColorStop(1, '#cbd5e1');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, w, h);
+    } else if (mode === 'gradient-warm') {
+      const grad = ctx.createLinearGradient(0, 0, w, h);
+      grad.addColorStop(0, '#fffbeb');
+      grad.addColorStop(1, '#fed7aa');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, w, h);
+    } else if (mode === 'gradient-cool') {
+      const grad = ctx.createLinearGradient(0, 0, w, h);
+      grad.addColorStop(0, '#e0f2fe');
+      grad.addColorStop(1, '#bae6fd');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, w, h);
+    } else if (mode === 'custom-image' && backdrop) {
+      const bRatio = backdrop.naturalWidth / backdrop.naturalHeight;
+      const cRatio = w / h;
+      let bw = w, bh = h, bx = 0, by = 0;
+      if (bRatio > cRatio) {
+        bh = h;
+        bw = h * bRatio;
+        bx = (w - bw) / 2;
+      } else {
+        bw = w;
+        bh = w / bRatio;
+        by = (h - bh) / 2;
+      }
+      ctx.drawImage(backdrop, bx, by, bw, bh);
+    } else if (mode === 'blur') {
+      ctx.save();
+      ctx.filter = 'blur(16px)';
+      ctx.drawImage(img, -20, -20, w + 40, h + 40);
+      ctx.restore();
+    }
+  }
 
   /* -------------------------------------------------------------
      FAST MODE: BFS FLOOD-FILL PERIMETER CLEAN
   ------------------------------------------------------------- */
-  const autoCleanBorderBackground = useCallback((
+  const runFastPerimeterClean = useCallback((
     img: HTMLImageElement,
     mask: HTMLCanvasElement,
     tol: number
@@ -270,7 +477,12 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
 
     ctx.drawImage(img, 0, 0, w, h);
     const srcData = ctx.getImageData(0, 0, w, h).data;
-    const maskData = mctx.getImageData(0, 0, w, h);
+
+    // Initialize mask to fully opaque white (255)
+    mctx.fillStyle = '#ffffff';
+    mctx.fillRect(0, 0, w, h);
+    const maskImgData = mctx.getImageData(0, 0, w, h);
+    const maskData = maskImgData.data;
 
     const seedPoints = [
       [2, 2],
@@ -302,11 +514,9 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
         const y = queueY[head];
         head++;
 
+        // Set erased background to transparent alpha (0)
         const idx = (y * w + x) * 4;
-        maskData.data[idx] = 255; // Red = Erased
-        maskData.data[idx + 1] = 0;
-        maskData.data[idx + 2] = 0;
-        maskData.data[idx + 3] = 255;
+        maskData[idx + 3] = 0;
 
         const nbrs = [
           [x + 1, y],
@@ -326,7 +536,7 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
               const dr = srcData[nIdx] - targetR;
               const dg = srcData[nIdx + 1] - targetG;
               const db = srcData[nIdx + 2] - targetB;
-              const dist = Math.sqrt(dr * dr + dg * dg + db * db);
+              const dist = Math.hypot(dr, dg, db);
 
               if (dist <= maxDist) {
                 queueX.push(nx);
@@ -338,12 +548,13 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
       }
     }
 
-    mctx.putImageData(maskData, 0, 0);
+    mctx.putImageData(maskImgData, 0, 0);
+    pushHistorySnapshot();
     renderCompositedResult();
-  }, [renderCompositedResult]);
+  }, [renderCompositedResult, pushHistorySnapshot]);
 
   /* -------------------------------------------------------------
-     AI SMART MODE: ONNX RUNTIME WEBGPU INFERENCE PIPELINE
+     AI SMART MODE: ONNX RMBG-1.4 8-BIT CONTINUOUS ALPHA INFERENCE
   ------------------------------------------------------------- */
   const runAiInference = useCallback(async () => {
     if (!currentImage || !maskCanvasRef.current) return;
@@ -414,12 +625,12 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
       setAiInferenceTimeMs(elapsed);
 
       setAiProgress(90);
-      setAiStatus('Compositing Neural Alpha Mask...');
+      setAiStatus('Compositing 8-Bit Soft Neural Alpha...');
 
       const outputTensor = results[outputName];
       const maskFloat = outputTensor.data as Float32Array;
 
-      // 2. Upsample Mask to Full Resolution onto maskCanvasRef
+      // 2. Continuous 8-bit Alpha Upsampling (Preserving Hair & Translucent Edges)
       const w = img.naturalWidth;
       const h = img.naturalHeight;
       const maskCanvas = maskCanvasRef.current;
@@ -428,7 +639,6 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
       const mctx = maskCanvas.getContext('2d');
       if (!mctx) return;
 
-      // Create low-res mask image data
       const lowResMaskCanvas = document.createElement('canvas');
       lowResMaskCanvas.width = AI_INPUT_SIZE;
       lowResMaskCanvas.height = AI_INPUT_SIZE;
@@ -438,30 +648,24 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
       const lowResImgData = lctx.createImageData(AI_INPUT_SIZE, AI_INPUT_SIZE);
       const lData = lowResImgData.data;
 
+      // Map continuous Float32 [0.0, 1.0] to 8-bit Alpha [0, 255]
       for (let i = 0; i < maskFloat.length; i++) {
         const alpha = Math.min(255, Math.max(0, Math.round(maskFloat[i] * 255)));
         const idx = i * 4;
-        // In our mask schema: Red = Erased (background), so background is where alpha < 128
-        if (alpha < 128) {
-          lData[idx] = 255; // Red = Erased
-          lData[idx + 1] = 0;
-          lData[idx + 2] = 0;
-          lData[idx + 3] = 255;
-        } else {
-          lData[idx] = 0;
-          lData[idx + 1] = 0;
-          lData[idx + 2] = 0;
-          lData[idx + 3] = 0; // Transparent mask = keep foreground
-        }
+        lData[idx] = 255;
+        lData[idx + 1] = 255;
+        lData[idx + 2] = 255;
+        lData[idx + 3] = alpha; // Full 8-bit anti-aliased hair transparency!
       }
       lctx.putImageData(lowResImgData, 0, 0);
 
-      // Upsample to full resolution using canvas bilinear scaling
+      // Upsample to full resolution via hardware bilinear interpolation
       mctx.clearRect(0, 0, w, h);
       mctx.imageSmoothingEnabled = true;
       mctx.imageSmoothingQuality = 'high';
       mctx.drawImage(lowResMaskCanvas, 0, 0, w, h);
 
+      pushHistorySnapshot();
       setAiProgress(100);
       setAiStatus('Complete');
       renderCompositedResult();
@@ -470,14 +674,24 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
       console.error('AI Smart Mode Inference failed:', err);
       setAiStatus('Neural processing failed. Switched to Fast Mode.');
       setEngineMode('fast');
-      onNotify('AI Notice', 'Model execution could not finish on this device. Switched to Fast Form Mode.', 'info');
+      onNotify('AI Notice', 'Model execution fell back to Fast Form Mode.', 'info');
       if (currentImage && maskCanvasRef.current) {
-        autoCleanBorderBackground(currentImage.imageElement, maskCanvasRef.current, tolerance);
+        runFastPerimeterClean(currentImage.imageElement, maskCanvasRef.current, tolerance);
       }
     } finally {
       setIsAiProcessing(false);
     }
-  }, [currentImage, loadOrtFromCDN, getCachedModelBuffer, hasWebGPU, renderCompositedResult, autoCleanBorderBackground, tolerance, onNotify]);
+  }, [
+    currentImage,
+    loadOrtFromCDN,
+    getCachedModelBuffer,
+    hasWebGPU,
+    pushHistorySnapshot,
+    renderCompositedResult,
+    runFastPerimeterClean,
+    tolerance,
+    onNotify,
+  ]);
 
   /* -------------------------------------------------------------
      INITIALIZE ON IMAGE LOAD OR ENGINE SWITCH
@@ -486,7 +700,10 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
     if (!currentImage) {
       maskCanvasRef.current = null;
       setResultBlob(null);
-      setRemovedObjectCount(0);
+      historyRef.current = [];
+      historyIndexRef.current = -1;
+      setCanUndo(false);
+      setCanRedo(false);
       return;
     }
 
@@ -498,18 +715,94 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
     mask.width = w;
     mask.height = h;
     const mctx = mask.getContext('2d');
-    if (mctx) mctx.clearRect(0, 0, w, h);
+    if (mctx) {
+      mctx.fillStyle = '#ffffff';
+      mctx.fillRect(0, 0, w, h);
+    }
     maskCanvasRef.current = mask;
 
+    // Reset Zoom & Pan to Fit Viewport
+    if (viewportRef.current) {
+      const vRect = viewportRef.current.getBoundingClientRect();
+      const scaleX = (vRect.width - 32) / w;
+      const scaleY = (vRect.height - 32) / h;
+      const fitZoom = Math.min(1.0, Math.max(0.2, Math.min(scaleX, scaleY)));
+      setZoom(+fitZoom.toFixed(2));
+      setPan({
+        x: Math.round((vRect.width - w * fitZoom) / 2),
+        y: Math.round((vRect.height - h * fitZoom) / 2),
+      });
+    }
+
     if (engineMode === 'fast') {
-      autoCleanBorderBackground(img, mask, tolerance);
+      runFastPerimeterClean(img, mask, tolerance);
     } else {
       runAiInference();
     }
   }, [currentImage, engineMode]);
 
   /* -------------------------------------------------------------
-     MANUAL TOOLS (MAGIC WAND & ERASER BRUSH)
+     INTERACTIVE BRUSH ENGINE: CONTINUOUS PATH INTERPOLATION
+  ------------------------------------------------------------- */
+  const stampBrushAt = (
+    x: number,
+    y: number,
+    size: number,
+    hardness: number,
+    isErase: boolean
+  ) => {
+    if (!maskCanvasRef.current) return;
+    const mctx = maskCanvasRef.current.getContext('2d');
+    if (!mctx) return;
+
+    const r = size / 2;
+    mctx.save();
+    mctx.globalCompositeOperation = isErase ? 'destination-out' : 'source-over';
+
+    const hFactor = hardness / 100;
+    if (hFactor >= 0.95) {
+      mctx.beginPath();
+      mctx.arc(x, y, r, 0, Math.PI * 2);
+      mctx.fillStyle = '#ffffff';
+      mctx.fill();
+    } else {
+      const innerRadius = Math.max(0, r * hFactor);
+      const grad = mctx.createRadialGradient(x, y, innerRadius, x, y, r);
+      grad.addColorStop(0, 'rgba(255, 255, 255, 1)');
+      grad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+      mctx.beginPath();
+      mctx.arc(x, y, r, 0, Math.PI * 2);
+      mctx.fillStyle = grad;
+      mctx.fill();
+    }
+    mctx.restore();
+  };
+
+  const paintInterpolatedStroke = (
+    startX: number,
+    startY: number,
+    endX: number,
+    endY: number,
+    size: number,
+    hardness: number,
+    isErase: boolean
+  ) => {
+    const dx = endX - startX;
+    const dy = endY - startY;
+    const dist = Math.hypot(dx, dy);
+    const step = Math.max(1, size * 0.2); // Smooth stamping every 20% of brush diameter
+    const numSteps = Math.ceil(dist / step);
+
+    for (let s = 1; s <= numSteps; s++) {
+      const t = s / numSteps;
+      const x = startX + dx * t;
+      const y = startY + dy * t;
+      stampBrushAt(x, y, size, hardness, isErase);
+    }
+  };
+
+  /* -------------------------------------------------------------
+     MAGIC WAND: COLOR-SIMILARITY FLOOD FILL
   ------------------------------------------------------------- */
   const runMagicWandAt = (clickX: number, clickY: number) => {
     if (!currentImage || !maskCanvasRef.current) return;
@@ -547,10 +840,7 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
       head++;
 
       const idx = (y * w + x) * 4;
-      maskData[idx] = 255; // Red channel = Erase
-      maskData[idx + 1] = 0;
-      maskData[idx + 2] = 0;
-      maskData[idx + 3] = 255;
+      maskData[idx + 3] = 0; // Cut alpha
 
       const nbrs = [
         [x + 1, y],
@@ -570,7 +860,7 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
             const dr = srcData[nIdx] - targetR;
             const dg = srcData[nIdx + 1] - targetG;
             const db = srcData[nIdx + 2] - targetB;
-            const dist = Math.sqrt(dr * dr + dg * dg + db * db);
+            const dist = Math.hypot(dr, dg, db);
 
             if (dist <= maxDist) {
               queueX.push(nx);
@@ -582,134 +872,323 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
     }
 
     mctx.putImageData(maskImgData, 0, 0);
-    setRemovedObjectCount((prev) => prev + 1);
-    onNotify('Object Erased', 'Selected background region removed.', 'info');
+    pushHistorySnapshot();
     renderCompositedResult();
+    onNotify('Region Erased', 'Magic Wand removed matching background color.', 'info');
   };
 
-  const paintManualBrush = (x: number, y: number) => {
-    if (!maskCanvasRef.current) return;
-    const mctx = maskCanvasRef.current.getContext('2d');
-    if (!mctx) return;
-
-    mctx.save();
-    mctx.beginPath();
-    mctx.arc(x, y, brushSize / 2, 0, Math.PI * 2);
-
-    if (activeToolMode === 'erase') {
-      mctx.fillStyle = 'rgba(255, 0, 0, 1)'; // Red = Erase
-    } else if (activeToolMode === 'restore') {
-      mctx.fillStyle = 'rgba(0, 0, 255, 1)'; // Blue = Restore
-    }
-    mctx.fill();
-    mctx.restore();
-    renderCompositedResult();
-  };
-
-  // Re-composite when background mode changes without touching the mask
-  useEffect(() => {
-    renderCompositedResult();
-  }, [bgMode, customBgColor, renderCompositedResult]);
-
-  // Canvas Mouse Interactions
-  const handleCanvasMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  /* -------------------------------------------------------------
+     CANVAS & VIEWPORT MOUSE INTERACTION HANDLERS
+  ------------------------------------------------------------- */
+  const getImageCoordinates = (e: React.MouseEvent): { x: number; y: number } | null => {
     const canvas = canvasRef.current;
-    if (!canvas || !currentImage) return;
-
+    if (!canvas || !currentImage) return null;
     const rect = canvas.getBoundingClientRect();
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
-    const x = Math.floor((e.clientX - rect.left) * scaleX);
-    const y = Math.floor((e.clientY - rect.top) * scaleY);
+    const x = Math.min(canvas.width - 1, Math.max(0, Math.floor((e.clientX - rect.left) * scaleX)));
+    const y = Math.min(canvas.height - 1, Math.max(0, Math.floor((e.clientY - rect.top) * scaleY)));
+    return { x, y };
+  };
+
+  // Mouse wheel zoom centered at cursor
+  const handleViewportWheel = (e: React.WheelEvent) => {
+    e.preventDefault();
+    if (!viewportRef.current) return;
+
+    const rect = viewportRef.current.getBoundingClientRect();
+    const cx = e.clientX - rect.left;
+    const cy = e.clientY - rect.top;
+
+    const zoomFactor = e.deltaY < 0 ? 1.15 : 0.87;
+    const newZoom = Math.min(5.0, Math.max(0.25, +(zoom * zoomFactor).toFixed(2)));
+
+    const ix = (cx - pan.x) / zoom;
+    const iy = (cy - pan.y) / zoom;
+
+    setPan({
+      x: Math.round(cx - ix * newZoom),
+      y: Math.round(cy - iy * newZoom),
+    });
+    setZoom(newZoom);
+  };
+
+  const handleViewportMouseDown = (e: React.MouseEvent) => {
+    // 1. Hand / Pan tool or Spacebar drag
+    if (activeToolMode === 'hand' || isSpacePressedRef.current || e.button === 1) {
+      setIsPanning(true);
+      panStartRef.current = { x: e.clientX - pan.x, y: e.clientY - pan.y };
+      return;
+    }
+
+    // 2. Split Slider divider drag
+    if (isSplitView && viewportRef.current && canvasRef.current) {
+      const cRect = canvasRef.current.getBoundingClientRect();
+      const currentSplitX = cRect.left + (splitPos / 100) * cRect.width;
+      if (Math.abs(e.clientX - currentSplitX) < 16) {
+        splitDragRef.current = true;
+        return;
+      }
+    }
+
+    // 3. Canvas Painting / Magic Wand
+    const coords = getImageCoordinates(e);
+    if (!coords) return;
 
     if (activeToolMode === 'wand') {
-      runMagicWandAt(x, y);
-    } else {
+      runMagicWandAt(coords.x, coords.y);
+    } else if (activeToolMode === 'erase' || activeToolMode === 'restore') {
       isDrawingRef.current = true;
-      paintManualBrush(x, y);
-    }
-  };
-
-  const handleCanvasMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isDrawingRef.current || activeToolMode === 'wand') return;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    const x = Math.floor((e.clientX - rect.left) * scaleX);
-    const y = Math.floor((e.clientY - rect.top) * scaleY);
-    paintManualBrush(x, y);
-  };
-
-  const handleCanvasMouseUp = () => {
-    if (isDrawingRef.current) {
-      isDrawingRef.current = false;
+      lastDrawPosRef.current = coords;
+      stampBrushAt(coords.x, coords.y, brushSize, brushHardness, activeToolMode === 'erase');
       renderCompositedResult();
     }
   };
 
-  const handleResetMask = () => {
-    if (!maskCanvasRef.current) return;
-    const mctx = maskCanvasRef.current.getContext('2d');
-    if (mctx) {
-      mctx.clearRect(0, 0, maskCanvasRef.current.width, maskCanvasRef.current.height);
+  const handleViewportMouseMove = (e: React.MouseEvent) => {
+    // Track cursor ring position in viewport coordinates
+    if (viewportRef.current) {
+      const vRect = viewportRef.current.getBoundingClientRect();
+      setCursorPos({
+        x: e.clientX - vRect.left,
+        y: e.clientY - vRect.top,
+        visible: true,
+      });
     }
-    setRemovedObjectCount(0);
-    renderCompositedResult();
-    onNotify('Reset', 'All erased areas restored to original image.', 'info');
+
+    // Pan execution
+    if (isPanning) {
+      setPan({
+        x: e.clientX - panStartRef.current.x,
+        y: e.clientY - panStartRef.current.y,
+      });
+      return;
+    }
+
+    // Split slider drag execution
+    if (splitDragRef.current && canvasRef.current) {
+      const cRect = canvasRef.current.getBoundingClientRect();
+      const relX = Math.min(cRect.width, Math.max(0, e.clientX - cRect.left));
+      const newPos = Math.round((relX / cRect.width) * 100);
+      setSplitPos(newPos);
+      return;
+    }
+
+    // Continuous brush stroke interpolation
+    if (isDrawingRef.current && lastDrawPosRef.current) {
+      const coords = getImageCoordinates(e);
+      if (!coords) return;
+
+      paintInterpolatedStroke(
+        lastDrawPosRef.current.x,
+        lastDrawPosRef.current.y,
+        coords.x,
+        coords.y,
+        brushSize,
+        brushHardness,
+        activeToolMode === 'erase'
+      );
+      lastDrawPosRef.current = coords;
+      renderCompositedResult();
+    }
   };
 
-  // Export handlers
-  const handleDownload = useCallback(() => {
-    if (!resultBlob || !currentImage) return;
-    const baseName = currentImage.name.replace(/\.[^/.]+$/, '');
-    const outName = `${baseName}-cutout.png`;
-    triggerFileDownload(resultBlob, outName);
-    onNotify('Download Started', `Saved "${outName}" with transparent background.`, 'success');
-  }, [resultBlob, currentImage, onNotify]);
-
-  const handleCopy = useCallback(async () => {
-    if (!resultBlob) return;
-    const ok = await copyImageToClipboard(resultBlob);
-    if (ok) {
-      onNotify('Copied to Clipboard', 'Cutout image copied. You can now paste (Ctrl+V) it anywhere.', 'success');
-    } else {
-      onNotify('Copy Failed', 'Your browser could not copy image directly to clipboard.', 'error');
+  const handleViewportMouseUp = () => {
+    if (isPanning) {
+      setIsPanning(false);
     }
-  }, [resultBlob, onNotify]);
+    if (splitDragRef.current) {
+      splitDragRef.current = false;
+    }
+    if (isDrawingRef.current) {
+      isDrawingRef.current = false;
+      lastDrawPosRef.current = null;
+      pushHistorySnapshot();
+      renderCompositedResult();
+    }
+  };
 
-  const handleShare = useCallback(async () => {
-    if (!resultBlob || !currentImage) return;
-    const baseName = currentImage.name.replace(/\.[^/.]+$/, '');
-    const outName = `${baseName}-cutout.png`;
-    const shared = await shareFileOrBlob({
-      blob: resultBlob,
-      filename: outName,
-      title: 'Background Cutout',
-      text: 'Background removed with FileWala.',
+  const handleViewportMouseLeave = () => {
+    setCursorPos((prev) => ({ ...prev, visible: false }));
+    if (isPanning) setIsPanning(false);
+    if (splitDragRef.current) splitDragRef.current = false;
+    if (isDrawingRef.current) {
+      isDrawingRef.current = false;
+      lastDrawPosRef.current = null;
+      pushHistorySnapshot();
+      renderCompositedResult();
+    }
+  };
+
+  /* -------------------------------------------------------------
+     ZOOM UTILITIES: FIT TO SCREEN & 100%
+  ------------------------------------------------------------- */
+  const handleZoomStep = (delta: number) => {
+    if (!viewportRef.current) return;
+    const rect = viewportRef.current.getBoundingClientRect();
+    const cx = rect.width / 2;
+    const cy = rect.height / 2;
+    const newZoom = Math.min(5.0, Math.max(0.25, +(zoom + delta).toFixed(2)));
+    const ix = (cx - pan.x) / zoom;
+    const iy = (cy - pan.y) / zoom;
+    setPan({
+      x: Math.round(cx - ix * newZoom),
+      y: Math.round(cy - iy * newZoom),
     });
-    if (shared) {
-      onNotify('Shared', 'Cutout shared successfully.', 'success');
-    }
-  }, [resultBlob, currentImage, onNotify]);
+    setZoom(newZoom);
+  };
 
-  // Global Keyboard Navigation
+  const handleFitToScreen = useCallback(() => {
+    if (!viewportRef.current || !currentImage) return;
+    const rect = viewportRef.current.getBoundingClientRect();
+    const w = currentImage.width;
+    const h = currentImage.height;
+    const padding = 36;
+    const scaleX = (rect.width - padding) / w;
+    const scaleY = (rect.height - padding) / h;
+    const fitZoom = Math.min(1.0, Math.max(0.2, Math.min(scaleX, scaleY)));
+    setZoom(+fitZoom.toFixed(2));
+    setPan({
+      x: Math.round((rect.width - w * fitZoom) / 2),
+      y: Math.round((rect.height - h * fitZoom) / 2),
+    });
+  }, [currentImage]);
+
+  const handle100Percent = () => {
+    if (!viewportRef.current || !currentImage) return;
+    const rect = viewportRef.current.getBoundingClientRect();
+    const w = currentImage.width;
+    const h = currentImage.height;
+    setZoom(1.0);
+    setPan({
+      x: Math.round((rect.width - w) / 2),
+      y: Math.round((rect.height - h) / 2),
+    });
+  };
+
+  /* -------------------------------------------------------------
+     UNDO / REDO ACTIONS
+  ------------------------------------------------------------- */
+  const handleUndo = useCallback(() => {
+    if (historyIndexRef.current <= 0 || !maskCanvasRef.current) return;
+    historyIndexRef.current--;
+    const prevSnapshot = historyRef.current[historyIndexRef.current];
+    const mctx = maskCanvasRef.current.getContext('2d');
+    if (mctx && prevSnapshot) {
+      mctx.putImageData(prevSnapshot, 0, 0);
+      renderCompositedResult();
+      setCanUndo(historyIndexRef.current > 0);
+      setCanRedo(true);
+      onNotify('Undo', 'Reverted last edit.', 'info');
+    }
+  }, [renderCompositedResult, onNotify]);
+
+  const handleRedo = useCallback(() => {
+    if (historyIndexRef.current >= historyRef.current.length - 1 || !maskCanvasRef.current) return;
+    historyIndexRef.current++;
+    const nextSnapshot = historyRef.current[historyIndexRef.current];
+    const mctx = maskCanvasRef.current.getContext('2d');
+    if (mctx && nextSnapshot) {
+      mctx.putImageData(nextSnapshot, 0, 0);
+      renderCompositedResult();
+      setCanUndo(true);
+      setCanRedo(historyIndexRef.current < historyRef.current.length - 1);
+      onNotify('Redo', 'Restored edit.', 'info');
+    }
+  }, [renderCompositedResult, onNotify]);
+
+  /* -------------------------------------------------------------
+     CUSTOM BACKDROP IMAGE UPLOAD
+  ------------------------------------------------------------- */
+  const handleCustomBackdropSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        setCustomBackdropImg(img);
+        setBgMode('custom-image');
+        onNotify('Backdrop Loaded', `Applied "${file.name}" as backdrop.`, 'success');
+      };
+      img.src = reader.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  /* -------------------------------------------------------------
+     KEYBOARD NAVIGATION & SHORTCUTS
+  ------------------------------------------------------------- */
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
       if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
 
-      if (e.key === 'n' || e.key === 'N' || e.key === 'Escape') {
-        if (currentImage) {
-          e.preventDefault();
-          resetImage();
-          onNotify('Reset', 'Cleared image.', 'info');
-          return;
-        }
+      // Undo: Ctrl+Z / Cmd+Z
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z') && !e.shiftKey) {
+        e.preventDefault();
+        handleUndo();
+        return;
       }
 
+      // Redo: Ctrl+Y or Ctrl+Shift+Z
+      if (
+        ((e.ctrlKey || e.metaKey) && (e.key === 'y' || e.key === 'Y')) ||
+        ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'z' || e.key === 'Z'))
+      ) {
+        e.preventDefault();
+        handleRedo();
+        return;
+      }
+
+      // Spacebar temporary hand pan mode
+      if (e.code === 'Space' && !isSpacePressedRef.current) {
+        isSpacePressedRef.current = true;
+        setPrevToolBeforeHand(activeToolMode);
+        setActiveToolMode('hand');
+        return;
+      }
+
+      // Tool switches
+      if (e.key === 'e' || e.key === 'E') {
+        setActiveToolMode('erase');
+        return;
+      }
+      if (e.key === 'r' || e.key === 'R') {
+        setActiveToolMode('restore');
+        return;
+      }
+      if (e.key === 'w' || e.key === 'W') {
+        setActiveToolMode('wand');
+        return;
+      }
+      if (e.key === 'h' || e.key === 'H') {
+        setActiveToolMode('hand');
+        return;
+      }
+
+      // Brush size adjustments: [ to decrease, ] to increase
+      if (e.key === '[') {
+        setBrushSize((s) => Math.max(5, s - 6));
+        return;
+      }
+      if (e.key === ']') {
+        setBrushSize((s) => Math.min(120, s + 6));
+        return;
+      }
+
+      // Zoom reset: 0 = Fit, 1 = 100%
+      if (e.key === '0') {
+        handleFitToScreen();
+        return;
+      }
+      if (e.key === '1') {
+        handle100Percent();
+        return;
+      }
+
+      // Download shortcut: D
       if (e.key === 'd' || e.key === 'D') {
         if (resultBlob) {
           e.preventDefault();
@@ -717,22 +1196,56 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
           return;
         }
       }
+    };
 
-      if (e.key === 'Enter') {
-        if (engineMode === 'ai' && !isAiProcessing) {
-          e.preventDefault();
-          runAiInference();
-          return;
-        } else if (resultBlob) {
-          e.preventDefault();
-          handleDownload();
-          return;
-        }
+    const onKeyUp = (e: KeyboardEvent) => {
+      if (e.code === 'Space') {
+        isSpacePressedRef.current = false;
+        setActiveToolMode(prevToolBeforeHand);
       }
     };
+
     window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [currentImage, resultBlob, engineMode, isAiProcessing, handleDownload, resetImage, runAiInference, onNotify]);
+    window.addEventListener('keyup', onKeyUp);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keyup', onKeyUp);
+    };
+  }, [handleUndo, handleRedo, activeToolMode, prevToolBeforeHand, handleFitToScreen, resultBlob]);
+
+  // Download & Share Handlers
+  const handleDownload = useCallback(() => {
+    if (!resultBlob || !currentImage) return;
+    const baseName = currentImage.name.replace(/\.[^/.]+$/, '');
+    const outName = `${baseName}-filewala-cutout.png`;
+    triggerFileDownload(resultBlob, outName);
+    onNotify('Download Started', `Saved "${outName}".`, 'success');
+  }, [resultBlob, currentImage, onNotify]);
+
+  const handleCopy = useCallback(async () => {
+    if (!resultBlob) return;
+    const ok = await copyImageToClipboard(resultBlob);
+    if (ok) {
+      onNotify('Copied to Clipboard', 'Cutout image copied (Ctrl+V anywhere).', 'success');
+    } else {
+      onNotify('Copy Failed', 'Clipboard access was blocked by browser permissions.', 'error');
+    }
+  }, [resultBlob, onNotify]);
+
+  const handleShare = useCallback(async () => {
+    if (!resultBlob || !currentImage) return;
+    const baseName = currentImage.name.replace(/\.[^/.]+$/, '');
+    const outName = `${baseName}-filewala-cutout.png`;
+    const shared = await shareFileOrBlob({
+      blob: resultBlob,
+      filename: outName,
+      title: 'Background Cutout',
+      text: 'Background removed with FileWala BG Studio.',
+    });
+    if (shared) {
+      onNotify('Shared', 'Cutout shared successfully.', 'success');
+    }
+  }, [resultBlob, currentImage, onNotify]);
 
   return (
     <div className="w-full max-w-7xl mx-auto space-y-6 sm:space-y-8 animate-in fade-in duration-200 select-none">
@@ -743,20 +1256,36 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
           <span>100% Client-Side Engine · Zero Uploads</span>
         </div>
         <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-zinc-950 dark:text-zinc-50">
-          Instant Background Remover
+          Background Remover Studio
         </h1>
         <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 max-w-md mx-auto leading-relaxed">
-          Remove backgrounds with 0ms flood-fill or WebGPU neural AI directly in browser RAM.
+          Desktop-grade cutout studio with WebGPU AI, tactile Zoom & Pan, undo history, and 8-bit soft alpha.
         </p>
       </div>
 
-      {/* Dual-Model Engine Mode Toggle Switch */}
+      {/* Dual-Model Engine Mode Toggle */}
       <div className="flex items-center justify-between flex-wrap gap-3 p-2 rounded-xl bg-zinc-100 dark:bg-zinc-850 border border-zinc-200 dark:border-zinc-800">
         <div className="flex items-center gap-1.5 w-full sm:w-auto">
           <button
             type="button"
+            onClick={() => setEngineMode('ai')}
+            className={`flex-1 sm:flex-none py-1.5 px-3.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+              engineMode === 'ai'
+                ? 'bg-white dark:bg-zinc-900 text-zinc-950 dark:text-white shadow-xs'
+                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5 text-blue-500" />
+            <span>AI Smart Mode</span>
+            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400">
+              RMBG-1.4
+            </span>
+          </button>
+
+          <button
+            type="button"
             onClick={() => setEngineMode('fast')}
-            className={`flex-1 sm:flex-none py-1.5 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+            className={`flex-1 sm:flex-none py-1.5 px-3.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer ${
               engineMode === 'fast'
                 ? 'bg-white dark:bg-zinc-900 text-zinc-950 dark:text-white shadow-xs'
                 : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
@@ -768,31 +1297,15 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
               0ms
             </span>
           </button>
-
-          <button
-            type="button"
-            onClick={() => setEngineMode('ai')}
-            className={`flex-1 sm:flex-none py-1.5 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer ${
-              engineMode === 'ai'
-                ? 'bg-white dark:bg-zinc-900 text-zinc-950 dark:text-white shadow-xs'
-                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
-            }`}
-          >
-            <Sparkles className="w-3.5 h-3.5 text-blue-500" />
-            <span>AI Smart Mode</span>
-            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400">
-              WebGPU
-            </span>
-          </button>
         </div>
 
         <div className="flex items-center gap-2 text-xs font-mono text-zinc-500 px-2">
           <Cpu className="w-3.5 h-3.5 text-emerald-500" />
-          <span>Hardware: {hasWebGPU ? 'WebGPU Accelerated ⚡' : 'WASM CPU Fallback'}</span>
+          <span>Hardware: {hasWebGPU ? 'WebGPU Accelerated ⚡' : 'WASM CPU Threads'}</span>
         </div>
       </div>
 
-      {/* Upload Zone (Unboxed 2D Flat Dropzone) */}
+      {/* Upload Zone (When no image is loaded) */}
       {!currentImage ? (
         <div className="max-w-3xl mx-auto">
           <Dropzone
@@ -800,489 +1313,697 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
               if (files.length > 0) loadFile(files[0]);
             }}
             accept="image/*"
-            title="Drop image here for instant background removal"
-            description="100% Client-Side Engine · Instant 0ms BFS or WebGPU Neural AI · Supports PNG, JPG, WebP"
+            title="Drop image here for background removal"
+            description="100% In-Browser Engine · Zero Uploads · Supports PNG, JPG, WebP, HEIC"
           />
         </div>
       ) : (
-        /* Active Workspace */
-        <div className="space-y-6">
-          {/* Active Workspace Top Header Bar */}
+        /* =========================================================================
+           ACTIVE DESKTOP-GRADE WORKSPACE
+        ========================================================================= */
+        <div className="space-y-4">
+          {/* Top Control Bar: File Details + Export Actions */}
           <div
-            className={`flex flex-wrap items-center justify-between gap-4 p-3.5 sm:p-4 border rounded-xl ${
-              isDark
-                ? 'bg-zinc-900 border-zinc-800 text-zinc-100'
-                : 'bg-white border-zinc-200 text-zinc-900'
+            className={`flex flex-wrap items-center justify-between gap-3 p-3 sm:p-3.5 border rounded-xl ${
+              isDark ? 'bg-zinc-900 border-zinc-800 text-zinc-100' : 'bg-white border-zinc-200 text-zinc-900'
             }`}
           >
             <div className="flex items-center gap-3 min-w-0">
               <div
-                className={`w-10 h-10 rounded-lg overflow-hidden shrink-0 flex items-center justify-center border ${
+                className={`w-9 h-9 rounded-lg overflow-hidden shrink-0 flex items-center justify-center border ${
                   isDark ? 'bg-zinc-950 border-zinc-800' : 'bg-zinc-100 border-zinc-200'
                 }`}
               >
-                <img
-                  src={currentImage.previewUrl}
-                  alt="Source"
-                  className="w-full h-full object-cover"
-                />
+                <img src={currentImage.previewUrl} alt="Source" className="w-full h-full object-cover" />
               </div>
               <div className="min-w-0">
-                <h3 className={`text-xs sm:text-sm font-semibold truncate ${isDark ? 'text-white' : 'text-zinc-900'}`}>
+                <h3 className="text-xs sm:text-sm font-semibold truncate max-w-[200px] sm:max-w-xs">
                   {currentImage.name}
                 </h3>
-                <div className={`flex items-center gap-2 text-[11px] font-mono mt-0.5 ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
-                  <span>{currentImage.width} × {currentImage.height} px</span>
-                  {engineMode === 'ai' && aiInferenceTimeMs !== null && (
+                <div className="flex items-center gap-2 text-[11px] font-mono text-zinc-500 mt-0.5">
+                  <span>
+                    {currentImage.width} × {currentImage.height} px
+                  </span>
+                  {aiInferenceTimeMs !== null && (
                     <>
                       <span>·</span>
-                      <span className="text-blue-500 dark:text-blue-400">Neural: {aiInferenceTimeMs}ms</span>
-                    </>
-                  )}
-                  {engineMode === 'fast' && removedObjectCount > 0 && (
-                    <>
-                      <span>·</span>
-                      <span className="text-emerald-500">{removedObjectCount} erased</span>
+                      <span className="text-blue-500">Neural: {aiInferenceTimeMs}ms</span>
                     </>
                   )}
                 </div>
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            {/* Top Toolbar Actions */}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {/* Undo / Redo */}
               <button
+                type="button"
+                disabled={!canUndo}
+                onClick={handleUndo}
+                className="p-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                title="Undo (Ctrl+Z)"
+              >
+                <Undo2 className="w-4 h-4" />
+              </button>
+
+              <button
+                type="button"
+                disabled={!canRedo}
+                onClick={handleRedo}
+                className="p-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                title="Redo (Ctrl+Y)"
+              >
+                <Redo2 className="w-4 h-4" />
+              </button>
+
+              <div className="h-5 w-[1px] bg-zinc-200 dark:bg-zinc-800 mx-1" />
+
+              {/* Reset Photo */}
+              <button
+                type="button"
                 onClick={resetImage}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
-                  isDark
-                    ? 'bg-zinc-800 hover:bg-zinc-750 text-zinc-200'
-                    : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700'
-                }`}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-750 transition-colors cursor-pointer"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
                 <span>New Photo</span>
               </button>
 
+              {/* Copy */}
               <button
+                type="button"
                 disabled={!resultBlob}
                 onClick={handleCopy}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer disabled:opacity-50 ${
-                  isDark
-                    ? 'bg-zinc-800 hover:bg-zinc-750 text-zinc-200'
-                    : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700'
-                }`}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-750 transition-colors cursor-pointer disabled:opacity-50"
               >
                 <Copy className="w-3.5 h-3.5" />
-                <span>Copy</span>
+                <span className="hidden sm:inline">Copy</span>
               </button>
 
+              {/* Share */}
               {isShareSupported() && (
                 <button
+                  type="button"
                   disabled={!resultBlob}
                   onClick={handleShare}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer disabled:opacity-50 ${
-                    isDark
-                      ? 'bg-zinc-800 hover:bg-zinc-750 text-zinc-200'
-                      : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700'
-                  }`}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-750 transition-colors cursor-pointer disabled:opacity-50"
                 >
                   <Share2 className="w-3.5 h-3.5" />
-                  <span>Share</span>
+                  <span className="hidden sm:inline">Share</span>
                 </button>
               )}
 
+              {/* Download PNG */}
               <button
+                type="button"
                 disabled={!resultBlob}
                 onClick={handleDownload}
-                className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
-                  isDark
-                    ? 'bg-zinc-100 hover:bg-zinc-200 text-zinc-900'
-                    : 'bg-zinc-900 hover:bg-zinc-800 text-white'
-                }`}
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors cursor-pointer disabled:opacity-50"
               >
                 <Download className="w-3.5 h-3.5" />
-                <span>Download PNG</span>
+                <span>Download Cutout</span>
               </button>
             </div>
           </div>
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          {/* Left Column: Interactive Canvas View (8 cols) */}
-          <div className="lg:col-span-8 space-y-3">
-            <div className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 space-y-3">
-              {/* Canvas Controls Bar */}
-              <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-zinc-100 dark:border-zinc-800 text-xs">
-                <div className="flex items-center gap-1.5">
-                  <span className="font-semibold text-zinc-900 dark:text-white">Canvas:</span>
-                  <span className="font-mono text-zinc-500 text-[11px]">
-                    {currentImage.width}×{currentImage.height}px
-                  </span>
-                  {engineMode === 'ai' && aiInferenceTimeMs !== null && (
-                    <>
-                      <span className="text-zinc-300 dark:text-zinc-700">·</span>
-                      <span className="text-[11px] font-mono text-blue-600 dark:text-blue-400">
-                        Neural Run: {aiInferenceTimeMs}ms
-                      </span>
-                    </>
-                  )}
-                  {engineMode === 'fast' && removedObjectCount > 0 && (
-                    <>
-                      <span className="text-zinc-300 dark:text-zinc-700">·</span>
-                      <span className="text-[11px] font-mono text-emerald-600 dark:text-emerald-400">
-                        {removedObjectCount} object{removedObjectCount > 1 ? 's' : ''} erased
-                      </span>
-                    </>
-                  )}
-                </div>
 
-                <div className="flex items-center gap-2">
-                  {engineMode === 'ai' ? (
+          {/* Main Studio Layout: 8 cols Viewport + 4 cols Studio Tools */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+            {/* ========================================================= */}
+            {/* Left 8 Cols: Interactive Zoom & Pan Studio Viewport       */}
+            {/* ========================================================= */}
+            <div className="lg:col-span-8 space-y-3">
+              <div className="p-3 sm:p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 space-y-3">
+                {/* Viewport Control Bar */}
+                <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-zinc-100 dark:border-zinc-800 text-xs">
+                  {/* Tool Modes (Erase, Restore, Wand, Hand) */}
+                  <div className="flex items-center gap-1 p-1 rounded-lg bg-zinc-100 dark:bg-zinc-800">
                     <button
                       type="button"
-                      disabled={isAiProcessing}
-                      onClick={runAiInference}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 text-zinc-700 dark:text-zinc-300 cursor-pointer transition-colors disabled:opacity-50"
-                      title="Re-run AI Neural Segmentation"
+                      onClick={() => setActiveToolMode('erase')}
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer ${
+                        activeToolMode === 'erase'
+                          ? 'bg-white dark:bg-zinc-900 text-rose-600 dark:text-rose-400 shadow-xs font-semibold'
+                          : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+                      }`}
+                      title="Erase Brush (E)"
                     >
-                      <RefreshCw className={`w-3 h-3 ${isAiProcessing ? 'animate-spin' : ''}`} />
-                      <span>Re-run AI</span>
+                      <Eraser className="w-3.5 h-3.5" />
+                      <span>Erase</span>
                     </button>
-                  ) : (
+
                     <button
                       type="button"
-                      onClick={() => {
-                        if (!currentImage || !maskCanvasRef.current) return;
-                        const mctx = maskCanvasRef.current.getContext('2d');
-                        if (mctx) mctx.clearRect(0, 0, maskCanvasRef.current.width, maskCanvasRef.current.height);
-                        setRemovedObjectCount(0);
-                        autoCleanBorderBackground(currentImage.imageElement, maskCanvasRef.current, tolerance);
-                        onNotify('Auto Clean Re-run', 'Perimeter background cleaned with updated tolerance.', 'success');
-                      }}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 text-zinc-700 dark:text-zinc-300 cursor-pointer transition-colors"
-                      title="Re-run border flood fill with current tolerance"
+                      onClick={() => setActiveToolMode('restore')}
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer ${
+                        activeToolMode === 'restore'
+                          ? 'bg-white dark:bg-zinc-900 text-blue-600 dark:text-blue-400 shadow-xs font-semibold'
+                          : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+                      }`}
+                      title="Restore Subject Brush (R)"
                     >
-                      <RotateCcw className="w-3 h-3" />
-                      <span>Auto Re-Clean</span>
+                      <Paintbrush className="w-3.5 h-3.5" />
+                      <span>Restore</span>
                     </button>
-                  )}
 
-                  <button
-                    type="button"
-                    onClick={() => setShowOriginal((prev) => !prev)}
-                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs cursor-pointer transition-colors ${
-                      showOriginal
-                        ? 'bg-zinc-900 text-white font-semibold dark:bg-zinc-100 dark:text-zinc-900'
-                        : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200'
-                    }`}
-                  >
-                    <Eye className="w-3 h-3" />
-                    <span>{showOriginal ? 'Showing Original' : 'Hold / View Original'}</span>
-                  </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveToolMode('wand')}
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer ${
+                        activeToolMode === 'wand'
+                          ? 'bg-white dark:bg-zinc-900 text-amber-600 dark:text-amber-400 shadow-xs font-semibold'
+                          : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+                      }`}
+                      title="Magic Wand Flood Fill (W)"
+                    >
+                      <Wand2 className="w-3.5 h-3.5" />
+                      <span>Wand</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setActiveToolMode('hand')}
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer ${
+                        activeToolMode === 'hand'
+                          ? 'bg-white dark:bg-zinc-900 text-emerald-600 dark:text-emerald-400 shadow-xs font-semibold'
+                          : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+                      }`}
+                      title="Hand Pan Tool (H / Hold Space)"
+                    >
+                      <Hand className="w-3.5 h-3.5" />
+                      <span>Pan</span>
+                    </button>
+                  </div>
+
+                  {/* Zoom Controls & Comparison View */}
+                  <div className="flex items-center gap-1.5">
+                    {/* Before / After Split Slider Toggle */}
+                    <button
+                      type="button"
+                      onClick={() => setIsSplitView((v) => !v)}
+                      className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+                        isSplitView
+                          ? 'bg-blue-500 text-white font-semibold'
+                          : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200'
+                      }`}
+                      title="Toggle Before/After Split Comparison"
+                    >
+                      <Columns2 className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">Split View</span>
+                    </button>
+
+                    {/* View Original */}
+                    <button
+                      type="button"
+                      onClick={() => setShowOriginal((v) => !v)}
+                      className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+                        showOriginal
+                          ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 font-semibold'
+                          : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200'
+                      }`}
+                      title="View original unedited image"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      <span>Original</span>
+                    </button>
+
+                    <div className="h-4 w-[1px] bg-zinc-200 dark:bg-zinc-800 mx-0.5" />
+
+                    {/* Zoom In / Out Buttons */}
+                    <button
+                      type="button"
+                      onClick={() => handleZoomStep(-0.2)}
+                      className="p-1 rounded-md text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer"
+                      title="Zoom Out"
+                    >
+                      <ZoomOut className="w-3.5 h-3.5" />
+                    </button>
+
+                    <span className="text-[11px] font-mono text-zinc-500 w-10 text-center">
+                      {Math.round(zoom * 100)}%
+                    </span>
+
+                    <button
+                      type="button"
+                      onClick={() => handleZoomStep(0.2)}
+                      className="p-1 rounded-md text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer"
+                      title="Zoom In"
+                    >
+                      <ZoomIn className="w-3.5 h-3.5" />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleFitToScreen}
+                      className="p-1 rounded-md text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer"
+                      title="Fit to Screen (0)"
+                    >
+                      <Maximize2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
-              </div>
 
-              {/* AI Processing Bar */}
-              {engineMode === 'ai' && isAiProcessing && (
-                <div className="space-y-1.5 p-2 rounded-lg bg-blue-500/10 border border-blue-500/20 text-xs text-blue-600 dark:text-blue-400">
-                  <div className="flex items-center justify-between font-mono text-[11px]">
-                    <div className="flex items-center gap-1.5">
-                      <RefreshCw className="w-3 h-3 animate-spin" />
-                      <span>{aiStatus}</span>
+                {/* AI Progress Banner */}
+                {engineMode === 'ai' && isAiProcessing && (
+                  <div className="space-y-1.5 p-2 rounded-lg bg-blue-500/10 border border-blue-500/20 text-xs text-blue-600 dark:text-blue-400">
+                    <div className="flex items-center justify-between font-mono text-[11px]">
+                      <div className="flex items-center gap-1.5">
+                        <RefreshCw className="w-3 h-3 animate-spin" />
+                        <span>{aiStatus}</span>
+                      </div>
+                      <span>{aiProgress}%</span>
                     </div>
-                    <span>{aiProgress}%</span>
+                    <div className="w-full bg-blue-200 dark:bg-blue-950 h-1.5 rounded-full overflow-hidden">
+                      <div className="bg-blue-600 h-full transition-all duration-200" style={{ width: `${aiProgress}%` }} />
+                    </div>
                   </div>
-                  <div className="w-full bg-blue-200 dark:bg-blue-950 h-1.5 rounded-full overflow-hidden">
+                )}
+
+                {/* Interactive Zoom/Pan Canvas Viewport */}
+                <div
+                  ref={viewportRef}
+                  onWheel={handleViewportWheel}
+                  onMouseDown={handleViewportMouseDown}
+                  onMouseMove={handleViewportMouseMove}
+                  onMouseUp={handleViewportMouseUp}
+                  onMouseLeave={handleViewportMouseLeave}
+                  className={`relative rounded-xl border border-zinc-200 dark:border-zinc-800 overflow-hidden min-h-[380px] max-h-[580px] sm:min-h-[460px] h-[520px] select-none ${
+                    activeToolMode === 'hand' || isPanning
+                      ? isPanning
+                        ? 'cursor-grabbing'
+                        : 'cursor-grab'
+                      : activeToolMode === 'wand'
+                      ? 'cursor-crosshair'
+                      : 'cursor-none'
+                  }`}
+                  style={{
+                    backgroundColor: '#09090b',
+                    backgroundImage:
+                      'radial-gradient(circle, rgba(255,255,255,0.08) 1px, transparent 1px)',
+                    backgroundSize: '20px 20px',
+                  }}
+                >
+                  {/* Floating Circular Brush Cursor */}
+                  {cursorPos.visible &&
+                    (activeToolMode === 'erase' || activeToolMode === 'restore') && (
+                      <div
+                        className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 rounded-full border border-white shadow-[0_0_0_1px_rgba(0,0,0,0.7)] transition-transform duration-75 z-30"
+                        style={{
+                          left: cursorPos.x,
+                          top: cursorPos.y,
+                          width: Math.max(8, brushSize * zoom),
+                          height: Math.max(8, brushSize * zoom),
+                          backgroundColor:
+                            activeToolMode === 'erase'
+                              ? 'rgba(239, 68, 68, 0.15)'
+                              : 'rgba(59, 130, 246, 0.15)',
+                        }}
+                      />
+                    )}
+
+                  {/* Canvas Transform Wrapper */}
+                  <div
+                    className="absolute transition-transform duration-75 ease-out origin-top-left"
+                    style={{
+                      transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+                      transformOrigin: '0 0',
+                    }}
+                  >
+                    {/* Checkerboard Backdrop for Transparent Area */}
                     <div
-                      className="bg-blue-600 h-full transition-all duration-200"
-                      style={{ width: `${aiProgress}%` }}
-                    />
+                      className="shadow-2xl rounded-sm overflow-hidden"
+                      style={{
+                        backgroundImage:
+                          'linear-gradient(45deg, #e4e4e7 25%, transparent 25%), linear-gradient(-45deg, #e4e4e7 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #e4e4e7 75%), linear-gradient(-45deg, transparent 75%, #e4e4e7 75%)',
+                        backgroundSize: '16px 16px',
+                        backgroundPosition: '0 0, 0 8px, 8px -8px, -8px 0px',
+                        backgroundColor: '#ffffff',
+                      }}
+                    >
+                      {showOriginal ? (
+                        <img
+                          src={currentImage.previewUrl}
+                          alt="Original"
+                          className="max-w-none block pointer-events-none"
+                          style={{
+                            width: currentImage.width,
+                            height: currentImage.height,
+                          }}
+                        />
+                      ) : (
+                        <canvas ref={canvasRef} className="block pointer-events-none" />
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Split View Floating Handle Indicator */}
+                  {isSplitView && (
+                    <div
+                      className="pointer-events-none absolute top-4 left-4 px-2.5 py-1 rounded-md bg-zinc-900/80 backdrop-blur-md text-white text-[11px] font-mono border border-zinc-700 z-20"
+                    >
+                      <span>Drag Divider: {splitPos}% Original / Cutout</span>
+                    </div>
+                  )}
+
+                  {/* Viewport Floating Reset Fit Button */}
+                  <div className="absolute bottom-3 right-3 flex items-center gap-1.5 z-20">
+                    <button
+                      type="button"
+                      onClick={handleFitToScreen}
+                      className="px-2 py-1 rounded-md bg-zinc-900/80 hover:bg-zinc-900 text-white text-[11px] font-mono border border-zinc-700 backdrop-blur-md transition-colors cursor-pointer"
+                    >
+                      Reset Fit
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handle100Percent}
+                      className="px-2 py-1 rounded-md bg-zinc-900/80 hover:bg-zinc-900 text-white text-[11px] font-mono border border-zinc-700 backdrop-blur-md transition-colors cursor-pointer"
+                    >
+                      1:1
+                    </button>
                   </div>
                 </div>
-              )}
 
-              {/* Viewport with Checkerboard Background */}
-              <div
-                className="relative rounded-lg border border-zinc-200 dark:border-zinc-800 overflow-hidden flex items-center justify-center min-h-[350px] max-h-[580px] p-2"
-                style={{
-                  backgroundImage:
-                    'linear-gradient(45deg, #f0f0f0 25%, transparent 25%), linear-gradient(-45deg, #f0f0f0 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #f0f0f0 75%), linear-gradient(-45deg, transparent 75%, #f0f0f0 75%)',
-                  backgroundSize: '16px 16px',
-                  backgroundPosition: '0 0, 0 8px, 8px -8px, -8px 0px',
-                  backgroundColor: '#ffffff',
-                }}
-              >
-                {showOriginal ? (
-                  <img
-                    src={currentImage.previewUrl}
-                    alt="Original"
-                    className="max-h-[550px] max-w-full object-contain rounded"
-                  />
-                ) : (
-                  <canvas
-                    ref={canvasRef}
-                    onMouseDown={handleCanvasMouseDown}
-                    onMouseMove={handleCanvasMouseMove}
-                    onMouseUp={handleCanvasMouseUp}
-                    className={`max-h-[550px] max-w-full object-contain ${
-                      activeToolMode === 'wand'
-                        ? 'cursor-crosshair'
-                        : activeToolMode === 'erase'
-                        ? 'cursor-cell'
-                        : 'cursor-pointer'
-                    }`}
-                    title={
-                      activeToolMode === 'wand'
-                        ? 'Magic Wand: Click any background object to erase it completely'
-                        : `Drawing with ${activeToolMode} brush`
-                    }
-                  />
-                )}
-              </div>
-
-              {/* Canvas Action Hint Bar */}
-              <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-[11px] text-zinc-500 font-mono">
-                <div className="flex items-center gap-1.5">
-                  <Wand2 className="w-3.5 h-3.5 text-amber-500" />
+                {/* Viewport Bottom Hint Bar */}
+                <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-[11px] text-zinc-500 font-mono">
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-semibold text-zinc-700 dark:text-zinc-300">Shortcuts:</span>
+                    <span>Space (Pan)</span>
+                    <span>·</span>
+                    <span>[ / ] (Size)</span>
+                    <span>·</span>
+                    <span>Ctrl+Z (Undo)</span>
+                  </div>
                   <span>
-                    {activeToolMode === 'wand'
-                      ? 'Magic Wand Active: Click any background spot to erase it'
-                      : activeToolMode === 'erase'
-                      ? 'Erase Brush Active: Click & drag to erase stray spots'
-                      : 'Restore Brush Active: Click & drag to restore subjects'}
+                    {engineMode === 'ai' ? 'RMBG-1.4 8-Bit Continuous Alpha' : 'BFS Perimeter Keyer (0ms)'}
                   </span>
                 </div>
-                <span>
-                  {engineMode === 'ai'
-                    ? `AI RMBG-1.4 Neural Engine (${hasWebGPU ? 'WebGPU' : 'WASM'})`
-                    : 'Fast BFS Flood-Fill (0ms Latency)'}
-                </span>
               </div>
             </div>
-          </div>
 
-          {/* Right Column: Controls & Settings (4 cols) */}
-          <div className="lg:col-span-4 space-y-4">
-            {/* Interactive Eraser / Touch-up Tools */}
-            <div className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 space-y-3">
-              <div className="flex items-center justify-between pb-2 border-b border-zinc-100 dark:border-zinc-800">
-                <span className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-white font-mono">
-                  Manual Refinement Tools
-                </span>
-                <button
-                  type="button"
-                  onClick={handleResetMask}
-                  className="text-[10px] font-mono text-zinc-500 hover:text-zinc-900 dark:hover:text-white underline cursor-pointer"
-                >
-                  Reset All
-                </button>
-              </div>
+            {/* ========================================================= */}
+            {/* Right 4 Cols: Refinement Tools & Background Replacement   */}
+            {/* ========================================================= */}
+            <div className="lg:col-span-4 space-y-4">
+              {/* 1. Brush Precision Controls */}
+              <div className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 space-y-3.5">
+                <div className="flex items-center justify-between pb-2 border-b border-zinc-100 dark:border-zinc-800">
+                  <span className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-white font-mono flex items-center gap-1.5">
+                    <Sliders className="w-3.5 h-3.5 text-blue-500" />
+                    <span>Brush Precision</span>
+                  </span>
+                  <span className="text-[11px] font-mono text-zinc-500">{brushSize}px</span>
+                </div>
 
-              <div className="grid grid-cols-3 gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => setActiveToolMode('wand')}
-                  className={`flex flex-col items-center gap-1 p-2 rounded-lg text-center transition-colors cursor-pointer ${
-                    activeToolMode === 'wand'
-                      ? 'bg-amber-500/10 text-amber-600 font-semibold dark:text-amber-400'
-                      : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-750'
-                  }`}
-                  title="Click on any background object to erase it"
-                >
-                  <Wand2 className="w-3.5 h-3.5 text-amber-500" />
-                  <span className="text-[11px]">Magic Wand</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setActiveToolMode('erase')}
-                  className={`flex flex-col items-center gap-1 p-2 rounded-lg text-center transition-colors cursor-pointer ${
-                    activeToolMode === 'erase'
-                      ? 'bg-rose-500/10 text-rose-600 font-semibold dark:text-rose-400'
-                      : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-750'
-                  }`}
-                  title="Swipe freehand to erase objects"
-                >
-                  <Eraser className="w-3.5 h-3.5 text-rose-500" />
-                  <span className="text-[11px]">Erase Brush</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setActiveToolMode('restore')}
-                  className={`flex flex-col items-center gap-1 p-2 rounded-lg text-center transition-colors cursor-pointer ${
-                    activeToolMode === 'restore'
-                      ? 'bg-blue-500/10 text-blue-600 font-semibold dark:text-blue-400'
-                      : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-750'
-                  }`}
-                  title="Swipe freehand to restore masked details"
-                >
-                  <Paintbrush className="w-3.5 h-3.5 text-blue-500" />
-                  <span className="text-[11px]">Restore</span>
-                </button>
-              </div>
-
-              {activeToolMode !== 'wand' && (
-                <div className="space-y-1.5 pt-1">
+                <div className="space-y-3">
                   <Slider
                     label="Brush Size"
                     min={5}
-                    max={80}
+                    max={120}
                     step={1}
                     value={brushSize}
                     onChange={setBrushSize}
                     unit="px"
                   />
-                </div>
-              )}
-            </div>
 
-            {/* Tolerance & Sensitivity Controls (Fast Mode & Wand) */}
-            <div className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 space-y-4">
-              <div className="flex items-center justify-between pb-2 border-b border-zinc-100 dark:border-zinc-800">
-                <span className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-white font-mono">
-                  {engineMode === 'fast' ? 'Flood-Fill Tolerance' : 'Magic Wand Tolerance'}
-                </span>
-                <span className="text-[11px] font-mono text-zinc-500">{tolerance}%</span>
-              </div>
-
-              <div className="space-y-1.5">
-                <Slider
-                  label="Color Distance Threshold"
-                  min={5}
-                  max={75}
-                  step={1}
-                  value={tolerance}
-                  onChange={setTolerance}
-                  unit="%"
-                />
-                <p className="text-[10px] text-zinc-400">
-                  Higher tolerance removes larger color variations and soft edge shadows.
-                </p>
-              </div>
-            </div>
-
-            {/* Background Output Mode */}
-            <div className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 space-y-3">
-              <span className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-white font-mono block pb-2 border-b border-zinc-100 dark:border-zinc-800">
-                Replace Background
-              </span>
-
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setBgMode('transparent')}
-                  className={`p-2 rounded-lg text-xs font-medium text-center transition-colors cursor-pointer ${
-                    bgMode === 'transparent'
-                      ? 'bg-zinc-900 text-white font-semibold dark:bg-zinc-100 dark:text-zinc-950'
-                      : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-750'
-                  }`}
-                >
-                  Transparent PNG
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setBgMode('white')}
-                  className={`p-2 rounded-lg text-xs font-medium text-center transition-colors cursor-pointer ${
-                    bgMode === 'white'
-                      ? 'bg-zinc-900 text-white font-semibold dark:bg-zinc-100 dark:text-zinc-950'
-                      : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-750'
-                  }`}
-                >
-                  Solid White
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setBgMode('blue')}
-                  className={`p-2 rounded-lg text-xs font-medium text-center transition-colors cursor-pointer ${
-                    bgMode === 'blue'
-                      ? 'bg-zinc-900 text-white font-semibold dark:bg-zinc-100 dark:text-zinc-950'
-                      : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-750'
-                  }`}
-                >
-                  Passport Blue
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setBgMode('blur')}
-                  className={`p-2 rounded-lg text-xs font-medium text-center transition-colors cursor-pointer ${
-                    bgMode === 'blur'
-                      ? 'bg-zinc-900 text-white font-semibold dark:bg-zinc-100 dark:text-zinc-950'
-                      : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-750'
-                  }`}
-                >
-                  Blur Bokeh BG
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setBgMode('grey')}
-                  className={`p-2 rounded-lg text-xs font-medium text-center transition-colors cursor-pointer ${
-                    bgMode === 'grey'
-                      ? 'bg-zinc-900 text-white font-semibold dark:bg-zinc-100 dark:text-zinc-950'
-                      : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-750'
-                  }`}
-                >
-                  Studio Grey
-                </button>
-
-                <div className="flex items-center gap-1.5 p-1 rounded-lg bg-zinc-100 dark:bg-zinc-800">
-                  <input
-                    type="color"
-                    value={customBgColor}
-                    onChange={(e) => {
-                      setCustomBgColor(e.target.value);
-                      setBgMode('custom');
-                    }}
-                    className="w-7 h-7 rounded border border-zinc-300 dark:border-zinc-600 cursor-pointer p-0"
-                    title="Pick custom color"
+                  <Slider
+                    label="Brush Hardness (Edge Softness)"
+                    min={0}
+                    max={100}
+                    step={5}
+                    value={brushHardness}
+                    onChange={setBrushHardness}
+                    unit="%"
                   />
-                  <span className="text-[11px] font-mono text-zinc-600 dark:text-zinc-400">Custom</span>
+
+                  {activeToolMode === 'wand' && (
+                    <Slider
+                      label="Magic Wand Tolerance"
+                      min={5}
+                      max={75}
+                      step={1}
+                      value={tolerance}
+                      onChange={setTolerance}
+                      unit="%"
+                    />
+                  )}
                 </div>
               </div>
-            </div>
 
-            {/* Action Bar */}
-            <div className="pt-2 space-y-2">
-              <Button
-                variant="primary"
-                onClick={handleDownload}
-                disabled={!resultBlob}
-                className="w-full justify-center py-2.5 text-xs font-semibold"
-              >
-                <Download className="w-4 h-4 mr-1.5" />
-                <span>Download Background-Free PNG</span>
-              </Button>
-
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={handleCopy}
-                  disabled={!resultBlob}
-                  className="py-2 px-3 rounded-md text-xs font-medium flex items-center justify-center gap-1.5 border border-zinc-200 dark:border-zinc-750 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 transition-colors cursor-pointer disabled:opacity-50"
-                >
-                  <Copy className="w-3.5 h-3.5 text-zinc-500" />
-                  <span>Copy Image</span>
-                </button>
-                {isShareSupported() && (
+              {/* 2. Edge Refinement Suite */}
+              <div className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 space-y-3.5">
+                <div className="flex items-center justify-between pb-2 border-b border-zinc-100 dark:border-zinc-800">
+                  <span className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-white font-mono flex items-center gap-1.5">
+                    <SlidersHorizontal className="w-3.5 h-3.5 text-emerald-500" />
+                    <span>Edge Refinement</span>
+                  </span>
                   <button
                     type="button"
-                    onClick={handleShare}
-                    disabled={!resultBlob}
-                    className="py-2 px-3 rounded-md text-xs font-medium flex items-center justify-center gap-1.5 border border-zinc-200 dark:border-zinc-750 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 transition-colors cursor-pointer disabled:opacity-50"
+                    onClick={() => {
+                      setFeather(0);
+                      setShiftEdge(0);
+                    }}
+                    className="text-[10px] font-mono text-zinc-500 hover:text-zinc-900 dark:hover:text-white underline cursor-pointer"
                   >
-                    <Share2 className="w-3.5 h-3.5 text-zinc-500" />
-                    <span>Share</span>
+                    Reset
                   </button>
-                )}
+                </div>
+
+                <div className="space-y-3">
+                  <Slider
+                    label="Feather (Smooth Edge)"
+                    min={0}
+                    max={8}
+                    step={1}
+                    value={feather}
+                    onChange={setFeather}
+                    unit="px"
+                  />
+
+                  <Slider
+                    label="Shift Edge (Defringe / Contract)"
+                    min={-5}
+                    max={5}
+                    step={1}
+                    value={shiftEdge}
+                    onChange={setShiftEdge}
+                    unit="px"
+                  />
+                  <p className="text-[10px] text-zinc-400 leading-relaxed">
+                    Shift negative (-1px) to cut border halos; positive to preserve faint hair.
+                  </p>
+                </div>
+              </div>
+
+              {/* 3. Background Replacement Options */}
+              <div className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 space-y-3.5">
+                <span className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-white font-mono block pb-2 border-b border-zinc-100 dark:border-zinc-800">
+                  Replace Background
+                </span>
+
+                <div className="grid grid-cols-2 gap-1.5 text-xs">
+                  {/* Transparent */}
+                  <button
+                    type="button"
+                    onClick={() => setBgMode('transparent')}
+                    className={`p-2 rounded-lg text-xs font-medium text-center transition-colors cursor-pointer ${
+                      bgMode === 'transparent'
+                        ? 'bg-zinc-900 text-white font-semibold dark:bg-zinc-100 dark:text-zinc-950 shadow-xs'
+                        : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200'
+                    }`}
+                  >
+                    Transparent PNG
+                  </button>
+
+                  {/* Solid White */}
+                  <button
+                    type="button"
+                    onClick={() => setBgMode('white')}
+                    className={`p-2 rounded-lg text-xs font-medium text-center transition-colors cursor-pointer ${
+                      bgMode === 'white'
+                        ? 'bg-zinc-900 text-white font-semibold dark:bg-zinc-100 dark:text-zinc-950 shadow-xs'
+                        : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200'
+                    }`}
+                  >
+                    Solid White
+                  </button>
+
+                  {/* Passport Blue */}
+                  <button
+                    type="button"
+                    onClick={() => setBgMode('passport-blue')}
+                    className={`p-2 rounded-lg text-xs font-medium text-center transition-colors cursor-pointer ${
+                      bgMode === 'passport-blue'
+                        ? 'bg-zinc-900 text-white font-semibold dark:bg-zinc-100 dark:text-zinc-950 shadow-xs'
+                        : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200'
+                    }`}
+                  >
+                    Passport Blue
+                  </button>
+
+                  {/* Visa Grey */}
+                  <button
+                    type="button"
+                    onClick={() => setBgMode('visa-grey')}
+                    className={`p-2 rounded-lg text-xs font-medium text-center transition-colors cursor-pointer ${
+                      bgMode === 'visa-grey'
+                        ? 'bg-zinc-900 text-white font-semibold dark:bg-zinc-100 dark:text-zinc-950 shadow-xs'
+                        : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200'
+                    }`}
+                  >
+                    Visa Light Grey
+                  </button>
+
+                  {/* Portrait Beige */}
+                  <button
+                    type="button"
+                    onClick={() => setBgMode('portrait-beige')}
+                    className={`p-2 rounded-lg text-xs font-medium text-center transition-colors cursor-pointer ${
+                      bgMode === 'portrait-beige'
+                        ? 'bg-zinc-900 text-white font-semibold dark:bg-zinc-100 dark:text-zinc-950 shadow-xs'
+                        : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200'
+                    }`}
+                  >
+                    Studio Beige
+                  </button>
+
+                  {/* Blur Bokeh BG */}
+                  <button
+                    type="button"
+                    onClick={() => setBgMode('blur')}
+                    className={`p-2 rounded-lg text-xs font-medium text-center transition-colors cursor-pointer ${
+                      bgMode === 'blur'
+                        ? 'bg-zinc-900 text-white font-semibold dark:bg-zinc-100 dark:text-zinc-950 shadow-xs'
+                        : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200'
+                    }`}
+                  >
+                    Blur Bokeh BG
+                  </button>
+
+                  {/* Studio Vignette Gradient */}
+                  <button
+                    type="button"
+                    onClick={() => setBgMode('gradient-vignette')}
+                    className={`p-2 rounded-lg text-xs font-medium text-center transition-colors cursor-pointer ${
+                      bgMode === 'gradient-vignette'
+                        ? 'bg-zinc-900 text-white font-semibold dark:bg-zinc-100 dark:text-zinc-950 shadow-xs'
+                        : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200'
+                    }`}
+                  >
+                    Dark Vignette
+                  </button>
+
+                  {/* Warm Sunset Gradient */}
+                  <button
+                    type="button"
+                    onClick={() => setBgMode('gradient-warm')}
+                    className={`p-2 rounded-lg text-xs font-medium text-center transition-colors cursor-pointer ${
+                      bgMode === 'gradient-warm'
+                        ? 'bg-zinc-900 text-white font-semibold dark:bg-zinc-100 dark:text-zinc-950 shadow-xs'
+                        : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200'
+                    }`}
+                  >
+                    Warm Sunset
+                  </button>
+
+                  {/* Custom Color Input */}
+                  <div className="flex items-center gap-1.5 p-1 rounded-lg bg-zinc-100 dark:bg-zinc-800">
+                    <input
+                      type="color"
+                      value={customBgColor}
+                      onChange={(e) => {
+                        setCustomBgColor(e.target.value);
+                        setBgMode('custom-color');
+                      }}
+                      className="w-7 h-7 rounded border border-zinc-300 dark:border-zinc-600 cursor-pointer p-0"
+                      title="Pick custom color"
+                    />
+                    <span className="text-[11px] font-mono text-zinc-600 dark:text-zinc-400">Custom HEX</span>
+                  </div>
+
+                  {/* Custom Image Backdrop Uploader */}
+                  <div>
+                    <input
+                      ref={backdropInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleCustomBackdropSelected}
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => backdropInputRef.current?.click()}
+                      className={`w-full p-2 rounded-lg text-xs font-medium text-center flex items-center justify-center gap-1 transition-colors cursor-pointer ${
+                        bgMode === 'custom-image'
+                          ? 'bg-zinc-900 text-white font-semibold dark:bg-zinc-100 dark:text-zinc-950 shadow-xs'
+                          : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200'
+                      }`}
+                    >
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>Custom Photo</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* 4. Realistic Drop Shadow Settings */}
+                <div className="pt-2 border-t border-zinc-100 dark:border-zinc-800 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={dropShadow}
+                        onChange={(e) => setDropShadow(e.target.checked)}
+                        className="rounded text-blue-600 focus:ring-blue-500 cursor-pointer"
+                      />
+                      <span>Realistic Drop Shadow</span>
+                    </label>
+                    <span className="text-[10px] font-mono text-zinc-400">
+                      {dropShadow ? `${shadowBlur}px blur` : 'Disabled'}
+                    </span>
+                  </div>
+
+                  {dropShadow && (
+                    <div className="space-y-2 pt-1 animate-in fade-in duration-150">
+                      <Slider
+                        label="Shadow Blur"
+                        min={0}
+                        max={35}
+                        step={1}
+                        value={shadowBlur}
+                        onChange={setShadowBlur}
+                        unit="px"
+                      />
+                      <Slider
+                        label="Shadow Opacity"
+                        min={10}
+                        max={80}
+                        step={5}
+                        value={shadowOpacity}
+                        onChange={setShadowOpacity}
+                        unit="%"
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Main Export Action Button */}
+              <div className="pt-1">
+                <Button
+                  variant="primary"
+                  onClick={handleDownload}
+                  disabled={!resultBlob}
+                  className="w-full justify-center py-2.5 text-xs font-semibold"
+                >
+                  <Download className="w-4 h-4 mr-1.5" />
+                  <span>Download High-Res Cutout</span>
+                </Button>
               </div>
             </div>
           </div>
         </div>
-      </div>
-    )}
+      )}
 
-      {/* Standardized Schema-Matched Guide & Knowledge Base */}
+      {/* Schema-Matched Knowledge Base Guide */}
       <ImageToolGuideSection toolId="bg-remover" />
     </div>
   );
