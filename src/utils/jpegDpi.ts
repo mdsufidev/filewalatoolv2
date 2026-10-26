@@ -209,6 +209,32 @@ export async function compressCanvasToPortalSpecs(
     bestQuality = 0.25;
   }
 
+  // Adaptive downscaling: If even at low quality the image exceeds portal maxBytes (e.g. huge source photo for a 20KB or 50KB quota),
+  // dynamically downscale dimensions so the resulting file is guaranteed to be portal compliant!
+  let currentCanvas: HTMLCanvasElement = canvas;
+  let downscalePasses = 0;
+  while (bestBlob && bestBlob.size > maxBytes && downscalePasses < 4 && currentCanvas.width > 80 && currentCanvas.height > 80) {
+    downscalePasses++;
+    const scaleRatio = Math.sqrt(maxBytes / bestBlob.size) * 0.95;
+    const newW = Math.max(60, Math.round(currentCanvas.width * scaleRatio));
+    const newH = Math.max(60, Math.round(currentCanvas.height * scaleRatio));
+    const scaledCanvas = document.createElement('canvas');
+    scaledCanvas.width = newW;
+    scaledCanvas.height = newH;
+    const scaledCtx = scaledCanvas.getContext('2d');
+    if (!scaledCtx) break;
+    scaledCtx.fillStyle = '#FFFFFF';
+    scaledCtx.fillRect(0, 0, newW, newH);
+    scaledCtx.drawImage(currentCanvas, 0, 0, newW, newH);
+    currentCanvas = scaledCanvas;
+
+    const rawBlob: Blob = await new Promise((resolve) =>
+      currentCanvas.toBlob((b) => resolve(b || new Blob()), 'image/jpeg', 0.65)
+    );
+    bestBlob = await embedJpegDpi(rawBlob, targetDpi);
+    bestQuality = 0.65;
+  }
+
   // If minKb is specified and file is below minimum, pad it safely
   if (minBytes > 0 && bestBlob.size < minBytes) {
     // Add small buffer so it lands securely above minBytes (e.g., +1.5 KB)

@@ -47,6 +47,8 @@ import { ComparisonSlider } from '../ui/ComparisonSlider';
 import { useTheme } from '../../core/themeContext';
 import { ImageToolGuideSection } from './image/ImageToolGuideSection';
 import { triggerFileDownload } from '../../utils/memory';
+import { convertHeicToJpeg } from '../../utils/heicHelper';
+import { embedJpegDpi } from '../../utils/jpegDpi';
 
 interface CompressorToolProps {
   onNotify?: (title: string, desc?: string, type?: 'success' | 'error' | 'info') => void;
@@ -113,6 +115,7 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
   const [mode, setMode] = useState<CompressionMode>('quality');
   const [quality, setQuality] = useState<number>(75); // 10% to 100%
   const [targetKb, setTargetKb] = useState<number>(200);
+  const [targetKbInput, setTargetKbInput] = useState<string>('200');
   const [outputFormat, setOutputFormat] = useState<OutputFormat>('original');
   const [scalePercentage, setScalePercentage] = useState<number>(100); // 25, 50, 75, 100
 
@@ -170,21 +173,48 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
   }, []);
 
   // Validate incoming file
-  const validateAndLoadFile = useCallback((file: File) => {
+  const validateAndLoadFile = useCallback(async (file: File) => {
     setErrorMessage(null);
 
-    // 1. Validate File Format (PNG, JPEG, WebP, AVIF)
+    // 1. Check for Apple iOS HEIC / HEIF photos
+    const isHeic =
+      file.name.toLowerCase().endsWith('.heic') ||
+      file.name.toLowerCase().endsWith('.heif') ||
+      file.type.includes('heic') ||
+      file.type.includes('heif');
+
+    if (isHeic) {
+      setIsProcessing(true);
+      onNotify?.('Decoding iPhone Photo', 'Converting HEIC in local browser RAM...', 'info');
+      try {
+        const jpegBlob = await convertHeicToJpeg(file);
+        const convertedFile = new File(
+          [jpegBlob],
+          file.name.replace(/\.(heic|heif)$/i, '.jpg'),
+          { type: 'image/jpeg' }
+        );
+        validateAndLoadFile(convertedFile);
+      } catch (err: unknown) {
+        setIsProcessing(false);
+        const msg = err instanceof Error ? err.message : 'Failed to decode iPhone HEIC photo.';
+        setErrorMessage(msg);
+        onNotify?.('HEIC Decode Failed', msg, 'error');
+      }
+      return;
+    }
+
+    // 2. Validate File Format (PNG, JPEG, WebP, AVIF)
     const validMimes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/avif'];
     const validExtensions = /\.(jpe?g|png|webp|avif)$/i;
 
     if (!validMimes.includes(file.type.toLowerCase()) && !validExtensions.test(file.name)) {
-      const err = 'Invalid file format. Please upload a PNG, JPEG, or WebP image.';
+      const err = 'Invalid file format. Please upload a JPG, PNG, WebP, AVIF, or iPhone HEIC image.';
       setErrorMessage(err);
       onNotify?.('Invalid File Format', err, 'error');
       return;
     }
 
-    // 2. Validate File Size (Limit to 50MB to prevent browser tab crash)
+    // 3. Validate File Size (Limit to 50MB to prevent browser tab crash)
     const maxSizeBytes = 50 * 1024 * 1024;
     if (file.size > maxSizeBytes) {
       const err = `File exceeds 50MB limit (${formatFileSize(file.size)}). Please choose a smaller image.`;
@@ -193,7 +223,7 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
       return;
     }
 
-    // 3. Load Image safely
+    // 4. Load Image safely
     setIsProcessing(true);
     const objectUrl = registerObjectUrl(URL.createObjectURL(file));
     const img = new Image();
@@ -229,6 +259,7 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
       // Intelligently set initial target KB (approx 35% of original size, clamped between 30KB and 5000KB)
       const initialTargetKb = Math.min(5000, Math.max(30, Math.round((file.size / 1024) * 0.35)));
       setTargetKb(initialTargetKb);
+      setTargetKbInput(String(initialTargetKb));
 
       setIsProcessing(false);
       onNotify?.('Image Loaded', `${file.name} (${formatFileSize(file.size)}) ready to compress.`, 'info');
@@ -336,10 +367,41 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
 
           ctx.drawImage(imageElement, 0, 0, w, h);
 
+          // For PNG with reduced quality, apply color quantization to enable DEFLATE compression savings
+          if (resolvedMime === 'image/png' && qFactor < 0.95) {
+            try {
+              const imgData = ctx.getImageData(0, 0, w, h);
+              const data = imgData.data;
+              const bitShift = Math.min(5, Math.max(1, Math.floor((1 - qFactor) * 5)));
+              const mask = 0xff << bitShift;
+              for (let i = 0; i < data.length; i += 4) {
+                data[i] = data[i] & mask;
+                data[i + 1] = data[i + 1] & mask;
+                data[i + 2] = data[i + 2] & mask;
+              }
+              ctx.putImageData(imgData, 0, 0);
+            } catch {
+              // Ignore if context read error
+            }
+          }
+
           canvas.toBlob(
-            (b) => {
-              if (b) resolve(b);
-              else reject(new Error('Canvas export failed'));
+            async (b) => {
+              if (b) {
+                // If JPEG, embed 200 DPI for portal & document compliance
+                if (resolvedMime === 'image/jpeg') {
+                  try {
+                    const withDpi = await embedJpegDpi(b, 200);
+                    resolve(withDpi);
+                    return;
+                  } catch {
+                    // Fallback to raw blob
+                  }
+                }
+                resolve(b);
+              } else {
+                reject(new Error('Canvas export failed'));
+              }
             },
             resolvedMime,
             qFactor
@@ -355,19 +417,19 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
         const targetBytes = targetKb * 1024;
 
         if (resolvedMime === 'image/png') {
-          // PNG is lossless in Canvas API (ignores quality factor). If PNG is too large, downscale dimensions
+          // PNG in target KB mode: adaptively downscale and quantize until <= targetBytes
           let curW = targetW;
           let curH = targetH;
-          let blob = await renderAndEncode(curW, curH, 1.0);
+          let blob = await renderAndEncode(curW, curH, 0.75);
 
           let iterations = 0;
-          while (blob.size > targetBytes && iterations < 5 && curW > 50 && curH > 50) {
+          while (blob.size > targetBytes && iterations < 6 && curW > 50 && curH > 50) {
             iterations++;
             wasDownscaled = true;
-            const shrinkRatio = Math.sqrt(targetBytes / blob.size) * 0.95;
-            curW = Math.max(20, Math.round(curW * shrinkRatio));
-            curH = Math.max(20, Math.round(curH * shrinkRatio));
-            blob = await renderAndEncode(curW, curH, 1.0);
+            const shrinkRatio = Math.sqrt(targetBytes / blob.size) * 0.93;
+            curW = Math.max(30, Math.round(curW * shrinkRatio));
+            curH = Math.max(30, Math.round(curH * shrinkRatio));
+            blob = await renderAndEncode(curW, curH, Math.max(0.4, 0.75 - iterations * 0.06));
           }
           finalBlob = blob;
           targetW = curW;
@@ -376,48 +438,58 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
           // Binary search solver for JPEG and WebP
           let low = 0.05;
           let high = 0.98;
-          let bestBlob: Blob | null = null;
+          let bestCompliantBlob: Blob | null = null;
+          let smallestCandidateBlob: Blob | null = null;
           let bestQuality = 0.75;
 
-          // 6 iterations give ~1.5% quality precision
-          for (let iter = 0; iter < 6; iter++) {
+          // 7 iterations give fine quality precision
+          for (let iter = 0; iter < 7; iter++) {
             const mid = (low + high) / 2;
             const candidateBlob = await renderAndEncode(targetW, targetH, mid);
-            bestBlob = candidateBlob;
-            bestQuality = mid;
 
-            // Early exit if within 3% of target quota
-            const diffRatio = Math.abs(candidateBlob.size - targetBytes) / targetBytes;
-            if (diffRatio < 0.03) {
-              break;
+            if (!smallestCandidateBlob || candidateBlob.size < smallestCandidateBlob.size) {
+              smallestCandidateBlob = candidateBlob;
             }
 
-            if (candidateBlob.size > targetBytes) {
-              high = mid; // Need smaller size (lower quality)
+            if (candidateBlob.size <= targetBytes) {
+              bestCompliantBlob = candidateBlob;
+              bestQuality = mid;
+              low = mid; // Can afford higher quality for sharper visual fidelity
             } else {
-              low = mid; // Can afford higher quality
+              high = mid; // File is too large, lower quality
+            }
+
+            // Early exit if compliant and within 4% of target quota
+            if (candidateBlob.size <= targetBytes && (targetBytes - candidateBlob.size) / targetBytes < 0.04) {
+              break;
             }
           }
 
-          finalBlob = bestBlob || (await renderAndEncode(targetW, targetH, 0.6));
-          appliedQuality = Math.round(bestQuality * 100);
-
-          // If even at minimum quality (0.05), the file exceeds targetBytes by >15%,
-          // adaptively downscale dimensions so government quotas (e.g. <20KB) are always satisfied!
-          if (finalBlob.size > targetBytes * 1.15) {
+          if (bestCompliantBlob) {
+            finalBlob = bestCompliantBlob;
+            appliedQuality = Math.round(bestQuality * 100);
+          } else {
+            // Even at minimum quality (0.05), source image dimensions are too huge to fit targetBytes.
+            // Adaptively scale down dimensions so the resulting file is GUARANTEED to be <= targetBytes!
             let curW = targetW;
             let curH = targetH;
+            let baseBlob = smallestCandidateBlob || (await renderAndEncode(curW, curH, 0.05));
             let iter = 0;
-            while (finalBlob.size > targetBytes && iter < 4 && curW > 60 && curH > 60) {
+
+            while (baseBlob.size > targetBytes && iter < 5 && curW > 50 && curH > 50) {
               iter++;
               wasDownscaled = true;
-              const scaleRatio = Math.sqrt(targetBytes / finalBlob.size) * 0.96;
+              const scaleRatio = Math.sqrt(targetBytes / baseBlob.size) * 0.94;
               curW = Math.max(30, Math.round(curW * scaleRatio));
               curH = Math.max(30, Math.round(curH * scaleRatio));
-              finalBlob = await renderAndEncode(curW, curH, Math.max(0.4, bestQuality));
+              // Use a clear quality (0.65) so the downscaled image remains crisp rather than pixel-mush
+              baseBlob = await renderAndEncode(curW, curH, 0.65);
             }
+
+            finalBlob = baseBlob;
             targetW = curW;
             targetH = curH;
+            appliedQuality = 65;
           }
         }
       } else {
@@ -521,29 +593,30 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
         ]);
         onNotify?.('Copied to Clipboard', 'Image copied to clipboard successfully!', 'success');
       } else {
-        // Convert to PNG for universal clipboard compatibility
+        // Render directly onto canvas for universal PNG clipboard export
         const canvas = document.createElement('canvas');
         canvas.width = compressedResult.width;
         canvas.height = compressedResult.height;
         const ctx = canvas.getContext('2d');
-        const img = new Image();
-        img.onload = async () => {
-          ctx?.drawImage(img, 0, 0);
-          canvas.toBlob(async (pngBlob) => {
-            if (pngBlob) {
-              await navigator.clipboard.write([
-                new ClipboardItem({ 'image/png': pngBlob })
-              ]);
-              onNotify?.('Copied to Clipboard', 'Image copied to clipboard!', 'success');
-            }
-          }, 'image/png');
-        };
-        img.src = compressedResult.url;
+        if (!ctx || !imageElement) {
+          throw new Error('Canvas context not available');
+        }
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(imageElement, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob(async (pngBlob) => {
+          if (pngBlob) {
+            await navigator.clipboard.write([
+              new ClipboardItem({ 'image/png': pngBlob })
+            ]);
+            onNotify?.('Copied to Clipboard', 'Image copied to clipboard!', 'success');
+          }
+        }, 'image/png');
       }
     } catch {
       onNotify?.('Copy Failed', 'Clipboard image copy is not supported in this browser.', 'error');
     }
-  }, [compressedResult, onNotify]);
+  }, [compressedResult, imageElement, onNotify]);
 
   // Mobile Web Share API
   const handleShare = useCallback(async () => {
@@ -687,6 +760,7 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
   const applyTargetKbPreset = (kb: number) => {
     setMode('target-size');
     setTargetKb(kb);
+    setTargetKbInput(String(kb));
   };
 
   /* -------------------------------------------------------------
@@ -745,8 +819,11 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/jpeg,image/png,image/webp,image/avif"
+            accept="image/jpeg,image/png,image/webp,image/avif,.heic,.heif"
             className="hidden"
+            onClick={(e) => {
+              (e.target as HTMLInputElement).value = '';
+            }}
             onChange={(e) => {
               if (e.target.files && e.target.files[0]) {
                 validateAndLoadFile(e.target.files[0]);
@@ -808,8 +885,11 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
       <input
         ref={workspaceFileInputRef}
         type="file"
-        accept="image/jpeg,image/png,image/webp,image/avif"
+        accept="image/jpeg,image/png,image/webp,image/avif,.heic,.heif"
         className="hidden"
+        onClick={(e) => {
+          (e.target as HTMLInputElement).value = '';
+        }}
         onChange={(e) => {
           if (e.target.files && e.target.files[0]) {
             validateAndLoadFile(e.target.files[0]);
@@ -1201,21 +1281,36 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
               </div>
             )}
 
-            {/* Notice if PNG size increased */}
-            {isIncreased && (
-              <div className="p-2.5 rounded-lg bg-amber-500/10 text-amber-400 text-[11px] flex items-center gap-2">
-                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                <span>Switch output to <strong>WebP</strong> or lower quality for true reduction.</span>
+            {/* Notice if PNG size increased or not reducing */}
+            {((outputFormat === 'image/png') || (sourceImage.format === 'image/png' && outputFormat === 'original')) && (
+              <div className="p-2.5 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[11px] flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5">
+                  <Info className="w-3.5 h-3.5 shrink-0" />
+                  <span>PNG is lossless. Switch to <strong>WebP</strong> for up to 80% size savings.</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setOutputFormat('image/webp')}
+                  className="px-2 py-0.5 rounded font-semibold bg-blue-600 text-white hover:bg-blue-700 text-[10px] shrink-0 cursor-pointer"
+                >
+                  Use WebP
+                </button>
               </div>
             )}
 
             {/* Progress bar showing reduction */}
             {compressedResult && (
-              <div className="space-y-1 pt-1">
-                <div className={`h-1.5 rounded-full overflow-hidden ${isDark ? 'bg-zinc-800' : 'bg-zinc-200'}`}>
+              <div className="space-y-1.5 pt-1">
+                <div className="flex items-center justify-between text-[11px] font-mono text-zinc-500">
+                  <span>File Size Savings</span>
+                  <span className={isReduced ? 'text-emerald-500 font-bold' : isIncreased ? 'text-rose-500 font-bold' : 'text-zinc-400'}>
+                    {isReduced ? `-${savedPercentage}%` : isIncreased ? `+${Math.abs(savedPercentage)}%` : '0%'}
+                  </span>
+                </div>
+                <div className={`h-2 rounded-full overflow-hidden ${isDark ? 'bg-zinc-800' : 'bg-zinc-200'}`}>
                   <div
-                    className="h-full bg-emerald-500 rounded-full transition-all duration-300"
-                    style={{ width: `${Math.min(100, Math.max(5, 100 - Math.max(0, savedPercentage)))}%` }}
+                    className={`h-full rounded-full transition-all duration-300 ${isReduced ? 'bg-emerald-500' : isIncreased ? 'bg-rose-500' : 'bg-zinc-400'}`}
+                    style={{ width: `${Math.min(100, Math.max(0, isReduced ? savedPercentage : Math.abs(savedPercentage)))}%` }}
                   />
                 </div>
               </div>
@@ -1335,13 +1430,24 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
                 <div className="flex items-center gap-2">
                   <input
                     type="number"
-                    min={10}
+                    min={5}
                     max={10000}
-                    value={targetKb}
+                    value={targetKbInput}
                     aria-label="Target file size in kilobytes"
                     onChange={(e) => {
-                      const val = parseInt(e.target.value || '10', 10);
-                      setTargetKb(Math.max(5, isNaN(val) ? 10 : val));
+                      const valStr = e.target.value;
+                      setTargetKbInput(valStr);
+                      const parsed = parseInt(valStr, 10);
+                      if (!isNaN(parsed) && parsed >= 5) {
+                        setTargetKb(parsed);
+                      }
+                    }}
+                    onBlur={() => {
+                      const parsed = parseInt(targetKbInput, 10);
+                      if (isNaN(parsed) || parsed < 5) {
+                        setTargetKbInput('20');
+                        setTargetKb(20);
+                      }
                     }}
                     className={`w-full px-3 py-1.5 rounded-lg text-xs font-mono font-medium border focus:outline-none focus:ring-1 focus:ring-blue-500 ${
                       isDark

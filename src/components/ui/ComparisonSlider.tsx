@@ -44,20 +44,39 @@ export const ComparisonSlider: React.FC<ComparisonSliderProps> = ({
     handleMove(e.clientX);
   };
 
+  const handleTouchStart = (e: React.TouchEvent) => {
+    isDragging.current = true;
+    if (e.touches[0]) {
+      handleMove(e.touches[0].clientX);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    isDragging.current = false;
+  };
+
   const handleTouchMove = (e: React.TouchEvent) => {
     if (e.touches[0]) {
       handleMove(e.touches[0].clientX);
     }
   };
 
+  const handleClick = (e: React.MouseEvent) => {
+    handleMove(e.clientX);
+  };
+
   return (
     <div
       ref={containerRef}
+      onClick={handleClick}
       onMouseMove={handleMouseMove}
       onMouseDown={handleMouseDown}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
+      onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      onTouchCancel={handleTouchEnd}
       className={`relative select-none overflow-hidden rounded-2xl border transition-colors aspect-auto flex items-center justify-center cursor-ew-resize ${
         isDark
           ? 'border-slate-800 bg-slate-950/60'
