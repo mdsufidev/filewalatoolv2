@@ -1,5 +1,4 @@
 import React from 'react';
-import { ArrowRight } from 'lucide-react';
 import { ToolItem } from '../../core/toolsData';
 import { ToolIconBadge } from './ToolIconBadge';
 import { useLanguage } from '../../core/languageContext';
