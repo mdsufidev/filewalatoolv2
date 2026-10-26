@@ -5,7 +5,6 @@ import {
   Zap,
   ShieldCheck,
   BadgeCheck,
-  FileBadge,
   Linkedin,
   Instagram,
   ArrowUpRight,
@@ -187,60 +186,26 @@ export const HomePage: React.FC<HomePageProps> = ({
     };
   }, [isToolsDirectory, selectedCategory, language, greeting]);
 
+  // Detect macOS for keyboard shortcut hints (⌘K vs Ctrl+K)
+  const isMac = useMemo(() => {
+    return typeof navigator !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(navigator.userAgent);
+  }, []);
+
   // Filter and rank tools using canonical search algorithm
+  // When user actively types a query, search globally across all categories
+  // so a query like "upsc" or "compress" always finds the tool regardless of the currently clicked tab!
+  const isSearching = searchQuery.trim().length > 0;
   const filteredTools = useMemo(() => {
-    return searchTools(ALL_TOOLS, searchQuery, selectedCategory);
-  }, [selectedCategory, searchQuery]);
+    return searchTools(
+      ALL_TOOLS,
+      searchQuery,
+      isSearching ? 'all' : selectedCategory
+    );
+  }, [selectedCategory, searchQuery, isSearching]);
 
   const activeCategoryMeta = useMemo(() => {
     return CATEGORIES_CONFIG.find((c) => c.id === selectedCategory) || CATEGORIES_CONFIG[0];
   }, [selectedCategory]);
-
-  // Curated category groupings for "All Tools" view
-  const categorizedSections = useMemo(() => {
-    return [
-      {
-        id: 'document-tools' as ToolCategory,
-        title: language === 'hi' ? 'सरकारी फॉर्म्स व परीक्षा टूल्स' : 'Govt & Exam Form Tools',
-        subtitle:
-          language === 'hi'
-            ? 'UPSC (नाम व तारीख स्टैम्प), SSC, पैन कार्ड और पासपोर्ट सेवा के लिए फोटो रिसाइज करें'
-            : 'Exact photo and signature specifications for UPSC, SSC, PAN Card, and Passport Seva',
-        emoji: '🏛️',
-        tools: ALL_TOOLS.filter((t) => t.category === 'document-tools'),
-      },
-      {
-        id: 'pdf-tools' as ToolCategory,
-        title: language === 'hi' ? 'PDF टूल्स' : 'PDF Tools & Document Utilities',
-        subtitle:
-          language === 'hi'
-            ? 'मार्कशीट व सर्टिफिकेट जोड़ें, साइज़ कम करें या वर्ड में बदलें — बिना सर्वर अपलोड के'
-            : 'Merge, compress, split, rotate, convert to Word, and extract text without uploading to servers',
-        emoji: '📑',
-        tools: ALL_TOOLS.filter((t) => t.category === 'pdf-tools'),
-      },
-      {
-        id: 'image-tools' as ToolCategory,
-        title: language === 'hi' ? 'फोटो टूल्स' : 'Image Optimizers & Creative Tools',
-        subtitle:
-          language === 'hi'
-            ? 'फोटो का साइज़ (KB) कम करें, पिक्सल बदलें, क्रॉप करें और पासपोर्ट साइज बनाएं'
-            : 'Compress file size, resize pixels, crop, watermark, round corners, and edit photos',
-        emoji: '🖼️',
-        tools: ALL_TOOLS.filter((t) => t.category === 'image-tools'),
-      },
-      {
-        id: 'convert' as ToolCategory,
-        title: language === 'hi' ? 'फॉर्मेट कन्वर्टर' : 'Image Format Converters',
-        subtitle:
-          language === 'hi'
-            ? 'iPhone (HEIC) फोटो, WebP और PNG को आसानी से सामान्य JPG में बदलें'
-            : 'Fast client-side conversion between JPG, PNG, WebP, HEIC/iPhone, and AVIF formats',
-        emoji: '🔄',
-        tools: ALL_TOOLS.filter((t) => t.category === 'convert'),
-      },
-    ];
-  }, [language]);
 
   return (
     <div className="w-full flex flex-col items-center">
@@ -281,6 +246,9 @@ export const HomePage: React.FC<HomePageProps> = ({
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') setSearchQuery('');
+                }}
                 placeholder={
                   language === 'hi'
                     ? 'टूल्स खोजें...'
@@ -301,16 +269,19 @@ export const HomePage: React.FC<HomePageProps> = ({
                 <kbd
                   onClick={() => onOpenCommandPalette?.()}
                   className="hidden sm:inline-flex items-center px-1.5 py-0.5 text-[10px] font-mono font-medium text-zinc-400 dark:text-zinc-500 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded select-none cursor-pointer hover:text-zinc-700 dark:hover:text-zinc-300 hover:border-zinc-300 dark:hover:border-zinc-600 transition-colors shrink-0"
-                  title="Quick Command Palette (Ctrl + K)"
+                  title={`Quick Command Palette (${isMac ? '⌘K' : 'Ctrl + K'})`}
                 >
-                  Ctrl K
+                  {isMac ? '⌘K' : 'Ctrl K'}
                 </kbd>
               )}
             </div>
 
             {searchQuery && (
               <div className="flex items-center justify-between text-xs mt-2 px-1 text-zinc-500 font-mono">
-                <span>{filteredTools.length} tools matching "{searchQuery}"</span>
+                <span>
+                  {filteredTools.length} tools matching "{searchQuery}"
+                  {selectedCategory !== 'all' && ' (across all categories)'}
+                </span>
                 <button
                   type="button"
                   onClick={() => setSearchQuery('')}
@@ -410,13 +381,19 @@ export const HomePage: React.FC<HomePageProps> = ({
                 </p>
               </div>
 
-              <button
-                type="button"
-                onClick={() => onSelectCategory('all')}
-                className="text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white flex items-center gap-1.5 cursor-pointer shrink-0 self-start sm:self-auto transition-colors"
+              <a
+                href="/"
+                onClick={(e) => {
+                  if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) {
+                    return;
+                  }
+                  e.preventDefault();
+                  onSelectCategory('all');
+                }}
+                className="text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white flex items-center gap-1.5 cursor-pointer shrink-0 self-start sm:self-auto transition-colors no-underline"
               >
                 <span>{language === 'hi' ? '← सभी टूल्स' : '← All Tools'}</span>
-              </button>
+              </a>
             </div>
 
             <ToolGrid
@@ -533,9 +510,8 @@ export const HomePage: React.FC<HomePageProps> = ({
             <div className="pt-2 flex flex-wrap items-center gap-3">
               {/* Direct Download .EXE Link (Branded domain download) */}
               <a
-                href="/download/v1.0.0/FileWala-TOOL-Setup-1.0.0.exe"
-                download="FileWala-TOOL-Setup-1.0.0.exe"
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-md text-xs font-semibold bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-colors duration-150 cursor-pointer shadow-none"
+                href="https://github.com/mdsufidev/pixcutbgremover/releases/download/v1.0.0/FileWala-TOOL-Setup-1.0.0.exe"
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-md text-xs font-semibold bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-colors duration-150 cursor-pointer shadow-none no-underline"
                 title="Direct Download FileWala Setup for Windows (80.4 MB)"
               >
                 <Download className="w-3.5 h-3.5 stroke-[2.2]" />
@@ -546,14 +522,20 @@ export const HomePage: React.FC<HomePageProps> = ({
               </a>
 
               {/* View Full Desktop Page Link */}
-              <button
-                type="button"
-                onClick={() => onNavigatePage?.('desktop')}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-md text-xs font-medium border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-200 hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors duration-150 cursor-pointer"
+              <a
+                href="/desktop"
+                onClick={(e) => {
+                  if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) {
+                    return;
+                  }
+                  e.preventDefault();
+                  onNavigatePage?.('desktop');
+                }}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-md text-xs font-medium border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-200 hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors duration-150 cursor-pointer no-underline"
               >
                 <span>Full Specs & Guide</span>
                 <ArrowRight className="w-3.5 h-3.5" />
-              </button>
+              </a>
 
               {/* GitHub Link */}
               <a
@@ -602,14 +584,20 @@ export const HomePage: React.FC<HomePageProps> = ({
 
               <figcaption className="p-3 bg-white dark:bg-zinc-950 text-[11px] text-zinc-500 flex items-center justify-between">
                 <span>Direct Split-Slider preview with face pore restoration and NVIDIA CUDA acceleration.</span>
-                <button
-                  type="button"
-                  onClick={() => onNavigatePage?.('desktop')}
-                  className="text-zinc-800 dark:text-zinc-200 font-medium hover:underline flex items-center gap-1 cursor-pointer"
+                <a
+                  href="/desktop"
+                  onClick={(e) => {
+                    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) {
+                      return;
+                    }
+                    e.preventDefault();
+                    onNavigatePage?.('desktop');
+                  }}
+                  className="text-zinc-800 dark:text-zinc-200 font-medium hover:underline flex items-center gap-1 cursor-pointer no-underline"
                 >
                   <span>Explore UI</span>
                   <ArrowRight className="w-3 h-3" />
-                </button>
+                </a>
               </figcaption>
             </figure>
           </div>
@@ -747,14 +735,20 @@ export const HomePage: React.FC<HomePageProps> = ({
             >
               <Instagram className="w-4 h-4" />
             </a>
-            <button
-              type="button"
-              onClick={() => onNavigatePage?.('about')}
-              className="text-xs font-medium px-3.5 py-2 rounded-lg bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors cursor-pointer flex items-center gap-1.5"
+            <a
+              href="/about"
+              onClick={(e) => {
+                if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) {
+                  return;
+                }
+                e.preventDefault();
+                onNavigatePage?.('about');
+              }}
+              className="text-xs font-medium px-3.5 py-2 rounded-lg bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors cursor-pointer flex items-center gap-1.5 no-underline"
             >
               <span>About</span>
               <ArrowUpRight className="w-3.5 h-3.5" />
-            </button>
+            </a>
           </div>
         </div>
       </section>
