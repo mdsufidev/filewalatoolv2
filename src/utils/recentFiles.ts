@@ -102,7 +102,7 @@ export function inferToolMeta(
     return { toolSection: 'image-tools', toolId: 'cropper', toolName: 'Crop & Rotate' };
   }
   if (hash.includes('convert') || hash.includes('converter')) {
-    return { toolSection: 'convert', toolId: 'image-converter', toolName: 'Format Converter' };
+    return { toolSection: 'convert', toolId: 'png-to-webp', toolName: 'Format Converter' };
   }
 
   // Filename heuristics

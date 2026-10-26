@@ -72,6 +72,7 @@ export const MASTER_NAV_DATA: MasterNavCategory[] = [
       { id: 'heic-to-jpg', name: 'HEIC to JPG', subToolId: 'heic-to-jpg', section: 'convert' },
       { id: 'png-to-webp', name: 'PNG to WebP', subToolId: 'png-to-webp', section: 'convert' },
       { id: 'webp-to-jpg', name: 'WebP to JPG', subToolId: 'webp-to-jpg', section: 'convert' },
+      { id: 'jpg-to-webp', name: 'JPG to WebP', subToolId: 'jpg-to-webp', section: 'convert' },
       { id: 'jpg-to-png', name: 'JPG to PNG', subToolId: 'jpg-to-png', section: 'convert' },
       { id: 'png-to-jpg', name: 'PNG to JPG', subToolId: 'png-to-jpg', section: 'convert' },
       { id: 'svg-to-png', name: 'SVG to PNG', subToolId: 'svg-to-png', section: 'convert' },

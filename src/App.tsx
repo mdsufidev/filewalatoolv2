@@ -83,17 +83,36 @@ const ShortcutsHelpModal = lazy(() =>
   import('./components/navigation/ShortcutsHelpModal').then((m) => ({ default: m.ShortcutsHelpModal }))
 );
 
+// Fault-tolerant lazy loader with retry for production CDN / network resilience
+const lazyWithRetry = <T extends React.ComponentType<any>>(
+  factory: () => Promise<{ default: T }>
+) =>
+  lazy(async () => {
+    try {
+      return await factory();
+    } catch (err) {
+      console.warn('Chunk load error, retrying module import...', err);
+      try {
+        await new Promise((r) => setTimeout(r, 400));
+        return await factory();
+      } catch (retryErr) {
+        console.error('Fatal chunk load failure after retry:', retryErr);
+        throw retryErr;
+      }
+    }
+  });
+
 // Code-split heavy tool engine suites (PDF libraries, OCR, Docx, Canvas suites)
-const ImageToolsWrapper = lazy(() =>
+const ImageToolsWrapper = lazyWithRetry(() =>
   import('./components/tools/ImageToolsWrapper').then((m) => ({ default: m.ImageToolsWrapper }))
 );
-const PdfTools = lazy(() =>
+const PdfTools = lazyWithRetry(() =>
   import('./components/tools/PdfTools').then((m) => ({ default: m.PdfTools }))
 );
-const FormatConverterSuite = lazy(() =>
+const FormatConverterSuite = lazyWithRetry(() =>
   import('./components/tools/FormatConverterSuite').then((m) => ({ default: m.FormatConverterSuite }))
 );
-const DocumentTools = lazy(() =>
+const DocumentTools = lazyWithRetry(() =>
   import('./components/tools/DocumentTools').then((m) => ({ default: m.DocumentTools }))
 );
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   ArrowRight,
   Download,
@@ -135,6 +135,13 @@ export const CONVERTER_TOOLS: ConverterToolMeta[] = [
   },
 ];
 
+const normalizeToolId = (id?: string): ConverterToolId => {
+  if (id && CONVERTER_TOOLS.some((t) => t.id === id)) {
+    return id as ConverterToolId;
+  }
+  return 'png-to-webp';
+};
+
 interface FormatConverterSuiteProps {
   initialToolId?: ConverterToolId;
   initialFiles?: File[] | null;
@@ -148,7 +155,7 @@ export const FormatConverterSuite: React.FC<FormatConverterSuiteProps> = ({
   onClearPendingFiles,
   onNotify,
 }) => {
-  const [activeToolId, setActiveToolId] = useState<ConverterToolId>(initialToolId);
+  const [activeToolId, setActiveToolId] = useState<ConverterToolId>(() => normalizeToolId(initialToolId));
   const [sourceFile, setSourceFile] = useState<File | null>(null);
   const [sourcePreviewUrl, setSourcePreviewUrl] = useState<string | null>(null);
   const [convertedBlob, setConvertedBlob] = useState<Blob | null>(null);
@@ -157,12 +164,15 @@ export const FormatConverterSuite: React.FC<FormatConverterSuiteProps> = ({
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [imgDimensions, setImgDimensions] = useState<{ width: number; height: number } | null>(null);
 
+  const executionIdRef = useRef<number>(0);
+  const qualityDebounceTimerRef = useRef<any>(null);
+
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
   useEffect(() => {
     if (initialToolId) {
-      setActiveToolId(initialToolId);
+      setActiveToolId(normalizeToolId(initialToolId));
     }
   }, [initialToolId]);
 
@@ -173,10 +183,52 @@ export const FormatConverterSuite: React.FC<FormatConverterSuiteProps> = ({
     setSourceFile(null);
     setConvertedBlob(null);
     if (sourcePreviewUrl) revokeSafeObjectURL(sourcePreviewUrl);
-    if (convertedPreviewUrl) revokeSafeObjectURL(convertedPreviewUrl);
+    if (convertedPreviewUrl && convertedPreviewUrl !== sourcePreviewUrl) revokeSafeObjectURL(convertedPreviewUrl);
     setSourcePreviewUrl(null);
     setConvertedPreviewUrl(null);
     setImgDimensions(null);
+    try {
+      window.history.pushState(null, '', `/${newToolId}`);
+    } catch {
+      // safe fallback if history API is restricted
+    }
+  };
+
+  const runConversion = async (
+    img: HTMLImageElement,
+    currentQuality: number,
+    notifyOnSuccess: boolean = true
+  ) => {
+    const currentTaskId = ++executionIdRef.current;
+    setIsProcessing(true);
+    try {
+      const q = activeMeta.targetFormat === 'image/png' ? 1.0 : currentQuality / 100;
+      const blob = await CanvasEngine.compress(img, {
+        format: activeMeta.targetFormat,
+        quality: q,
+      });
+
+      // Discard stale responses if a newer conversion was triggered in the meantime
+      if (currentTaskId !== executionIdRef.current) return;
+
+      setConvertedBlob(blob);
+      if (convertedPreviewUrl && convertedPreviewUrl !== sourcePreviewUrl) {
+        revokeSafeObjectURL(convertedPreviewUrl);
+      }
+      const resUrl = createSafeObjectURL(blob);
+      setConvertedPreviewUrl(resUrl);
+
+      if (notifyOnSuccess) {
+        onNotify('Converted Successfully', `Target: ${activeMeta.to} format`, 'success');
+      }
+    } catch (e: any) {
+      if (currentTaskId !== executionIdRef.current) return;
+      onNotify('Conversion Failed', e?.message || 'Error converting graphic', 'error');
+    } finally {
+      if (currentTaskId === executionIdRef.current) {
+        setIsProcessing(false);
+      }
+    }
   };
 
   const handleFileLoaded = async (files: File[]) => {
@@ -185,7 +237,9 @@ export const FormatConverterSuite: React.FC<FormatConverterSuiteProps> = ({
 
     setSourceFile(file);
     setConvertedBlob(null);
-    if (convertedPreviewUrl) revokeSafeObjectURL(convertedPreviewUrl);
+    if (convertedPreviewUrl && convertedPreviewUrl !== sourcePreviewUrl) {
+      revokeSafeObjectURL(convertedPreviewUrl);
+    }
     setConvertedPreviewUrl(null);
 
     if (activeToolId === 'heic-to-jpg') {
@@ -196,6 +250,17 @@ export const FormatConverterSuite: React.FC<FormatConverterSuiteProps> = ({
         setSourcePreviewUrl(preview);
         setConvertedBlob(jpegBlob);
         setConvertedPreviewUrl(preview);
+
+        // Load image to compute dimensions
+        const img = new Image();
+        img.onload = () => {
+          setImgDimensions({
+            width: img.naturalWidth || img.width || 800,
+            height: img.naturalHeight || img.height || 600,
+          });
+        };
+        img.src = preview;
+
         onNotify('HEIC Decoded Successfully', 'Converted to JPEG in browser.', 'success');
       } catch (err: any) {
         onNotify('Conversion Failed', err?.message || 'Failed to convert HEIC.', 'error');
@@ -210,8 +275,10 @@ export const FormatConverterSuite: React.FC<FormatConverterSuiteProps> = ({
 
     const img = new Image();
     img.onload = () => {
-      setImgDimensions({ width: img.naturalWidth, height: img.naturalHeight });
-      runConversion(img, file, quality);
+      const w = img.naturalWidth || img.width || 800;
+      const h = img.naturalHeight || img.height || 600;
+      setImgDimensions({ width: w, height: h });
+      runConversion(img, quality, true);
     };
     img.onerror = () => {
       onNotify('File Error', 'Could not decode image. The file might be corrupted or unsupported.', 'error');
@@ -220,31 +287,11 @@ export const FormatConverterSuite: React.FC<FormatConverterSuiteProps> = ({
     img.src = preview;
   };
 
-  const runConversion = async (img: HTMLImageElement, file: File, currentQuality: number) => {
-    setIsProcessing(true);
-    try {
-      const q = activeMeta.targetFormat === 'image/png' ? 1.0 : currentQuality / 100;
-      const blob = await CanvasEngine.compress(img, {
-        format: activeMeta.targetFormat,
-        quality: q,
-      });
-
-      setConvertedBlob(blob);
-      if (convertedPreviewUrl) revokeSafeObjectURL(convertedPreviewUrl);
-      const resUrl = createSafeObjectURL(blob);
-      setConvertedPreviewUrl(resUrl);
-      onNotify('Converted Successfully', `Target: ${activeMeta.to} format`, 'success');
-    } catch (e: any) {
-      onNotify('Conversion Failed', e?.message || 'Error converting graphic', 'error');
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
   // Load initial files if passed from global drop zone
   useEffect(() => {
     if (initialFiles && initialFiles.length > 0) {
       handleFileLoaded(initialFiles);
+      onClearPendingFiles?.();
     }
   }, [initialFiles]);
 
@@ -260,7 +307,7 @@ export const FormatConverterSuite: React.FC<FormatConverterSuiteProps> = ({
     setSourceFile(null);
     setConvertedBlob(null);
     if (sourcePreviewUrl) revokeSafeObjectURL(sourcePreviewUrl);
-    if (convertedPreviewUrl) revokeSafeObjectURL(convertedPreviewUrl);
+    if (convertedPreviewUrl && convertedPreviewUrl !== sourcePreviewUrl) revokeSafeObjectURL(convertedPreviewUrl);
     setSourcePreviewUrl(null);
     setConvertedPreviewUrl(null);
     setImgDimensions(null);
@@ -269,8 +316,11 @@ export const FormatConverterSuite: React.FC<FormatConverterSuiteProps> = ({
   // Cleanup object URLs on unmount
   useEffect(() => {
     return () => {
+      if (qualityDebounceTimerRef.current) {
+        clearTimeout(qualityDebounceTimerRef.current);
+      }
       if (sourcePreviewUrl) revokeSafeObjectURL(sourcePreviewUrl);
-      if (convertedPreviewUrl) revokeSafeObjectURL(convertedPreviewUrl);
+      if (convertedPreviewUrl && convertedPreviewUrl !== sourcePreviewUrl) revokeSafeObjectURL(convertedPreviewUrl);
     };
   }, [sourcePreviewUrl, convertedPreviewUrl]);
 
@@ -483,9 +533,14 @@ export const FormatConverterSuite: React.FC<FormatConverterSuiteProps> = ({
                   const val = parseInt(e.target.value, 10);
                   setQuality(val);
                   if (sourcePreviewUrl) {
-                    const img = new Image();
-                    img.onload = () => runConversion(img, sourceFile, val);
-                    img.src = sourcePreviewUrl;
+                    if (qualityDebounceTimerRef.current) {
+                      clearTimeout(qualityDebounceTimerRef.current);
+                    }
+                    qualityDebounceTimerRef.current = setTimeout(() => {
+                      const img = new Image();
+                      img.onload = () => runConversion(img, val, false);
+                      img.src = sourcePreviewUrl;
+                    }, 60);
                   }
                 }}
                 className="w-full h-1.5 rounded-lg appearance-none cursor-pointer accent-blue-500 focus:outline-none"

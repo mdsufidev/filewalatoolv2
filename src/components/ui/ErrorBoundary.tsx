@@ -28,10 +28,7 @@ export class AppErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundar
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    // Log error locally in dev mode without throwing
-    if (process.env.NODE_ENV === 'development') {
-      console.error('AppErrorBoundary caught an unhandled exception:', error, errorInfo);
-    }
+    console.error('[FileWala Engine] AppErrorBoundary caught an unhandled exception:', error, errorInfo);
   }
 
   handleReload = () => {
