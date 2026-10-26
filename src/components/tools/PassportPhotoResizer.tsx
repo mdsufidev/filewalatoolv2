@@ -886,7 +886,7 @@ export const PassportPhotoResizer: React.FC<PassportPhotoResizerProps> = ({ onNo
                 <div
                   ref={canvasContainerRef}
                   tabIndex={0}
-                  className={`relative overflow-hidden rounded-xl border flex items-center justify-center select-none bg-zinc-50/80 dark:bg-zinc-950/80 cursor-grab active:cursor-grabbing focus:outline-none transition-colors ${
+                  className={`relative overflow-hidden rounded-xl border flex items-center justify-center select-none bg-zinc-50/80 dark:bg-zinc-950/80 cursor-grab active:cursor-grabbing focus:outline-none transition-colors touch-none ${
                     isDark ? 'border-zinc-800' : 'border-zinc-200'
                   }`}
                   style={{

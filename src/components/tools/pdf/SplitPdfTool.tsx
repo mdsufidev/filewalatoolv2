@@ -150,6 +150,8 @@ export const SplitPdfTool: React.FC<SplitPdfToolProps> = ({ onNotify }) => {
             height: viewport.height,
             selected: i <= Math.min(3, count),
           });
+          canvas.width = 0;
+          canvas.height = 0;
         }
       }
 
@@ -198,7 +200,7 @@ export const SplitPdfTool: React.FC<SplitPdfToolProps> = ({ onNotify }) => {
 
     try {
       const buffer = await file.arrayBuffer();
-      const sourcePdf = await PDFDocument.load(buffer);
+      const sourcePdf = await PDFDocument.load(buffer, { ignoreEncryption: true });
 
       if (asZip || splitMode === 'extract-all') {
         // Create ZIP archive containing each extracted page as an individual PDF

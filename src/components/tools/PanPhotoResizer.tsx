@@ -967,7 +967,7 @@ export const PanPhotoResizer: React.FC<PanPhotoResizerProps> = ({ onNotify }) =>
                 <div
                   ref={canvasContainerRef}
                   tabIndex={0}
-                  className="relative overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-950/80 flex items-center justify-center select-none cursor-grab active:cursor-grabbing focus:outline-none focus:border-zinc-400 transition-colors"
+                  className="relative overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-950/80 flex items-center justify-center select-none cursor-grab active:cursor-grabbing focus:outline-none focus:border-zinc-400 transition-colors touch-none"
                   style={{
                     height: '460px',
                     backgroundImage: isDark

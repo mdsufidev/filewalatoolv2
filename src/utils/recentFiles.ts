@@ -281,6 +281,8 @@ async function generateThumbnail(blob: Blob, maxWidth = 120, maxHeight = 120): P
         if (ctx) {
           ctx.drawImage(img, 0, 0, width, height);
           const thumbDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+          canvas.width = 0;
+          canvas.height = 0;
           resolve(thumbDataUrl);
         } else {
           resolve(undefined);

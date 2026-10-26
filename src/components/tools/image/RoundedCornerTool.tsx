@@ -107,6 +107,12 @@ export const RoundedCornerTool: React.FC<{
     render();
   }, [currentImage, radius, borderWidth, borderColor, bgColor]);
 
+  useEffect(() => {
+    return () => {
+      if (resultUrl) URL.revokeObjectURL(resultUrl);
+    };
+  }, [resultUrl]);
+
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 

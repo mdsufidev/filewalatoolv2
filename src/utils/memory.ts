@@ -49,11 +49,11 @@ export function revokeAllSafeObjectURLs(): void {
  * Formats byte values into human-readable strings (e.g., 2.4 MB, 450 KB).
  */
 export function formatBytes(bytes: number, decimals = 1): string {
-  if (bytes === 0) return '0 Bytes';
+  if (!bytes || bytes <= 0 || isNaN(bytes)) return '0 Bytes';
   const k = 1024;
   const dm = decimals < 0 ? 0 : decimals;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+  const i = Math.min(sizes.length - 1, Math.floor(Math.log(bytes) / Math.log(k)));
   const val = parseFloat((bytes / Math.pow(k, i)).toFixed(dm));
   return `${val} ${sizes[i]}`;
 }

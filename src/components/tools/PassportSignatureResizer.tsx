@@ -790,7 +790,7 @@ export const PassportSignatureResizer: React.FC<PassportSignatureResizerProps> =
                       height: `${boxH}px`,
                       cursor: isDragging ? 'grabbing' : 'grab',
                     }}
-                    className="relative overflow-hidden border-2 border-dashed border-zinc-400 dark:border-zinc-600 rounded bg-white shadow-xs"
+                    className="relative overflow-hidden border-2 border-dashed border-zinc-400 dark:border-zinc-600 rounded bg-white shadow-xs touch-none"
                   >
                     <div
                       style={{

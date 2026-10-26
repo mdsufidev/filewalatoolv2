@@ -188,7 +188,7 @@ export const PdfTools: React.FC<PdfToolsProps> = ({
 
       for (const file of mergeFiles) {
         const fileBuffer = await file.arrayBuffer();
-        const pdf = await PDFDocument.load(fileBuffer);
+        const pdf = await PDFDocument.load(fileBuffer, { ignoreEncryption: true });
         const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
         copiedPages.forEach((page) => mergedPdf.addPage(page));
       }

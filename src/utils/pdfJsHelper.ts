@@ -83,6 +83,9 @@ export async function convertPdfToJpg(
       );
     });
 
+    canvas.width = 0;
+    canvas.height = 0;
+
     const url = URL.createObjectURL(blob);
     results.push({ pageNum: i, blob, url });
 

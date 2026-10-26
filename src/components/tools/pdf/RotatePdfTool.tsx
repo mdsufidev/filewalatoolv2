@@ -27,8 +27,6 @@ import { PdfToolGuideSection } from './PdfToolGuideSection';
 import {
   formatBytes,
   triggerFileDownload,
-  createSafeObjectURL,
-  revokeSafeObjectURL,
 } from '../../../utils/memory';
 import { useTheme } from '../../../core/themeContext';
 
@@ -78,7 +76,7 @@ export const RotatePdfTool: React.FC<RotatePdfToolProps> = ({ onNotify }) => {
       setTotalPages(count);
 
       // Also read original rotation angle from pdf-lib
-      const pdfDoc = await PDFDocument.load(buffer);
+      const pdfDoc = await PDFDocument.load(buffer, { ignoreEncryption: true });
       const docPages = pdfDoc.getPages();
 
       const pageItems: RotatePageItem[] = [];
@@ -107,6 +105,8 @@ export const RotatePdfTool: React.FC<RotatePdfToolProps> = ({ onNotify }) => {
             originalRotation: origAngle,
             currentRotation: origAngle,
           });
+          canvas.width = 0;
+          canvas.height = 0;
         }
       }
 
@@ -170,7 +170,7 @@ export const RotatePdfTool: React.FC<RotatePdfToolProps> = ({ onNotify }) => {
 
     try {
       const buffer = await file.arrayBuffer();
-      const pdfDoc = await PDFDocument.load(buffer);
+      const pdfDoc = await PDFDocument.load(buffer, { ignoreEncryption: true });
       const docPages = pdfDoc.getPages();
 
       pages.forEach((p, idx) => {

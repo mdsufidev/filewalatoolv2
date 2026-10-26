@@ -34,39 +34,44 @@ export async function copyImageToClipboard(
     const objectUrl =
       imageSource instanceof Blob ? URL.createObjectURL(imageSource) : imageSource;
 
-    await new Promise<void>((resolve, reject) => {
-      img.onload = () => resolve();
-      img.onerror = () => reject(new Error('Failed to load image for clipboard copy'));
-      img.src = objectUrl;
-    });
+    try {
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = () => reject(new Error('Failed to load image for clipboard copy'));
+        img.src = objectUrl;
+      });
 
-    const canvas = document.createElement('canvas');
-    canvas.width = options?.width || img.naturalWidth || img.width;
-    canvas.height = options?.height || img.naturalHeight || img.height;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) {
-      if (imageSource instanceof Blob) URL.revokeObjectURL(objectUrl);
-      return { success: false, error: 'Canvas 2D context unavailable' };
+      const canvas = document.createElement('canvas');
+      canvas.width = options?.width || img.naturalWidth || img.width;
+      canvas.height = options?.height || img.naturalHeight || img.height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        return { success: false, error: 'Canvas 2D context unavailable' };
+      }
+
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+      const pngBlob = await new Promise<Blob | null>((resolve) =>
+        canvas.toBlob(resolve, 'image/png')
+      );
+
+      canvas.width = 0;
+      canvas.height = 0;
+
+      if (!pngBlob) {
+        return { success: false, error: 'Failed to convert image to PNG blob' };
+      }
+
+      await navigator.clipboard.write([
+        new ClipboardItem({ 'image/png': pngBlob }),
+      ]);
+
+      return { success: true };
+    } finally {
+      if (imageSource instanceof Blob) {
+        URL.revokeObjectURL(objectUrl);
+      }
     }
-
-    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-    if (imageSource instanceof Blob) {
-      URL.revokeObjectURL(objectUrl);
-    }
-
-    const pngBlob = await new Promise<Blob | null>((resolve) =>
-      canvas.toBlob(resolve, 'image/png')
-    );
-
-    if (!pngBlob) {
-      return { success: false, error: 'Failed to convert image to PNG blob' };
-    }
-
-    await navigator.clipboard.write([
-      new ClipboardItem({ 'image/png': pngBlob }),
-    ]);
-
-    return { success: true };
   } catch (err: any) {
     return { success: false, error: err?.message || 'Failed to copy to clipboard' };
   }

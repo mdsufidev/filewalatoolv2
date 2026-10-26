@@ -858,7 +858,7 @@ export const UpscPhotoMaker: React.FC<UpscPhotoMakerProps> = ({ onNotify }) => {
                 <div
                   ref={canvasContainerRef}
                   tabIndex={0}
-                  className={`relative w-full flex items-center justify-center p-4 rounded-xl border select-none cursor-grab active:cursor-grabbing focus:outline-none transition-colors overflow-hidden bg-zinc-50/80 dark:bg-zinc-950/80 ${
+                  className={`relative w-full flex items-center justify-center p-4 rounded-xl border select-none cursor-grab active:cursor-grabbing focus:outline-none transition-colors overflow-hidden bg-zinc-50/80 dark:bg-zinc-950/80 touch-none ${
                     isDark ? 'border-zinc-800' : 'border-zinc-200'
                   }`}
                   style={{

@@ -84,6 +84,12 @@ export const MemeGeneratorTool: React.FC<{
     render();
   }, [currentImage, topText, bottomText, fontSize, isUppercase, textColor, strokeWidth]);
 
+  useEffect(() => {
+    return () => {
+      if (resultUrl) URL.revokeObjectURL(resultUrl);
+    };
+  }, [resultUrl]);
+
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 

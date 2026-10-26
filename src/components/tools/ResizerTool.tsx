@@ -507,11 +507,13 @@ export const ResizerTool: React.FC<ResizerToolProps> = ({ onNotify, initialFile 
   };
 
   // Execute Resize via Client-Side Canvas Engine with race condition guard and memory cleanup
-  const executeResize = useCallback(async (): Promise<ResizedResult | null> => {
+  const executeResize = useCallback(async (silent: boolean = false): Promise<ResizedResult | null> => {
     if (!sourceImage) return null;
 
     if (width <= 0 || height <= 0) {
-      onNotify('Invalid Dimensions', 'Width and height must be at least 1 pixel.', 'error');
+      if (!silent) {
+        onNotify('Invalid Dimensions', 'Width and height must be at least 1 pixel.', 'error');
+      }
       return null;
     }
 
@@ -581,7 +583,7 @@ export const ResizerTool: React.FC<ResizerToolProps> = ({ onNotify, initialFile 
     if (!sourceImage) return;
 
     const timer = setTimeout(() => {
-      executeResize();
+      executeResize(true);
     }, 220);
 
     return () => clearTimeout(timer);
@@ -589,6 +591,11 @@ export const ResizerTool: React.FC<ResizerToolProps> = ({ onNotify, initialFile 
 
   // Download Resized Image
   const handleDownload = async () => {
+    if (width <= 0 || height <= 0) {
+      onNotify('Invalid Dimensions', 'Width and height must be at least 1 pixel.', 'error');
+      return;
+    }
+
     let resultToDownload = resizedResult;
 
     if (!resultToDownload) {

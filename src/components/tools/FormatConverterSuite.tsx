@@ -266,6 +266,14 @@ export const FormatConverterSuite: React.FC<FormatConverterSuiteProps> = ({
     setImgDimensions(null);
   }, [sourcePreviewUrl, convertedPreviewUrl]);
 
+  // Cleanup object URLs on unmount
+  useEffect(() => {
+    return () => {
+      if (sourcePreviewUrl) revokeSafeObjectURL(sourcePreviewUrl);
+      if (convertedPreviewUrl) revokeSafeObjectURL(convertedPreviewUrl);
+    };
+  }, [sourcePreviewUrl, convertedPreviewUrl]);
+
   // Global Keyboard Shortcuts
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {

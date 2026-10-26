@@ -46,6 +46,7 @@ import {
 import { ComparisonSlider } from '../ui/ComparisonSlider';
 import { useTheme } from '../../core/themeContext';
 import { ImageToolGuideSection } from './image/ImageToolGuideSection';
+import { triggerFileDownload } from '../../utils/memory';
 
 interface CompressorToolProps {
   onNotify?: (title: string, desc?: string, type?: 'success' | 'error' | 'info') => void;
@@ -500,22 +501,11 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
     const baseName = sourceImage.name.replace(/\.[^/.]+$/, '');
     const filename = `${baseName}-compressed.${extension}`;
 
-    const downloadUrl = URL.createObjectURL(compressedResult.blob);
-    const link = document.createElement('a');
-    link.href = downloadUrl;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-
-    // Revoke immediate download URL after trigger
-    setTimeout(() => {
-      try {
-        URL.revokeObjectURL(downloadUrl);
-      } catch {
-        // ignore
-      }
-    }, 2000);
+    triggerFileDownload(compressedResult.blob, filename, {
+      toolName: 'Image Compressor',
+      toolId: 'compressor',
+      toolSection: 'image-tools',
+    });
 
     onNotify?.('Downloaded', `Saved ${filename} (${formatFileSize(compressedResult.size)})`, 'success');
   }, [compressedResult, sourceImage, onNotify]);

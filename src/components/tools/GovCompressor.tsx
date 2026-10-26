@@ -319,11 +319,15 @@ export const GovCompressor: React.FC<GovCompressorProps> = ({ initialFile, onNot
         setProgressStage('Loading and analyzing image pixels...');
         const img = new Image();
         const imgUrl = URL.createObjectURL(sourceFile);
-        await new Promise((resolve, reject) => {
-          img.onload = resolve;
-          img.onerror = reject;
-          img.src = imgUrl;
-        });
+        try {
+          await new Promise((resolve, reject) => {
+            img.onload = resolve;
+            img.onerror = reject;
+            img.src = imgUrl;
+          });
+        } finally {
+          URL.revokeObjectURL(imgUrl);
+        }
 
         let targetW = img.naturalWidth;
         let targetH = img.naturalHeight;
@@ -347,7 +351,6 @@ export const GovCompressor: React.FC<GovCompressorProps> = ({ initialFile, onNot
         ctx.fillStyle = '#FFFFFF';
         ctx.fillRect(0, 0, targetW, targetH);
         ctx.drawImage(img, 0, 0, targetW, targetH);
-        URL.revokeObjectURL(imgUrl);
 
         // Apply text clarity boost if enabled
         if (textClarityBoost) {

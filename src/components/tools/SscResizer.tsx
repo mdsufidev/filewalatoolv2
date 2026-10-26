@@ -853,7 +853,7 @@ export const SscResizer: React.FC<SscResizerProps> = ({
                 {/* Studio Canvas Viewport */}
                 <div
                   ref={canvasContainerRef}
-                  className={`relative w-full flex items-center justify-center p-6 rounded-xl border select-none cursor-grab active:cursor-grabbing transition-colors overflow-hidden bg-zinc-50/80 dark:bg-zinc-950/80 ${
+                  className={`relative w-full flex items-center justify-center p-6 rounded-xl border select-none cursor-grab active:cursor-grabbing transition-colors overflow-hidden bg-zinc-50/80 dark:bg-zinc-950/80 touch-none ${
                     isDragging
                       ? 'border-zinc-400 dark:border-zinc-600'
                       : isDark

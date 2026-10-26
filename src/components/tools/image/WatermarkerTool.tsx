@@ -45,8 +45,18 @@ export const WatermarkerTool: React.FC<{
       setLogoImg(img);
       URL.revokeObjectURL(url);
     };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      onNotify('Invalid Logo Image', 'Could not load selected logo file', 'error');
+    };
     img.src = url;
   };
+
+  useEffect(() => {
+    return () => {
+      if (resultUrl) URL.revokeObjectURL(resultUrl);
+    };
+  }, [resultUrl]);
 
   useEffect(() => {
     if (!currentImage) return;
