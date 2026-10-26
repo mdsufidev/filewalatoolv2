@@ -32,24 +32,24 @@ export const Button: React.FC<ButtonProps> = ({
   const isDark = theme === 'dark';
 
   const baseStyles =
-    'relative inline-flex items-center justify-center font-medium transition-colors duration-150 rounded-md focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-900 dark:focus-visible:ring-zinc-100 disabled:opacity-50 disabled:cursor-not-allowed select-none cursor-pointer';
+    'relative inline-flex items-center justify-center font-medium transition-colors duration-150 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950 dark:focus-visible:ring-zinc-100 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-zinc-950 disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none select-none cursor-pointer';
 
   const variantStyles = isDark
     ? {
         primary:
-          'bg-zinc-100 text-zinc-900 hover:bg-white border border-zinc-200 font-semibold',
+          'bg-zinc-100 text-zinc-950 hover:bg-white border border-zinc-200 font-semibold shadow-xs',
         secondary:
-          'bg-zinc-850 text-zinc-200 hover:bg-zinc-800 border border-zinc-750',
+          'bg-zinc-800 text-zinc-200 hover:bg-zinc-700 border border-zinc-700',
         outline:
           'bg-transparent text-zinc-200 border border-zinc-800 hover:bg-zinc-900 hover:border-zinc-700',
         ghost:
           'bg-transparent text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900 border border-transparent',
         danger:
-          'bg-red-600 text-white hover:bg-red-700 border border-red-600',
+          'bg-[#E11D2A] text-white hover:bg-[#C81420] border border-[#E11D2A] font-semibold',
       }
     : {
         primary:
-          'bg-zinc-900 text-white hover:bg-zinc-800 border border-zinc-900 font-semibold',
+          'bg-zinc-900 text-white hover:bg-zinc-800 border border-zinc-900 font-semibold shadow-xs',
         secondary:
           'bg-zinc-100 text-zinc-900 hover:bg-zinc-200 border border-zinc-200',
         outline:
@@ -57,7 +57,7 @@ export const Button: React.FC<ButtonProps> = ({
         ghost:
           'bg-transparent text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 border border-transparent',
         danger:
-          'bg-red-600 text-white hover:bg-red-700 border border-red-600',
+          'bg-[#E11D2A] text-white hover:bg-[#C81420] border border-[#E11D2A] font-semibold',
       };
 
   const sizeStyles = {

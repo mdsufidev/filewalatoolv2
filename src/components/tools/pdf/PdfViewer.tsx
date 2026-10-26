@@ -106,8 +106,8 @@ export const PdfViewer: React.FC<PdfViewerProps> = ({
 
       if (file instanceof Uint8Array) {
         data = file;
-      } else if (file instanceof Blob || file instanceof File) {
-        const arrayBuf = await file.arrayBuffer();
+      } else if (file && typeof file === 'object' && 'arrayBuffer' in file) {
+        const arrayBuf = await (file as Blob).arrayBuffer();
         data = new Uint8Array(arrayBuf);
       } else if (typeof file === 'string') {
         url = file;

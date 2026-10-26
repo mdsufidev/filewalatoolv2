@@ -12,12 +12,17 @@ import {
   Linkedin,
   Instagram,
   Github,
+  Building2,
+  FileText,
+  Image as ImageIcon,
+  RefreshCw,
+  CheckCircle2,
 } from 'lucide-react';
 import { useLanguage } from '../../core/languageContext';
 
 interface AboutUsProps {
   onBackHome: () => void;
-  onNavigate?: (page: 'about' | 'disclaimer' | 'terms' | 'contact') => void;
+  onNavigate?: (page: 'about' | 'disclaimer' | 'terms' | 'contact' | 'privacy' | 'desktop') => void;
 }
 
 export const AboutUs: React.FC<AboutUsProps> = ({ onBackHome, onNavigate }) => {
@@ -44,10 +49,10 @@ export const AboutUs: React.FC<AboutUsProps> = ({ onBackHome, onNavigate }) => {
       </div>
 
       {/* ========================================================= */}
-      {/* OPEN EDITORIAL HERO (Swiss / Notion Minimalist Aesthetic) */}
+      {/* OPEN EDITORIAL HERO (Swiss / Linear Minimalist Aesthetic) */}
       {/* ========================================================= */}
       <div className="space-y-4 max-w-4xl">
-        <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md border border-zinc-200 dark:border-zinc-750 text-[11px] font-mono text-zinc-600 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-850">
+        <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md border border-zinc-200 dark:border-zinc-800 text-[11px] font-mono text-zinc-600 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-900">
           <span>Handcrafted in India • 100% In-Browser</span>
         </div>
 
@@ -60,7 +65,7 @@ export const AboutUs: React.FC<AboutUsProps> = ({ onBackHome, onNavigate }) => {
         <p className="text-sm sm:text-base text-zinc-600 dark:text-zinc-400 leading-relaxed font-normal max-w-3xl">
           {language === 'hi'
             ? 'FileWala एक स्वतंत्र वेब टूलकिट है जिसे भारतीय छात्रों, नौकरी आवेदकों और साइबर कैफ़े ऑपरेटरों के लिए बनाया गया है। बिना किसी क्लाउड अपलोड, बिना किसी कतार और बिना किसी फीस के—आपकी फाइलें केवल आपके डिवाइस की RAM में प्रोसेस होती हैं।'
-            : 'FileWala is an independent, client-side web utility suite engineered to solve document rejection and photo sizing for Indian competitive exams, recruitment portals, and everyday digital work.'}
+            : 'FileWala is an independent, 100% client-side web utility suite engineered to solve document rejection and photo sizing for Indian competitive exams, recruitment portals, and everyday digital work.'}
         </p>
       </div>
 
@@ -232,9 +237,87 @@ export const AboutUs: React.FC<AboutUsProps> = ({ onBackHome, onNavigate }) => {
       </div>
 
       {/* ========================================================= */}
-      {/* ARCHITECTURAL PILLARS (Unboxed 4-Column Open Layout) */}
+      {/* THE 4 COMPREHENSIVE PRODUCT SUITES (Open 2-Column Grid)  */}
       {/* ========================================================= */}
       <div className="space-y-8">
+        <div>
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-950 dark:text-zinc-50">
+            {language === 'hi' ? 'चार मुख्य टूलकिट' : 'The Four Core Product Suites'}
+          </h2>
+          <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 mt-1 max-w-2xl">
+            {language === 'hi'
+              ? 'भारतीय भर्ती नियमों और डिजिटल वर्कफ़्लो के लिए विशेष रूप से तैयार किए गए टूल्स:'
+              : 'Precision-engineered utilities calibrated to official portal guidelines and digital workflows:'}
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-10">
+          {/* Suite 1: Govt & Exam Forms */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 flex items-center justify-center shrink-0">
+                <Building2 className="w-4 h-4" />
+              </div>
+              <h3 className="text-base font-bold text-zinc-950 dark:text-zinc-100">
+                Govt &amp; Exam Forms
+              </h3>
+            </div>
+            <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed font-normal">
+              Specialized presets for Indian competitive exams and ID portals. Includes UPSC Photo Maker with Name &amp; DOP banner (latest 10-day notice rule), SSC Photo (3.5×4.5 cm / 20–50 KB) &amp; Signature (140×60 px), PAN Card dual-portal specifications (NSDL Protean 197×276 px vs UTIITSL 213×213 px), Passport Seva 630×810 px digital upload, and Gov Form Document Compressor (&lt; 100/200/500 KB).
+            </p>
+          </div>
+
+          {/* Suite 2: PDF Suite */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 flex items-center justify-center shrink-0">
+                <FileText className="w-4 h-4" />
+              </div>
+              <h3 className="text-base font-bold text-zinc-950 dark:text-zinc-100">
+                In-Browser PDF Suite
+              </h3>
+            </div>
+            <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed font-normal">
+              Zero-upload PDF processing powered by WebAssembly and pdf-lib. Merge multiple PDF files, compress documents under 1 MB without blur, split pages or custom ranges, convert PDFs to high-resolution JPEG/PNG images, convert images to PDF, rotate orientations, and extract text via in-browser OCR.
+            </p>
+          </div>
+
+          {/* Suite 3: Image Utilities */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 flex items-center justify-center shrink-0">
+                <ImageIcon className="w-4 h-4" />
+              </div>
+              <h3 className="text-base font-bold text-zinc-950 dark:text-zinc-100">
+                Modern Image Utilities
+              </h3>
+            </div>
+            <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed font-normal">
+              High-speed image processing with HTML5 Canvas 2D. Perceptual image compressor with dynamic quality controls (save up to 90%), pixel-perfect image resizer with aspect ratio lock, client-side background remover, precision cropper, image watermarker, meme generator, and batch processing.
+            </p>
+          </div>
+
+          {/* Suite 4: Format Converters */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 flex items-center justify-center shrink-0">
+                <RefreshCw className="w-4 h-4" />
+              </div>
+              <h3 className="text-base font-bold text-zinc-950 dark:text-zinc-100">
+                Format Converters
+              </h3>
+            </div>
+            <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed font-normal">
+              Seamless local conversion between next-generation and standard graphic formats: HEIC to JPG (iPhone camera photos), PNG to WebP, WebP to JPG, AVIF to JPG, SVG to PNG vector rasterization, and JPG to PNG transparency conversions without server roundtrips.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* ========================================================= */}
+      {/* ARCHITECTURAL PILLARS (Unboxed 4-Column Open Layout) */}
+      {/* ========================================================= */}
+      <div className="space-y-8 pt-8 border-t border-zinc-200 dark:border-zinc-800">
         <div>
           <h2 className="text-lg sm:text-xl font-bold tracking-tight text-zinc-950 dark:text-zinc-50">
             {language === 'hi' ? 'मुख्य तकनीकी सिद्धांत' : 'Core Architecture Principles'}
@@ -287,7 +370,7 @@ export const AboutUs: React.FC<AboutUsProps> = ({ onBackHome, onNavigate }) => {
             </h3>
             <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed font-normal">
               {language === 'hi'
-                ? 'UPSC (नाम व तारीख स्टैम्प), SSC (20-50KB), PAN Card (200 DPI), और Passport Seva (35x45mm) के मानक पहले से सेट हैं।'
+                ? 'UPSC (नाम व तारीख स्टैम्प), SSC (20-50KB), PAN Card (200 DPI), और Passport Seva (630x810 px) के मानक पहले से सेट हैं।'
                 : 'Exact dimension, DPI, and byte boundaries for UPSC (Name & Date stamp), SSC (20-50KB), PAN (200 DPI), and Passport Seva.'}
             </p>
           </div>
@@ -336,21 +419,44 @@ export const AboutUs: React.FC<AboutUsProps> = ({ onBackHome, onNavigate }) => {
           ))}
         </div>
 
-        <div className="pt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-zinc-500 border-t border-zinc-200 dark:border-zinc-800">
-          <div className="flex items-center gap-1.5 font-mono text-zinc-500">
+        <div className="pt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-zinc-500 border-t border-zinc-200 dark:border-zinc-800 font-mono">
+          <div className="flex items-center gap-1.5 text-zinc-500">
             <span>Handcrafted by Mohammad Sufiyan (@mdsufidev) in Kushinagar, UP</span>
           </div>
 
-          {onNavigate && (
+          <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
-              onClick={() => onNavigate('contact')}
-              className="inline-flex items-center gap-1 font-medium text-zinc-900 dark:text-zinc-100 hover:underline cursor-pointer"
+              onClick={() => onNavigate?.('privacy')}
+              className="hover:text-zinc-900 dark:hover:text-zinc-100 hover:underline cursor-pointer"
             >
-              <span>{language === 'hi' ? 'संपर्क करें' : 'Contact Developer'}</span>
-              <ExternalLink className="w-3.5 h-3.5" />
+              Privacy Policy
             </button>
-          )}
+            <span>•</span>
+            <button
+              type="button"
+              onClick={() => onNavigate?.('terms')}
+              className="hover:text-zinc-900 dark:hover:text-zinc-100 hover:underline cursor-pointer"
+            >
+              Terms &amp; Conditions
+            </button>
+            <span>•</span>
+            <button
+              type="button"
+              onClick={() => onNavigate?.('disclaimer')}
+              className="hover:text-zinc-900 dark:hover:text-zinc-100 hover:underline cursor-pointer"
+            >
+              Compliance Disclaimer
+            </button>
+            <span>•</span>
+            <button
+              type="button"
+              onClick={() => onNavigate?.('contact')}
+              className="hover:text-zinc-900 dark:hover:text-zinc-100 hover:underline cursor-pointer"
+            >
+              Contact Support
+            </button>
+          </div>
         </div>
       </div>
     </div>

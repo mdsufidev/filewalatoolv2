@@ -1,3 +1,5 @@
+import { CATEGORY_HUBS_CONTENT } from './categoryHubsContent';
+
 export interface FlagshipFaq {
   question: string;
   answer: string;
@@ -502,15 +504,15 @@ export const FLAGSHIP_SEO_TOOLS: Record<string, FlagshipSeoConfig> = {
     toolName: 'SSC Photo & Signature Resizer (CGL, CHSL, MTS, GD)',
     slug: '/ssc-photo-signature',
     title: 'SSC Photo & Signature Resizer (20–50 KB & 10–20 KB) | FileWala',
-    description: 'Official SSC CGL, CHSL, MTS, and GD photo & signature resizer. Photo: strictly 20-50 KB (100x120 px); Signature: strictly 10-20 KB (140x60 px). 100% in-browser.',
+    description: 'Official SSC CGL, CHSL, MTS, and GD photo & signature resizer. Photo: 350x450 px (20-50 KB); Signature: strictly 10-20 KB (140x60 px). 100% in-browser.',
     canonicalUrl: 'https://www.filewalatool.com/ssc-photo-signature',
-    intro: 'Format your photo and signature to meet the unforgiving upload limits of the Staff Selection Commission (SSC) portals for CGL, CHSL, MTS, and GD examinations. Photo is locked between 20 KB and 50 KB (100x120 px), and signature is locked between 10 KB and 20 KB (140x60 px) with pure white canvas and zero server uploads.',
+    intro: 'Format your photo and signature to meet the upload limits of the Staff Selection Commission (SSC) portals for CGL, CHSL, MTS, and GD examinations. Photo is calibrated to 350x450 px (20–50 KB), and signature is locked between 10 KB and 20 KB (140x60 px) with pure white canvas and zero server uploads.',
     category: 'document-tools',
     matchingSubToolIds: ['ssc-resizer', 'ssc-photo-signature'],
     faqs: [
       {
         question: 'What is the exact photo and signature size required for SSC applications?',
-        answer: 'For SSC portals: Photographs must be 100x120 pixels (or 3.5cm x 4.5cm) strictly between 20 KB and 50 KB. Signatures must be 140x60 pixels (4.0cm x 2.0cm) strictly between 10 KB and 20 KB.'
+        answer: 'For SSC portals: Photographs are 3.5cm x 4.5cm (approx 350x450 px) strictly between 20 KB and 50 KB (note: modern ssc.gov.in uses live camera capture). Signatures must be 140x60 pixels (4.0cm x 2.0cm) strictly between 10 KB and 20 KB.'
       },
       {
         question: 'Why does the SSC portal reject signatures that are 21 KB or 9.5 KB?',
@@ -544,7 +546,7 @@ export const FLAGSHIP_SEO_TOOLS: Record<string, FlagshipSeoConfig> = {
               name: 'What is the exact photo and signature size required for SSC applications?',
               acceptedAnswer: {
                 '@type': 'Answer',
-                text: 'For SSC portals: Photographs must be 100x120 pixels (or 3.5cm x 4.5cm) strictly between 20 KB and 50 KB. Signatures must be 140x60 pixels (4.0cm x 2.0cm) strictly between 10 KB and 20 KB.'
+                text: 'For SSC portals: Photographs are 3.5cm x 4.5cm (approx 350x450 px) strictly between 20 KB and 50 KB (note: modern ssc.gov.in uses live camera capture). Signatures must be 140x60 pixels (4.0cm x 2.0cm) strictly between 10 KB and 20 KB.'
               }
             },
             {
@@ -571,18 +573,18 @@ export const FLAGSHIP_SEO_TOOLS: Record<string, FlagshipSeoConfig> = {
 
   'pan-photo-resize': {
     id: 'pan-photo-resize',
-    toolName: 'PAN Card Photo Resizer (200x230 px, 200 DPI)',
+    toolName: 'PAN Card Photo Resizer (NSDL 197x276 px & UTIITSL 213x213 px)',
     slug: '/pan-photo-resize',
-    title: 'PAN Card Photo Resizer 200x230 px (200 DPI, 20–50 KB) | FileWala',
-    description: 'Resize photo for PAN Card online. Exactly 200x230 px, 20-50 KB, and 200 DPI JPEG for Protean (NSDL) and UTIITSL portals. 100% in-browser private.',
+    title: 'PAN Card Photo Resizer 197x276 px & 213x213 px (200 DPI) | FileWala',
+    description: 'Resize photo for PAN Card online. NSDL Protean (197x276 px, 200 DPI) & UTIITSL (213x213 px, 300 DPI) strictly 20-50 KB. 100% in-browser private.',
     canonicalUrl: 'https://www.filewalatool.com/pan-photo-resize',
-    intro: 'Calibrate your photograph to the exact official specifications for Indian PAN Card applications on Protean (formerly NSDL e-Gov) and UTIITSL portals. Automatically resizes to 200x230 pixels, encodes 200 DPI metadata in the JPEG header, and locks file weight between 20 KB and 50 KB with zero cloud exposure.',
+    intro: 'Calibrate your photograph to official specifications for Indian PAN Card applications on Protean (NSDL) and UTIITSL portals. Format to 197x276 px (NSDL @ 200 DPI) or 213x213 px (UTIITSL @ 300 DPI), lock file weight between 20 KB and 50 KB with zero cloud exposure.',
     category: 'document-tools',
     matchingSubToolIds: ['pan-photo-resize', 'pan-resizer'],
     faqs: [
       {
         question: 'What are the exact photo specifications for Protean (NSDL) and UTIITSL PAN cards?',
-        answer: 'PAN card application rules specify a photograph of exactly 200x230 pixels (2.5cm x 3.5cm), file size between 20 KB and 50 KB in JPEG format, with 200 DPI resolution.'
+        answer: 'PAN card application rules specify: Protean (NSDL) requires 197x276 pixels (3.5cm x 2.5cm) at 200 DPI strictly between 20 KB and 50 KB. UTIITSL requires a square 213x213 pixels at 300 DPI strictly under 30 KB.'
       },
       {
         question: 'How does FileWala ensure 200 DPI resolution for PAN card uploads?',
@@ -605,7 +607,7 @@ export const FLAGSHIP_SEO_TOOLS: Record<string, FlagshipSeoConfig> = {
           operatingSystem: 'All (Modern Web Browser)',
           offers: { '@type': 'Offer', price: '0', priceCurrency: 'INR' },
           author: { '@type': 'Person', name: 'mdsufidev', url: 'https://www.filewalatool.com/about' },
-          description: 'Online photo resizer for Indian PAN Card (Protean NSDL / UTIITSL) calibrated to 200x230 pixels, 20-50 KB, and 200 DPI.'
+          description: 'Online photo resizer for Indian PAN Card (Protean NSDL 197x276 px / UTIITSL 213x213 px) calibrated to 20-50 KB at 200/300 DPI.'
         },
         {
           '@type': 'FAQPage',
@@ -616,7 +618,7 @@ export const FLAGSHIP_SEO_TOOLS: Record<string, FlagshipSeoConfig> = {
               name: 'What are the exact photo specifications for Protean (NSDL) and UTIITSL PAN cards?',
               acceptedAnswer: {
                 '@type': 'Answer',
-                text: 'PAN card application rules specify a photograph of exactly 200x230 pixels (2.5cm x 3.5cm), file size between 20 KB and 50 KB in JPEG format, with 200 DPI resolution.'
+                text: 'PAN card application rules specify: Protean (NSDL) requires 197x276 pixels (3.5cm x 2.5cm) at 200 DPI strictly between 20 KB and 50 KB. UTIITSL requires a square 213x213 pixels at 300 DPI strictly under 30 KB.'
               }
             },
             {
@@ -715,18 +717,18 @@ export const FLAGSHIP_SEO_TOOLS: Record<string, FlagshipSeoConfig> = {
 
   'passport-photo-resize': {
     id: 'passport-photo-resize',
-    toolName: 'Passport Photo Maker (350x450 px, 35x45 mm, 300 DPI)',
+    toolName: 'Passport Photo Maker (630x810 px Digital / 35x45 mm Print)',
     slug: '/passport-photo',
-    title: 'Passport Photo Maker 350x450 px (35x45 mm, 300 DPI) | FileWala',
-    description: 'Format Indian passport photo to 350x450 px (35x45 mm) under 300 KB at 300 DPI with biometric head-framing guide for MEA Passport Seva. 100% client-side.',
+    title: 'Passport Seva Photo Resizer 630x810 px (35x45 mm, 300 DPI) | FileWala',
+    description: 'Format Indian passport photo to 630x810 px (Digital) or 350x450 px (35x45 mm) strictly 10-250 KB at 300 DPI with biometric guide for MEA Passport Seva. 100% client-side.',
     canonicalUrl: 'https://www.filewalatool.com/passport-photo',
-    intro: 'Format passport photos compliant with the Ministry of External Affairs (MEA) Passport Seva Kendra guidelines. Pre-configured for 350x450 pixels (35x45 mm), under 300 KB at 300 DPI with interactive head-to-chin biometric framing guides and pure white background calibration.',
+    intro: 'Format passport photos compliant with Ministry of External Affairs (MEA) Passport Seva Kendra guidelines. Pre-configured for 630x810 pixels (Online Digital Upload) and 350x450 pixels (35x45 mm Physical Print), strictly between 10 KB and 250 KB at 300 DPI with interactive head-to-chin biometric framing guides and pure white background calibration.',
     category: 'document-tools',
     matchingSubToolIds: ['passport-photo-resize', 'passport-resizer'],
     faqs: [
       {
         question: 'What are the Indian passport photo requirements for Passport Seva?',
-        answer: 'MEA Passport Seva requires a photograph of 350x450 pixels (35x45 mm) under 300 KB in JPEG format at 300 DPI. The face must cover 70% to 80% of the image area against a pure white or light background.'
+        answer: 'MEA Passport Seva specifies 630x810 pixels (strictly 10-250 KB) for online digital portal upload, or 350x450 pixels (35x45 mm) for physical print submissions at 300 DPI. The face must cover 70% to 80% of the image area against a pure white background.'
       },
       {
         question: 'How does the biometric framing guide assist candidate alignment?',
@@ -749,7 +751,7 @@ export const FLAGSHIP_SEO_TOOLS: Record<string, FlagshipSeoConfig> = {
           operatingSystem: 'All (Modern Web Browser)',
           offers: { '@type': 'Offer', price: '0', priceCurrency: 'INR' },
           author: { '@type': 'Person', name: 'mdsufidev', url: 'https://www.filewalatool.com/about' },
-          description: 'Indian Passport Seva photo maker and resizer with biometric framing guide (350x450 px, 35x45 mm, 300 DPI).'
+          description: 'Indian Passport Seva photo maker and resizer with biometric framing guide (630x810 px digital upload, 35x45 mm print, 10-250 KB, 300 DPI).'
         },
         {
           '@type': 'FAQPage',
@@ -760,7 +762,7 @@ export const FLAGSHIP_SEO_TOOLS: Record<string, FlagshipSeoConfig> = {
               name: 'What are the Indian passport photo requirements for Passport Seva?',
               acceptedAnswer: {
                 '@type': 'Answer',
-                text: 'MEA Passport Seva requires a photograph of 350x450 pixels (35x45 mm) under 300 KB in JPEG format at 300 DPI. The face must cover 70% to 80% of the image area against a pure white or light background.'
+                text: 'MEA Passport Seva specifies 630x810 pixels (strictly 10-250 KB) for online digital portal upload, or 350x450 pixels (35x45 mm) for physical print submissions at 300 DPI. The face must cover 70% to 80% of the image area against a pure white background.'
               }
             },
             {
@@ -937,16 +939,28 @@ export const FLAGSHIP_SEO_TOOLS: Record<string, FlagshipSeoConfig> = {
     matchingSubToolIds: ['document-tools'],
     faqs: [
       {
-        question: 'What government exam and identity portals are supported?',
-        answer: 'FileWala includes pre-calibrated modules for UPSC (Civil Services, NDA, CDS), SSC (CGL, CHSL, MTS, GD), PAN Card (Protean NSDL & UTIITSL), MEA Passport Seva, and State PSC / EPFO / Bank PO portals.'
+        question: 'Why do government job and identity portals reject uploaded photos?',
+        answer: 'Most Indian portals (UPSC, SSC, NSDL, MEA) employ strict automated server-side verification scripts. If an image exceeds the ceiling by even 1 KB (e.g. 50.1 KB on SSC), has non-compliant pixel dimensions, or lacks the required 200 DPI JFIF metadata, the upload is instantly blocked. FileWala locks all parameters automatically so your file passes verification on the first attempt.'
       },
       {
-        question: 'How does FileWala guarantee that my application documents will not be rejected?',
-        answer: 'Every tool enforces official notification parameters: exact pixel dimensions, true 200/300 DPI JFIF encoding, strict min-max byte ceilings, and automatic background whitening.'
+        question: 'How does the UPSC Photo Maker add the candidate name and Date of Photo (DOP)?',
+        answer: 'According to the official UPSC Civil Services & OTR guidelines, the candidate photograph must feature the applicant full name and the photograph capture date (Date of Photo - DOP) printed clearly across a white bottom banner. FileWala renders this text overlay in-memory on HTML5 Canvas and exports a certified 350x350 px JPEG between 20 KB and 300 KB.'
       },
       {
-        question: 'Can cyber cafes and applicants use these tools completely free?',
-        answer: 'Yes. FileWala is 100% free forever without subscriptions, quotas, or exported watermarks.'
+        question: 'Why is 200 DPI resolution mandatory for PAN Card photos and signatures?',
+        answer: 'Protean (formerly NSDL) and UTIITSL industrial card printers require exactly 200 DPI (Dots Per Inch) metadata in the JPEG header so biometric signatures and photos do not pixelate during plastic card thermal printing. Standard mobile phone cameras only save files at 72 or 96 DPI. FileWala automatically writes the exact 200 DPI JFIF header tag directly into the binary byte stream.'
+      },
+      {
+        question: 'How does the SSC Resizer compress signatures strictly between 10 KB and 20 KB?',
+        answer: 'Staff Selection Commission enforces an unforgiving boundary: signatures below 10 KB or above 20 KB are blocked. FileWala applies an automated binary search compression loop that calibrates quality quantization matrices to lock your file weight safely between 14 KB and 18 KB with 140x60 px dimensions and clean white canvas.'
+      },
+      {
+        question: 'How does FileWala compress certificates under 100 KB without making text unreadable?',
+        answer: 'Generic cloud compressors uniformly downsample images, turning roll numbers and official seals into unreadable smudges. FileWala Gov Form Compressor applies an adaptive high-pass text sharpening and background-whitening filter. It eliminates paper grain and shadows while boosting black text contrast, keeping numbers razor-sharp even at 85–95 KB file sizes.'
+      },
+      {
+        question: 'Are my Aadhaar card, marksheets, or biometric signatures uploaded to any server?',
+        answer: 'No, never. FileWala runs 100% inside your local device memory using client-side WebAssembly and HTML5 Canvas. Your documents, Aadhaar numbers, biometric scans, and signatures never leave your browser and are never uploaded or retained anywhere.'
       }
     ],
     schema: {
@@ -962,6 +976,60 @@ export const FLAGSHIP_SEO_TOOLS: Record<string, FlagshipSeoConfig> = {
           offers: { '@type': 'Offer', price: '0', priceCurrency: 'INR' },
           author: { '@type': 'Person', name: 'mdsufidev', url: 'https://www.filewalatool.com/about' },
           description: 'Suite of browser-based utilities for Indian government forms: UPSC Photo Maker, SSC Resizer, PAN Photo & Signature Resizer, Passport Resizer, and Certificate Compressor.'
+        },
+        {
+          '@type': 'FAQPage',
+          '@id': 'https://www.filewalatool.com/document-tools#faq',
+          mainEntity: [
+            {
+              '@type': 'Question',
+              name: 'Why do government job and identity portals reject uploaded photos?',
+              acceptedAnswer: {
+                '@type': 'Answer',
+                text: 'Most Indian portals (UPSC, SSC, NSDL, MEA) employ strict automated server-side verification scripts. If an image exceeds the ceiling by even 1 KB (e.g. 50.1 KB on SSC), has non-compliant pixel dimensions, or lacks the required 200 DPI JFIF metadata, the upload is instantly blocked. FileWala locks all parameters automatically so your file passes verification on the first attempt.'
+              }
+            },
+            {
+              '@type': 'Question',
+              name: 'How does the UPSC Photo Maker add the candidate name and Date of Photo (DOP)?',
+              acceptedAnswer: {
+                '@type': 'Answer',
+                text: 'According to the official UPSC Civil Services & OTR guidelines, the candidate photograph must feature the applicant full name and the photograph capture date (Date of Photo - DOP) printed clearly across a white bottom banner. FileWala renders this text overlay in-memory on HTML5 Canvas and exports a certified 350x350 px JPEG between 20 KB and 300 KB.'
+              }
+            },
+            {
+              '@type': 'Question',
+              name: 'Why is 200 DPI resolution mandatory for PAN Card photos and signatures?',
+              acceptedAnswer: {
+                '@type': 'Answer',
+                text: 'Protean (formerly NSDL) and UTIITSL industrial card printers require exactly 200 DPI (Dots Per Inch) metadata in the JPEG header so biometric signatures and photos do not pixelate during plastic card thermal printing. Standard mobile phone cameras only save files at 72 or 96 DPI. FileWala automatically writes the exact 200 DPI JFIF header tag directly into the binary byte stream.'
+              }
+            },
+            {
+              '@type': 'Question',
+              name: 'How does the SSC Resizer compress signatures strictly between 10 KB and 20 KB?',
+              acceptedAnswer: {
+                '@type': 'Answer',
+                text: 'Staff Selection Commission enforces an unforgiving boundary: signatures below 10 KB or above 20 KB are blocked. FileWala applies an automated binary search compression loop that calibrates quality quantization matrices to lock your file weight safely between 14 KB and 18 KB with 140x60 px dimensions and clean white canvas.'
+              }
+            },
+            {
+              '@type': 'Question',
+              name: 'How does FileWala compress certificates under 100 KB without making text unreadable?',
+              acceptedAnswer: {
+                '@type': 'Answer',
+                text: 'Generic cloud compressors uniformly downsample images, turning roll numbers and official seals into unreadable smudges. FileWala Gov Form Compressor applies an adaptive high-pass text sharpening and background-whitening filter. It eliminates paper grain and shadows while boosting black text contrast, keeping numbers razor-sharp even at 85–95 KB file sizes.'
+              }
+            },
+            {
+              '@type': 'Question',
+              name: 'Are my Aadhaar card, marksheets, or biometric signatures uploaded to any server?',
+              acceptedAnswer: {
+                '@type': 'Answer',
+                text: 'No, never. FileWala runs 100% inside your local device memory using client-side WebAssembly and HTML5 Canvas. Your documents, Aadhaar numbers, biometric scans, and signatures never leave your browser and are never uploaded or retained anywhere.'
+              }
+            }
+          ]
         }
       ]
     }
@@ -1095,7 +1163,158 @@ export const FLAGSHIP_SEO_TOOLS: Record<string, FlagshipSeoConfig> = {
         }
       ]
     }
-  }
+  },
+  'image-tools': {
+    id: 'image-tools',
+    toolName: 'Image Tools & Photo Optimizers Hub',
+    slug: '/image-tools',
+    title: 'Free In-Browser Image Tools & Photo Optimizers | FileWala',
+    description: 'Compress image size, resize pixel dimensions, crop, remove backgrounds, rounded corners, and watermark photos with zero cloud uploads. 100% private in-browser tools by mdsufidev.',
+    canonicalUrl: 'https://www.filewalatool.com/image-tools',
+    intro: 'Free, private, in-browser image optimization suite. Compress file weights under KB targets, scale pixel dimensions, crop, watermark, and remove backgrounds with zero cloud uploads.',
+    category: 'image-tools',
+    matchingSubToolIds: ['image-tools'],
+    faqs: CATEGORY_HUBS_CONTENT['image-tools'].faqs,
+    schema: {
+      '@context': 'https://schema.org',
+      '@graph': [
+        {
+          '@type': 'WebApplication',
+          '@id': 'https://www.filewalatool.com/image-tools#app',
+          name: 'FileWala Image Tools & Photo Optimizers Suite',
+          url: 'https://www.filewalatool.com/image-tools',
+          applicationCategory: 'MultimediaApplication',
+          operatingSystem: 'All (Modern Web Browser)',
+          offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+          author: { '@type': 'Person', name: 'mdsufidev', url: 'https://www.filewalatool.com/about' },
+          description: 'Client-side photo optimizer and creative utility suite running in browser RAM with zero server uploads.'
+        },
+        {
+          '@type': 'FAQPage',
+          '@id': 'https://www.filewalatool.com/image-tools#faq',
+          mainEntity: CATEGORY_HUBS_CONTENT['image-tools'].faqs.map((f) => ({
+            '@type': 'Question',
+            name: f.question,
+            acceptedAnswer: { '@type': 'Answer', text: f.answer }
+          }))
+        }
+      ]
+    }
+  },
+
+  'pdf-tools': {
+    id: 'pdf-tools',
+    toolName: 'Private In-Browser PDF Tools & Document Utilities Hub',
+    slug: '/pdf-tools',
+    title: 'Private In-Browser PDF Tools & Document Utilities | FileWala',
+    description: 'Merge, compress, split, rotate, convert to Word, and extract text from PDFs directly in your browser with zero server uploads. 100% client-side privacy by mdsufidev.',
+    canonicalUrl: 'https://www.filewalatool.com/pdf-tools',
+    intro: 'Comprehensive client-side PDF utility suite. Merge multiple documents, compress file sizes, split pages, rotate orientation, convert to Word DOCX, and extract text without transmitting data over the internet.',
+    category: 'pdf-tools',
+    matchingSubToolIds: ['pdf-tools'],
+    faqs: CATEGORY_HUBS_CONTENT['pdf-tools'].faqs,
+    schema: {
+      '@context': 'https://schema.org',
+      '@graph': [
+        {
+          '@type': 'WebApplication',
+          '@id': 'https://www.filewalatool.com/pdf-tools#app',
+          name: 'FileWala Private PDF Tools Suite',
+          url: 'https://www.filewalatool.com/pdf-tools',
+          applicationCategory: 'UtilitiesApplication',
+          operatingSystem: 'All (Modern Web Browser)',
+          offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+          author: { '@type': 'Person', name: 'mdsufidev', url: 'https://www.filewalatool.com/about' },
+          description: 'Client-side PDF suite executing in local browser memory with zero cloud transmission.'
+        },
+        {
+          '@type': 'FAQPage',
+          '@id': 'https://www.filewalatool.com/pdf-tools#faq',
+          mainEntity: CATEGORY_HUBS_CONTENT['pdf-tools'].faqs.map((f) => ({
+            '@type': 'Question',
+            name: f.question,
+            acceptedAnswer: { '@type': 'Answer', text: f.answer }
+          }))
+        }
+      ]
+    }
+  },
+
+  'convert': {
+    id: 'convert',
+    toolName: 'Fast Client-Side Format Converters Hub',
+    slug: '/convert-tools',
+    title: 'Fast Client-Side Format Converters — HEIC, WebP, PNG & JPG | FileWala',
+    description: 'Convert between HEIC/iPhone, WebP, JPG, PNG, and AVIF formats instantly in your browser without uploading to any server. 100% client-side by mdsufidev.',
+    canonicalUrl: 'https://www.filewalatool.com/convert-tools',
+    intro: 'In-browser media codec transcoder. Convert iPhone HEIC photos to JPG, PNG to lightweight WebP with transparency, WebP to universal JPEG, and rasterize SVG vectors in milliseconds.',
+    category: 'convert',
+    matchingSubToolIds: ['convert', 'convert-tools'],
+    faqs: CATEGORY_HUBS_CONTENT['convert'].faqs,
+    schema: {
+      '@context': 'https://schema.org',
+      '@graph': [
+        {
+          '@type': 'WebApplication',
+          '@id': 'https://www.filewalatool.com/convert-tools#app',
+          name: 'FileWala Client-Side Format Converter Suite',
+          url: 'https://www.filewalatool.com/convert-tools',
+          applicationCategory: 'MultimediaApplication',
+          operatingSystem: 'All (Modern Web Browser)',
+          offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+          author: { '@type': 'Person', name: 'mdsufidev', url: 'https://www.filewalatool.com/about' },
+          description: 'High-speed in-browser image format converter powered by client-side WebAssembly codecs with zero server uploads.'
+        },
+        {
+          '@type': 'FAQPage',
+          '@id': 'https://www.filewalatool.com/convert-tools#faq',
+          mainEntity: CATEGORY_HUBS_CONTENT['convert'].faqs.map((f) => ({
+            '@type': 'Question',
+            name: f.question,
+            acceptedAnswer: { '@type': 'Answer', text: f.answer }
+          }))
+        }
+      ]
+    }
+  },
+
+  'convert-tools': {
+    id: 'convert-tools',
+    toolName: 'Fast Client-Side Format Converters Hub',
+    slug: '/convert-tools',
+    title: 'Fast Client-Side Format Converters — HEIC, WebP, PNG & JPG | FileWala',
+    description: 'Convert between HEIC/iPhone, WebP, JPG, PNG, and AVIF formats instantly in your browser without uploading to any server. 100% client-side by mdsufidev.',
+    canonicalUrl: 'https://www.filewalatool.com/convert-tools',
+    intro: 'In-browser media codec transcoder. Convert iPhone HEIC photos to JPG, PNG to lightweight WebP with transparency, WebP to universal JPEG, and rasterize SVG vectors in milliseconds.',
+    category: 'convert',
+    matchingSubToolIds: ['convert', 'convert-tools'],
+    faqs: CATEGORY_HUBS_CONTENT['convert'].faqs,
+    schema: {
+      '@context': 'https://schema.org',
+      '@graph': [
+        {
+          '@type': 'WebApplication',
+          '@id': 'https://www.filewalatool.com/convert-tools#app',
+          name: 'FileWala Client-Side Format Converter Suite',
+          url: 'https://www.filewalatool.com/convert-tools',
+          applicationCategory: 'MultimediaApplication',
+          operatingSystem: 'All (Modern Web Browser)',
+          offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+          author: { '@type': 'Person', name: 'mdsufidev', url: 'https://www.filewalatool.com/about' },
+          description: 'High-speed in-browser image format converter powered by client-side WebAssembly codecs with zero server uploads.'
+        },
+        {
+          '@type': 'FAQPage',
+          '@id': 'https://www.filewalatool.com/convert-tools#faq',
+          mainEntity: CATEGORY_HUBS_CONTENT['convert'].faqs.map((f) => ({
+            '@type': 'Question',
+            name: f.question,
+            acceptedAnswer: { '@type': 'Answer', text: f.answer }
+          }))
+        }
+      ]
+    }
+  },
 };
 
 /**

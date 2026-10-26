@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Award,
   CheckCircle2,
@@ -25,6 +25,11 @@ import {
   Maximize2,
   Copy,
   Share2,
+  ArrowUp,
+  ArrowDown,
+  ArrowLeft,
+  ArrowRight,
+  Keyboard,
 } from 'lucide-react';
 import { Dropzone } from '../ui/Dropzone';
 import { Button } from '../ui/Button';
@@ -47,6 +52,7 @@ import {
   shareFileOrBlob,
   isShareSupported,
 } from '../../utils/clipboardAndShare';
+import { GovToolGuideSection } from './gov/GovToolGuideSection';
 
 interface UpscPhotoMakerProps {
   onNotify: (title: string, desc?: string, type?: 'success' | 'error' | 'info') => void;
@@ -125,6 +131,7 @@ export const UpscPhotoMaker: React.FC<UpscPhotoMakerProps> = ({ onNotify }) => {
     initialPanY: 0,
   });
   const viewportRef = useRef<HTMLDivElement>(null);
+  const canvasContainerRef = useRef<HTMLDivElement>(null);
 
   // Processing state
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
@@ -142,7 +149,7 @@ export const UpscPhotoMaker: React.FC<UpscPhotoMakerProps> = ({ onNotify }) => {
     };
   }, [resultUrl]);
 
-  const handleFileSelected = (files: File[]) => {
+  const handleFileSelected = useCallback((files: File[]) => {
     const file = files[0];
     if (!file) return;
 
@@ -183,7 +190,26 @@ export const UpscPhotoMaker: React.FC<UpscPhotoMakerProps> = ({ onNotify }) => {
       onNotify('Error Reading File', 'Could not read image file.', 'error');
     };
     reader.readAsDataURL(file);
-  };
+  }, [resultUrl, onNotify]);
+
+  // Global Clipboard Paste Support (Ctrl+V / Cmd+V)
+  useEffect(() => {
+    const handlePaste = (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.startsWith('image/')) {
+          const file = items[i].getAsFile();
+          if (file) {
+            handleFileSelected([file]);
+            break;
+          }
+        }
+      }
+    };
+    window.addEventListener('paste', handlePaste);
+    return () => window.removeEventListener('paste', handlePaste);
+  }, [handleFileSelected]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!imageElement) return;
@@ -233,85 +259,40 @@ export const UpscPhotoMaker: React.FC<UpscPhotoMakerProps> = ({ onNotify }) => {
 
   const handleTouchEnd = () => setIsDragging(false);
 
-  const handleWheel = (e: React.WheelEvent) => {
-    if (!imageElement) return;
-    e.preventDefault();
-    const delta = e.deltaY * -0.0015;
-    setZoom((prev) => Math.min(4, Math.max(0.5, prev + delta)));
-  };
+  // Native non-passive wheel listener: strictly prevents page scrolling while zooming on canvas
+  useEffect(() => {
+    const el = canvasContainerRef.current;
+    if (!el) return;
 
-  const rotateCCW = () => setRotation((prev) => (prev - 90 + 360) % 360);
-  const rotateCW = () => setRotation((prev) => (prev + 90) % 360);
-  const handleCenter = () => setPan({ x: 0, y: 0 });
-  const toggleFlipH = () => setFlipH((prev) => !prev);
-  const nudge = (dx: number, dy: number) => {
+    const handleNativeWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const zoomDelta = e.deltaY < 0 ? 0.08 : -0.08;
+      setZoom((prev) => Math.min(4, Math.max(0.5, parseFloat((prev + zoomDelta).toFixed(2)))));
+    };
+
+    el.addEventListener('wheel', handleNativeWheel, { passive: false });
+    return () => {
+      el.removeEventListener('wheel', handleNativeWheel);
+    };
+  }, [imageSrc, imageElement]);
+
+  const rotateCCW = useCallback(() => setRotation((prev) => (prev - 90 + 360) % 360), []);
+  const rotateCW = useCallback(() => setRotation((prev) => (prev + 90) % 360), []);
+  const handleCenter = useCallback(() => setPan({ x: 0, y: 0 }), []);
+  const toggleFlipH = useCallback(() => setFlipH((prev) => !prev), []);
+  const nudge = useCallback((dx: number, dy: number) => {
     setPan((p) => ({ x: p.x + dx, y: p.y + dy }));
-  };
+  }, []);
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    const targetTag = (e.target as HTMLElement)?.tagName?.toLowerCase();
-    if (targetTag === 'input' || targetTag === 'textarea' || targetTag === 'select') return;
-
-    const step = e.shiftKey ? 10 : 2;
-    if (e.key === 'ArrowLeft') {
-      e.preventDefault();
-      nudge(-step, 0);
-    } else if (e.key === 'ArrowRight') {
-      e.preventDefault();
-      nudge(step, 0);
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      nudge(0, -step);
-    } else if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      nudge(0, step);
-    } else if (e.key === '+' || e.key === '=') {
-      e.preventDefault();
-      setZoom((prev) => Math.min(4, parseFloat((prev + 0.05).toFixed(2))));
-    } else if (e.key === '-' || e.key === '_') {
-      e.preventDefault();
-      setZoom((prev) => Math.max(0.5, parseFloat((prev - 0.05).toFixed(2))));
-    } else if (e.key === 'r' || e.key === 'R') {
-      e.preventDefault();
-      if (e.shiftKey) {
-        rotateCCW();
-      } else {
-        rotateCW();
-      }
-    } else if (e.key === 'h' || e.key === 'H') {
-      e.preventDefault();
-      toggleFlipH();
-    } else if (e.key === 'c' || e.key === 'C') {
-      e.preventDefault();
-      handleCenter();
-    } else if (e.key === '0') {
-      e.preventDefault();
-      resetTransform();
-    } else if (e.key === '[') {
-      e.preventDefault();
-      if (e.shiftKey) {
-        setContrast((prev) => Math.max(70, prev - 5));
-      } else {
-        setBrightness((prev) => Math.max(70, prev - 5));
-      }
-    } else if (e.key === ']') {
-      e.preventDefault();
-      if (e.shiftKey) {
-        setContrast((prev) => Math.min(140, prev + 5));
-      } else {
-        setBrightness((prev) => Math.min(140, prev + 5));
-      }
-    }
-  };
-
-  const resetTransform = () => {
+  const resetTransform = useCallback(() => {
     setZoom(1);
     setPan({ x: 0, y: 0 });
     setRotation(0);
     setFlipH(false);
     setBrightness(100);
     setContrast(100);
-  };
+  }, []);
 
   // Render UPSC Photo with Canvas Name & Date Stamp
   const processPhoto = async (options?: { silent?: boolean }) => {
@@ -443,7 +424,7 @@ export const UpscPhotoMaker: React.FC<UpscPhotoMakerProps> = ({ onNotify }) => {
     bannerStyle,
   ]);
 
-  const handleDownload = () => {
+  const handleDownload = useCallback(() => {
     if (!resultBlob) return;
     const sanitizedName = (candidateName || 'UPSC_Photo')
       .replace(/[^a-zA-Z0-9]/g, '_')
@@ -451,9 +432,9 @@ export const UpscPhotoMaker: React.FC<UpscPhotoMakerProps> = ({ onNotify }) => {
     const filename = `${sanitizedName}_DOP_${Date.now()}.jpg`;
     triggerFileDownload(resultBlob, filename);
     onNotify('Download Started', `${filename} saved successfully.`, 'success');
-  };
+  }, [resultBlob, candidateName, onNotify]);
 
-  const handleCopyPhoto = async () => {
+  const handleCopyPhoto = useCallback(async () => {
     if (!resultBlob) return;
     const ok = await copyImageToClipboard(resultBlob);
     if (ok) {
@@ -461,9 +442,9 @@ export const UpscPhotoMaker: React.FC<UpscPhotoMakerProps> = ({ onNotify }) => {
     } else {
       onNotify('Copy Failed', 'Your browser could not copy image directly to clipboard.', 'error');
     }
-  };
+  }, [resultBlob, onNotify]);
 
-  const handleSharePhoto = async () => {
+  const handleSharePhoto = useCallback(async () => {
     if (!resultBlob) return;
     const sanitizedName = (candidateName || 'UPSC_Photo')
       .replace(/[^a-zA-Z0-9]/g, '_')
@@ -478,7 +459,7 @@ export const UpscPhotoMaker: React.FC<UpscPhotoMakerProps> = ({ onNotify }) => {
     if (shared) {
       onNotify('Shared', 'Photo shared successfully.', 'success');
     }
-  };
+  }, [resultBlob, candidateName, onNotify]);
 
   const currentSizeKb = resultSizeBytes ? (resultSizeBytes / 1024).toFixed(1) : null;
 
@@ -499,80 +480,281 @@ export const UpscPhotoMaker: React.FC<UpscPhotoMakerProps> = ({ onNotify }) => {
 
   const currentStep = !imageElement ? 1 : !resultBlob ? 2 : 3;
 
-  const handleResetFile = () => {
+  const handleResetFile = useCallback(() => {
     if (resultUrl) revokeSafeObjectURL(resultUrl);
     setResultUrl(null);
     setResultBlob(null);
     setImageElement(null);
     setImageSrc(null);
     setSourceFile(null);
-  };
+  }, [resultUrl]);
 
-  const handleReAdjust = () => {
+  const handleReAdjust = useCallback(() => {
     if (resultUrl) revokeSafeObjectURL(resultUrl);
     setResultUrl(null);
     setResultBlob(null);
-  };
+  }, [resultUrl]);
 
+  // Global Zero-Latency Keyboard Engine
+  useEffect(() => {
+    const onWindowKeyDown = (e: KeyboardEvent) => {
+      // Don't intercept when user is typing in form inputs (Candidate Name, Date, etc.)
+      const targetTag = (e.target as HTMLElement)?.tagName?.toLowerCase();
+      if (targetTag === 'input' || targetTag === 'textarea' || targetTag === 'select') return;
+
+      if (!imageElement) return;
+
+      // Download: D or Ctrl+S / Cmd+S
+      if (e.key === 'd' || e.key === 'D' || ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S'))) {
+        e.preventDefault();
+        if (resultBlob) {
+          handleDownload();
+        } else {
+          processPhoto();
+        }
+        return;
+      }
+
+      // Copy: C or Ctrl+C / Cmd+C (without selection)
+      if ((e.key === 'c' || e.key === 'C') && !e.ctrlKey && !e.metaKey) {
+        if (resultBlob) {
+          e.preventDefault();
+          handleCopyPhoto();
+          return;
+        }
+      }
+
+      // Process / Format: Enter or Space
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        processPhoto();
+        return;
+      }
+
+      // Reset / New: N or Esc
+      if (e.key === 'n' || e.key === 'N' || e.key === 'Escape') {
+        e.preventDefault();
+        handleResetFile();
+        onNotify('Reset', 'Cleared image and reset viewport.', 'info');
+        return;
+      }
+
+      // Rotate: T
+      if (e.key === 't' || e.key === 'T') {
+        e.preventDefault();
+        rotateCW();
+        return;
+      }
+
+      // Flip: H
+      if (e.key === 'h' || e.key === 'H') {
+        e.preventDefault();
+        toggleFlipH();
+        return;
+      }
+
+      // Biometric guides toggle: G
+      if (e.key === 'g' || e.key === 'G') {
+        e.preventDefault();
+        setShowGuides((prev) => !prev);
+        return;
+      }
+
+      // Pan & Zoom
+      const step = e.shiftKey ? 10 : 2;
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        nudge(-step, 0);
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        nudge(step, 0);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        nudge(0, -step);
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        nudge(0, step);
+      } else if (e.key === '+' || e.key === '=') {
+        e.preventDefault();
+        setZoom((prev) => Math.min(4, parseFloat((prev + 0.05).toFixed(2))));
+      } else if (e.key === '-' || e.key === '_') {
+        e.preventDefault();
+        setZoom((prev) => Math.max(0.5, parseFloat((prev - 0.05).toFixed(2))));
+      }
+    };
+
+    window.addEventListener('keydown', onWindowKeyDown);
+    return () => window.removeEventListener('keydown', onWindowKeyDown);
+  }, [
+    imageElement,
+    resultBlob,
+    handleDownload,
+    handleCopyPhoto,
+    handleResetFile,
+    rotateCW,
+    toggleFlipH,
+    nudge,
+    onNotify,
+  ]);
+
+  /* -------------------------------------------------------------
+     RENDER: EMPTY STATE (CLEAN, DIRECT DROPZONE, NO BOX-IN-BOX)
+  ------------------------------------------------------------- */
+  if (!imageElement) {
+    return (
+      <div className="w-full max-w-7xl mx-auto space-y-8 animate-in fade-in duration-300">
+        {/* Single Authoritative Minimal Header Section */}
+        <div className="text-center space-y-3 max-w-2xl mx-auto">
+          <div
+            className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold ${
+              isDark ? 'bg-zinc-800/80 text-zinc-300' : 'bg-zinc-100 text-zinc-700'
+            }`}
+          >
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+            <span>
+              {language === 'hi'
+                ? 'संघ लोक सेवा आयोग (UPSC OTR एवं सिविल सेवा पोर्टल)'
+                : 'Union Public Service Commission (OTR & CSE Portal)'}
+            </span>
+          </div>
+
+          <h1
+            className={`text-3xl sm:text-4xl font-extrabold tracking-tight ${
+              isDark ? 'text-zinc-100' : 'text-zinc-950'
+            }`}
+          >
+            {language === 'hi'
+              ? 'UPSC फ़ोटो मेकर (नाम और तारीख़ स्टैम्प)'
+              : 'UPSC Photo Maker with Name & Date Stamp'}
+          </h1>
+          <p className={`text-sm sm:text-base leading-relaxed ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>
+            {language === 'hi'
+              ? 'उम्मीदवार का नाम और फ़ोटो की तारीख़ (DOP) प्रिंट करके 350×350 px व 20–300 KB UPSC फ़ोटो बनाएं।'
+              : 'Add candidate Name & Date of Photo (DOP) on official 350×350 px, 20–300 KB UPSC OTR photos.'}
+          </p>
+        </div>
+
+        {/* Official UPSC 10-Day Rule Notice */}
+        <div className="max-w-3xl mx-auto p-3.5 rounded-lg border border-amber-500/30 bg-amber-500/10 text-xs text-amber-900 dark:text-amber-300 flex items-start gap-2.5">
+          <Info className="w-4 h-4 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
+          <p className="leading-relaxed">
+            <strong>Official UPSC 10-Day Rule (upsconline.nic.in):</strong> The photograph must not be older than <strong>10 days</strong> from the commencement date of the online application process. Candidate’s full name and exact Date of Photograph (DOP) are automatically formatted on the bottom banner.
+          </p>
+        </div>
+
+        {/* Direct Dropzone (Centered, Max-w-3xl, Clean & Focused) */}
+        <div className="max-w-3xl mx-auto">
+          <Dropzone
+            onFilesSelected={handleFileSelected}
+            accept="image/*"
+            multiple={false}
+            title="Upload Photo for UPSC OTR"
+            description="Drag & drop or click to browse. Automatically formats to UPSC OTR standards."
+          />
+        </div>
+
+        {/* Authoritative Verified Guide, Official Specifications & FAQs */}
+        <GovToolGuideSection toolId="upsc-photo-maker" />
+      </div>
+    );
+  }
+
+  /* -------------------------------------------------------------
+     RENDER: ACTIVE WORKSPACE (PHOTO LOADED & READY)
+  ------------------------------------------------------------- */
   return (
-    <div className="space-y-6">
-      {/* 3-Step Compliance Progress Bar */}
-      <ComplianceProgressBar
-        currentStep={currentStep}
-        toolName="UPSC OTR Photo (350×350 + DOP)"
-        step1Label="Upload Photo"
-        step2Label="Enter Name, Date & Align"
-        step3Label="Download UPSC Photo"
-        step1Desc="Select passport portrait"
-        step2Desc="Add printed Name & DOP"
-        step3Desc="20–300 KB JPEG output"
-        onReset={handleResetFile}
-        onReAdjust={handleReAdjust}
-      />
-
-      {/* Header Banner */}
+    <div className="w-full max-w-7xl mx-auto space-y-6 animate-in fade-in duration-200">
+      {/* Pro Workspace Header Bar */}
       <div
-        className={`p-5 rounded-lg border ${
-          isDark
-            ? 'bg-zinc-900/50 border-zinc-800'
-            : 'bg-white border-zinc-200'
+        className={`p-3.5 sm:p-4 rounded-xl border flex flex-wrap items-center justify-between gap-3 ${
+          isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'
         }`}
       >
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded border text-[11px] font-mono font-medium border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 mb-2">
-              <Award className="w-3.5 h-3.5 text-zinc-500" />
-              <span>
-                {language === 'hi'
-                  ? 'संघ लोक सेवा आयोग (UPSC OTR एवं सिविल सेवा पोर्टल)'
-                  : 'Union Public Service Commission (OTR & CSE Portal)'}
-              </span>
+          <div className="flex items-center gap-3 min-w-0">
+            {imageSrc && (
+              <img
+                src={imageSrc}
+                alt="Thumbnail"
+                className="w-10 h-10 rounded-lg object-cover border border-zinc-200 dark:border-zinc-700 shrink-0"
+              />
+            )}
+            <div className="min-w-0">
+              <h3 className={`text-sm font-bold truncate max-w-[180px] sm:max-w-xs ${isDark ? 'text-white' : 'text-zinc-900'}`}>
+                {candidateName ? `${candidateName}.jpg` : sourceFile?.name}
+              </h3>
+              <div className="flex items-center gap-2 text-xs text-zinc-500 font-mono">
+                <span>{formatBytes(sourceFile?.size || 0)}</span>
+                <span>•</span>
+                <span>{imageNaturalSize.width} × {imageNaturalSize.height} px</span>
+              </div>
             </div>
-            <h1 className={`text-xl sm:text-2xl font-bold tracking-tight flex items-center gap-2.5 ${isDark ? 'text-white' : 'text-zinc-900'}`}>
-              {language === 'hi'
-                ? 'UPSC फ़ोटो मेकर (नाम और तारीख़ स्टैम्प)'
-                : 'UPSC Photo Maker with Name & Date Stamp'}
-            </h1>
-            <p className={`text-xs sm:text-sm mt-1 max-w-2xl ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>
-              {language === 'hi'
-                ? 'उम्मीदवार का नाम और फ़ोटो खींचने की तारीख़ (DOP) नीचे बैनर पर प्रिंट करके आधिकारिक UPSC OTR फ़ोटो बनाएं। 350×350 px और 20 KB से 300 KB।'
-                : 'Create official UPSC OTR complaint photos with candidate Name & Date of Photo (DOP) printed on the bottom banner. Formatted to 350×350 px and compressed between 20 KB to 300 KB.'}
-            </p>
+          </div>
+
+          {/* Center Live Compliance Pill */}
+          <div className="hidden md:flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-medium border bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400">
+            <CheckCircle2 className="w-3.5 h-3.5" />
+            <span>
+              {resultBlob
+                ? `✓ 100% UPSC Compliant: ${currentSizeKb} KB · 200 DPI · Name + DOP`
+                : `${targetW}×${targetH} px · ${targetMinKb}–${targetMaxKb} KB · 200 DPI`}
+            </span>
           </div>
 
           <div className="flex items-center gap-2">
-            <span className={`px-2.5 py-1 rounded text-xs font-mono font-medium border ${isDark ? 'bg-zinc-800 text-zinc-300 border-zinc-700' : 'bg-zinc-100 text-zinc-700 border-zinc-200'}`}>
-              350 × 350 px
-            </span>
-            <span className={`px-2.5 py-1 rounded text-xs font-mono font-medium border ${isDark ? 'bg-zinc-800 text-zinc-300 border-zinc-700' : 'bg-zinc-100 text-zinc-700 border-zinc-200'}`}>
-              20–300 KB
-            </span>
-            <span className="px-2.5 py-1 rounded text-xs font-mono font-medium bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 border border-zinc-900 dark:border-white">
-              Name + DOP Stamp
-            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleResetFile}
+              leftIcon={<RefreshCw className="w-3.5 h-3.5" />}
+            >
+              <span>New</span>
+              <kbd className="ml-1.5 px-1.5 py-0.5 rounded text-[10px] font-mono bg-zinc-200/80 dark:bg-zinc-750 text-zinc-700 dark:text-zinc-300">
+                N
+              </kbd>
+            </Button>
+
+            {resultBlob && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCopyPhoto}
+                leftIcon={<Copy className="w-3.5 h-3.5" />}
+              >
+                <span>Copy</span>
+                <kbd className="ml-1.5 px-1.5 py-0.5 rounded text-[10px] font-mono bg-zinc-200/80 dark:bg-zinc-750 text-zinc-700 dark:text-zinc-300">
+                  C
+                </kbd>
+              </Button>
+            )}
+
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => (resultBlob ? handleDownload() : processPhoto())}
+              disabled={isProcessing}
+              leftIcon={
+                isProcessing ? (
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                ) : resultBlob ? (
+                  <Download className="w-3.5 h-3.5" />
+                ) : (
+                  <Sparkles className="w-3.5 h-3.5" />
+                )
+              }
+            >
+              <span>
+                {isProcessing
+                  ? 'Generating...'
+                  : resultBlob
+                    ? `Download (${currentSizeKb} KB)`
+                    : 'Generate UPSC Photo'}
+              </span>
+              <kbd className="ml-1.5 px-1.5 py-0.5 rounded text-[10px] font-mono bg-white/20 dark:bg-black/30 text-white">
+                {resultBlob ? 'D' : '↵'}
+              </kbd>
+            </Button>
           </div>
         </div>
-      </div>
 
       {/* Main Workspace Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -665,24 +847,21 @@ export const UpscPhotoMaker: React.FC<UpscPhotoMakerProps> = ({ onNotify }) => {
               )}
             </div>
 
-            {!imageElement ? (
-              <Dropzone
-                onFilesSelected={handleFileSelected}
-                accept="image/*"
-                multiple={false}
-                title="Upload Portrait Photo"
-                description="Upload clear passport photo on white/light background (JPEG, PNG)"
-              />
-            ) : (
-              <div className="space-y-4">
-                {/* Viewport Frame */}
+            <div className="space-y-4">
+              {/* Viewport Frame */}
                 <div
+                  ref={canvasContainerRef}
                   tabIndex={0}
-                  onKeyDown={handleKeyDown}
-                  className={`relative w-full flex items-center justify-center p-4 rounded-md border select-none cursor-grab active:cursor-grabbing focus:outline-hidden focus:ring-1 focus:ring-zinc-400 transition-colors bg-zinc-100 dark:bg-zinc-950 ${
+                  className={`relative w-full flex items-center justify-center p-4 rounded-xl border select-none cursor-grab active:cursor-grabbing focus:outline-none transition-colors overflow-hidden bg-zinc-50/80 dark:bg-zinc-950/80 ${
                     isDark ? 'border-zinc-800' : 'border-zinc-200'
                   }`}
-                  style={{ minHeight: '380px' }}
+                  style={{
+                    minHeight: '380px',
+                    backgroundImage: isDark
+                      ? 'radial-gradient(#27272a 1.2px, transparent 1.2px)'
+                      : 'radial-gradient(#d4d4d8 1.2px, transparent 1.2px)',
+                    backgroundSize: '16px 16px',
+                  }}
                   onMouseDown={handleMouseDown}
                   onMouseMove={handleMouseMove}
                   onMouseUp={handleMouseUp}
@@ -690,7 +869,6 @@ export const UpscPhotoMaker: React.FC<UpscPhotoMakerProps> = ({ onNotify }) => {
                   onTouchStart={handleTouchStart}
                   onTouchMove={handleTouchMove}
                   onTouchEnd={handleTouchEnd}
-                  onWheel={handleWheel}
                 >
                   <div
                     ref={viewportRef}
@@ -698,7 +876,7 @@ export const UpscPhotoMaker: React.FC<UpscPhotoMakerProps> = ({ onNotify }) => {
                       width: `${boxW}px`,
                       height: `${boxH}px`,
                     }}
-                    className="relative overflow-hidden border-2 border-white rounded-xs shadow-[0_0_0_9999px_rgba(24,24,27,0.60)] bg-white pointer-events-none"
+                    className="relative overflow-hidden border-2 border-zinc-900/90 dark:border-white rounded-xs shadow-xl bg-white pointer-events-none ring-4 ring-zinc-950/5 dark:ring-white/10"
                   >
                     <div
                       style={{
@@ -722,24 +900,24 @@ export const UpscPhotoMaker: React.FC<UpscPhotoMakerProps> = ({ onNotify }) => {
                     </div>
 
                     {/* Viewfinder Corner L-Brackets */}
-                    <div className="absolute -top-0.5 -left-0.5 w-3 h-3 border-t-2 border-l-2 border-white pointer-events-none z-10" />
-                    <div className="absolute -top-0.5 -right-0.5 w-3 h-3 border-t-2 border-r-2 border-white pointer-events-none z-10" />
-                    <div className="absolute -bottom-0.5 -left-0.5 w-3 h-3 border-b-2 border-l-2 border-white pointer-events-none z-10" />
-                    <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 border-b-2 border-r-2 border-white pointer-events-none z-10" />
+                    <div className="absolute -top-0.5 -left-0.5 w-3 h-3 border-t-2 border-l-2 border-zinc-900 dark:border-white pointer-events-none z-10" />
+                    <div className="absolute -top-0.5 -right-0.5 w-3 h-3 border-t-2 border-r-2 border-zinc-900 dark:border-white pointer-events-none z-10" />
+                    <div className="absolute -bottom-0.5 -left-0.5 w-3 h-3 border-b-2 border-l-2 border-zinc-900 dark:border-white pointer-events-none z-10" />
+                    <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 border-b-2 border-r-2 border-zinc-900 dark:border-white pointer-events-none z-10" />
 
                     {/* Clean Minimalist Composition Grid Overlay */}
                     {showGuides && (
-                      <div className="absolute inset-0 pointer-events-none border border-white/40">
+                      <div className="absolute inset-0 pointer-events-none border border-zinc-400/40 dark:border-white/30">
                         {/* Rule of thirds grid lines */}
-                        <div className="absolute top-1/3 left-0 right-0 border-t border-dashed border-white/40" />
-                        <div className="absolute top-2/3 left-0 right-0 border-t border-dashed border-white/40" />
-                        <div className="absolute left-1/3 top-0 bottom-0 border-l border-dashed border-white/40" />
-                        <div className="absolute left-2/3 top-0 bottom-0 border-l border-dashed border-white/40" />
+                        <div className="absolute top-1/3 left-0 right-0 border-t border-dashed border-zinc-500/40 dark:border-white/30" />
+                        <div className="absolute top-2/3 left-0 right-0 border-t border-dashed border-zinc-500/40 dark:border-white/30" />
+                        <div className="absolute left-1/3 top-0 bottom-0 border-l border-dashed border-zinc-500/40 dark:border-white/30" />
+                        <div className="absolute left-2/3 top-0 bottom-0 border-l border-dashed border-zinc-500/40 dark:border-white/30" />
 
                         {/* Subtle center alignment crosshair */}
-                        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none opacity-50">
-                          <div className="absolute top-1/2 left-0 right-0 h-px bg-white" />
-                          <div className="absolute left-1/2 top-0 bottom-0 w-px bg-white" />
+                        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none opacity-60">
+                          <div className="absolute top-1/2 left-0 right-0 h-px bg-zinc-700 dark:bg-white" />
+                          <div className="absolute left-1/2 top-0 bottom-0 w-px bg-zinc-700 dark:bg-white" />
                         </div>
                       </div>
                     )}
@@ -757,137 +935,25 @@ export const UpscPhotoMaker: React.FC<UpscPhotoMakerProps> = ({ onNotify }) => {
                     )}
                   </div>
 
-                  {/* Top-Left Live Metadata Pill Badges */}
+                  {/* Clean Non-Intrusive Top-Left Live Metadata Pill */}
                   <div className="absolute top-3 left-3 flex items-center gap-1.5 pointer-events-none z-10">
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded border border-zinc-200 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 text-zinc-700 dark:text-zinc-300 flex items-center gap-1.5 shadow-xs">
-                      <Maximize2 className="w-3 h-3 text-zinc-500" />
-                      {targetW} × {targetH} px
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-900/80 text-white border border-zinc-700/50 backdrop-blur-xs flex items-center gap-1.5">
+                      <Maximize2 className="w-3 h-3 text-zinc-300" />
+                      {targetW} × {targetH} px · {targetDpi} DPI
                     </span>
-                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded border border-zinc-200 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 text-zinc-700 dark:text-zinc-300 shadow-xs">
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-900/80 text-zinc-200 border border-zinc-700/50 backdrop-blur-xs">
                       {Math.round(zoom * 100)}%
                     </span>
                     {rotation !== 0 && (
-                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded border border-zinc-200 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 text-zinc-700 dark:text-zinc-300 shadow-xs">
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-900/80 text-zinc-200 border border-zinc-700/50 backdrop-blur-xs">
                         {rotation}°
                       </span>
                     )}
                     {flipH && (
-                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded border border-zinc-200 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 text-zinc-700 dark:text-zinc-300 shadow-xs">
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-900/80 text-zinc-200 border border-zinc-700/50 backdrop-blur-xs">
                         Flipped
                       </span>
                     )}
-                  </div>
-
-                  {/* Top-Right Floating Quick Controls */}
-                  <div className="absolute top-3 right-3 flex items-center gap-1 z-20 bg-white dark:bg-zinc-900 p-1 rounded-md border border-zinc-200 dark:border-zinc-800 shadow-xs">
-                    <button
-                      onClick={() => setZoom((prev) => Math.max(0.5, parseFloat((prev - 0.1).toFixed(2))))}
-                      title="Zoom Out"
-                      className="p-1 rounded text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-                    >
-                      <ZoomOut className="w-3.5 h-3.5" />
-                    </button>
-                    <span className="text-[10px] font-mono text-zinc-700 dark:text-zinc-300 px-1">
-                      {Math.round(zoom * 100)}%
-                    </span>
-                    <button
-                      onClick={() => setZoom((prev) => Math.min(3.5, parseFloat((prev + 0.1).toFixed(2))))}
-                      title="Zoom In"
-                      className="p-1 rounded text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-                    >
-                      <ZoomIn className="w-3.5 h-3.5" />
-                    </button>
-                    <div className="w-px h-3.5 bg-zinc-200 dark:bg-zinc-800 mx-0.5" />
-                    <button
-                      onClick={rotateCCW}
-                      title="Rotate 90° Left"
-                      className="p-1 rounded text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-                    >
-                      <RotateCcw className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={rotateCW}
-                      title="Rotate 90° Right"
-                      className="p-1 rounded text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-                    >
-                      <RotateCw className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={toggleFlipH}
-                      title={flipH ? 'Unflip' : 'Flip Horizontally'}
-                      className={`p-1 rounded transition-colors cursor-pointer ${
-                        flipH
-                          ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-950'
-                          : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800'
-                      }`}
-                    >
-                      <FlipHorizontal className="w-3.5 h-3.5" />
-                    </button>
-                    <div className="w-px h-3.5 bg-zinc-200 dark:bg-zinc-800 mx-0.5" />
-                    <button
-                      onClick={handleCenter}
-                      title="Center Image"
-                      className="p-1 rounded text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-                    >
-                      <Move className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={resetTransform}
-                      title="Reset Viewport"
-                      className="p-1 rounded text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-                    >
-                      <RefreshCw className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                  {/* Bottom-Right Micro-Nudge D-Pad */}
-                  <div className="absolute bottom-3 right-3 flex flex-col items-center z-20 bg-white dark:bg-zinc-900 p-1 rounded-md border border-zinc-200 dark:border-zinc-800 shadow-xs">
-                    <button
-                      onClick={() => nudge(0, -3)}
-                      title="Nudge Up (3px)"
-                      className="p-1 rounded text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-                    >
-                      <ArrowUp className="w-3 h-3" />
-                    </button>
-                    <div className="flex items-center gap-1 my-0.5">
-                      <button
-                        onClick={() => nudge(-3, 0)}
-                        title="Nudge Left (3px)"
-                        className="p-1 rounded text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-                      >
-                        <ArrowLeft className="w-3 h-3" />
-                      </button>
-                      <button
-                        onClick={handleCenter}
-                        title="Re-Center"
-                        className="p-1 rounded text-zinc-900 dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer text-[9px] font-bold"
-                      >
-                        ●
-                      </button>
-                      <button
-                        onClick={() => nudge(3, 0)}
-                        title="Nudge Right (3px)"
-                        className="p-1 rounded text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-                      >
-                        <ArrowRight className="w-3 h-3" />
-                      </button>
-                    </div>
-                    <button
-                      onClick={() => nudge(0, 3)}
-                      title="Nudge Down (3px)"
-                      className="p-1 rounded text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-                    >
-                      <ArrowDown className="w-3 h-3" />
-                    </button>
-                  </div>
-
-                  {/* Bottom Navigation Hint Bar */}
-                  <div className="absolute bottom-3 left-3 flex flex-wrap items-center gap-1.5 pointer-events-none z-10 text-[10px] font-mono text-zinc-400">
-                    <span className="px-2 py-0.5 rounded border border-zinc-200 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 text-zinc-700 dark:text-zinc-300 shadow-xs">
-                      Offset: {pan.x}px, {pan.y}px
-                    </span>
-                    <span className="hidden sm:inline px-2 py-0.5 rounded border border-zinc-200 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 text-zinc-500 shadow-xs">
-                      Drag or use arrow keys
-                    </span>
                   </div>
                 </div>
 
@@ -952,7 +1018,6 @@ export const UpscPhotoMaker: React.FC<UpscPhotoMakerProps> = ({ onNotify }) => {
                   </Button>
                 </div>
               </div>
-            )}
           </div>
         </div>
 
@@ -1085,49 +1150,50 @@ export const UpscPhotoMaker: React.FC<UpscPhotoMakerProps> = ({ onNotify }) => {
         </div>
       </div>
 
-      {/* Accordion FAQ Section */}
-      <div
-        className={`p-5 sm:p-6 rounded-lg border ${
-          isDark
-            ? 'bg-zinc-900/40 border-zinc-800'
-            : 'bg-white border-zinc-200'
-        }`}
-      >
-        <h3 className={`text-xs font-semibold uppercase tracking-wider mb-4 flex items-center gap-2 ${isDark ? 'text-zinc-300' : 'text-zinc-900'}`}>
-          <HelpCircle className="w-4 h-4 text-zinc-500" />
-          UPSC OTR Photo Guidelines &amp; Rules
-        </h3>
-        <div className="space-y-2">
-          {faqs.map((faq, index) => {
-            const isOpen = openFaq === index;
-            return (
-              <div
-                key={index}
-                className={`rounded-lg border transition-colors ${isDark ? 'border-zinc-800 bg-zinc-900' : 'border-zinc-200 bg-white'}`}
-              >
-                <button
-                  onClick={() => setOpenFaq(isOpen ? null : index)}
-                  className={`w-full p-3.5 text-left text-xs font-medium flex items-center justify-between cursor-pointer ${
-                    isDark ? 'text-zinc-200 hover:text-white' : 'text-zinc-800 hover:text-zinc-950'
-                  }`}
-                >
-                  <span>{faq.q}</span>
-                  <ChevronDown
-                    className={`w-4 h-4 transition-transform ${
-                      isOpen ? 'rotate-180 text-zinc-900 dark:text-white' : 'text-zinc-400'
-                    }`}
-                  />
-                </button>
-                {isOpen && (
-                  <div className={`p-3.5 pt-0 text-xs leading-relaxed border-t ${isDark ? 'text-zinc-400 border-zinc-800' : 'text-zinc-600 border-zinc-100'}`}>
-                    {faq.a}
-                  </div>
-                )}
-              </div>
-            );
-          })}
+      {/* Bottom Keyboard Hotkey Helper Strip */}
+      <div className="flex flex-wrap items-center justify-between gap-2 px-3.5 py-2.5 rounded-lg border text-xs bg-zinc-50 dark:bg-zinc-850/60 border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 font-mono select-none">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+            <Keyboard className="w-3.5 h-3.5 text-zinc-500" />
+            Hotkeys:
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-750 text-zinc-800 dark:text-zinc-200 font-semibold text-[10px]">Ctrl+V</kbd> Paste
+          </span>
+          <span className="opacity-40">·</span>
+          <span className="inline-flex items-center gap-1">
+            <kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-750 text-zinc-800 dark:text-zinc-200 font-semibold text-[10px]">↑↓←→</kbd> Pan
+          </span>
+          <span className="opacity-40">·</span>
+          <span className="inline-flex items-center gap-1">
+            <kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-750 text-zinc-800 dark:text-zinc-200 font-semibold text-[10px]">+/-</kbd> Zoom
+          </span>
+          <span className="opacity-40">·</span>
+          <span className="inline-flex items-center gap-1">
+            <kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-750 text-zinc-800 dark:text-zinc-200 font-semibold text-[10px]">T</kbd> Rotate
+          </span>
+          <span className="opacity-40">·</span>
+          <span className="inline-flex items-center gap-1">
+            <kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-750 text-zinc-800 dark:text-zinc-200 font-semibold text-[10px]">G</kbd> Guides
+          </span>
+          <span className="opacity-40">·</span>
+          <span className="inline-flex items-center gap-1">
+            <kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-750 text-zinc-800 dark:text-zinc-200 font-semibold text-[10px]">↵ Enter</kbd> Generate
+          </span>
+          <span className="opacity-40">·</span>
+          <span className="inline-flex items-center gap-1">
+            <kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-750 text-zinc-800 dark:text-zinc-200 font-semibold text-[10px]">D</kbd> Download
+          </span>
+          <span className="opacity-40">·</span>
+          <span className="inline-flex items-center gap-1">
+            <kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-750 text-zinc-800 dark:text-zinc-200 font-semibold text-[10px]">C</kbd> Copy
+          </span>
         </div>
+        <span className="text-[11px] text-zinc-500 font-medium">Zero Mouse Latency</span>
       </div>
+
+      {/* Authoritative Verified Guide, Official Specifications & FAQs */}
+      <GovToolGuideSection toolId="upsc-photo-maker" />
     </div>
   );
 };

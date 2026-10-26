@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { Type, Image as ImageIcon, Download, RefreshCw, Sparkles, Grid, Copy, Share2 } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Type, Image as ImageIcon, Download, RefreshCw, Sparkles, Grid, Copy, Share2, ShieldCheck } from 'lucide-react';
+import { ImageToolGuideSection } from './ImageToolGuideSection';
 import { Dropzone } from '../../ui/Dropzone';
 import { Button } from '../../ui/Button';
 import { Slider } from '../../ui/Slider';
 import { useImageUpload } from '../../../hooks/useImageUpload';
 import { triggerFileDownload, formatBytes } from '../../../utils/memory';
+import { useTheme } from '../../../core/themeContext';
 import {
   copyImageToClipboard,
   shareFileOrBlob,
@@ -154,14 +156,17 @@ export const WatermarkerTool: React.FC<{
     render();
   }, [currentImage, type, text, fontSize, opacity, color, position, tileRepeat, logoImg, logoScale]);
 
-  const handleDownload = () => {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+
+  const handleDownload = useCallback(() => {
     if (!resultBlob || !currentImage) return;
     const baseName = currentImage.name.replace(/\.[^/.]+$/, '');
     triggerFileDownload(resultBlob, `${baseName}-watermarked.jpg`);
     onNotify('Watermarked Photo Saved!', '', 'success');
-  };
+  }, [resultBlob, currentImage, onNotify]);
 
-  const handleCopy = async () => {
+  const handleCopy = useCallback(async () => {
     if (!resultBlob) return;
     const ok = await copyImageToClipboard(resultBlob);
     if (ok) {
@@ -169,9 +174,9 @@ export const WatermarkerTool: React.FC<{
     } else {
       onNotify('Copy Failed', 'Your browser could not copy image directly to clipboard.', 'error');
     }
-  };
+  }, [resultBlob, onNotify]);
 
-  const handleShare = async () => {
+  const handleShare = useCallback(async () => {
     if (!resultBlob || !currentImage) return;
     const baseName = currentImage.name.replace(/\.[^/.]+$/, '');
     const filename = `${baseName}-watermarked.jpg`;
@@ -184,47 +189,182 @@ export const WatermarkerTool: React.FC<{
     if (shared) {
       onNotify('Shared', 'Photo shared successfully.', 'success');
     }
-  };
+  }, [resultBlob, currentImage, onNotify]);
+
+  // Global Keyboard Navigation
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
+      if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+
+      if (e.key === 'n' || e.key === 'N' || e.key === 'Escape') {
+        if (currentImage) {
+          e.preventDefault();
+          resetImage();
+          onNotify('Reset', 'Cleared workspace.');
+          return;
+        }
+      }
+
+      if (e.key === 'd' || e.key === 'D') {
+        if (resultBlob) {
+          e.preventDefault();
+          handleDownload();
+          return;
+        }
+      }
+
+      if (e.key === 'Enter') {
+        if (resultBlob) {
+          e.preventDefault();
+          handleDownload();
+          return;
+        }
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [currentImage, resultBlob, handleDownload, resetImage, onNotify]);
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6 animate-in fade-in duration-200">
-      <div className="text-center space-y-1.5 max-w-xl mx-auto">
-        <h3 className="text-2xl font-bold tracking-tight text-zinc-950">
-          Image Watermarker (Add Text / Logo)
-        </h3>
-        <p className="text-xs text-zinc-500 font-medium">
-          Target Keyword: <em>Add watermark to images online for free</em>
-        </p>
-        <p className="text-xs text-zinc-400">
-          Built for photographers, artists, and creators to copyright-protect photos with custom brand signatures or repeating anti-theft tiles.
+    <div className="w-full max-w-7xl mx-auto space-y-6 sm:space-y-8 animate-in fade-in duration-200 select-none">
+      {/* Header Section */}
+      <div className="text-center space-y-2.5 max-w-2xl mx-auto">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-medium uppercase tracking-wider text-zinc-600 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-850">
+          <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+          <span>100% Client-Side Engine · Zero Uploads</span>
+        </div>
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-zinc-950 dark:text-zinc-50">
+          Image Watermarker
+        </h1>
+        <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 max-w-md mx-auto leading-relaxed">
+          Protect photos and artwork with custom copyright text, logo stamps, or repeating anti-theft diagonal tiles.
         </p>
       </div>
 
       {!currentImage ? (
-        <Dropzone
-          onFilesSelected={(files) => loadFile(files[0])}
-          title="Drop photo to watermark"
-          description="JPEG, PNG, WebP supported"
-        />
+        <div className="max-w-3xl mx-auto">
+          <Dropzone
+            onFilesSelected={(files) => loadFile(files[0])}
+            title="Drop photo to watermark"
+            description="JPEG, PNG, WebP supported · 100% Client-Side"
+          />
+        </div>
       ) : (
+        <div className="space-y-6">
+          {/* Active Workspace Top Header Bar */}
+          <div
+            className={`flex flex-wrap items-center justify-between gap-4 p-3.5 sm:p-4 border rounded-xl ${
+              isDark
+                ? 'bg-zinc-900 border-zinc-800 text-zinc-100'
+                : 'bg-white border-zinc-200 text-zinc-900'
+            }`}
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              <div
+                className={`w-10 h-10 rounded-lg overflow-hidden shrink-0 flex items-center justify-center border ${
+                  isDark ? 'bg-zinc-950 border-zinc-800' : 'bg-zinc-100 border-zinc-200'
+                }`}
+              >
+                <img
+                  src={currentImage.previewUrl}
+                  alt="Source"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div className="min-w-0">
+                <h3 className={`text-xs sm:text-sm font-semibold truncate ${isDark ? 'text-white' : 'text-zinc-900'}`}>
+                  {currentImage.name}
+                </h3>
+                <div className={`flex items-center gap-2 text-[11px] font-mono mt-0.5 ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                  <span>{currentImage.width} × {currentImage.height} px</span>
+                  {resultBlob && (
+                    <>
+                      <span>·</span>
+                      <span className="text-emerald-500 font-semibold">{formatBytes(resultBlob.size)}</span>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={resetImage}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+                  isDark
+                    ? 'bg-zinc-800 hover:bg-zinc-750 text-zinc-200'
+                    : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700'
+                }`}
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                <span>Change Photo</span>
+              </button>
+
+              <button
+                disabled={!resultBlob}
+                onClick={handleCopy}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer disabled:opacity-50 ${
+                  isDark
+                    ? 'bg-zinc-800 hover:bg-zinc-750 text-zinc-200'
+                    : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700'
+                }`}
+              >
+                <Copy className="w-3.5 h-3.5" />
+                <span>Copy</span>
+              </button>
+
+              {isShareSupported() && (
+                <button
+                  disabled={!resultBlob}
+                  onClick={handleShare}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer disabled:opacity-50 ${
+                    isDark
+                      ? 'bg-zinc-800 hover:bg-zinc-750 text-zinc-200'
+                      : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700'
+                  }`}
+                >
+                  <Share2 className="w-3.5 h-3.5" />
+                  <span>Share</span>
+                </button>
+              )}
+
+              <button
+                disabled={!resultBlob}
+                onClick={handleDownload}
+                className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
+                  isDark
+                    ? 'bg-zinc-100 hover:bg-zinc-200 text-zinc-900'
+                    : 'bg-zinc-900 hover:bg-zinc-800 text-white'
+                }`}
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Download Photo</span>
+              </button>
+            </div>
+          </div>
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* Controls */}
-          <div className="lg:col-span-5 bg-white border border-zinc-200 rounded-lg p-5 space-y-5">
-            <div className="flex items-center justify-between pb-3 border-b border-zinc-100">
+          <div className="lg:col-span-5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 space-y-5">
+            <div className="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800">
               {/* Type Switcher */}
-              <div className="flex bg-zinc-100 p-1 rounded-md border border-zinc-200 text-xs">
+              <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1 rounded-lg text-xs">
                 <button
                   onClick={() => setType('text')}
-                  className={`px-3 py-1.5 rounded-lg font-semibold transition-colors cursor-pointer ${
-                    type === 'text' ? 'bg-white text-zinc-950 shadow-xs' : 'text-zinc-600'
+                  className={`px-3 py-1.5 rounded-md font-semibold transition-colors cursor-pointer ${
+                    type === 'text'
+                      ? 'bg-white dark:bg-zinc-700 text-zinc-950 dark:text-white shadow-xs'
+                      : 'text-zinc-600 dark:text-zinc-400'
                   }`}
                 >
                   Text Watermark
                 </button>
                 <button
                   onClick={() => setType('logo')}
-                  className={`px-3 py-1.5 rounded-lg font-semibold transition-colors cursor-pointer ${
-                    type === 'logo' ? 'bg-white text-zinc-950 shadow-xs' : 'text-zinc-600'
+                  className={`px-3 py-1.5 rounded-md font-semibold transition-colors cursor-pointer ${
+                    type === 'logo'
+                      ? 'bg-white dark:bg-zinc-700 text-zinc-950 dark:text-white shadow-xs'
+                      : 'text-zinc-600 dark:text-zinc-400'
                   }`}
                 >
                   Logo Image
@@ -239,7 +379,7 @@ export const WatermarkerTool: React.FC<{
             {type === 'text' ? (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-xs font-bold text-zinc-700 mb-1">
+                  <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">
                     Watermark Text
                   </label>
                   <input
@@ -247,7 +387,7 @@ export const WatermarkerTool: React.FC<{
                     value={text}
                     onChange={(e) => setText(e.target.value)}
                     placeholder="e.g. © 2026 Studio"
-                    className="w-full px-3 py-2 text-xs bg-zinc-50 border border-zinc-300 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-zinc-950"
+                    className="w-full px-3 py-2 text-xs bg-zinc-50 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white rounded-lg focus:outline-none focus:ring-1 focus:ring-zinc-500"
                   />
                 </div>
 
@@ -261,7 +401,7 @@ export const WatermarkerTool: React.FC<{
                 />
 
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-zinc-700">Text Color</label>
+                  <label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">Text Color</label>
                   <div className="flex items-center gap-2">
                     <input
                       type="color"
@@ -273,21 +413,21 @@ export const WatermarkerTool: React.FC<{
                       <button
                         key={c}
                         onClick={() => setColor(c)}
-                        className="w-6 h-6 rounded border border-zinc-300"
+                        className="w-6 h-6 rounded border border-zinc-300 dark:border-zinc-700 shadow-xs"
                         style={{ backgroundColor: c }}
                       />
                     ))}
                   </div>
                 </div>
 
-                <label className="flex items-center gap-2 cursor-pointer select-none pt-2 border-t border-zinc-100">
+                <label className="flex items-center gap-2 cursor-pointer select-none pt-2 border-t border-zinc-100 dark:border-zinc-800">
                   <input
                     type="checkbox"
                     checked={tileRepeat}
                     onChange={(e) => setTileRepeat(e.target.checked)}
                     className="rounded border-zinc-300 text-zinc-900 focus:ring-zinc-900 w-4 h-4"
                   />
-                  <span className="text-xs font-semibold text-zinc-800">
+                  <span className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">
                     Repeat diagonally across entire image (Tile Mode)
                   </span>
                 </label>
@@ -295,14 +435,14 @@ export const WatermarkerTool: React.FC<{
             ) : (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-xs font-bold text-zinc-700 mb-1">
+                  <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">
                     Upload PNG Logo
                   </label>
                   <input
                     type="file"
                     accept="image/png,image/svg+xml,image/jpeg"
                     onChange={handleLogoUpload}
-                    className="text-xs text-zinc-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-zinc-950 file:text-white hover:file:bg-zinc-800 cursor-pointer"
+                    className="text-xs text-zinc-600 dark:text-zinc-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-zinc-900 file:text-white dark:file:bg-zinc-100 dark:file:text-zinc-900 hover:file:opacity-90 cursor-pointer"
                   />
                 </div>
 
@@ -328,14 +468,16 @@ export const WatermarkerTool: React.FC<{
 
             {!tileRepeat && (
               <div className="space-y-1.5">
-                <label className="block text-xs font-bold text-zinc-700">Anchor Position</label>
+                <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300">Anchor Position</label>
                 <div className="grid grid-cols-3 gap-1.5 max-w-[200px]">
                   {(['top-left', 'top-center', 'top-right', 'center', 'bottom-left', 'bottom-center', 'bottom-right'] as Position[]).map((pos) => (
                     <button
                       key={pos}
                       onClick={() => setPosition(pos)}
-                      className={`h-8 rounded-lg border text-[10px] font-mono transition-colors cursor-pointer ${
-                        position === pos ? 'bg-zinc-950 text-white border-zinc-950' : 'bg-zinc-50 text-zinc-700 border-zinc-200'
+                      className={`h-8 rounded-lg text-[10px] font-mono transition-colors cursor-pointer ${
+                        position === pos
+                          ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-xs'
+                          : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-750'
                       }`}
                     >
                       {pos.replace('bottom-', 'b-').replace('top-', 't-')}
@@ -361,7 +503,7 @@ export const WatermarkerTool: React.FC<{
                   <button
                     type="button"
                     onClick={handleCopy}
-                    className="py-2 px-3 rounded-md text-xs font-medium flex items-center justify-center gap-1.5 border border-zinc-200 dark:border-zinc-750 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 transition-colors cursor-pointer"
+                    className="py-2 px-3 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-zinc-800 dark:text-zinc-200 transition-colors cursor-pointer"
                   >
                     <Copy className="w-3.5 h-3.5 text-zinc-500" />
                     <span>Copy Image</span>
@@ -370,7 +512,7 @@ export const WatermarkerTool: React.FC<{
                     <button
                       type="button"
                       onClick={handleShare}
-                      className="py-2 px-3 rounded-md text-xs font-medium flex items-center justify-center gap-1.5 border border-zinc-200 dark:border-zinc-750 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 transition-colors cursor-pointer"
+                      className="py-2 px-3 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-zinc-800 dark:text-zinc-200 transition-colors cursor-pointer"
                     >
                       <Share2 className="w-3.5 h-3.5 text-zinc-500" />
                       <span>Share</span>
@@ -382,11 +524,11 @@ export const WatermarkerTool: React.FC<{
           </div>
 
           {/* Preview */}
-          <div className="lg:col-span-7 bg-white border border-zinc-200 rounded-lg p-5 space-y-4">
-            <span className="text-xs font-semibold text-zinc-800 uppercase tracking-wider block">
+          <div className="lg:col-span-7 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 space-y-4">
+            <span className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 uppercase tracking-wider block">
               Live Stamped Output
             </span>
-            <div className="rounded-md border border-zinc-200 bg-zinc-50 p-4 flex items-center justify-center min-h-[380px]">
+            <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-100/60 dark:bg-zinc-950 p-4 flex items-center justify-center min-h-[380px]">
               {resultUrl && (
                 <img
                   src={resultUrl}
@@ -397,7 +539,10 @@ export const WatermarkerTool: React.FC<{
             </div>
           </div>
         </div>
+      </div>
       )}
+      {/* Educational Guide, Specs, Pro Tips & Schema-Matched FAQs */}
+      <ImageToolGuideSection toolId="watermark-image" />
     </div>
   );
 };

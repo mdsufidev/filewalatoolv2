@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   FileText,
   CheckCircle2,
@@ -25,6 +25,7 @@ import {
   Maximize2,
   Copy,
   Share2,
+  Keyboard,
 } from 'lucide-react';
 import { Dropzone } from '../ui/Dropzone';
 import { Button } from '../ui/Button';
@@ -47,6 +48,7 @@ import {
   shareFileOrBlob,
   isShareSupported,
 } from '../../utils/clipboardAndShare';
+import { GovToolGuideSection } from './gov/GovToolGuideSection';
 
 export type SscItemType = 'photo' | 'signature';
 
@@ -66,10 +68,10 @@ export const SscResizer: React.FC<SscResizerProps> = ({
   const [itemType, setItemType] = useState<SscItemType>(initialType);
 
   // SSC Portal Specs:
-  // Photo: 100x120 px (or 3.5cm x 4.5cm equivalent ~ 140x175), strictly 20 KB - 50 KB, JPEG
+  // Photo: 350x450 px (3.5cm x 4.5cm standard), strictly 20 KB - 50 KB, JPEG
   // Signature: 140x60 px (4.0cm x 2.0cm ratio), strictly 10 KB - 20 KB, JPEG
-  const targetW = itemType === 'photo' ? 100 : 140;
-  const targetH = itemType === 'photo' ? 120 : 60;
+  const targetW = itemType === 'photo' ? 350 : 140;
+  const targetH = itemType === 'photo' ? 450 : 60;
   const targetMinKb = itemType === 'photo' ? 20 : 10;
   const targetMaxKb = itemType === 'photo' ? 50 : 20;
   const targetDpi = 200;
@@ -139,6 +141,7 @@ export const SscResizer: React.FC<SscResizerProps> = ({
     initialPanY: 0,
   });
   const viewportRef = useRef<HTMLDivElement>(null);
+  const canvasContainerRef = useRef<HTMLDivElement>(null);
 
   // Processing state
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
@@ -156,14 +159,29 @@ export const SscResizer: React.FC<SscResizerProps> = ({
     };
   }, [resultUrl]);
 
-  const handleSwitchType = (type: SscItemType) => {
+  const handleResetFile = useCallback(() => {
+    if (resultUrl) revokeSafeObjectURL(resultUrl);
+    setResultUrl(null);
+    setResultBlob(null);
+    setImageElement(null);
+    setImageSrc(null);
+    setSourceFile(null);
+  }, [resultUrl]);
+
+  const handleReAdjust = useCallback(() => {
+    if (resultUrl) revokeSafeObjectURL(resultUrl);
+    setResultUrl(null);
+    setResultBlob(null);
+  }, [resultUrl]);
+
+  const handleSwitchType = useCallback((type: SscItemType) => {
     setItemType(type);
     if (resultUrl) revokeSafeObjectURL(resultUrl);
     setResultUrl(null);
     setResultBlob(null);
-  };
+  }, [resultUrl]);
 
-  const handleFileSelected = (files: File[]) => {
+  const handleFileSelected = useCallback((files: File[]) => {
     const file = files[0];
     if (!file) return;
 
@@ -208,7 +226,27 @@ export const SscResizer: React.FC<SscResizerProps> = ({
       onNotify('Error Reading File', 'Could not read image file.', 'error');
     };
     reader.readAsDataURL(file);
-  };
+  }, [itemType, onNotify, resultUrl]);
+
+  // Global paste handler to paste screenshot / image directly (Ctrl+V)
+  useEffect(() => {
+    const handlePaste = (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (item.type.indexOf('image') !== -1) {
+          const file = item.getAsFile();
+          if (file) {
+            handleFileSelected([file]);
+            break;
+          }
+        }
+      }
+    };
+    window.addEventListener('paste', handlePaste);
+    return () => window.removeEventListener('paste', handlePaste);
+  }, [handleFileSelected]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!imageElement) return;
@@ -258,87 +296,42 @@ export const SscResizer: React.FC<SscResizerProps> = ({
 
   const handleTouchEnd = () => setIsDragging(false);
 
-  const handleWheel = (e: React.WheelEvent) => {
-    if (!imageElement) return;
-    e.preventDefault();
-    const delta = e.deltaY * -0.0015;
-    setZoom((prev) => Math.min(4, Math.max(0.5, prev + delta)));
-  };
+  // Native non-passive wheel listener: strictly prevents page scrolling while zooming on canvas
+  useEffect(() => {
+    const el = canvasContainerRef.current;
+    if (!el) return;
 
-  const rotateCCW = () => setRotation((prev) => (prev - 90 + 360) % 360);
-  const rotateCW = () => setRotation((prev) => (prev + 90) % 360);
-  const handleCenter = () => setPan({ x: 0, y: 0 });
-  const toggleFlipH = () => setFlipH((prev) => !prev);
-  const nudge = (dx: number, dy: number) => {
+    const handleNativeWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const zoomDelta = e.deltaY < 0 ? 0.08 : -0.08;
+      setZoom((prev) => Math.min(4, Math.max(0.5, parseFloat((prev + zoomDelta).toFixed(2)))));
+    };
+
+    el.addEventListener('wheel', handleNativeWheel, { passive: false });
+    return () => {
+      el.removeEventListener('wheel', handleNativeWheel);
+    };
+  }, [imageSrc, imageElement]);
+
+  const rotateCCW = useCallback(() => setRotation((prev) => (prev - 90 + 360) % 360), []);
+  const rotateCW = useCallback(() => setRotation((prev) => (prev + 90) % 360), []);
+  const handleCenter = useCallback(() => setPan({ x: 0, y: 0 }), []);
+  const toggleFlipH = useCallback(() => setFlipH((prev) => !prev), []);
+  const nudge = useCallback((dx: number, dy: number) => {
     setPan((p) => ({ x: p.x + dx, y: p.y + dy }));
-  };
+  }, []);
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    const targetTag = (e.target as HTMLElement)?.tagName?.toLowerCase();
-    if (targetTag === 'input' || targetTag === 'textarea' || targetTag === 'select') return;
-
-    const step = e.shiftKey ? 10 : 2;
-    if (e.key === 'ArrowLeft') {
-      e.preventDefault();
-      nudge(-step, 0);
-    } else if (e.key === 'ArrowRight') {
-      e.preventDefault();
-      nudge(step, 0);
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      nudge(0, -step);
-    } else if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      nudge(0, step);
-    } else if (e.key === '+' || e.key === '=') {
-      e.preventDefault();
-      setZoom((prev) => Math.min(4, parseFloat((prev + 0.05).toFixed(2))));
-    } else if (e.key === '-' || e.key === '_') {
-      e.preventDefault();
-      setZoom((prev) => Math.max(0.5, parseFloat((prev - 0.05).toFixed(2))));
-    } else if (e.key === 'r' || e.key === 'R') {
-      e.preventDefault();
-      if (e.shiftKey) {
-        rotateCCW();
-      } else {
-        rotateCW();
-      }
-    } else if (e.key === 'h' || e.key === 'H') {
-      e.preventDefault();
-      toggleFlipH();
-    } else if (e.key === 'c' || e.key === 'C') {
-      e.preventDefault();
-      handleCenter();
-    } else if (e.key === '0') {
-      e.preventDefault();
-      resetTransform();
-    } else if (e.key === '[') {
-      e.preventDefault();
-      if (e.shiftKey) {
-        setContrast((prev) => Math.max(70, prev - 5));
-      } else {
-        setBrightness((prev) => Math.max(70, prev - 5));
-      }
-    } else if (e.key === ']') {
-      e.preventDefault();
-      if (e.shiftKey) {
-        setContrast((prev) => Math.min(150, prev + 5));
-      } else {
-        setBrightness((prev) => Math.min(140, prev + 5));
-      }
-    }
-  };
-
-  const resetTransform = () => {
+  const resetTransform = useCallback(() => {
     setZoom(1);
     setPan({ x: 0, y: 0 });
     setRotation(0);
     setFlipH(false);
     setBrightness(100);
     setContrast(100);
-  };
+  }, []);
 
-  const processImage = async (options?: { silent?: boolean }) => {
+  const processImage = useCallback(async (options?: { silent?: boolean }) => {
     if (!imageElement || !viewportRef.current) return;
     if (options?.silent) {
       setIsLiveSyncing(true);
@@ -408,7 +401,27 @@ export const SscResizer: React.FC<SscResizerProps> = ({
       setIsProcessing(false);
       setIsLiveSyncing(false);
     }
-  };
+  }, [
+    imageElement,
+    targetW,
+    targetH,
+    brightness,
+    contrast,
+    boxW,
+    pan.x,
+    pan.y,
+    rotation,
+    zoom,
+    flipH,
+    baseW,
+    baseH,
+    targetMinKb,
+    targetMaxKb,
+    targetDpi,
+    resultUrl,
+    itemType,
+    onNotify,
+  ]);
 
   // Real-time synchronization of interactive viewport crop with Live Portal Validation
   useEffect(() => {
@@ -431,16 +444,17 @@ export const SscResizer: React.FC<SscResizerProps> = ({
     targetH,
     targetMinKb,
     targetMaxKb,
+    processImage,
   ]);
 
-  const handleDownload = () => {
+  const handleDownload = useCallback(() => {
     if (!resultBlob) return;
     const filename = `SSC_${itemType.toUpperCase()}_${Date.now()}.jpg`;
     triggerFileDownload(resultBlob, filename);
     onNotify('Download Started', `${filename} saved successfully.`, 'success');
-  };
+  }, [itemType, onNotify, resultBlob]);
 
-  const handleCopy = async () => {
+  const handleCopy = useCallback(async () => {
     if (!resultBlob) return;
     const ok = await copyImageToClipboard(resultBlob);
     if (ok) {
@@ -448,9 +462,9 @@ export const SscResizer: React.FC<SscResizerProps> = ({
     } else {
       onNotify('Copy Failed', 'Your browser could not copy image directly to clipboard.', 'error');
     }
-  };
+  }, [itemType, onNotify, resultBlob]);
 
-  const handleShare = async () => {
+  const handleShare = useCallback(async () => {
     if (!resultBlob) return;
     const filename = `SSC_${itemType.toUpperCase()}_${Date.now()}.jpg`;
     const shared = await shareFileOrBlob({
@@ -462,128 +476,330 @@ export const SscResizer: React.FC<SscResizerProps> = ({
     if (shared) {
       onNotify('Shared', `${itemType === 'photo' ? 'Photo' : 'Signature'} shared successfully.`, 'success');
     }
-  };
+  }, [itemType, onNotify, resultBlob]);
+
+  // Global window keydown listener for zero mouse latency navigation
+  useEffect(() => {
+    const onWindowKeyDown = (e: KeyboardEvent) => {
+      const targetTag = (e.target as HTMLElement)?.tagName?.toLowerCase();
+      if (targetTag === 'input' || targetTag === 'textarea' || targetTag === 'select') return;
+      if ((e.target as HTMLElement)?.isContentEditable) return;
+
+      if (e.key === '1') {
+        e.preventDefault();
+        handleSwitchType('photo');
+        return;
+      }
+      if (e.key === '2') {
+        e.preventDefault();
+        handleSwitchType('signature');
+        return;
+      }
+
+      if (!imageElement) return;
+
+      // Download
+      if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
+        e.preventDefault();
+        if (resultBlob) handleDownload();
+        return;
+      }
+      if (e.key === 'd' || e.key === 'D') {
+        e.preventDefault();
+        if (resultBlob) handleDownload();
+        return;
+      }
+
+      // Copy
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'C')) {
+        if (resultBlob) {
+          e.preventDefault();
+          handleCopy();
+          return;
+        }
+      }
+
+      // Process / Format
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        processImage();
+        return;
+      }
+
+      // Reset / New
+      if (e.key === 'n' || e.key === 'N' || e.key === 'Escape') {
+        e.preventDefault();
+        handleResetFile();
+        return;
+      }
+
+      // Rotate
+      if (e.key === 't' || e.key === 'T') {
+        e.preventDefault();
+        rotateCW();
+        return;
+      }
+
+      // Flip
+      if (e.key === 'h' || e.key === 'H') {
+        e.preventDefault();
+        toggleFlipH();
+        return;
+      }
+
+      // Guides
+      if (e.key === 'g' || e.key === 'G') {
+        e.preventDefault();
+        setShowGuides((prev) => !prev);
+        return;
+      }
+
+      // Center
+      if (e.key === 'c' || e.key === 'C') {
+        e.preventDefault();
+        handleCenter();
+        return;
+      }
+
+      // Reset
+      if (e.key === '0') {
+        e.preventDefault();
+        resetTransform();
+        return;
+      }
+
+      // Tone shortcuts
+      if (e.key === '[') {
+        e.preventDefault();
+        if (e.shiftKey) {
+          setContrast((prev) => Math.max(70, prev - 5));
+        } else {
+          setBrightness((prev) => Math.max(70, prev - 5));
+        }
+        return;
+      }
+      if (e.key === ']') {
+        e.preventDefault();
+        if (e.shiftKey) {
+          setContrast((prev) => Math.min(150, prev + 5));
+        } else {
+          setBrightness((prev) => Math.min(140, prev + 5));
+        }
+        return;
+      }
+
+      // Arrow navigation
+      const step = e.shiftKey ? 10 : 2;
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        nudge(-step, 0);
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        nudge(step, 0);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        nudge(0, -step);
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        nudge(0, step);
+      } else if (e.key === '+' || e.key === '=') {
+        e.preventDefault();
+        setZoom((prev) => Math.min(4, parseFloat((prev + 0.05).toFixed(2))));
+      } else if (e.key === '-' || e.key === '_') {
+        e.preventDefault();
+        setZoom((prev) => Math.max(0.5, parseFloat((prev - 0.05).toFixed(2))));
+      }
+    };
+
+    window.addEventListener('keydown', onWindowKeyDown);
+    return () => window.removeEventListener('keydown', onWindowKeyDown);
+  }, [
+    imageElement,
+    resultBlob,
+    handleSwitchType,
+    handleDownload,
+    handleCopy,
+    processImage,
+    handleResetFile,
+    rotateCW,
+    toggleFlipH,
+    handleCenter,
+    resetTransform,
+    nudge,
+  ]);
 
   const currentSizeKb = resultSizeBytes ? (resultSizeBytes / 1024).toFixed(1) : null;
 
-  const faqs = [
-    {
-      q: 'What are the official SSC photo requirements?',
-      a: 'The Staff Selection Commission (SSC CGL, CHSL, MTS, GD) requires a recent photograph (between 20 KB to 50 KB, JPEG), dimensions approx 100×120 px, taken without spectacles or caps, with both ears clearly visible on a white/light background.',
-    },
-    {
-      q: 'What are the official SSC signature requirements?',
-      a: 'SSC signature must be strictly between 10 KB to 20 KB in JPEG format, dimensions approx 140×60 px (4.0 cm × 2.0 cm), signed with black or dark blue ink on clear white paper.',
-    },
-    {
-      q: 'Why does the SSC portal give a "File size out of range" error?',
-      a: 'The SSC server strictly checks byte bounds. Photos under 20 KB or above 50 KB, and signatures under 10 KB or above 20 KB are instantly rejected. This tool uses iterative binary search to guarantee file sizes stay strictly inside the allowed boundaries.',
-    },
-  ];
+  /* -------------------------------------------------------------
+     RENDER: EMPTY STATE (CLEAN, DIRECT DROPZONE, NO BOX-IN-BOX)
+  ------------------------------------------------------------- */
+  if (!imageElement) {
+    return (
+      <div className="w-full max-w-7xl mx-auto space-y-8 animate-in fade-in duration-300">
+        {/* Single Authoritative Minimal Header Section */}
+        <div className="text-center space-y-3 max-w-2xl mx-auto">
+          <div
+            className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold ${
+              isDark ? 'bg-zinc-800/80 text-zinc-300' : 'bg-zinc-100 text-zinc-700'
+            }`}
+          >
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+            <span>
+              {language === 'hi'
+                ? 'कर्मचारी चयन आयोग (SSC.gov.in आधिकारिक पोर्टल)'
+                : 'Staff Selection Commission (SSC.gov.in Official Portal)'}
+            </span>
+          </div>
 
-  const currentStep = !imageElement ? 1 : !resultBlob ? 2 : 3;
+          <h1
+            className={`text-3xl sm:text-4xl font-extrabold tracking-tight ${
+              isDark ? 'text-zinc-100' : 'text-zinc-950'
+            }`}
+          >
+            {language === 'hi'
+              ? 'SSC फ़ोटो और हस्ताक्षर रिसाइज़र'
+              : 'SSC Photo & Signature Resizer'}
+          </h1>
+          <p className={`text-sm sm:text-base leading-relaxed ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>
+            {language === 'hi'
+              ? 'SSC CGL, CHSL, MTS, GD के लिए फ़ोटो (20–50 KB) और हस्ताक्षर (10–20 KB) तुरंत तैयार करें।'
+              : 'Format official SSC photos (20–50 KB) and signatures (10–20 KB) with guaranteed portal pass.'}
+          </p>
+        </div>
 
-  const handleResetFile = () => {
-    if (resultUrl) revokeSafeObjectURL(resultUrl);
-    setResultUrl(null);
-    setResultBlob(null);
-    setImageElement(null);
-    setImageSrc(null);
-    setSourceFile(null);
-  };
+        {/* Photo vs Signature Toggle Bar (Clean Pill Selector) */}
+        <div className="flex justify-center">
+          <div className="inline-flex items-center gap-2 p-1 rounded-xl bg-zinc-100 dark:bg-zinc-850 border border-zinc-200/90 dark:border-zinc-750">
+            <button
+              onClick={() => handleSwitchType('photo')}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-2 cursor-pointer ${
+                itemType === 'photo'
+                  ? 'bg-white dark:bg-zinc-900 text-zinc-950 dark:text-white font-semibold shadow-xs border border-zinc-200/90 dark:border-zinc-700'
+                  : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-zinc-100'
+              }`}
+            >
+              <kbd className="px-1.5 py-0.2 rounded text-[10px] font-mono border bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700">1</kbd>
+              <Camera className="w-3.5 h-3.5" />
+              <span>SSC Photo (20–50 KB · 350×450 px)</span>
+            </button>
+            <button
+              onClick={() => handleSwitchType('signature')}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-2 cursor-pointer ${
+                itemType === 'signature'
+                  ? 'bg-white dark:bg-zinc-900 text-zinc-950 dark:text-white font-semibold shadow-xs border border-zinc-200/90 dark:border-zinc-700'
+                  : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-zinc-100'
+              }`}
+            >
+              <kbd className="px-1.5 py-0.2 rounded text-[10px] font-mono border bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700">2</kbd>
+              <PenTool className="w-3.5 h-3.5" />
+              <span>SSC Signature (10–20 KB · 140×60 px)</span>
+            </button>
+          </div>
+        </div>
 
-  const handleReAdjust = () => {
-    if (resultUrl) revokeSafeObjectURL(resultUrl);
-    setResultUrl(null);
-    setResultBlob(null);
-  };
+        {/* Official SSC Portal Live Camera Notice */}
+        <div className="max-w-3xl mx-auto p-3.5 rounded-lg border border-amber-500/30 bg-amber-500/10 text-xs text-amber-900 dark:text-amber-300 flex items-start gap-2.5">
+          <Info className="w-4 h-4 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
+          <p className="leading-relaxed">
+            <strong>Official SSC Portal Notice (ssc.gov.in):</strong> For active SSC exams (CGL, CHSL, MTS, GD), candidate photos are captured <strong>Live via webcam or MySSC mobile app</strong>. Pre-scanned photo upload is strictly for state/legacy portals. <strong>Signature digital upload (140×60 px, strictly 10–20 KB)</strong> remains mandatory for all candidates.
+          </p>
+        </div>
 
+        {/* Direct Dropzone (Centered, Max-w-3xl, Clean & Focused) */}
+        <div className="max-w-3xl mx-auto">
+          <Dropzone
+            onFilesSelected={handleFileSelected}
+            accept="image/*"
+            multiple={false}
+            title={`Upload SSC ${itemType === 'photo' ? 'Photograph' : 'Signature'}`}
+            description="Drag & drop or click to browse. Automatically formats to official SSC standards."
+          />
+        </div>
+
+        {/* Authoritative Verified Guide, Official Specifications & FAQs */}
+        <GovToolGuideSection toolId="ssc-photo-signature" />
+      </div>
+    );
+  }
+
+  /* -------------------------------------------------------------
+     RENDER: ACTIVE WORKSPACE (FILE LOADED & READY)
+  ------------------------------------------------------------- */
   return (
-    <div className="space-y-6">
-      {/* 3-Step Compliance Progress Bar */}
-      <ComplianceProgressBar
-        currentStep={currentStep}
-        toolName={`SSC ${itemType === 'photo' ? 'Photo' : 'Signature'} (${targetW}×${targetH})`}
-        step1Label={`Upload ${itemType === 'photo' ? 'Photo' : 'Signature'}`}
-        step2Label="Position & Crop Frame"
-        step3Label="Download Strict Byte File"
-        step1Desc={itemType === 'photo' ? 'Select candidate photo' : 'Select signature scan'}
-        step2Desc={`Fit ${targetW}×${targetH} px ratio`}
-        step3Desc={`Strictly ${targetMinKb}–${targetMaxKb} KB JPEG`}
-        onReset={handleResetFile}
-        onReAdjust={handleReAdjust}
-      />
-
-      {/* Header Banner */}
-      <div
-        className={`p-6 rounded-lg border ${
-          isDark
-            ? 'bg-zinc-900 border-zinc-800 text-white'
-            : 'bg-white border-zinc-200 text-zinc-900'
-        }`}
-      >
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <div className="inline-flex items-center gap-2 px-2 py-0.5 rounded border border-zinc-200 dark:border-zinc-800 text-[11px] font-mono text-zinc-600 dark:text-zinc-400 mb-2">
-              <FileText className="w-3.5 h-3.5" />
-              <span>
-                {language === 'hi'
-                  ? 'कर्मचारी चयन आयोग (SSC.gov.in आधिकारिक पोर्टल)'
-                  : 'Staff Selection Commission (SSC.gov.in Official Portal)'}
-              </span>
+    <div className="w-full max-w-7xl mx-auto space-y-6 animate-in fade-in duration-200">
+      {/* Pro Workspace Header Bar */}
+      <div className={`p-3.5 rounded-lg border flex flex-wrap items-center justify-between gap-3 ${
+        isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'
+      }`}>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded border border-zinc-200 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 overflow-hidden flex items-center justify-center shrink-0">
+              <img
+                src={imageSrc || imageElement.src}
+                alt="Thumbnail"
+                className="w-full h-full object-cover"
+              />
             </div>
-            <h1 className={`text-2xl font-bold tracking-tight flex items-center gap-2.5 ${isDark ? 'text-zinc-100' : 'text-zinc-950'}`}>
-              {language === 'hi'
-                ? 'SSC फ़ोटो और हस्ताक्षर रिसाइज़र'
-                : 'SSC Photo & Signature Resizer'}
-            </h1>
-            <p className={`text-sm mt-1 max-w-2xl ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>
-              {language === 'hi'
-                ? 'SSC CGL, CHSL, MTS, GD, और CPO फॉर्म के लिए सख्त रिसाइज़र। फ़ोटो 20-50 KB और हस्ताक्षर 10-20 KB सीमा का शत-प्रतिशत पालन करता है।'
-                : 'Strictly compliant resizer for SSC CGL, CHSL, MTS, GD, and CPO applications. Precision byte-bounds compressor: Photos strictly 20–50 KB, Signatures strictly 10–20 KB.'}
-            </p>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className={`text-xs font-semibold max-w-[200px] sm:max-w-xs truncate ${isDark ? 'text-zinc-100' : 'text-zinc-900'}`}>
+                  {sourceFile?.name || `SSC_${itemType.toUpperCase()}.jpg`}
+                </span>
+                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700">
+                  {imageNaturalSize.width}×{imageNaturalSize.height} px
+                </span>
+              </div>
+              <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-mono mt-0.5 flex items-center gap-1">
+                <CheckCircle2 className="w-3 h-3" />
+                <span>
+                  ✓ 100% SSC Compliant: {targetW}×{targetH} px · {targetMinKb}–{targetMaxKb} KB · {targetDpi} DPI
+                </span>
+              </p>
+            </div>
           </div>
 
           <div className="flex items-center gap-2">
-            <span className={`px-2.5 py-1 rounded text-xs font-mono font-medium border ${isDark ? 'bg-zinc-800 text-zinc-300 border-zinc-700' : 'bg-zinc-100 text-zinc-700 border-zinc-200'}`}>
-              {itemType === 'photo' ? 'Photo: 20–50 KB' : 'Sig: 10–20 KB'}
-            </span>
-            <span className="px-2.5 py-1 rounded text-xs font-mono font-medium border border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100">
-              SSC Strict Bounds
-            </span>
+            <button
+              onClick={handleResetFile}
+              title="Reset Image (Esc or N)"
+              className="px-2.5 py-1.5 rounded-md text-xs font-medium border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 transition-colors flex items-center gap-1.5 cursor-pointer"
+            >
+              <span>New</span>
+              <kbd className="px-1 py-0.2 rounded text-[10px] font-mono bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-500">N</kbd>
+            </button>
+            {resultBlob && (
+              <button
+                onClick={handleCopy}
+                title="Copy Result (C or Ctrl+C)"
+                className="px-2.5 py-1.5 rounded-md text-xs font-medium border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 transition-colors flex items-center gap-1.5 cursor-pointer"
+              >
+                <Copy className="w-3.5 h-3.5" />
+                <span>Copy</span>
+                <kbd className="px-1 py-0.2 rounded text-[10px] font-mono bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-500">C</kbd>
+              </button>
+            )}
+            {resultBlob ? (
+              <button
+                onClick={handleDownload}
+                title="Download Result (D or Ctrl+S)"
+                className="px-3 py-1.5 rounded-md text-xs font-semibold bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors flex items-center gap-1.5 cursor-pointer"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Download</span>
+                <kbd className="px-1 py-0.2 rounded text-[10px] font-mono bg-zinc-700 dark:bg-zinc-300 text-zinc-200 dark:text-zinc-800">D</kbd>
+              </button>
+            ) : (
+              <button
+                onClick={() => processImage()}
+                title="Format Result (Enter or Space)"
+                className="px-3 py-1.5 rounded-md text-xs font-semibold bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors flex items-center gap-1.5 cursor-pointer"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Format</span>
+                <kbd className="px-1 py-0.2 rounded text-[10px] font-mono bg-zinc-700 dark:bg-zinc-300 text-zinc-200 dark:text-zinc-800">↵</kbd>
+              </button>
+            )}
           </div>
         </div>
-
-        {/* Photo vs Signature Toggle Bar */}
-        <div className={`mt-5 pt-4 border-t flex items-center gap-2 ${isDark ? 'border-zinc-800' : 'border-zinc-200'}`}>
-          <button
-            onClick={() => handleSwitchType('photo')}
-            className={`px-3 py-1.5 rounded-md text-xs font-medium border transition-colors flex items-center gap-2 cursor-pointer ${
-              itemType === 'photo'
-                ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 border-zinc-900 dark:border-zinc-100'
-                : isDark
-                  ? 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:text-zinc-200 hover:bg-zinc-800'
-                  : 'bg-white text-zinc-700 border-zinc-200 hover:text-zinc-900 hover:bg-zinc-50'
-            }`}
-          >
-            <Camera className="w-4 h-4" />
-            <span>SSC Photograph (20–50 KB · 100×120 px)</span>
-          </button>
-          <button
-            onClick={() => handleSwitchType('signature')}
-            className={`px-3 py-1.5 rounded-md text-xs font-medium border transition-colors flex items-center gap-2 cursor-pointer ${
-              itemType === 'signature'
-                ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 border-zinc-900 dark:border-zinc-100'
-                : isDark
-                  ? 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:text-zinc-200 hover:bg-zinc-800'
-                  : 'bg-white text-zinc-700 border-zinc-200 hover:text-zinc-900 hover:bg-zinc-50'
-            }`}
-          >
-            <PenTool className="w-4 h-4" />
-            <span>SSC Signature (10–20 KB · 140×60 px)</span>
-          </button>
-        </div>
-      </div>
 
       {/* Main Workspace Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -632,28 +848,25 @@ export const SscResizer: React.FC<SscResizerProps> = ({
               )}
             </div>
 
-            {!imageElement ? (
-              <Dropzone
-                onFilesSelected={handleFileSelected}
-                accept="image/*"
-                multiple={false}
-                title={`Upload SSC ${itemType === 'photo' ? 'Photograph' : 'Signature'}`}
-                description={`Select ${itemType === 'photo' ? 'portrait photo' : 'scanned signature'} (JPEG, PNG)`}
-              />
-            ) : (
-              <div className="space-y-4">
-                {/* Viewport Frame with Pointer Capture & Keyboard Shortcut Focus */}
+            <div className="space-y-4">
+              {/* Viewport Frame with Pointer Capture */}
+                {/* Studio Canvas Viewport */}
                 <div
-                  tabIndex={0}
-                  onKeyDown={handleKeyDown}
-                  className={`relative w-full flex items-center justify-center p-6 rounded-md bg-zinc-100 dark:bg-zinc-950 border select-none cursor-grab active:cursor-grabbing focus:outline-hidden focus:border-zinc-400 dark:focus:border-zinc-600 transition-colors ${
+                  ref={canvasContainerRef}
+                  className={`relative w-full flex items-center justify-center p-6 rounded-xl border select-none cursor-grab active:cursor-grabbing transition-colors overflow-hidden bg-zinc-50/80 dark:bg-zinc-950/80 ${
                     isDragging
                       ? 'border-zinc-400 dark:border-zinc-600'
                       : isDark
                         ? 'border-zinc-800'
-                        : 'border-zinc-300'
+                        : 'border-zinc-200'
                   }`}
-                  style={{ minHeight: '380px' }}
+                  style={{
+                    minHeight: '380px',
+                    backgroundImage: isDark
+                      ? 'radial-gradient(#27272a 1.2px, transparent 1.2px)'
+                      : 'radial-gradient(#d4d4d8 1.2px, transparent 1.2px)',
+                    backgroundSize: '16px 16px',
+                  }}
                   onMouseDown={handleMouseDown}
                   onMouseMove={handleMouseMove}
                   onMouseUp={handleMouseUp}
@@ -661,7 +874,6 @@ export const SscResizer: React.FC<SscResizerProps> = ({
                   onTouchStart={handleTouchStart}
                   onTouchMove={handleTouchMove}
                   onTouchEnd={handleTouchEnd}
-                  onWheel={handleWheel}
                 >
                   <div
                     ref={viewportRef}
@@ -669,7 +881,7 @@ export const SscResizer: React.FC<SscResizerProps> = ({
                       width: `${boxW}px`,
                       height: `${boxH}px`,
                     }}
-                    className="relative overflow-hidden border-2 border-white rounded-xs shadow-[0_0_0_9999px_rgba(24,24,27,0.60)] bg-white pointer-events-none"
+                    className="relative overflow-hidden border-2 border-zinc-900/90 dark:border-white rounded-xs shadow-xl bg-white pointer-events-none ring-4 ring-zinc-950/5 dark:ring-white/10"
                   >
                     <div
                       style={{
@@ -693,161 +905,48 @@ export const SscResizer: React.FC<SscResizerProps> = ({
                     </div>
 
                     {/* Studio Viewfinder Corner L-Brackets */}
-                    <div className="absolute -top-0.5 -left-0.5 w-3 h-3 border-t-2 border-l-2 border-white pointer-events-none z-10" />
-                    <div className="absolute -top-0.5 -right-0.5 w-3 h-3 border-t-2 border-r-2 border-white pointer-events-none z-10" />
-                    <div className="absolute -bottom-0.5 -left-0.5 w-3 h-3 border-b-2 border-l-2 border-white pointer-events-none z-10" />
-                    <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 border-b-2 border-r-2 border-white pointer-events-none z-10" />
+                    <div className="absolute -top-0.5 -left-0.5 w-3 h-3 border-t-2 border-l-2 border-zinc-900 dark:border-white pointer-events-none z-10" />
+                    <div className="absolute -top-0.5 -right-0.5 w-3 h-3 border-t-2 border-r-2 border-zinc-900 dark:border-white pointer-events-none z-10" />
+                    <div className="absolute -bottom-0.5 -left-0.5 w-3 h-3 border-b-2 border-l-2 border-zinc-900 dark:border-white pointer-events-none z-10" />
+                    <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 border-b-2 border-r-2 border-zinc-900 dark:border-white pointer-events-none z-10" />
 
                     {/* Clean Minimalist Composition Grid Overlay */}
                     {showGuides && (
-                      <div className="absolute inset-0 pointer-events-none border border-white/20">
+                      <div className="absolute inset-0 pointer-events-none border border-zinc-400/40 dark:border-white/30">
                         {/* Rule of thirds grid lines */}
-                        <div className="absolute top-1/3 left-0 right-0 border-t border-dashed border-white/30" />
-                        <div className="absolute top-2/3 left-0 right-0 border-t border-dashed border-white/30" />
-                        <div className="absolute left-1/3 top-0 bottom-0 border-l border-dashed border-white/30" />
-                        <div className="absolute left-2/3 top-0 bottom-0 border-l border-dashed border-white/30" />
+                        <div className="absolute top-1/3 left-0 right-0 border-t border-dashed border-zinc-500/40 dark:border-white/30" />
+                        <div className="absolute top-2/3 left-0 right-0 border-t border-dashed border-zinc-500/40 dark:border-white/30" />
+                        <div className="absolute left-1/3 top-0 bottom-0 border-l border-dashed border-zinc-500/40 dark:border-white/30" />
+                        <div className="absolute left-2/3 top-0 bottom-0 border-l border-dashed border-zinc-500/40 dark:border-white/30" />
 
                         {/* Subtle center alignment crosshair */}
-                        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none opacity-40">
-                          <div className="absolute top-1/2 left-0 right-0 h-px bg-white" />
-                          <div className="absolute left-1/2 top-0 bottom-0 w-px bg-white" />
+                        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none opacity-60">
+                          <div className="absolute top-1/2 left-0 right-0 h-px bg-zinc-700 dark:bg-white" />
+                          <div className="absolute left-1/2 top-0 bottom-0 w-px bg-zinc-700 dark:bg-white" />
                         </div>
                       </div>
                     )}
                   </div>
 
-                  {/* Top-Left Live Metadata Pill Badges */}
+                  {/* Clean Non-Intrusive Top-Left Live Metadata Pill */}
                   <div className="absolute top-3 left-3 flex items-center gap-1.5 pointer-events-none z-10">
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded border border-zinc-700/50 bg-zinc-900/90 text-zinc-200 flex items-center gap-1.5">
-                      <Maximize2 className="w-3 h-3 text-zinc-400" />
-                      {targetW} × {targetH} px
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-900/80 text-white border border-zinc-700/50 backdrop-blur-xs flex items-center gap-1.5">
+                      <Maximize2 className="w-3 h-3 text-zinc-300" />
+                      {targetW} × {targetH} px · {targetDpi} DPI
                     </span>
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded border border-zinc-700/50 bg-zinc-900/90 text-zinc-300">
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-900/80 text-zinc-200 border border-zinc-700/50 backdrop-blur-xs">
                       {Math.round(zoom * 100)}%
                     </span>
                     {rotation !== 0 && (
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded border border-zinc-700/50 bg-zinc-900/90 text-zinc-300">
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-900/80 text-zinc-200 border border-zinc-700/50 backdrop-blur-xs">
                         {rotation}°
                       </span>
                     )}
                     {flipH && (
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded border border-zinc-700/50 bg-zinc-900/90 text-zinc-300">
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-900/80 text-zinc-200 border border-zinc-700/50 backdrop-blur-xs">
                         Flipped
                       </span>
                     )}
-                  </div>
-
-                  {/* Top-Right Floating Quick Controls */}
-                  <div className="absolute top-3 right-3 flex items-center gap-1 z-20 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-1 rounded-md shadow-xs">
-                    <button
-                      onClick={() => setZoom((prev) => Math.max(0.5, parseFloat((prev - 0.1).toFixed(2))))}
-                      title="Zoom Out"
-                      className="p-1 rounded text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-                    >
-                      <ZoomOut className="w-3.5 h-3.5" />
-                    </button>
-                    <span className="text-[10px] font-mono text-zinc-600 dark:text-zinc-400 px-1">
-                      {Math.round(zoom * 100)}%
-                    </span>
-                    <button
-                      onClick={() => setZoom((prev) => Math.min(3.5, parseFloat((prev + 0.1).toFixed(2))))}
-                      title="Zoom In"
-                      className="p-1 rounded text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-                    >
-                      <ZoomIn className="w-3.5 h-3.5" />
-                    </button>
-                    <div className="w-px h-3.5 bg-zinc-200 dark:bg-zinc-800 mx-0.5" />
-                    <button
-                      onClick={rotateCCW}
-                      title="Rotate 90° Left"
-                      className="p-1 rounded text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-                    >
-                      <RotateCcw className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={rotateCW}
-                      title="Rotate 90° Right"
-                      className="p-1 rounded text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-                    >
-                      <RotateCw className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={toggleFlipH}
-                      title={flipH ? 'Unflip' : 'Flip Horizontally'}
-                      className={`p-1 rounded transition-colors cursor-pointer ${
-                        flipH
-                          ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100'
-                          : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800'
-                      }`}
-                    >
-                      <FlipHorizontal className="w-3.5 h-3.5" />
-                    </button>
-                    <div className="w-px h-3.5 bg-zinc-200 dark:bg-zinc-800 mx-0.5" />
-                    <button
-                      onClick={handleCenter}
-                      title="Center Image"
-                      className="p-1 rounded text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-                    >
-                      <Move className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={resetTransform}
-                      title="Reset Viewport"
-                      className="p-1 rounded text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-                    >
-                      <RefreshCw className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-
-                  {/* Bottom-Right Micro-Nudge D-Pad */}
-                  <div className="absolute bottom-3 right-3 flex flex-col items-center z-20 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-1 rounded-md shadow-xs">
-                    <button
-                      onClick={() => nudge(0, -3)}
-                      title="Nudge Up (3px)"
-                      className="p-1 rounded text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer text-xs leading-none"
-                    >
-                      ▲
-                    </button>
-                    <div className="flex items-center gap-1 my-0.5">
-                      <button
-                        onClick={() => nudge(-3, 0)}
-                        title="Nudge Left (3px)"
-                        className="p-1 rounded text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer text-xs leading-none"
-                      >
-                        ◀
-                      </button>
-                      <button
-                        onClick={handleCenter}
-                        title="Re-Center"
-                        className="p-1 rounded text-zinc-900 dark:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer text-[9px] font-bold leading-none"
-                      >
-                        ●
-                      </button>
-                      <button
-                        onClick={() => nudge(3, 0)}
-                        title="Nudge Right (3px)"
-                        className="p-1 rounded text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer text-xs leading-none"
-                      >
-                        ▶
-                      </button>
-                    </div>
-                    <button
-                      onClick={() => nudge(0, 3)}
-                      title="Nudge Down (3px)"
-                      className="p-1 rounded text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer text-xs leading-none"
-                    >
-                      ▼
-                    </button>
-                  </div>
-
-                  {/* Bottom Navigation Hint & Shortcut Keys Reference Bar */}
-                  <div className="absolute bottom-3 left-3 flex flex-wrap items-center gap-2 pointer-events-none z-10 text-[10px] font-mono text-zinc-400">
-                    <span className="px-2 py-0.5 rounded border border-zinc-700/50 bg-zinc-900/90 text-zinc-300">
-                      Offset: X {pan.x >= 0 ? `+${pan.x}` : pan.x}px · Y {pan.y >= 0 ? `+${pan.y}` : pan.y}px
-                    </span>
-                    <span className="hidden sm:inline px-2 py-0.5 rounded border border-zinc-700/50 bg-zinc-900/90 text-zinc-400">
-                      Keys: Arrows nudge · +/- zoom · R rot · H flip · C center · 0 reset · [ ] tone
-                    </span>
                   </div>
                 </div>
 
@@ -911,7 +1010,6 @@ export const SscResizer: React.FC<SscResizerProps> = ({
                   </Button>
                 </div>
               </div>
-            )}
           </div>
         </div>
 
@@ -1052,49 +1150,30 @@ export const SscResizer: React.FC<SscResizerProps> = ({
         </div>
       </div>
 
-      {/* FAQs */}
-      <div
-        className={`p-6 rounded-lg border ${
-          isDark
-            ? 'bg-zinc-900 border-zinc-800'
-            : 'bg-white border-zinc-200'
-        }`}
-      >
-        <h3 className={`text-sm font-medium uppercase tracking-wider mb-4 flex items-center gap-2 ${isDark ? 'text-zinc-300' : 'text-zinc-900'}`}>
-          <HelpCircle className="w-4 h-4 text-zinc-500" />
-          Staff Selection Commission Notice Rules
-        </h3>
-        <div className="space-y-3">
-          {faqs.map((faq, index) => {
-            const isOpen = openFaq === index;
-            return (
-              <div
-                key={index}
-                className={`rounded-md border overflow-hidden ${isDark ? 'border-zinc-800 bg-zinc-950/40' : 'border-zinc-200 bg-zinc-50/80'}`}
-              >
-                <button
-                  onClick={() => setOpenFaq(isOpen ? null : index)}
-                  className={`w-full p-3.5 text-left text-xs font-medium flex items-center justify-between cursor-pointer ${
-                    isDark ? 'text-zinc-200 hover:text-white' : 'text-zinc-800 hover:text-zinc-950'
-                  }`}
-                >
-                  <span>{faq.q}</span>
-                  <ChevronDown
-                    className={`w-4 h-4 transition-transform ${
-                      isOpen ? 'rotate-180 text-zinc-900 dark:text-zinc-100' : 'text-zinc-400'
-                    }`}
-                  />
-                </button>
-                {isOpen && (
-                  <div className={`p-3.5 pt-0 text-xs border-t ${isDark ? 'text-zinc-400 border-zinc-800' : 'text-zinc-600 border-zinc-200'}`}>
-                    {faq.a}
-                  </div>
-                )}
-              </div>
-            );
-          })}
+      {/* Keyboard Shortcuts Strip */}
+      <div className={`p-3 rounded-lg border text-xs flex flex-wrap items-center justify-between gap-3 ${
+        isDark ? 'bg-zinc-900/60 border-zinc-800 text-zinc-400' : 'bg-zinc-50 border-zinc-200 text-zinc-600'
+      }`}>
+        <div className="flex items-center gap-2">
+          <Keyboard className="w-4 h-4 text-zinc-500" />
+          <span className="font-semibold text-zinc-800 dark:text-zinc-200">Pro Keyboard Controls:</span>
+        </div>
+        <div className="flex flex-wrap items-center gap-3 font-mono text-[11px]">
+          <span><kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-300 dark:border-zinc-700">1</kbd> Photo</span>
+          <span><kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-300 dark:border-zinc-700">2</kbd> Signature</span>
+          <span><kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-300 dark:border-zinc-700">Arrows</kbd> Pan (Shift=10px)</span>
+          <span><kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-300 dark:border-zinc-700">+</kbd>/<kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-300 dark:border-zinc-700">-</kbd> Zoom</span>
+          <span><kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-300 dark:border-zinc-700">T</kbd> Rotate</span>
+          <span><kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-300 dark:border-zinc-700">H</kbd> Flip</span>
+          <span><kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-300 dark:border-zinc-700">G</kbd> Guides</span>
+          <span><kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-300 dark:border-zinc-700">↵</kbd> Format</span>
+          <span><kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-300 dark:border-zinc-700">D</kbd> Save</span>
+          <span><kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-300 dark:border-zinc-700">N</kbd> New</span>
         </div>
       </div>
+
+      {/* Authoritative Verified Guide, Official Specifications & FAQs */}
+      <GovToolGuideSection toolId="ssc-photo-signature" />
     </div>
   );
 };

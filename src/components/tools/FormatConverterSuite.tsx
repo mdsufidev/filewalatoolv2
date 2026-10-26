@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   ArrowRight,
   Download,
@@ -9,6 +9,7 @@ import {
   CheckCircle2,
   Layers,
   Zap,
+  ShieldCheck,
 } from 'lucide-react';
 import { Dropzone } from '../ui/Dropzone';
 import { Button } from '../ui/Button';
@@ -22,6 +23,7 @@ import {
   triggerFileDownload,
 } from '../../utils/memory';
 import { useTheme } from '../../core/themeContext';
+import { ImageToolGuideSection } from './image/ImageToolGuideSection';
 
 export type ConverterToolId =
   | 'png-to-webp'
@@ -242,37 +244,76 @@ export const FormatConverterSuite: React.FC<FormatConverterSuiteProps> = ({
     }
   }, [initialFiles]);
 
-  const handleDownload = () => {
+  const handleDownload = useCallback(() => {
     if (!convertedBlob || !sourceFile) return;
     const baseName = sourceFile.name.replace(/\.[^/.]+$/, '');
     const outName = `${baseName}.${activeMeta.extension}`;
     triggerFileDownload(convertedBlob, outName);
     onNotify('Download Started', `Saved ${outName}`, 'success');
-  };
+  }, [convertedBlob, sourceFile, activeMeta.extension, onNotify]);
+
+  const handleReset = useCallback(() => {
+    setSourceFile(null);
+    setConvertedBlob(null);
+    if (sourcePreviewUrl) revokeSafeObjectURL(sourcePreviewUrl);
+    if (convertedPreviewUrl) revokeSafeObjectURL(convertedPreviewUrl);
+    setSourcePreviewUrl(null);
+    setConvertedPreviewUrl(null);
+    setImgDimensions(null);
+  }, [sourcePreviewUrl, convertedPreviewUrl]);
+
+  // Global Keyboard Shortcuts
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
+      if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+
+      if (e.key === 'n' || e.key === 'N' || e.key === 'Escape') {
+        if (sourceFile) {
+          e.preventDefault();
+          handleReset();
+          onNotify('Reset', 'Cleared workspace.', 'info');
+          return;
+        }
+      }
+
+      if (e.key === 'd' || e.key === 'D') {
+        if (convertedBlob) {
+          e.preventDefault();
+          handleDownload();
+          return;
+        }
+      }
+
+      if (e.key === 'Enter') {
+        if (convertedBlob) {
+          e.preventDefault();
+          handleDownload();
+          return;
+        }
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [sourceFile, convertedBlob, handleDownload, handleReset, onNotify]);
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-200">
-      {/* Header */}
-      <div className="text-center space-y-2 max-w-xl mx-auto">
-        <div
-          className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold border ${
-            isDark
-              ? 'bg-slate-900 border-slate-800 text-slate-300'
-              : 'bg-white border-slate-200 text-slate-700 shadow-xs'
-          }`}
-        >
-          <Layers className="w-3.5 h-3.5 text-blue-500" />
-          <span>Format Converters & Codecs</span>
+    <div className="w-full max-w-7xl mx-auto space-y-8 animate-in fade-in duration-200 select-none">
+      {/* Header Section */}
+      <div className="text-center space-y-2.5 max-w-2xl mx-auto">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-medium uppercase tracking-wider text-zinc-600 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-850">
+          <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+          <span>100% Client-Side Engine · Zero Uploads</span>
         </div>
-        <h2 className={`text-2xl sm:text-3xl font-extrabold tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-zinc-950 dark:text-zinc-50">
           {activeMeta.name} Converter
-        </h2>
-        <p className={`text-xs sm:text-sm font-medium ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+        </h1>
+        <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 max-w-md mx-auto leading-relaxed">
           {activeMeta.description}
         </p>
       </div>
 
-      {/* 8 Converters Tabs Grid */}
+      {/* 8 Converters Tabs Grid (Soft Unboxed Tiles) */}
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
         {CONVERTER_TOOLS.map((t) => {
           const isSelected = activeToolId === t.id;
@@ -280,25 +321,25 @@ export const FormatConverterSuite: React.FC<FormatConverterSuiteProps> = ({
             <button
               key={t.id}
               onClick={() => handleToolChange(t.id)}
-              className={`p-3 rounded-xl border text-center transition-all cursor-pointer flex flex-col items-center justify-between ${
+              className={`p-3 rounded-xl text-center transition-all cursor-pointer flex flex-col items-center justify-between ${
                 isSelected
                   ? isDark
-                    ? 'bg-slate-800 border-slate-700 text-white shadow-xs'
-                    : 'bg-slate-900 border-slate-900 text-white shadow-xs'
+                    ? 'bg-zinc-800 text-white shadow-xs font-semibold'
+                    : 'bg-zinc-900 text-white shadow-xs font-semibold'
                   : isDark
-                    ? 'bg-slate-900/60 border-slate-800/80 text-slate-400 hover:text-white hover:bg-slate-800/50'
-                    : 'bg-white border-slate-200 text-slate-600 hover:text-slate-950 hover:bg-slate-50 shadow-xs'
+                    ? 'bg-zinc-900/60 text-zinc-400 hover:text-white hover:bg-zinc-800/50'
+                    : 'bg-zinc-100/70 text-zinc-600 hover:text-zinc-950 hover:bg-zinc-100'
               }`}
             >
               <div
-                className={`w-8 h-8 rounded-lg flex items-center justify-center mb-1.5 border transition-colors ${
+                className={`w-8 h-8 rounded-lg flex items-center justify-center mb-1.5 transition-colors ${
                   isSelected
                     ? isDark
-                      ? 'bg-slate-900 border-slate-700 text-blue-400'
-                      : 'bg-slate-800 border-slate-700 text-blue-300'
+                      ? 'bg-zinc-900 text-blue-400'
+                      : 'bg-zinc-800 text-blue-300'
                     : isDark
-                      ? 'bg-slate-900 border-slate-800 text-slate-400'
-                      : 'bg-slate-100 border-slate-200 text-slate-600'
+                      ? 'bg-zinc-800/60 text-zinc-400'
+                      : 'bg-white text-zinc-600 shadow-xs'
                 }`}
               >
                 <Layers className="w-4 h-4" />
@@ -308,14 +349,14 @@ export const FormatConverterSuite: React.FC<FormatConverterSuiteProps> = ({
               </span>
               {t.badge && (
                 <span
-                  className={`mt-1 text-[9px] font-mono px-1 py-0.2 rounded border ${
+                  className={`mt-1 text-[9px] font-mono px-1 py-0.2 rounded ${
                     isSelected
                       ? isDark
-                        ? 'bg-slate-950 text-blue-400 border-slate-800'
-                        : 'bg-slate-800 text-blue-300 border-slate-700'
+                        ? 'bg-zinc-950 text-blue-400'
+                        : 'bg-zinc-800 text-blue-300'
                       : isDark
-                        ? 'bg-slate-800 text-slate-400 border-slate-700/60'
-                        : 'bg-slate-100 text-slate-600 border-slate-200'
+                        ? 'bg-zinc-800 text-zinc-400'
+                        : 'bg-white text-zinc-600'
                   }`}
                 >
                   {t.badge}
@@ -326,85 +367,127 @@ export const FormatConverterSuite: React.FC<FormatConverterSuiteProps> = ({
         })}
       </div>
 
-      {/* Main Converter Card */}
-      <div
-        className={`p-6 md:p-8 rounded-lg border ${
-          isDark
-            ? 'bg-zinc-900 border-zinc-800'
-            : 'bg-white border-zinc-200'
-        }`}
-      >
-        {!sourceFile ? (
+      {/* Workspace: Unboxed 2D Flat Dropzone or Active State */}
+      {!sourceFile ? (
+        <div className="max-w-3xl mx-auto">
           <Dropzone
             onFilesSelected={handleFileLoaded}
             accept={activeMeta.accept}
             title={`Drop ${activeMeta.from} file to convert to ${activeMeta.to}`}
             description={`Instant client-side encoding with zero server uploads`}
           />
-        ) : (
-          <div className="space-y-6">
-            <div className={`flex flex-wrap items-center justify-between gap-4 p-4 rounded-xl border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
-              <div className="flex items-center gap-3">
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {/* Active Workspace Top Header Bar */}
+          <div
+            className={`flex flex-wrap items-center justify-between gap-4 p-3.5 sm:p-4 border rounded-xl ${
+              isDark
+                ? 'bg-zinc-900 border-zinc-800 text-zinc-100'
+                : 'bg-white border-zinc-200 text-zinc-900'
+            }`}
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              <div
+                className={`w-10 h-10 rounded-lg overflow-hidden shrink-0 flex items-center justify-center border ${
+                  isDark ? 'bg-zinc-950 border-zinc-800' : 'bg-zinc-100 border-zinc-200'
+                }`}
+              >
                 {sourcePreviewUrl && (
-                  <img
-                    src={sourcePreviewUrl}
-                    alt="Preview"
-                    className="w-12 h-12 rounded-lg object-cover border border-slate-700"
-                  />
+                  <img src={sourcePreviewUrl} alt="Preview" className="w-full h-full object-cover" />
                 )}
-                <div>
-                  <h4 className={`text-sm font-semibold truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>{sourceFile.name}</h4>
-                  <div className={`flex items-center gap-2 text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                    <span>Original: {formatBytes(sourceFile.size)}</span>
-                    {imgDimensions && (
-                      <span>· {imgDimensions.width} × {imgDimensions.height} px</span>
-                    )}
-                  </div>
-                </div>
               </div>
-
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setSourceFile(null)}
-                >
-                  Change File
-                </Button>
-                {convertedBlob && (
-                  <Button
-                    onClick={handleDownload}
-                    leftIcon={<Download className="w-4 h-4" />}
-                  >
-                    Download {activeMeta.to} ({formatBytes(convertedBlob.size)})
-                  </Button>
-                )}
+              <div className="min-w-0">
+                <h3 className={`text-xs sm:text-sm font-semibold truncate ${isDark ? 'text-white' : 'text-zinc-900'}`}>
+                  {sourceFile.name}
+                </h3>
+                <div className={`flex items-center gap-2 text-[11px] font-mono mt-0.5 ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                  <span>Original: {formatBytes(sourceFile.size)}</span>
+                  {imgDimensions && (
+                    <>
+                      <span>·</span>
+                      <span>{imgDimensions.width} × {imgDimensions.height} px</span>
+                    </>
+                  )}
+                  {convertedBlob && (
+                    <>
+                      <span>·</span>
+                      <span className="text-emerald-500 font-semibold">Output: {formatBytes(convertedBlob.size)}</span>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
 
-            {activeMeta.targetFormat !== 'image/png' && (
-              <div className="max-w-md">
-                <Slider
-                  label="Encoding Quality"
-                  min={10}
-                  max={100}
-                  value={quality}
-                  onChange={(val) => {
-                    setQuality(val);
-                    if (sourcePreviewUrl) {
-                      const img = new Image();
-                      img.onload = () => runConversion(img, sourceFile, val);
-                      img.src = sourcePreviewUrl;
-                    }
-                  }}
-                  unit="%"
-                  helperText="Adjust compression ratio vs visual sharpness"
-                />
-              </div>
-            )}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleReset}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+                  isDark
+                    ? 'bg-zinc-800 hover:bg-zinc-750 text-zinc-200'
+                    : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700'
+                }`}
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                <span>Replace File</span>
+              </button>
+
+              <button
+                disabled={!convertedBlob || isProcessing}
+                onClick={handleDownload}
+                className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
+                  isDark
+                    ? 'bg-zinc-100 hover:bg-zinc-200 text-zinc-900'
+                    : 'bg-zinc-900 hover:bg-zinc-800 text-white'
+                }`}
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Download {activeMeta.to} {convertedBlob ? `(${formatBytes(convertedBlob.size)})` : ''}</span>
+              </button>
+            </div>
           </div>
-        )}
-      </div>
+
+          {/* Quality Control Card if format supports lossy quantization */}
+          {activeMeta.targetFormat !== 'image/png' && (
+            <div
+              className={`p-4 sm:p-5 rounded-xl border max-w-xl mx-auto space-y-3 ${
+                isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'
+              }`}
+            >
+              <div className="flex items-center justify-between text-xs">
+                <label className={`font-medium ${isDark ? 'text-zinc-300' : 'text-zinc-700'}`}>
+                  Encoding Quality
+                </label>
+                <span className={`font-mono text-xs font-bold px-2 py-0.5 rounded ${isDark ? 'text-zinc-200 bg-zinc-800' : 'text-zinc-800 bg-zinc-100'}`}>
+                  {quality}%
+                </span>
+              </div>
+              <input
+                type="range"
+                min={10}
+                max={100}
+                value={quality}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value, 10);
+                  setQuality(val);
+                  if (sourcePreviewUrl) {
+                    const img = new Image();
+                    img.onload = () => runConversion(img, sourceFile, val);
+                    img.src = sourcePreviewUrl;
+                  }
+                }}
+                className="w-full h-1.5 rounded-lg appearance-none cursor-pointer accent-blue-500 focus:outline-none"
+              />
+              <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                Adjust compression ratio vs visual sharpness. Default 85% is ideal for web graphics.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Educational Guide, Specs, Pro Tips & Schema-Matched FAQs */}
+      <ImageToolGuideSection toolId={activeToolId} />
     </div>
   );
 };

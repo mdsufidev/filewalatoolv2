@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { Type, Download, RefreshCw, Sparkles, Smile, Copy, Share2 } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Type, Download, RefreshCw, Sparkles, Smile, Copy, Share2, ShieldCheck } from 'lucide-react';
+import { ImageToolGuideSection } from './ImageToolGuideSection';
 import { Dropzone } from '../../ui/Dropzone';
 import { Button } from '../../ui/Button';
 import { Slider } from '../../ui/Slider';
 import { useImageUpload } from '../../../hooks/useImageUpload';
 import { triggerFileDownload, formatBytes } from '../../../utils/memory';
+import { useTheme } from '../../../core/themeContext';
 import {
   copyImageToClipboard,
   shareFileOrBlob,
@@ -82,14 +84,17 @@ export const MemeGeneratorTool: React.FC<{
     render();
   }, [currentImage, topText, bottomText, fontSize, isUppercase, textColor, strokeWidth]);
 
-  const handleDownload = () => {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+
+  const handleDownload = useCallback(() => {
     if (!resultBlob || !currentImage) return;
     const baseName = currentImage.name.replace(/\.[^/.]+$/, '');
     triggerFileDownload(resultBlob, `${baseName}-meme.jpg`);
     onNotify('Meme Downloaded!', 'Ready to share on social media', 'success');
-  };
+  }, [resultBlob, currentImage, onNotify]);
 
-  const handleCopy = async () => {
+  const handleCopy = useCallback(async () => {
     if (!resultBlob) return;
     const ok = await copyImageToClipboard(resultBlob);
     if (ok) {
@@ -97,9 +102,9 @@ export const MemeGeneratorTool: React.FC<{
     } else {
       onNotify('Copy Failed', 'Your browser could not copy image directly to clipboard.', 'error');
     }
-  };
+  }, [resultBlob, onNotify]);
 
-  const handleShare = async () => {
+  const handleShare = useCallback(async () => {
     if (!resultBlob || !currentImage) return;
     const baseName = currentImage.name.replace(/\.[^/.]+$/, '');
     const filename = `${baseName}-meme.jpg`;
@@ -112,34 +117,165 @@ export const MemeGeneratorTool: React.FC<{
     if (shared) {
       onNotify('Shared', 'Meme shared successfully.', 'success');
     }
-  };
+  }, [resultBlob, currentImage, onNotify]);
+
+  // Global Keyboard Navigation
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
+      if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+
+      if (e.key === 'n' || e.key === 'N' || e.key === 'Escape') {
+        if (currentImage) {
+          e.preventDefault();
+          resetImage();
+          onNotify('Reset', 'Cleared workspace.');
+          return;
+        }
+      }
+
+      if (e.key === 'd' || e.key === 'D') {
+        if (resultBlob) {
+          e.preventDefault();
+          handleDownload();
+          return;
+        }
+      }
+
+      if (e.key === 'Enter') {
+        if (resultBlob) {
+          e.preventDefault();
+          handleDownload();
+          return;
+        }
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [currentImage, resultBlob, handleDownload, resetImage, onNotify]);
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6 animate-in fade-in duration-200">
-      <div className="text-center space-y-1.5 max-w-xl mx-auto">
-        <h3 className="text-2xl font-bold tracking-tight text-zinc-950">
-          Meme Generator & Image Captioner
-        </h3>
-        <p className="text-xs text-zinc-500 font-medium">
-          Target Keyword: <em>Add text to image / Meme generator online</em>
-        </p>
-        <p className="text-xs text-zinc-400">
-          Quickly generate iconic memes and bold social media captions with classic Impact typography and clean black contrast strokes.
+    <div className="w-full max-w-7xl mx-auto space-y-6 sm:space-y-8 animate-in fade-in duration-200 select-none">
+      {/* Header Section */}
+      <div className="text-center space-y-2.5 max-w-2xl mx-auto">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-medium uppercase tracking-wider text-zinc-600 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-850">
+          <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+          <span>100% Client-Side Engine · Zero Uploads</span>
+        </div>
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-zinc-950 dark:text-zinc-50">
+          Meme Generator
+        </h1>
+        <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 max-w-md mx-auto leading-relaxed">
+          Generate iconic memes and bold social captions with classic Impact typography and black outline strokes.
         </p>
       </div>
 
       {!currentImage ? (
-        <Dropzone
-          onFilesSelected={(files) => loadFile(files[0])}
-          title="Drop image to generate meme"
-          description="JPEG, PNG, WebP supported"
-        />
+        <div className="max-w-3xl mx-auto">
+          <Dropzone
+            onFilesSelected={(files) => loadFile(files[0])}
+            title="Drop image to generate meme"
+            description="JPEG, PNG, WebP supported · 100% Client-Side"
+          />
+        </div>
       ) : (
+        <div className="space-y-6">
+          {/* Active Workspace Top Header Bar */}
+          <div
+            className={`flex flex-wrap items-center justify-between gap-4 p-3.5 sm:p-4 border rounded-xl ${
+              isDark
+                ? 'bg-zinc-900 border-zinc-800 text-zinc-100'
+                : 'bg-white border-zinc-200 text-zinc-900'
+            }`}
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              <div
+                className={`w-10 h-10 rounded-lg overflow-hidden shrink-0 flex items-center justify-center border ${
+                  isDark ? 'bg-zinc-950 border-zinc-800' : 'bg-zinc-100 border-zinc-200'
+                }`}
+              >
+                <img
+                  src={currentImage.previewUrl}
+                  alt="Source"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div className="min-w-0">
+                <h3 className={`text-xs sm:text-sm font-semibold truncate ${isDark ? 'text-white' : 'text-zinc-900'}`}>
+                  {currentImage.name}
+                </h3>
+                <div className={`flex items-center gap-2 text-[11px] font-mono mt-0.5 ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                  <span>{currentImage.width} × {currentImage.height} px</span>
+                  {resultBlob && (
+                    <>
+                      <span>·</span>
+                      <span className="text-emerald-500 font-semibold">{formatBytes(resultBlob.size)}</span>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={resetImage}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+                  isDark
+                    ? 'bg-zinc-800 hover:bg-zinc-750 text-zinc-200'
+                    : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700'
+                }`}
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                <span>Change Image</span>
+              </button>
+
+              <button
+                disabled={!resultBlob}
+                onClick={handleCopy}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer disabled:opacity-50 ${
+                  isDark
+                    ? 'bg-zinc-800 hover:bg-zinc-750 text-zinc-200'
+                    : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700'
+                }`}
+              >
+                <Copy className="w-3.5 h-3.5" />
+                <span>Copy</span>
+              </button>
+
+              {isShareSupported() && (
+                <button
+                  disabled={!resultBlob}
+                  onClick={handleShare}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer disabled:opacity-50 ${
+                    isDark
+                      ? 'bg-zinc-800 hover:bg-zinc-750 text-zinc-200'
+                      : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700'
+                  }`}
+                >
+                  <Share2 className="w-3.5 h-3.5" />
+                  <span>Share</span>
+                </button>
+              )}
+
+              <button
+                disabled={!resultBlob}
+                onClick={handleDownload}
+                className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
+                  isDark
+                    ? 'bg-zinc-100 hover:bg-zinc-200 text-zinc-900'
+                    : 'bg-zinc-900 hover:bg-zinc-800 text-white'
+                }`}
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Download Meme</span>
+              </button>
+            </div>
+          </div>
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* Controls */}
-          <div className="lg:col-span-5 bg-white border border-zinc-200 rounded-lg p-5 space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-zinc-100">
-              <span className="text-xs font-bold text-zinc-800 uppercase tracking-wider">
+          <div className="lg:col-span-5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800">
+              <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200 uppercase tracking-wider">
                 Meme Captions
               </span>
               <Button variant="outline" size="sm" onClick={resetImage} leftIcon={<RefreshCw className="w-3.5 h-3.5" />}>
@@ -148,24 +284,24 @@ export const MemeGeneratorTool: React.FC<{
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-zinc-700 mb-1">Top Caption</label>
+              <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">Top Caption</label>
               <input
                 type="text"
                 value={topText}
                 onChange={(e) => setTopText(e.target.value)}
                 placeholder="TOP TEXT..."
-                className="w-full px-3 py-2 text-xs font-semibold bg-zinc-50 border border-zinc-300 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-zinc-950"
+                className="w-full px-3 py-2 text-xs font-semibold bg-zinc-50 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white rounded-lg focus:outline-none focus:ring-1 focus:ring-zinc-500"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-zinc-700 mb-1">Bottom Caption</label>
+              <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">Bottom Caption</label>
               <input
                 type="text"
                 value={bottomText}
                 onChange={(e) => setBottomText(e.target.value)}
                 placeholder="BOTTOM TEXT..."
-                className="w-full px-3 py-2 text-xs font-semibold bg-zinc-50 border border-zinc-300 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-zinc-950"
+                className="w-full px-3 py-2 text-xs font-semibold bg-zinc-50 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white rounded-lg focus:outline-none focus:ring-1 focus:ring-zinc-500"
               />
             </div>
 
@@ -179,7 +315,7 @@ export const MemeGeneratorTool: React.FC<{
             />
 
             <div className="flex items-center justify-between pt-1">
-              <label className="flex items-center gap-2 cursor-pointer text-xs font-medium text-zinc-700">
+              <label className="flex items-center gap-2 cursor-pointer text-xs font-medium text-zinc-700 dark:text-zinc-300">
                 <input
                   type="checkbox"
                   checked={isUppercase}
@@ -194,7 +330,7 @@ export const MemeGeneratorTool: React.FC<{
                   <button
                     key={c}
                     onClick={() => setTextColor(c)}
-                    className="w-5 h-5 rounded border border-zinc-300 cursor-pointer shadow-xs"
+                    className="w-6 h-6 rounded border border-zinc-300 dark:border-zinc-700 cursor-pointer shadow-xs"
                     style={{ backgroundColor: c }}
                   />
                 ))}
@@ -217,7 +353,7 @@ export const MemeGeneratorTool: React.FC<{
                   <button
                     type="button"
                     onClick={handleCopy}
-                    className="py-2 px-3 rounded-md text-xs font-medium flex items-center justify-center gap-1.5 border border-zinc-200 dark:border-zinc-750 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 transition-colors cursor-pointer"
+                    className="py-2 px-3 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-zinc-800 dark:text-zinc-200 transition-colors cursor-pointer"
                   >
                     <Copy className="w-3.5 h-3.5 text-zinc-500" />
                     <span>Copy Meme</span>
@@ -226,7 +362,7 @@ export const MemeGeneratorTool: React.FC<{
                     <button
                       type="button"
                       onClick={handleShare}
-                      className="py-2 px-3 rounded-md text-xs font-medium flex items-center justify-center gap-1.5 border border-zinc-200 dark:border-zinc-750 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 transition-colors cursor-pointer"
+                      className="py-2 px-3 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-zinc-800 dark:text-zinc-200 transition-colors cursor-pointer"
                     >
                       <Share2 className="w-3.5 h-3.5 text-zinc-500" />
                       <span>Share</span>
@@ -238,11 +374,11 @@ export const MemeGeneratorTool: React.FC<{
           </div>
 
           {/* Preview */}
-          <div className="lg:col-span-7 bg-white border border-zinc-200 rounded-lg p-5 space-y-4">
-            <span className="text-xs font-semibold text-zinc-800 uppercase tracking-wider block">
+          <div className="lg:col-span-7 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 space-y-4">
+            <span className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 uppercase tracking-wider block">
               Meme Canvas Preview
             </span>
-            <div className="rounded-md border border-zinc-200 bg-zinc-50 p-4 flex items-center justify-center min-h-[380px]">
+            <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-100/60 dark:bg-zinc-950 p-4 flex items-center justify-center min-h-[380px]">
               {resultUrl && (
                 <img
                   src={resultUrl}
@@ -253,7 +389,10 @@ export const MemeGeneratorTool: React.FC<{
             </div>
           </div>
         </div>
+      </div>
       )}
+      {/* Educational Guide, Specs, Pro Tips & Schema-Matched FAQs */}
+      <ImageToolGuideSection toolId="meme-generator" />
     </div>
   );
 };

@@ -29,6 +29,7 @@ import {
   RefreshCw,
   Copy,
   Share2,
+  Keyboard,
 } from 'lucide-react';
 import { Dropzone } from '../ui/Dropzone';
 import { Button } from '../ui/Button';
@@ -50,6 +51,7 @@ import {
   shareFileOrBlob,
   isShareSupported,
 } from '../../utils/clipboardAndShare';
+import { GovToolGuideSection } from './gov/GovToolGuideSection';
 
 interface PassportSignatureResizerProps {
   onNotify: (title: string, desc?: string, type?: 'success' | 'error' | 'info') => void;
@@ -120,6 +122,7 @@ export const PassportSignatureResizer: React.FC<PassportSignatureResizerProps> =
     initialPanY: 0,
   });
   const viewportRef = useRef<HTMLDivElement>(null);
+  const canvasContainerRef = useRef<HTMLDivElement>(null);
 
   // Processing state
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
@@ -137,7 +140,7 @@ export const PassportSignatureResizer: React.FC<PassportSignatureResizerProps> =
     };
   }, [resultUrl]);
 
-  const handleFileSelected = (files: File[]) => {
+  const handleFileSelected = useCallback((files: File[]) => {
     const file = files[0];
     if (!file) return;
 
@@ -178,13 +181,44 @@ export const PassportSignatureResizer: React.FC<PassportSignatureResizerProps> =
       onNotify('Error Reading File', 'Could not read signature file.', 'error');
     };
     reader.readAsDataURL(file);
-  };
+  }, [resultUrl, onNotify]);
 
-  const nudge = (dx: number, dy: number) => {
+  // Global Clipboard Paste Support (Ctrl+V / Cmd+V)
+  useEffect(() => {
+    const handlePaste = (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.startsWith('image/')) {
+          const file = items[i].getAsFile();
+          if (file) {
+            handleFileSelected([file]);
+            break;
+          }
+        }
+      }
+    };
+    window.addEventListener('paste', handlePaste);
+    return () => window.removeEventListener('paste', handlePaste);
+  }, [handleFileSelected]);
+
+  const nudge = useCallback((dx: number, dy: number) => {
     setPan((p) => ({ x: p.x + dx, y: p.y + dy }));
-  };
+  }, []);
 
-  const toggleFlipH = () => setFlipH((prev) => !prev);
+  const toggleFlipH = useCallback(() => setFlipH((prev) => !prev), []);
+  const rotateCCW = useCallback(() => setRotation((prev) => (prev - 90 + 360) % 360), []);
+  const rotateCW = useCallback(() => setRotation((prev) => (prev + 90) % 360), []);
+  const handleCenter = useCallback(() => setPan({ x: 0, y: 0 }), []);
+  const resetTransform = useCallback(() => {
+    setZoom(1);
+    setPan({ x: 0, y: 0 });
+    setRotation(0);
+    setFlipH(false);
+    setBrightness(105);
+    setContrast(120);
+    setWhitenBgThreshold(210);
+  }, []);
 
   // Ultra-Smooth Pointer Capture Dragging Handlers
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -241,24 +275,23 @@ export const PassportSignatureResizer: React.FC<PassportSignatureResizerProps> =
 
   const handleTouchEnd = () => setIsDragging(false);
 
-  const handleWheel = (e: React.WheelEvent) => {
-    if (!imageElement) return;
-    e.preventDefault();
-    const delta = e.deltaY * -0.0015;
-    setZoom((prev) => Math.min(4, Math.max(0.5, prev + delta)));
-  };
+  // Native non-passive wheel listener: strictly prevents page scrolling while zooming on canvas
+  useEffect(() => {
+    const el = canvasContainerRef.current;
+    if (!el) return;
 
-  const rotateCCW = () => setRotation((prev) => (prev - 90 + 360) % 360);
-  const rotateCW = () => setRotation((prev) => (prev + 90) % 360);
-  const resetTransform = () => {
-    setZoom(1);
-    setPan({ x: 0, y: 0 });
-    setRotation(0);
-    setFlipH(false);
-    setBrightness(105);
-    setContrast(120);
-    setWhitenBgThreshold(210);
-  };
+    const handleNativeWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const zoomDelta = e.deltaY < 0 ? 0.08 : -0.08;
+      setZoom((prev) => Math.min(4, Math.max(0.5, parseFloat((prev + zoomDelta).toFixed(2)))));
+    };
+
+    el.addEventListener('wheel', handleNativeWheel, { passive: false });
+    return () => {
+      el.removeEventListener('wheel', handleNativeWheel);
+    };
+  }, [imageSrc, imageElement]);
 
   // Render Clean Signature Canvas (100% Exact Parity)
   const processSignature = useCallback(
@@ -398,14 +431,14 @@ export const PassportSignatureResizer: React.FC<PassportSignatureResizerProps> =
     targetMaxKb,
   ]);
 
-  const handleDownload = () => {
+  const handleDownload = useCallback(() => {
     if (!resultBlob) return;
     const filename = `Passport_Seva_Signature_${Date.now()}.jpg`;
     triggerFileDownload(resultBlob, filename);
     onNotify('Download Started', `${filename} saved successfully.`, 'success');
-  };
+  }, [resultBlob, onNotify]);
 
-  const handleCopySignature = async () => {
+  const handleCopySignature = useCallback(async () => {
     if (!resultBlob) return;
     const ok = await copyImageToClipboard(resultBlob);
     if (ok) {
@@ -413,9 +446,9 @@ export const PassportSignatureResizer: React.FC<PassportSignatureResizerProps> =
     } else {
       onNotify('Copy Failed', 'Your browser could not copy image directly to clipboard.', 'error');
     }
-  };
+  }, [resultBlob, onNotify]);
 
-  const handleShareSignature = async () => {
+  const handleShareSignature = useCallback(async () => {
     if (!resultBlob) return;
     const filename = `Passport_Seva_Signature_${Date.now()}.jpg`;
     const shared = await shareFileOrBlob({
@@ -427,93 +460,272 @@ export const PassportSignatureResizer: React.FC<PassportSignatureResizerProps> =
     if (shared) {
       onNotify('Shared', 'Signature shared successfully.', 'success');
     }
-  };
+  }, [resultBlob, onNotify]);
 
   const currentSizeKb = resultSizeBytes ? (resultSizeBytes / 1024).toFixed(1) : null;
 
-  const faqs = [
-    {
-      q: 'What ink color is acceptable for Passport Seva signatures?',
-      a: 'The Ministry of External Affairs mandates black or dark-blue ballpoint/gel ink on an unruled, pure white sheet of paper. Signatures with faint pencil, sketchy markers, or colored pens will be rejected.',
-    },
-    {
-      q: 'How does the background whitening feature work?',
-      a: 'Physical paper scans usually have grey cast or ambient shadow. The tool uses pixel threshold analysis directly inside your browser to convert shaded grey background paper into pure 255,255,255 white while keeping ink strokes sharp.',
-    },
-    {
-      q: 'What is the required file size for Passport Seva signatures?',
-      a: 'Signatures must be in JPEG/JPG format, under 100 KB (strictly between 10 KB and 100 KB), formatted with a 300 DPI resolution header.',
-    },
-  ];
 
   const currentStep = !imageElement ? 1 : !resultBlob ? 2 : 3;
 
-  const handleResetFile = () => {
+  const handleResetFile = useCallback(() => {
     if (resultUrl) revokeSafeObjectURL(resultUrl);
     setResultUrl(null);
     setResultBlob(null);
     setImageElement(null);
     setImageSrc(null);
     setSourceFile(null);
-  };
+  }, [resultUrl]);
 
-  const handleReAdjust = () => {
+  const handleReAdjust = useCallback(() => {
     if (resultUrl) revokeSafeObjectURL(resultUrl);
     setResultUrl(null);
     setResultBlob(null);
-  };
+  }, [resultUrl]);
 
+  // Global Zero-Latency Keyboard Engine
+  useEffect(() => {
+    const onWindowKeyDown = (e: KeyboardEvent) => {
+      // Don't intercept when user is typing in form inputs
+      const targetTag = (e.target as HTMLElement)?.tagName?.toLowerCase();
+      if (targetTag === 'input' || targetTag === 'textarea' || targetTag === 'select') return;
+
+      if (!imageElement) return;
+
+      // Download: D or Ctrl+S / Cmd+S
+      if (e.key === 'd' || e.key === 'D' || ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S'))) {
+        e.preventDefault();
+        if (resultBlob) {
+          handleDownload();
+        } else {
+          processSignature();
+        }
+        return;
+      }
+
+      // Copy: C or Ctrl+C / Cmd+C (without selection)
+      if ((e.key === 'c' || e.key === 'C') && !e.ctrlKey && !e.metaKey) {
+        if (resultBlob) {
+          e.preventDefault();
+          handleCopySignature();
+          return;
+        }
+      }
+
+      // Process / Format: Enter or Space
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        processSignature();
+        return;
+      }
+
+      // Reset / New: N or Esc
+      if (e.key === 'n' || e.key === 'N' || e.key === 'Escape') {
+        e.preventDefault();
+        handleResetFile();
+        onNotify('Reset', 'Cleared signature and reset viewport.', 'info');
+        return;
+      }
+
+      // Rotate: T
+      if (e.key === 't' || e.key === 'T') {
+        e.preventDefault();
+        rotateCW();
+        return;
+      }
+
+      // Flip: H
+      if (e.key === 'h' || e.key === 'H') {
+        e.preventDefault();
+        toggleFlipH();
+        return;
+      }
+
+      // Biometric guides toggle: G
+      if (e.key === 'g' || e.key === 'G') {
+        e.preventDefault();
+        setShowGuides((prev) => !prev);
+        return;
+      }
+
+      // Pan & Zoom
+      const step = e.shiftKey ? 10 : 2;
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        nudge(-step, 0);
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        nudge(step, 0);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        nudge(0, -step);
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        nudge(0, step);
+      } else if (e.key === '+' || e.key === '=') {
+        e.preventDefault();
+        setZoom((prev) => Math.min(4, parseFloat((prev + 0.05).toFixed(2))));
+      } else if (e.key === '-' || e.key === '_') {
+        e.preventDefault();
+        setZoom((prev) => Math.max(0.5, parseFloat((prev - 0.05).toFixed(2))));
+      }
+    };
+
+    window.addEventListener('keydown', onWindowKeyDown);
+    return () => window.removeEventListener('keydown', onWindowKeyDown);
+  }, [
+    imageElement,
+    resultBlob,
+    handleDownload,
+    handleCopySignature,
+    handleResetFile,
+    rotateCW,
+    toggleFlipH,
+    nudge,
+    onNotify,
+  ]);
+
+  /* -------------------------------------------------------------
+     RENDER: EMPTY STATE (CLEAN, DIRECT DROPZONE, NO BOX-IN-BOX)
+  ------------------------------------------------------------- */
+  if (!imageElement) {
+    return (
+      <div className="w-full max-w-7xl mx-auto space-y-8 animate-in fade-in duration-300">
+        {/* Single Authoritative Minimal Header Section */}
+        <div className="text-center space-y-3 max-w-2xl mx-auto">
+          <div
+            className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold ${
+              isDark ? 'bg-zinc-800/80 text-zinc-300' : 'bg-zinc-100 text-zinc-700'
+            }`}
+          >
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+            <span>Ministry of External Affairs (MEA) Passport Seva Portal</span>
+          </div>
+
+          <h1
+            className={`text-3xl sm:text-4xl font-extrabold tracking-tight ${
+              isDark ? 'text-zinc-100' : 'text-zinc-950'
+            }`}
+          >
+            Passport Seva Signature Resizer
+          </h1>
+          <p className={`text-sm sm:text-base leading-relaxed ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>
+            Clean, whiten, and resize official passport signatures to strict 400×200 px (4×2 cm) and 300 DPI.
+          </p>
+        </div>
+
+        {/* Direct Dropzone (Centered, Max-w-3xl, Clean & Focused) */}
+        <div className="max-w-3xl mx-auto">
+          <Dropzone
+            onFilesSelected={handleFileSelected}
+            accept="image/*"
+            multiple={false}
+            title="Upload Physical Signature Scan"
+            description="Drag & drop or click to browse. Formatted under 100 KB with 300 DPI metadata."
+          />
+        </div>
+
+        {/* Authoritative Verified Guide, Official Specifications & FAQs */}
+        <GovToolGuideSection toolId="passport-signature-resize" />
+      </div>
+    );
+  }
+
+  /* -------------------------------------------------------------
+     RENDER: ACTIVE WORKSPACE (SIGNATURE LOADED & READY)
+  ------------------------------------------------------------- */
   return (
-    <div className="space-y-6">
-      {/* 3-Step Compliance Progress Bar */}
-      <ComplianceProgressBar
-        currentStep={currentStep}
-        toolName="Passport Seva Signature (400×200)"
-        step1Label="Upload Signature"
-        step2Label="Isolate & Whiten Background"
-        step3Label="Download 300 DPI"
-        step1Desc="Select signature image"
-        step2Desc="Remove shadow & frame"
-        step3Desc="Under 100 KB & 300 DPI JPEG"
-        onReset={handleResetFile}
-        onReAdjust={handleReAdjust}
-      />
-
-      {/* Header Banner */}
+    <div className="w-full max-w-7xl mx-auto space-y-6 animate-in fade-in duration-200">
+      {/* Pro Workspace Header Bar */}
       <div
-        className={`p-5 rounded-lg border ${
-          isDark
-            ? 'bg-zinc-900/50 border-zinc-800'
-            : 'bg-white border-zinc-200'
+        className={`p-3.5 sm:p-4 rounded-xl border flex flex-wrap items-center justify-between gap-3 ${
+          isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'
         }`}
       >
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded border text-[11px] font-mono font-medium border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 mb-2">
-              <PenTool className="w-3.5 h-3.5 text-zinc-500" />
-              <span>Ministry of External Affairs (MEA) Passport Seva Portal</span>
+          <div className="flex items-center gap-3 min-w-0">
+            {imageSrc && (
+              <img
+                src={imageSrc}
+                alt="Thumbnail"
+                className="w-10 h-10 rounded-lg object-cover border border-zinc-200 dark:border-zinc-700 shrink-0"
+              />
+            )}
+            <div className="min-w-0">
+              <h3 className={`text-sm font-bold truncate max-w-[180px] sm:max-w-xs ${isDark ? 'text-white' : 'text-zinc-900'}`}>
+                {sourceFile?.name}
+              </h3>
+              <div className="flex items-center gap-2 text-xs text-zinc-500 font-mono">
+                <span>{formatBytes(sourceFile?.size || 0)}</span>
+                <span>•</span>
+                <span>{imageNaturalSize.width} × {imageNaturalSize.height} px</span>
+              </div>
             </div>
-            <h1 className={`text-xl sm:text-2xl font-bold tracking-tight flex items-center gap-2.5 ${isDark ? 'text-white' : 'text-zinc-900'}`}>
-              Passport Seva Signature Resizer
-            </h1>
-            <p className={`text-xs sm:text-sm mt-1 max-w-2xl ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>
-              Clean, whiten, and resize official passport signatures to strict 4.0×2.0 cm proportions. Embeds 300 DPI metadata and compresses under 100 KB with pure white background.
-            </p>
+          </div>
+
+          {/* Center Live Compliance Pill */}
+          <div className="hidden md:flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-medium border bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400">
+            <CheckCircle2 className="w-3.5 h-3.5" />
+            <span>
+              {resultBlob
+                ? `✓ 100% MEA Compliant: ${currentSizeKb} KB · ${verifiedDpi || targetDpi} DPI`
+                : `${targetW}×${targetH} px · Strictly < ${targetMaxKb} KB · ${targetDpi} DPI`}
+            </span>
           </div>
 
           <div className="flex items-center gap-2">
-            <span className={`px-2.5 py-1 rounded text-xs font-mono font-medium border ${isDark ? 'bg-zinc-800 text-zinc-300 border-zinc-700' : 'bg-zinc-100 text-zinc-700 border-zinc-200'}`}>
-              400 × 200 px
-            </span>
-            <span className={`px-2.5 py-1 rounded text-xs font-mono font-medium border ${isDark ? 'bg-zinc-800 text-zinc-300 border-zinc-700' : 'bg-zinc-100 text-zinc-700 border-zinc-200'}`}>
-              &lt; 100 KB
-            </span>
-            <span className="px-2.5 py-1 rounded text-xs font-mono font-medium bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 border border-zinc-900 dark:border-white">
-              300 DPI
-            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleResetFile}
+              leftIcon={<RefreshCw className="w-3.5 h-3.5" />}
+            >
+              <span>New</span>
+              <kbd className="ml-1.5 px-1.5 py-0.5 rounded text-[10px] font-mono bg-zinc-200/80 dark:bg-zinc-750 text-zinc-700 dark:text-zinc-300">
+                N
+              </kbd>
+            </Button>
+
+            {resultBlob && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCopySignature}
+                leftIcon={<Copy className="w-3.5 h-3.5" />}
+              >
+                <span>Copy</span>
+                <kbd className="ml-1.5 px-1.5 py-0.5 rounded text-[10px] font-mono bg-zinc-200/80 dark:bg-zinc-750 text-zinc-700 dark:text-zinc-300">
+                  C
+                </kbd>
+              </Button>
+            )}
+
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => (resultBlob ? handleDownload() : processSignature())}
+              disabled={isProcessing}
+              leftIcon={
+                isProcessing ? (
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                ) : resultBlob ? (
+                  <Download className="w-3.5 h-3.5" />
+                ) : (
+                  <Sparkles className="w-3.5 h-3.5" />
+                )
+              }
+            >
+              <span>
+                {isProcessing
+                  ? 'Formatting...'
+                  : resultBlob
+                    ? `Download (${currentSizeKb} KB)`
+                    : 'Format Signature'}
+              </span>
+              <kbd className="ml-1.5 px-1.5 py-0.5 rounded text-[10px] font-mono bg-white/20 dark:bg-black/30 text-white">
+                {resultBlob ? 'D' : '↵'}
+              </kbd>
+            </Button>
           </div>
         </div>
-      </div>
 
       {/* Main Workspace Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -558,20 +770,11 @@ export const PassportSignatureResizer: React.FC<PassportSignatureResizerProps> =
               )}
             </div>
 
-            {!imageElement ? (
-              <Dropzone
-                onFilesSelected={handleFileSelected}
-                accept="image/*"
-                multiple={false}
-                title="Upload Physical Signature Scan"
-                description="Upload photo or scan of your signature on clean white paper (JPEG, PNG)"
-              />
-            ) : (
-              <div className="space-y-4">
-                {/* Viewport Frame */}
+            <div className="space-y-4">
+              {/* Viewport Frame */}
                 <div
+                  ref={canvasContainerRef}
                   className="relative w-full flex items-center justify-center p-4 rounded-md bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 overflow-hidden select-none"
-                  onWheel={handleWheel}
                 >
                   <div
                     ref={viewportRef}
@@ -677,7 +880,6 @@ export const PassportSignatureResizer: React.FC<PassportSignatureResizerProps> =
                   </Button>
                 </div>
               </div>
-            )}
           </div>
         </div>
 
@@ -800,49 +1002,50 @@ export const PassportSignatureResizer: React.FC<PassportSignatureResizerProps> =
         </div>
       </div>
 
-      {/* FAQs */}
-      <div
-        className={`p-5 sm:p-6 rounded-lg border ${
-          isDark
-            ? 'bg-zinc-900/40 border-zinc-800'
-            : 'bg-white border-zinc-200'
-        }`}
-      >
-        <h3 className={`text-sm font-semibold uppercase tracking-wider mb-4 flex items-center gap-2 ${isDark ? 'text-slate-300' : 'text-slate-900'}`}>
-          <HelpCircle className="w-4 h-4 text-blue-500 dark:text-blue-400" />
-          Passport Seva Signature Rules
-        </h3>
-        <div className="space-y-3">
-          {faqs.map((faq, index) => {
-            const isOpen = openFaq === index;
-            return (
-              <div
-                key={index}
-                className={`rounded-xl border overflow-hidden ${isDark ? 'border-slate-800/80 bg-slate-950/50' : 'border-slate-200 bg-slate-50/80'}`}
-              >
-                <button
-                  onClick={() => setOpenFaq(isOpen ? null : index)}
-                  className={`w-full p-3.5 text-left text-xs font-medium flex items-center justify-between cursor-pointer ${
-                    isDark ? 'text-slate-200 hover:text-white' : 'text-slate-800 hover:text-slate-950'
-                  }`}
-                >
-                  <span>{faq.q}</span>
-                  <ChevronDown
-                    className={`w-4 h-4 transition-transform ${
-                      isOpen ? 'rotate-180 text-blue-500 dark:text-blue-400' : 'text-slate-400'
-                    }`}
-                  />
-                </button>
-                {isOpen && (
-                  <div className={`p-3.5 pt-0 text-xs border-t ${isDark ? 'text-slate-400 border-slate-800/40' : 'text-slate-600 border-slate-200'}`}>
-                    {faq.a}
-                  </div>
-                )}
-              </div>
-            );
-          })}
+      {/* Bottom Keyboard Hotkey Helper Strip */}
+      <div className="flex flex-wrap items-center justify-between gap-2 px-3.5 py-2.5 rounded-lg border text-xs bg-zinc-50 dark:bg-zinc-850/60 border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 font-mono select-none">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+            <Keyboard className="w-3.5 h-3.5 text-zinc-500" />
+            Hotkeys:
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-750 text-zinc-800 dark:text-zinc-200 font-semibold text-[10px]">Ctrl+V</kbd> Paste
+          </span>
+          <span className="opacity-40">·</span>
+          <span className="inline-flex items-center gap-1">
+            <kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-750 text-zinc-800 dark:text-zinc-200 font-semibold text-[10px]">↑↓←→</kbd> Pan
+          </span>
+          <span className="opacity-40">·</span>
+          <span className="inline-flex items-center gap-1">
+            <kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-750 text-zinc-800 dark:text-zinc-200 font-semibold text-[10px]">+/-</kbd> Zoom
+          </span>
+          <span className="opacity-40">·</span>
+          <span className="inline-flex items-center gap-1">
+            <kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-750 text-zinc-800 dark:text-zinc-200 font-semibold text-[10px]">T</kbd> Rotate
+          </span>
+          <span className="opacity-40">·</span>
+          <span className="inline-flex items-center gap-1">
+            <kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-750 text-zinc-800 dark:text-zinc-200 font-semibold text-[10px]">G</kbd> Guides
+          </span>
+          <span className="opacity-40">·</span>
+          <span className="inline-flex items-center gap-1">
+            <kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-750 text-zinc-800 dark:text-zinc-200 font-semibold text-[10px]">↵ Enter</kbd> Format
+          </span>
+          <span className="opacity-40">·</span>
+          <span className="inline-flex items-center gap-1">
+            <kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-750 text-zinc-800 dark:text-zinc-200 font-semibold text-[10px]">D</kbd> Download
+          </span>
+          <span className="opacity-40">·</span>
+          <span className="inline-flex items-center gap-1">
+            <kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-750 text-zinc-800 dark:text-zinc-200 font-semibold text-[10px]">C</kbd> Copy
+          </span>
         </div>
+        <span className="text-[11px] text-zinc-500 font-medium">Zero Mouse Latency</span>
       </div>
+
+      {/* Authoritative Verified Guide, Official Specifications & FAQs */}
+      <GovToolGuideSection toolId="passport-signature-resize" />
     </div>
   );
 };

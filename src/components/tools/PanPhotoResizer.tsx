@@ -31,6 +31,7 @@ import {
   FlipHorizontal,
   Copy,
   Share2,
+  Keyboard,
 } from 'lucide-react';
 import { Dropzone } from '../ui/Dropzone';
 import { Button } from '../ui/Button';
@@ -53,8 +54,9 @@ import {
   shareFileOrBlob,
   isShareSupported,
 } from '../../utils/clipboardAndShare';
+import { GovToolGuideSection } from './gov/GovToolGuideSection';
 
-export type PhotoPortalPreset = 'protean-200x230' | 'utiitsl-213x213' | 'custom';
+export type PhotoPortalPreset = 'protean-197x276' | 'utiitsl-213x213' | 'custom';
 
 interface PhotoPresetConfig {
   id: PhotoPortalPreset;
@@ -70,21 +72,21 @@ interface PhotoPresetConfig {
 }
 
 const PHOTO_PRESETS: Record<PhotoPortalPreset, PhotoPresetConfig> = {
-  'protean-200x230': {
-    id: 'protean-200x230',
+  'protean-197x276': {
+    id: 'protean-197x276',
     name: 'Protean (NSDL) Standard',
     portal: 'Protean / NSDL Portal',
-    width: 200,
-    height: 230,
+    width: 197,
+    height: 276,
     minKb: 20,
     maxKb: 50,
     dpi: 200,
-    aspectRatio: 200 / 230,
-    description: 'Exact 200 × 230 px · 20 KB to 50 KB · 200 DPI JPEG (Government Mandatory)',
+    aspectRatio: 197 / 276,
+    description: 'Exact 197 × 276 px (3.5 × 2.5 cm) · 20 KB to 50 KB · 200 DPI JPEG (Government Mandatory)',
   },
   'utiitsl-213x213': {
     id: 'utiitsl-213x213',
-    name: 'UTIITSL Portal Standard',
+    name: 'UTIITSL Standard',
     portal: 'UTIITSL Government Portal',
     width: 213,
     height: 213,
@@ -92,18 +94,18 @@ const PHOTO_PRESETS: Record<PhotoPortalPreset, PhotoPresetConfig> = {
     maxKb: 30,
     dpi: 300,
     aspectRatio: 1,
-    description: 'Exact 213 × 213 px (3.5 × 2.5 cm) · 15 KB to 30 KB · 300 DPI JPEG',
+    description: 'Exact 213 × 213 px (2.5 × 2.5 cm) · 15 KB to 30 KB · 300 DPI JPEG',
   },
   custom: {
     id: 'custom',
     name: 'Custom Dimensions',
     portal: 'Custom Portal Requirements',
-    width: 200,
-    height: 230,
+    width: 197,
+    height: 276,
     minKb: 20,
     maxKb: 50,
     dpi: 200,
-    aspectRatio: 200 / 230,
+    aspectRatio: 197 / 276,
     description: 'Custom dimensions and strict file size range',
   },
 };
@@ -118,9 +120,9 @@ export const PanPhotoResizer: React.FC<PanPhotoResizerProps> = ({ onNotify }) =>
   const { t, language } = useLanguage();
 
   // Selected preset
-  const [selectedPreset, setSelectedPreset] = useState<PhotoPortalPreset>('protean-200x230');
-  const [customW, setCustomW] = useState<number>(200);
-  const [customH, setCustomH] = useState<number>(230);
+  const [selectedPreset, setSelectedPreset] = useState<PhotoPortalPreset>('protean-197x276');
+  const [customW, setCustomW] = useState<number>(197);
+  const [customH, setCustomH] = useState<number>(276);
   const [customMinKb, setCustomMinKb] = useState<number>(20);
   const [customMaxKb, setCustomMaxKb] = useState<number>(50);
   const [customDpi, setCustomDpi] = useState<number>(200);
@@ -189,6 +191,7 @@ export const PanPhotoResizer: React.FC<PanPhotoResizerProps> = ({ onNotify }) =>
   });
   const pinchStartRef = useRef<{ dist: number; zoom: number }>({ dist: 0, zoom: 1 });
   const viewportRef = useRef<HTMLDivElement>(null);
+  const canvasContainerRef = useRef<HTMLDivElement>(null);
 
   // Processing state & Results
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
@@ -211,7 +214,7 @@ export const PanPhotoResizer: React.FC<PanPhotoResizerProps> = ({ onNotify }) =>
   }, [resultUrl]);
 
   // Load selected image file
-  const handleFileSelected = (files: File[]) => {
+  const handleFileSelected = useCallback((files: File[]) => {
     const file = files[0];
     if (!file) return;
 
@@ -257,87 +260,48 @@ export const PanPhotoResizer: React.FC<PanPhotoResizerProps> = ({ onNotify }) =>
       onNotify('Error Reading File', 'Could not read the selected image file.', 'error');
     };
     reader.readAsDataURL(file);
-  };
+  }, [resultUrl, onNotify]);
 
   // Reset transforms
-  const handleResetViewport = () => {
+  const handleResetViewport = useCallback(() => {
     setZoom(1);
     setPan({ x: 0, y: 0 });
     setRotation(0);
     setFlipH(false);
     setBrightness(100);
     setContrast(100);
-  };
+  }, []);
 
-  const handleCenter = () => {
+  const handleCenter = useCallback(() => {
     setPan({ x: 0, y: 0 });
-  };
+  }, []);
 
-  const nudge = (dx: number, dy: number) => {
+  const nudge = useCallback((dx: number, dy: number) => {
     setPan((p) => ({ x: p.x + dx, y: p.y + dy }));
-  };
+  }, []);
 
-  const rotateCCW = () => setRotation((prev) => (prev - 90 + 360) % 360);
-  const rotateCW = () => setRotation((prev) => (prev + 90) % 360);
-  const toggleFlipH = () => setFlipH((prev) => !prev);
+  const rotateCCW = useCallback(() => setRotation((prev) => (prev - 90 + 360) % 360), []);
+  const rotateCW = useCallback(() => setRotation((prev) => (prev + 90) % 360), []);
+  const toggleFlipH = useCallback(() => setFlipH((prev) => !prev), []);
 
-  // Keyboard shortcuts for full image editing & pixel-level alignment
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    // If target is an input or textarea, let default behavior take place
-    const targetTag = (e.target as HTMLElement)?.tagName?.toLowerCase();
-    if (targetTag === 'input' || targetTag === 'textarea' || targetTag === 'select') return;
-
-    const step = e.shiftKey ? 10 : 2;
-    if (e.key === 'ArrowLeft') {
-      e.preventDefault();
-      nudge(-step, 0);
-    } else if (e.key === 'ArrowRight') {
-      e.preventDefault();
-      nudge(step, 0);
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      nudge(0, -step);
-    } else if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      nudge(0, step);
-    } else if (e.key === '+' || e.key === '=') {
-      e.preventDefault();
-      setZoom((prev) => Math.min(3.5, parseFloat((prev + 0.05).toFixed(2))));
-    } else if (e.key === '-' || e.key === '_') {
-      e.preventDefault();
-      setZoom((prev) => Math.max(0.6, parseFloat((prev - 0.05).toFixed(2))));
-    } else if (e.key === 'r' || e.key === 'R') {
-      e.preventDefault();
-      if (e.shiftKey) {
-        rotateCCW();
-      } else {
-        rotateCW();
+  // Global Clipboard Paste Support (Ctrl+V / Cmd+V)
+  useEffect(() => {
+    const handlePaste = (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.startsWith('image/')) {
+          const file = items[i].getAsFile();
+          if (file) {
+            handleFileSelected([file]);
+            break;
+          }
+        }
       }
-    } else if (e.key === 'h' || e.key === 'H') {
-      e.preventDefault();
-      toggleFlipH();
-    } else if (e.key === 'c' || e.key === 'C') {
-      e.preventDefault();
-      handleCenter();
-    } else if (e.key === '0') {
-      e.preventDefault();
-      handleResetViewport();
-    } else if (e.key === '[') {
-      e.preventDefault();
-      if (e.shiftKey) {
-        setContrast((prev) => Math.max(70, prev - 5));
-      } else {
-        setBrightness((prev) => Math.max(70, prev - 5));
-      }
-    } else if (e.key === ']') {
-      e.preventDefault();
-      if (e.shiftKey) {
-        setContrast((prev) => Math.min(140, prev + 5));
-      } else {
-        setBrightness((prev) => Math.min(140, prev + 5));
-      }
-    }
-  };
+    };
+    window.addEventListener('paste', handlePaste);
+    return () => window.removeEventListener('paste', handlePaste);
+  }, [handleFileSelected]);
 
   // Ultra-Smooth Pointer Capture Dragging Handlers
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -369,12 +333,23 @@ export const PanPhotoResizer: React.FC<PanPhotoResizerProps> = ({ onNotify }) =>
     setIsDragging(false);
   };
 
-  // Wheel to Zoom
-  const handleWheel = (e: React.WheelEvent) => {
-    e.preventDefault();
-    const zoomDelta = e.deltaY < 0 ? 0.08 : -0.08;
-    setZoom((prev) => Math.min(4, Math.max(0.6, parseFloat((prev + zoomDelta).toFixed(2)))));
-  };
+  // Native non-passive wheel listener: strictly prevents page scrolling while zooming on canvas
+  useEffect(() => {
+    const el = canvasContainerRef.current;
+    if (!el) return;
+
+    const handleNativeWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const zoomDelta = e.deltaY < 0 ? 0.08 : -0.08;
+      setZoom((prev) => Math.min(4, Math.max(0.6, parseFloat((prev + zoomDelta).toFixed(2)))));
+    };
+
+    el.addEventListener('wheel', handleNativeWheel, { passive: false });
+    return () => {
+      el.removeEventListener('wheel', handleNativeWheel);
+    };
+  }, [imageSrc, imageElement]);
 
   // Touch handlers for mobile pan & 2-finger pinch
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -557,7 +532,7 @@ export const PanPhotoResizer: React.FC<PanPhotoResizerProps> = ({ onNotify }) =>
   ]);
 
   // Trigger Download
-  const handleDownload = () => {
+  const handleDownload = useCallback(() => {
     if (!resultBlob) return;
     const cleanName = sourceFile
       ? sourceFile.name.replace(/\.[^/.]+$/, '')
@@ -565,9 +540,9 @@ export const PanPhotoResizer: React.FC<PanPhotoResizerProps> = ({ onNotify }) =>
     const filename = `${cleanName}-${targetWidth}x${targetHeight}-${targetDpi}dpi.jpg`;
     triggerFileDownload(resultBlob, filename);
     onNotify('Download Started', `Saved ${filename}`, 'success');
-  };
+  }, [resultBlob, sourceFile, targetWidth, targetHeight, targetDpi, onNotify]);
 
-  const handleCopyImage = async () => {
+  const handleCopyImage = useCallback(async () => {
     if (!resultBlob) return;
     const res = await copyImageToClipboard(resultBlob, { width: targetWidth, height: targetHeight });
     if (res.success) {
@@ -575,9 +550,9 @@ export const PanPhotoResizer: React.FC<PanPhotoResizerProps> = ({ onNotify }) =>
     } else {
       onNotify('Copy Failed', res.error || 'Clipboard copy not supported in this browser', 'error');
     }
-  };
+  }, [resultBlob, targetWidth, targetHeight, onNotify]);
 
-  const handleShareImage = async () => {
+  const handleShareImage = useCallback(async () => {
     if (!resultBlob) return;
     const cleanName = sourceFile
       ? sourceFile.name.replace(/\.[^/.]+$/, '')
@@ -589,90 +564,199 @@ export const PanPhotoResizer: React.FC<PanPhotoResizerProps> = ({ onNotify }) =>
       title: 'PAN Card Photo',
       text: `PAN Card Photo (${targetWidth}×${targetHeight}px, ${formatBytes(resultSizeBytes)}) via FileWala`,
     });
-  };
+  }, [resultBlob, sourceFile, targetWidth, targetHeight, resultSizeBytes]);
 
   const isSizeCompliant =
     resultSizeBytes >= targetMinKb * 1024 && resultSizeBytes <= targetMaxKb * 1024;
 
   const currentStep = !imageElement ? 1 : !resultBlob ? 2 : 3;
 
-  const handleResetFile = () => {
+  const handleResetFile = useCallback(() => {
     if (resultUrl) revokeSafeObjectURL(resultUrl);
     setResultUrl(null);
     setResultBlob(null);
     setImageElement(null);
     setImageSrc(null);
     setSourceFile(null);
-  };
+  }, [resultUrl]);
 
-  const handleReAdjust = () => {
+  const handleReAdjust = useCallback(() => {
     if (resultUrl) revokeSafeObjectURL(resultUrl);
     setResultUrl(null);
     setResultBlob(null);
-  };
+  }, [resultUrl]);
 
-  return (
-    <div className="max-w-6xl mx-auto space-y-6">
-      {/* Header Banner */}
-      <div className="text-center space-y-3 max-w-2xl mx-auto">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md text-xs font-mono font-medium border bg-zinc-100 border-zinc-200 text-zinc-700">
-          <Camera className="w-3.5 h-3.5 text-zinc-700" />
-          <span>
+  // Global Zero-Latency Keyboard Engine
+  useEffect(() => {
+    const onWindowKeyDown = (e: KeyboardEvent) => {
+      // Don't intercept when user is typing in form inputs
+      const targetTag = (e.target as HTMLElement)?.tagName?.toLowerCase();
+      if (targetTag === 'input' || targetTag === 'textarea' || targetTag === 'select') return;
+
+      // Global Presets: 1, 2, 3
+      if (e.key === '1') {
+        e.preventDefault();
+        setSelectedPreset('protean-197x276');
+        onNotify('Preset: Protean (NSDL)', '197×276 px · 20–50 KB · 200 DPI', 'info');
+        return;
+      }
+      if (e.key === '2') {
+        e.preventDefault();
+        setSelectedPreset('utiitsl-213x213');
+        onNotify('Preset: UTIITSL', '213×213 px · 15–30 KB · 300 DPI', 'info');
+        return;
+      }
+      if (e.key === '3') {
+        e.preventDefault();
+        setSelectedPreset('custom');
+        onNotify('Preset: Custom Dimensions', 'Configure custom dimensions', 'info');
+        return;
+      }
+
+      // If no image is loaded yet, only preset keys can be pressed
+      if (!imageElement) return;
+
+      // Download: D or Ctrl+S / Cmd+S
+      if (e.key === 'd' || e.key === 'D' || ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S'))) {
+        e.preventDefault();
+        if (resultBlob) {
+          handleDownload();
+        } else {
+          handleProcessPhoto();
+        }
+        return;
+      }
+
+      // Copy: C or Ctrl+C / Cmd+C (without selection)
+      if ((e.key === 'c' || e.key === 'C') && !e.ctrlKey && !e.metaKey) {
+        if (resultBlob) {
+          e.preventDefault();
+          handleCopyImage();
+          return;
+        }
+      }
+
+      // Process / Format: Enter or Space
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        handleProcessPhoto();
+        return;
+      }
+
+      // Reset / New: N or Esc
+      if (e.key === 'n' || e.key === 'N' || e.key === 'Escape') {
+        e.preventDefault();
+        handleResetFile();
+        onNotify('Reset', 'Cleared image and reset viewport.', 'info');
+        return;
+      }
+
+      // Rotate: T
+      if (e.key === 't' || e.key === 'T') {
+        e.preventDefault();
+        rotateCW();
+        return;
+      }
+
+      // Flip: H
+      if (e.key === 'h' || e.key === 'H') {
+        e.preventDefault();
+        toggleFlipH();
+        return;
+      }
+
+      // Biometric guides toggle: G
+      if (e.key === 'g' || e.key === 'G') {
+        e.preventDefault();
+        setShowGuides((prev) => !prev);
+        return;
+      }
+
+      // Pan & Zoom
+      const step = e.shiftKey ? 10 : 2;
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        nudge(-step, 0);
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        nudge(step, 0);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        nudge(0, -step);
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        nudge(0, step);
+      } else if (e.key === '+' || e.key === '=') {
+        e.preventDefault();
+        setZoom((prev) => Math.min(3.5, parseFloat((prev + 0.05).toFixed(2))));
+      } else if (e.key === '-' || e.key === '_') {
+        e.preventDefault();
+        setZoom((prev) => Math.max(0.6, parseFloat((prev - 0.05).toFixed(2))));
+      }
+    };
+
+    window.addEventListener('keydown', onWindowKeyDown);
+    return () => window.removeEventListener('keydown', onWindowKeyDown);
+  }, [
+    imageElement,
+    resultBlob,
+    handleDownload,
+    handleCopyImage,
+    handleProcessPhoto,
+    handleResetFile,
+    rotateCW,
+    toggleFlipH,
+    nudge,
+    onNotify,
+  ]);
+
+  /* -------------------------------------------------------------
+     RENDER: EMPTY STATE (CLEAN, DIRECT DROPZONE, NO BOX-IN-BOX)
+  ------------------------------------------------------------- */
+  if (!imageElement) {
+    return (
+      <div className="w-full max-w-7xl mx-auto space-y-8 animate-in fade-in duration-300">
+        {/* Single Authoritative Minimal Header Section */}
+        <div className="text-center space-y-3 max-w-2xl mx-auto">
+          <div
+            className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold ${
+              isDark ? 'bg-zinc-800/80 text-zinc-300' : 'bg-zinc-100 text-zinc-700'
+            }`}
+          >
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+            <span>
+              {language === 'hi'
+                ? 'प्रोटियन (NSDL) और UTIITSL सरकारी विनिर्देश'
+                : 'Protean (NSDL) & UTIITSL Government Specifications'}
+            </span>
+          </div>
+
+          <h1
+            className={`text-3xl sm:text-4xl font-extrabold tracking-tight ${
+              isDark ? 'text-zinc-100' : 'text-zinc-950'
+            }`}
+          >
             {language === 'hi'
-              ? 'प्रोटियन (NSDL) और UTIITSL सरकारी विनिर्देश'
-              : 'Protean (NSDL) & UTIITSL Government Specifications'}
-          </span>
-          <span className="w-1.5 h-1.5 rounded-full bg-zinc-900" />
+              ? 'PAN कार्ड फ़ोटो रिसाइज़र & DPI फॉर्मेटर'
+              : 'PAN Photo Resizer & DPI Formatter'}
+          </h1>
+          <p className={`text-sm sm:text-base leading-relaxed ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>
+            {language === 'hi'
+              ? 'NSDL और UTIITSL के लिए सटीक डायमेंशन, फ़ाइल साइज़ और 200 DPI के साथ फ़ोटो तैयार करें।'
+              : 'Crop and align your photo with exact NSDL & UTIITSL dimensions, file size, and 200 DPI.'}
+          </p>
         </div>
 
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-zinc-950">
-          {language === 'hi'
-            ? 'PAN कार्ड फ़ोटो रिसाइज़र & DPI फॉर्मेटर'
-            : 'PAN Photo Resizer & DPI Formatter'}
-        </h1>
-
-        <p className="text-xs sm:text-sm leading-relaxed text-zinc-600">
-          {language === 'hi' ? (
-            <>
-              इंटरएक्टिव पैन और ज़ूम के साथ अपनी पासपोर्ट फ़ोटो संरेखित और क्रॉप करें। सख्त{' '}
-              <strong className="text-zinc-950">200 × 230 px</strong>,{' '}
-              <strong className="text-zinc-950">20 KB – 50 KB</strong>, और{' '}
-              <strong className="text-zinc-950">200 DPI</strong> हेडर 100% आपके ब्राउज़र में जनरेट करता है।
-            </>
-          ) : (
-            <>
-              Align and crop your passport photo with interactive pan &amp; zoom. Generates strict{' '}
-              <strong className="text-zinc-950">200 × 230 px</strong>,{' '}
-              <strong className="text-zinc-950">20 KB – 50 KB</strong>, and embeds{' '}
-              <strong className="text-zinc-950">200 DPI</strong> headers 100% in your browser.
-            </>
-          )}
-        </p>
-      </div>
-
-      {/* 3-Step Compliance Progress Bar */}
-      <ComplianceProgressBar
-        currentStep={currentStep}
-        toolName={language === 'hi' ? 'PAN फ़ोटो सत्यापन (200×230)' : 'PAN Photo Compliance (200×230)'}
-        step1Label={language === 'hi' ? 'फ़ोटो अपलोड करें' : 'Upload Photo'}
-        step2Label={language === 'hi' ? 'फ़्रेम में सेट करें' : 'Align & Zoom Viewport'}
-        step3Label={language === 'hi' ? 'डाउनलोड 200 DPI' : 'Download 200 DPI'}
-        step1Desc={language === 'hi' ? 'पासपोर्ट फ़ोटो चुनें' : 'Select passport portrait'}
-        step2Desc={language === 'hi' ? '200×230 px फ्रेम में सेट करें' : 'Fit 200×230 px frame'}
-        step3Desc={language === 'hi' ? '20–50 KB और 200 DPI JPEG' : '20–50 KB & 200 DPI JPEG'}
-        onReset={handleResetFile}
-        onReAdjust={handleReAdjust}
-      />
-
-      {/* Preset Selector Bar */}
-      <div className="flex justify-center">
-        <div className="inline-flex flex-wrap p-1 rounded-lg text-xs gap-1 border border-zinc-200 bg-zinc-50 max-w-full">
-          {(Object.keys(PHOTO_PRESETS) as PhotoPortalPreset[]).map((key) => {
+        {/* Preset Target Tabs (Clean Pill Bar) */}
+        <div className="flex flex-wrap justify-center gap-2">
+          {(Object.keys(PHOTO_PRESETS) as PhotoPortalPreset[]).map((key, index) => {
             const preset = PHOTO_PRESETS[key];
             const isSelected = selectedPreset === key;
+            const shortcutNum = index + 1;
             return (
               <button
                 key={key}
+                type="button"
                 onClick={() => {
                   setSelectedPreset(key);
                   if (resultUrl) {
@@ -681,130 +765,139 @@ export const PanPhotoResizer: React.FC<PanPhotoResizerProps> = ({ onNotify }) =>
                     setResultBlob(null);
                   }
                 }}
-                className={`px-3.5 py-1.5 rounded-md font-medium transition-colors flex items-center gap-2 cursor-pointer ${
+                className={`px-3 py-1.5 rounded-md text-xs font-medium border transition-colors cursor-pointer flex items-center gap-1.5 ${
                   isSelected
-                    ? 'bg-zinc-900 text-white font-semibold border border-zinc-900'
-                    : 'text-zinc-600 hover:text-zinc-950 hover:bg-zinc-100 border border-transparent'
+                    ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 border-zinc-900 dark:border-zinc-100'
+                    : isDark
+                      ? 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
+                      : 'bg-white border-zinc-200 text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50'
                 }`}
               >
-                <span>{preset.name}</span>
-                <span
-                  className={`text-[10px] font-mono px-1.5 py-0.2 rounded border ${
+                <kbd
+                  className={`px-1.5 py-0.2 rounded text-[10px] font-mono border ${
                     isSelected
-                      ? 'bg-zinc-800 text-zinc-200 border-zinc-700'
-                      : 'bg-zinc-100 text-zinc-600 border-zinc-200'
+                      ? 'bg-zinc-800 text-white dark:bg-zinc-200 dark:text-zinc-900 border-zinc-700 dark:border-zinc-300'
+                      : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 border-zinc-200 dark:border-zinc-700'
                   }`}
                 >
-                  {preset.width}×{preset.height} px
-                </span>
+                  {shortcutNum}
+                </kbd>
+                <span>{preset.name}</span>
+                <span className="text-[10px] opacity-70">({preset.width}×{preset.height} px)</span>
               </button>
             );
           })}
         </div>
+
+        {/* Direct Dropzone (Centered, Max-w-3xl, Clean & Focused) */}
+        <div className="max-w-3xl mx-auto">
+          <Dropzone
+            accept="image/jpeg,image/png,image/webp,image/jpg"
+            onFilesSelected={handleFileSelected}
+            title="Upload Passport Photo for PAN Card"
+            description="Drag & drop or click to browse. Auto-formats to official portal specs."
+          />
+        </div>
+
+        {/* Authoritative Verified Guide, Official Specifications & FAQs */}
+        <GovToolGuideSection toolId="pan-photo-resize" />
       </div>
+    );
+  }
 
-      {/* Main Workspace Card */}
-      <div className="p-6 sm:p-7 rounded-lg border border-zinc-200 bg-white">
-        {!imageElement ? (
-          <div className="space-y-6">
-            <Dropzone
-              accept="image/jpeg,image/png,image/webp,image/jpg"
-              onFilesSelected={handleFileSelected}
-              title="Drag & drop your passport photo here"
-              description="Supports JPG, PNG, and WebP. Auto-converts to 200×230 px, 20–50 KB, 200 DPI JPEG."
-            />
-
-            {/* Quick specifications glance card */}
-            <div
-              className={`p-4 rounded-xl border grid grid-cols-1 sm:grid-cols-3 gap-4 text-center ${
-                isDark ? 'bg-slate-950/40 border-slate-800/60' : 'bg-slate-50 border-slate-200'
-              }`}
-            >
-              <div className="space-y-1">
-                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-                  Target Dimensions
-                </span>
-                <p className={`text-base font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                  {targetWidth} × {targetHeight} px
-                </p>
-                <p className="text-xs text-slate-400">Strict portrait ratio</p>
-              </div>
-
-              <div className="space-y-1 sm:border-x border-slate-800/40">
-                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-                  Allowed File Size
-                </span>
-                <p className={`text-base font-bold text-emerald-400`}>
-                  {targetMinKb} KB – {targetMaxKb} KB
-                </p>
-                <p className="text-xs text-slate-400">Guaranteed portal acceptance</p>
-              </div>
-
-              <div className="space-y-1">
-                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-                  DPI Header
-                </span>
-                <p className={`text-base font-bold text-blue-400`}>
-                  {targetDpi} DPI Embedded
-                </p>
-                <p className="text-xs text-slate-400">JFIF APP0 standard</p>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-8">
-            {/* Top Toolbar */}
-            <div
-              className={`p-4 rounded-xl border flex flex-wrap items-center justify-between gap-4 ${
-                isDark ? 'bg-slate-900 border-slate-800' : 'bg-slate-50 border-slate-200'
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-                  <Camera className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className={`text-sm font-bold truncate max-w-xs ${isDark ? 'text-white' : 'text-slate-900'}`}>
+  /* -------------------------------------------------------------
+     RENDER: ACTIVE WORKSPACE (PHOTO LOADED & READY)
+  ------------------------------------------------------------- */
+  return (
+    <div className="w-full max-w-7xl mx-auto space-y-6 animate-in fade-in duration-200">
+      {/* Top Toolbar / Pro Workspace Header */}
+      <div
+        className={`p-3.5 sm:p-4 rounded-xl border flex flex-wrap items-center justify-between gap-3 ${
+          isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-zinc-50 border-zinc-200'
+        }`}
+      >
+              <div className="flex items-center gap-3 min-w-0">
+                {imageSrc && (
+                  <img
+                    src={imageSrc}
+                    alt="Thumbnail"
+                    className="w-10 h-10 rounded-lg object-cover border border-zinc-200 dark:border-zinc-700 shrink-0"
+                  />
+                )}
+                <div className="min-w-0">
+                  <h3 className={`text-sm font-bold truncate max-w-[180px] sm:max-w-xs ${isDark ? 'text-white' : 'text-zinc-900'}`}>
                     {sourceFile?.name}
                   </h3>
-                  <div className="flex items-center gap-2 text-xs text-slate-400">
-                    <span>Original: {formatBytes(sourceFile?.size || 0)}</span>
+                  <div className="flex items-center gap-2 text-xs text-zinc-500 font-mono">
+                    <span>{formatBytes(sourceFile?.size || 0)}</span>
                     <span>•</span>
                     <span>{imageNaturalSize.width} × {imageNaturalSize.height} px</span>
                   </div>
                 </div>
               </div>
 
+              {/* Center Live Compliance Pill */}
+              <div className="hidden md:flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-medium border bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>
+                  {resultBlob
+                    ? `✓ 100% Compliant: ${formatBytes(resultSizeBytes)} · ${verifiedDpi || targetDpi} DPI`
+                    : `${targetWidth}×${targetHeight} px · ${targetMinKb}–${targetMaxKb} KB · ${targetDpi} DPI`}
+                </span>
+              </div>
+
               <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => {
-                    setImageElement(null);
-                    setSourceFile(null);
-                    if (resultUrl) revokeSafeObjectURL(resultUrl);
-                    setResultUrl(null);
-                    setResultBlob(null);
-                  }}
+                  onClick={handleResetFile}
                   leftIcon={<RefreshCw className="w-3.5 h-3.5" />}
                 >
-                  Change Image
+                  <span>New</span>
+                  <kbd className="ml-1.5 px-1.5 py-0.5 rounded text-[10px] font-mono bg-zinc-200/80 dark:bg-zinc-750 text-zinc-700 dark:text-zinc-300">
+                    N
+                  </kbd>
                 </Button>
+
+                {resultBlob && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCopyImage}
+                    leftIcon={<Copy className="w-3.5 h-3.5" />}
+                  >
+                    <span>Copy</span>
+                    <kbd className="ml-1.5 px-1.5 py-0.5 rounded text-[10px] font-mono bg-zinc-200/80 dark:bg-zinc-750 text-zinc-700 dark:text-zinc-300">
+                      C
+                    </kbd>
+                  </Button>
+                )}
 
                 <Button
                   variant="primary"
                   size="sm"
-                  onClick={() => handleProcessPhoto()}
+                  onClick={() => (resultBlob ? handleDownload() : handleProcessPhoto())}
                   disabled={isProcessing}
                   leftIcon={
                     isProcessing ? (
-                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    ) : resultBlob ? (
+                      <Download className="w-3.5 h-3.5" />
                     ) : (
-                      <Sparkles className="w-4 h-4" />
+                      <Sparkles className="w-3.5 h-3.5" />
                     )
                   }
                 >
-                  {isProcessing ? 'Optimizing...' : 'Crop & Format (200 DPI)'}
+                  <span>
+                    {isProcessing
+                      ? 'Formatting...'
+                      : resultBlob
+                        ? `Download (${formatBytes(resultSizeBytes)})`
+                        : 'Crop & Format'}
+                  </span>
+                  <kbd className="ml-1.5 px-1.5 py-0.5 rounded text-[10px] font-mono bg-white/20 dark:bg-black/30 text-white">
+                    {resultBlob ? 'D' : '↵'}
+                  </kbd>
                 </Button>
               </div>
             </div>
@@ -872,23 +965,28 @@ export const PanPhotoResizer: React.FC<PanPhotoResizerProps> = ({ onNotify }) =>
 
                 {/* Studio Canvas Viewport (Clean Minimalist 2D Matte) */}
                 <div
+                  ref={canvasContainerRef}
                   tabIndex={0}
-                  onKeyDown={handleKeyDown}
-                  className="relative overflow-hidden rounded-md border border-zinc-200 bg-zinc-100 flex items-center justify-center select-none cursor-grab active:cursor-grabbing focus:outline-none focus:border-zinc-400 transition-colors"
-                  style={{ height: '460px' }}
+                  className="relative overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-950/80 flex items-center justify-center select-none cursor-grab active:cursor-grabbing focus:outline-none focus:border-zinc-400 transition-colors"
+                  style={{
+                    height: '460px',
+                    backgroundImage: isDark
+                      ? 'radial-gradient(#27272a 1.2px, transparent 1.2px)'
+                      : 'radial-gradient(#d4d4d8 1.2px, transparent 1.2px)',
+                    backgroundSize: '16px 16px',
+                  }}
                   onPointerDown={handlePointerDown}
                   onPointerMove={handlePointerMove}
                   onPointerUp={handlePointerUp}
                   onPointerCancel={handlePointerUp}
-                  onWheel={handleWheel}
                   onTouchStart={handleTouchStart}
                   onTouchMove={handleTouchMove}
                   onTouchEnd={handleTouchEnd}
                 >
-                  {/* Fixed Aspect Ratio Crop Box with Outer Matte Scrim */}
+                  {/* Fixed Aspect Ratio Crop Box */}
                   <div
                     ref={viewportRef}
-                    className="relative overflow-hidden shadow-[0_0_0_9999px_rgba(24,24,27,0.60)] border-2 border-white rounded-xs pointer-events-none"
+                    className="relative overflow-hidden border-2 border-zinc-900/90 dark:border-white rounded-xs shadow-xl bg-white pointer-events-none ring-4 ring-zinc-950/5 dark:ring-white/10"
                     style={{
                       width: `${boxW}px`,
                       height: `${boxH}px`,
@@ -917,161 +1015,48 @@ export const PanPhotoResizer: React.FC<PanPhotoResizerProps> = ({ onNotify }) =>
                     </div>
 
                     {/* Viewfinder Corner L-Brackets */}
-                    <div className="absolute -top-0.5 -left-0.5 w-3.5 h-3.5 border-t-2 border-l-2 border-white/90 pointer-events-none z-10" />
-                    <div className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 border-t-2 border-r-2 border-white/90 pointer-events-none z-10" />
-                    <div className="absolute -bottom-0.5 -left-0.5 w-3.5 h-3.5 border-b-2 border-l-2 border-white/90 pointer-events-none z-10" />
-                    <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 border-b-2 border-r-2 border-white/90 pointer-events-none z-10" />
+                    <div className="absolute -top-0.5 -left-0.5 w-3.5 h-3.5 border-t-2 border-l-2 border-zinc-900 dark:border-white pointer-events-none z-10" />
+                    <div className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 border-t-2 border-r-2 border-zinc-900 dark:border-white pointer-events-none z-10" />
+                    <div className="absolute -bottom-0.5 -left-0.5 w-3.5 h-3.5 border-b-2 border-l-2 border-zinc-900 dark:border-white pointer-events-none z-10" />
+                    <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 border-b-2 border-r-2 border-zinc-900 dark:border-white pointer-events-none z-10" />
 
                     {/* Clean Minimalist Composition Grid Overlay */}
                     {showGuides && (
-                      <div className="absolute inset-0 pointer-events-none border border-white/20">
+                      <div className="absolute inset-0 pointer-events-none border border-zinc-400/40 dark:border-white/30">
                         {/* Rule of thirds grid lines */}
-                        <div className="absolute top-1/3 left-0 right-0 border-t border-dashed border-white/30" />
-                        <div className="absolute top-2/3 left-0 right-0 border-t border-dashed border-white/30" />
-                        <div className="absolute left-1/3 top-0 bottom-0 border-l border-dashed border-white/30" />
-                        <div className="absolute left-2/3 top-0 bottom-0 border-l border-dashed border-white/30" />
+                        <div className="absolute top-1/3 left-0 right-0 border-t border-dashed border-zinc-500/40 dark:border-white/30" />
+                        <div className="absolute top-2/3 left-0 right-0 border-t border-dashed border-zinc-500/40 dark:border-white/30" />
+                        <div className="absolute left-1/3 top-0 bottom-0 border-l border-dashed border-zinc-500/40 dark:border-white/30" />
+                        <div className="absolute left-2/3 top-0 bottom-0 border-l border-dashed border-zinc-500/40 dark:border-white/30" />
 
                         {/* Subtle center crosshair */}
                         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none opacity-60">
-                          <div className="absolute top-1/2 left-0 right-0 h-px bg-white" />
-                          <div className="absolute left-1/2 top-0 bottom-0 w-px bg-white" />
+                          <div className="absolute top-1/2 left-0 right-0 h-px bg-zinc-700 dark:bg-white" />
+                          <div className="absolute left-1/2 top-0 bottom-0 w-px bg-zinc-700 dark:bg-white" />
                         </div>
                       </div>
                     )}
                   </div>
 
-                  {/* Top-Left Live Metadata Pill Badges */}
+                  {/* Clean Non-Intrusive Top-Left Live Metadata Pill */}
                   <div className="absolute top-3 left-3 flex items-center gap-1.5 pointer-events-none z-10">
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-900/90 text-white border border-zinc-800 flex items-center gap-1.5">
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-900/80 text-white border border-zinc-700/50 backdrop-blur-xs flex items-center gap-1.5">
                       <Maximize2 className="w-3 h-3 text-zinc-300" />
-                      {targetWidth} × {targetHeight} px
+                      {targetWidth} × {targetHeight} px · {targetDpi} DPI
                     </span>
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-900/90 text-zinc-200 border border-zinc-800">
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-900/80 text-zinc-200 border border-zinc-700/50 backdrop-blur-xs">
                       {Math.round(zoom * 100)}%
                     </span>
                     {rotation !== 0 && (
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-900/90 text-zinc-200 border border-zinc-800">
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-900/80 text-zinc-200 border border-zinc-700/50 backdrop-blur-xs">
                         {rotation}°
                       </span>
                     )}
                     {flipH && (
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-900/90 text-zinc-200 border border-zinc-800">
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-900/80 text-zinc-200 border border-zinc-700/50 backdrop-blur-xs">
                         Flipped
                       </span>
                     )}
-                  </div>
-
-                  {/* Top-Right Clean 2D Toolbar HUD */}
-                  <div className="absolute top-3 right-3 flex items-center gap-0.5 z-20 bg-white border border-zinc-200 p-1 rounded-md shadow-xs">
-                    <button
-                      onClick={() => setZoom((prev) => Math.max(0.6, parseFloat((prev - 0.1).toFixed(2))))}
-                      title="Zoom Out"
-                      className="p-1 rounded text-zinc-600 hover:text-zinc-950 hover:bg-zinc-100 transition-colors cursor-pointer"
-                    >
-                      <ZoomOut className="w-3.5 h-3.5" />
-                    </button>
-                    <span className="text-[10px] font-mono text-zinc-600 px-1">
-                      {Math.round(zoom * 100)}%
-                    </span>
-                    <button
-                      onClick={() => setZoom((prev) => Math.min(3.5, parseFloat((prev + 0.1).toFixed(2))))}
-                      title="Zoom In"
-                      className="p-1 rounded text-zinc-600 hover:text-zinc-950 hover:bg-zinc-100 transition-colors cursor-pointer"
-                    >
-                      <ZoomIn className="w-3.5 h-3.5" />
-                    </button>
-                    <div className="w-px h-3 bg-zinc-200 mx-0.5" />
-                    <button
-                      onClick={rotateCCW}
-                      title="Rotate 90° Left"
-                      className="p-1 rounded text-zinc-600 hover:text-zinc-950 hover:bg-zinc-100 transition-colors cursor-pointer"
-                    >
-                      <RotateCcw className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={rotateCW}
-                      title="Rotate 90° Right"
-                      className="p-1 rounded text-zinc-600 hover:text-zinc-950 hover:bg-zinc-100 transition-colors cursor-pointer"
-                    >
-                      <RotateCw className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={toggleFlipH}
-                      title={flipH ? 'Unflip' : 'Flip Horizontally'}
-                      className={`p-1 rounded transition-colors cursor-pointer ${
-                        flipH
-                          ? 'bg-zinc-900 text-white'
-                          : 'text-zinc-600 hover:text-zinc-950 hover:bg-zinc-100'
-                      }`}
-                    >
-                      <FlipHorizontal className="w-3.5 h-3.5" />
-                    </button>
-                    <div className="w-px h-3 bg-zinc-200 mx-0.5" />
-                    <button
-                      onClick={handleCenter}
-                      title="Center Image"
-                      className="p-1 rounded text-zinc-600 hover:text-zinc-950 hover:bg-zinc-100 transition-colors cursor-pointer"
-                    >
-                      <Move className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={handleResetViewport}
-                      title="Reset Viewport"
-                      className="p-1 rounded text-zinc-600 hover:text-zinc-950 hover:bg-zinc-100 transition-colors cursor-pointer"
-                    >
-                      <RefreshCw className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-
-                  {/* Bottom-Right Nudge Controls */}
-                  <div className="absolute bottom-3 right-3 flex flex-col items-center z-20 bg-white border border-zinc-200 p-1 rounded-md shadow-xs">
-                    <button
-                      onClick={() => nudge(0, -3)}
-                      title="Nudge Up (3px)"
-                      className="p-1 rounded text-zinc-600 hover:text-zinc-950 hover:bg-zinc-100 transition-colors cursor-pointer"
-                    >
-                      <ArrowUp className="w-3 h-3" />
-                    </button>
-                    <div className="flex items-center gap-1 my-0.5">
-                      <button
-                        onClick={() => nudge(-3, 0)}
-                        title="Nudge Left (3px)"
-                        className="p-1 rounded text-zinc-600 hover:text-zinc-950 hover:bg-zinc-100 transition-colors cursor-pointer"
-                      >
-                        <ArrowLeft className="w-3 h-3" />
-                      </button>
-                      <button
-                        onClick={handleCenter}
-                        title="Re-Center"
-                        className="p-1 rounded text-zinc-900 hover:bg-zinc-100 transition-colors cursor-pointer text-[9px] font-bold"
-                      >
-                        ●
-                      </button>
-                      <button
-                        onClick={() => nudge(3, 0)}
-                        title="Nudge Right (3px)"
-                        className="p-1 rounded text-zinc-600 hover:text-zinc-950 hover:bg-zinc-100 transition-colors cursor-pointer"
-                      >
-                        <ArrowRight className="w-3 h-3" />
-                      </button>
-                    </div>
-                    <button
-                      onClick={() => nudge(0, 3)}
-                      title="Nudge Down (3px)"
-                      className="p-1 rounded text-zinc-600 hover:text-zinc-950 hover:bg-zinc-100 transition-colors cursor-pointer"
-                    >
-                      <ArrowDown className="w-3 h-3" />
-                    </button>
-                  </div>
-
-                  {/* Bottom Navigation Hint Bar */}
-                  <div className="absolute bottom-3 left-3 flex flex-wrap items-center gap-1.5 pointer-events-none z-10 text-[10px] font-mono text-zinc-300">
-                    <span className="px-2 py-0.5 rounded bg-zinc-900/90 border border-zinc-800 text-zinc-200">
-                      Offset: {pan.x}px, {pan.y}px
-                    </span>
-                    <span className="hidden sm:inline px-2 py-0.5 rounded bg-zinc-900/90 border border-zinc-800 text-zinc-400">
-                      Drag or use arrow keys
-                    </span>
                   </div>
                 </div>
 
@@ -1418,196 +1403,57 @@ export const PanPhotoResizer: React.FC<PanPhotoResizerProps> = ({ onNotify }) =>
                 </div>
               </div>
             </div>
-          </div>
-        )}
-      </div>
 
-      {/* Educational & How It Works Guidance Section */}
-      <div
-        className={`p-6 sm:p-7 rounded-lg border space-y-6 ${
-          isDark
-            ? 'bg-zinc-900/40 border-zinc-800'
-            : 'bg-zinc-50/60 border-zinc-200'
-        }`}
-      >
-        <div className="text-center space-y-1.5 max-w-xl mx-auto">
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-[11px] font-medium text-zinc-600 dark:text-zinc-300 font-mono">
-            <HelpCircle className="w-3.5 h-3.5 text-zinc-500" />
-            <span>Govt Portal Guidance</span>
-          </div>
-          <h2 className={`text-lg sm:text-xl font-bold tracking-tight ${isDark ? 'text-white' : 'text-zinc-900'}`}>
-            How to Prepare Your PAN Card Photo
-          </h2>
-          <p className={`text-xs sm:text-sm ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
-            Step-by-step instructions to prevent portal rejection on Protean (NSDL) and UTIITSL.
-          </p>
-        </div>
-
-        {/* 3 Step Process Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div
-            className={`p-4 rounded-lg border space-y-2.5 ${
-              isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'
-            }`}
-          >
-            <div className="w-7 h-7 rounded border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 flex items-center justify-center font-semibold text-xs text-zinc-900 dark:text-white font-mono">
-              1
-            </div>
-            <h4 className={`text-xs font-semibold ${isDark ? 'text-white' : 'text-zinc-900'}`}>
-              Upload Portrait Photo
-            </h4>
-            <p className={`text-xs leading-relaxed ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
-              Upload a clear frontal passport photo taken against a white or light background. Avoid wearing glasses with tinted lenses or caps.
-            </p>
-          </div>
-
-          <div
-            className={`p-4 rounded-lg border space-y-2.5 ${
-              isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'
-            }`}
-          >
-            <div className="w-7 h-7 rounded border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 flex items-center justify-center font-semibold text-xs text-zinc-900 dark:text-white font-mono">
-              2
-            </div>
-            <h4 className={`text-xs font-semibold ${isDark ? 'text-white' : 'text-zinc-900'}`}>
-              Pan &amp; Align in Frame
-            </h4>
-            <p className={`text-xs leading-relaxed ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
-              Use the interactive viewport to drag and zoom your photo so your face and shoulders align with the center guide lines.
-            </p>
-          </div>
-
-          <div
-            className={`p-4 rounded-lg border space-y-2.5 ${
-              isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'
-            }`}
-          >
-            <div className="w-7 h-7 rounded border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 flex items-center justify-center font-semibold text-xs text-zinc-900 dark:text-white font-mono">
-              3
-            </div>
-            <h4 className={`text-xs font-semibold ${isDark ? 'text-white' : 'text-zinc-900'}`}>
-              Crop &amp; Download (200 DPI)
-            </h4>
-            <p className={`text-xs leading-relaxed ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
-              Click &ldquo;Crop &amp; Format&rdquo;. FileWala embeds 200 DPI metadata and scales the JPEG to strictly 20 KB – 50 KB for instant upload.
-            </p>
-          </div>
-        </div>
-
-        {/* Portal Specification Table */}
-        <div
-          className={`p-4 sm:p-5 rounded-lg border overflow-x-auto ${
-            isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'
-          }`}
-        >
-          <h4 className={`text-xs font-semibold uppercase tracking-wider mb-3 ${isDark ? 'text-zinc-300' : 'text-zinc-700'}`}>
-            Protean (NSDL) vs UTIITSL Official Requirements
-          </h4>
-          <table className="w-full text-left text-xs border-collapse">
-            <thead>
-              <tr className={`border-b ${isDark ? 'border-zinc-800 text-zinc-400' : 'border-zinc-200 text-zinc-500'}`}>
-                <th className="py-2 px-3 font-medium">Portal Name</th>
-                <th className="py-2 px-3 font-medium">Exact Dimensions</th>
-                <th className="py-2 px-3 font-medium">File Size Range</th>
-                <th className="py-2 px-3 font-medium">DPI Requirement</th>
-                <th className="py-2 px-3 font-medium">Format</th>
-              </tr>
-            </thead>
-            <tbody className={`divide-y ${isDark ? 'divide-zinc-800 text-zinc-300' : 'divide-zinc-100 text-zinc-700'}`}>
-              <tr>
-                <td className="py-2.5 px-3 font-medium text-zinc-900 dark:text-zinc-100">Protean (NSDL)</td>
-                <td className="py-2.5 px-3 font-mono">200 × 230 pixels</td>
-                <td className="py-2.5 px-3 font-mono">20 KB – 50 KB</td>
-                <td className="py-2.5 px-3 font-mono">200 DPI</td>
-                <td className="py-2.5 px-3">JPEG / JPG</td>
-              </tr>
-              <tr>
-                <td className="py-2.5 px-3 font-medium text-zinc-900 dark:text-zinc-100">UTIITSL Portal</td>
-                <td className="py-2.5 px-3 font-mono">213 × 213 pixels (3.5×2.5cm)</td>
-                <td className="py-2.5 px-3 font-mono">&lt; 30 KB</td>
-                <td className="py-2.5 px-3 font-mono">300 DPI</td>
-                <td className="py-2.5 px-3">JPEG / JPG</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        {/* Expandable FAQs Accordion */}
-        <div className="space-y-2">
-          <h4 className={`text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-white' : 'text-zinc-900'}`}>
-            Frequently Asked Questions
-          </h4>
-
-          {[
-            {
-              q: 'Why was my photo rejected with an "Invalid File Size" or "Incorrect DPI" error?',
-              a: 'Government portals like Protean and UTIITSL check internal binary headers. A photo smaller than 20 KB or lacking the 200 DPI JFIF marker is automatically rejected. FileWala writes the exact 200 DPI marker and regulates the file size into the 20 KB – 50 KB bracket.',
-            },
-            {
-              q: 'Is my photo uploaded to any server or database?',
-              a: 'No. 100% of the image cropping, zoom transformation, DPI embedding, and compression executes entirely inside your browser using HTML5 Canvas and Web APIs. Your photo never leaves your device.',
-            },
-            {
-              q: 'Can I upload a photo taken from a smartphone?',
-              a: 'Yes! Use the zoom slider and pan drag controls to crop your face from a high-resolution smartphone photo. The tool scales it down to the exact 200×230 px standard.',
-            },
-          ].map((item, idx) => {
-            const isOpen = openFaq === idx;
-            return (
-              <div
-                key={idx}
-                className={`rounded-lg border transition-colors ${
-                  isDark
-                    ? 'bg-zinc-900 border-zinc-800'
-                    : 'bg-white border-zinc-200'
-                }`}
-              >
-                <button
-                  onClick={() => setOpenFaq(isOpen ? null : idx)}
-                  className="w-full p-3.5 flex items-center justify-between text-left text-xs font-medium cursor-pointer"
-                >
-                  <span className={isDark ? 'text-zinc-200' : 'text-zinc-800'}>{item.q}</span>
-                  <ChevronDown
-                    className={`w-4 h-4 text-zinc-400 transition-transform ${
-                      isOpen ? 'rotate-180 text-zinc-900 dark:text-white' : ''
-                    }`}
-                  />
-                </button>
-                {isOpen && (
-                  <div
-                    className={`px-3.5 pb-3.5 text-xs leading-relaxed border-t ${
-                      isDark
-                        ? 'text-zinc-400 border-zinc-800'
-                        : 'text-zinc-600 border-zinc-100'
-                    }`}
-                  >
-                    {item.a}
-                  </div>
-                )}
+            {/* Bottom Keyboard Hotkey Helper Strip */}
+            <div className="flex flex-wrap items-center justify-between gap-2 px-3.5 py-2.5 rounded-lg border text-xs bg-zinc-50 dark:bg-zinc-850/60 border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 font-mono select-none">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                  <Keyboard className="w-3.5 h-3.5 text-zinc-500" />
+                  Hotkeys:
+                </span>
+                <span className="inline-flex items-center gap-1">
+                  <kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-750 text-zinc-800 dark:text-zinc-200 font-semibold text-[10px]">Ctrl+V</kbd> Paste
+                </span>
+                <span className="opacity-40">·</span>
+                <span className="inline-flex items-center gap-1">
+                  <kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-750 text-zinc-800 dark:text-zinc-200 font-semibold text-[10px]">1</kbd>
+                  <kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-750 text-zinc-800 dark:text-zinc-200 font-semibold text-[10px]">2</kbd>
+                  <kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-750 text-zinc-800 dark:text-zinc-200 font-semibold text-[10px]">3</kbd> Presets
+                </span>
+                <span className="opacity-40">·</span>
+                <span className="inline-flex items-center gap-1">
+                  <kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-750 text-zinc-800 dark:text-zinc-200 font-semibold text-[10px]">↑↓←→</kbd> Pan
+                </span>
+                <span className="opacity-40">·</span>
+                <span className="inline-flex items-center gap-1">
+                  <kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-750 text-zinc-800 dark:text-zinc-200 font-semibold text-[10px]">+/-</kbd> Zoom
+                </span>
+                <span className="opacity-40">·</span>
+                <span className="inline-flex items-center gap-1">
+                  <kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-750 text-zinc-800 dark:text-zinc-200 font-semibold text-[10px]">T</kbd> Rotate
+                </span>
+                <span className="opacity-40">·</span>
+                <span className="inline-flex items-center gap-1">
+                  <kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-750 text-zinc-800 dark:text-zinc-200 font-semibold text-[10px]">G</kbd> Guides
+                </span>
+                <span className="opacity-40">·</span>
+                <span className="inline-flex items-center gap-1">
+                  <kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-750 text-zinc-800 dark:text-zinc-200 font-semibold text-[10px]">↵ Enter</kbd> Format
+                </span>
+                <span className="opacity-40">·</span>
+                <span className="inline-flex items-center gap-1">
+                  <kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-750 text-zinc-800 dark:text-zinc-200 font-semibold text-[10px]">D</kbd> Download
+                </span>
+                <span className="opacity-40">·</span>
+                <span className="inline-flex items-center gap-1">
+                  <kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-750 text-zinc-800 dark:text-zinc-200 font-semibold text-[10px]">C</kbd> Copy
+                </span>
               </div>
-            );
-          })}
-        </div>
+              <span className="text-[11px] text-zinc-500 font-medium">Zero Mouse Latency</span>
+            </div>
 
-        {/* Privacy Notice Banner */}
-        <div
-          className={`p-3.5 rounded-lg border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs ${
-            isDark
-              ? 'bg-zinc-900 border-zinc-800 text-zinc-400'
-              : 'bg-white border-zinc-200 text-zinc-600'
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            <ShieldCheck className="w-4 h-4 text-zinc-500 shrink-0" />
-            <span>
-              <strong>Zero-Knowledge Privacy:</strong> All passport photo transformations happen strictly in browser memory. No data is stored or transmitted.
-            </span>
-          </div>
-          <span className="text-[10px] font-mono px-2 py-0.5 rounded border border-zinc-200 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 shrink-0">
-            Client-Side Verified
-          </span>
-        </div>
-      </div>
+      {/* Authoritative Verified Guide, Official Specifications & FAQs */}
+      <GovToolGuideSection toolId="pan-photo-resize" />
     </div>
   );
 };

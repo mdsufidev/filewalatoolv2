@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Search, X, CornerDownLeft } from 'lucide-react';
-import { ALL_TOOLS, CATEGORIES_CONFIG, ToolCategory, ToolItem } from '../../core/toolsData';
+import { ALL_TOOLS, CATEGORIES_CONFIG, ToolCategory, ToolItem, searchTools } from '../../core/toolsData';
 import { useTheme } from '../../core/themeContext';
 import { useLanguage } from '../../core/languageContext';
 import { ToolIconBadge } from '../tools/ToolIconBadge';
@@ -32,33 +32,33 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
-  // Filter tools based on query & selected category
+  // Filter and rank tools based on canonical search algorithm
   const filteredTools = useMemo(() => {
-    let list = ALL_TOOLS;
-
-    if (selectedFilter !== 'all') {
-      list = list.filter((t) => t.category === selectedFilter);
-    }
-
-    if (query.trim()) {
-      const q = query.toLowerCase().trim();
-      list = list.filter(
-        (t) =>
-          t.name.toLowerCase().includes(q) ||
-          t.description.toLowerCase().includes(q) ||
-          t.targetKeyword.toLowerCase().includes(q) ||
-          t.subToolId.toLowerCase().includes(q) ||
-          (t.badge && t.badge.toLowerCase().includes(q))
-      );
-    }
-
-    return list;
+    return searchTools(ALL_TOOLS, query, selectedFilter);
   }, [query, selectedFilter]);
 
   // Reset active index when query or filter changes
   useEffect(() => {
     setActiveIndex(0);
   }, [query, selectedFilter]);
+
+  const getCategoryLabel = useCallback(
+    (category: string) => {
+      switch (category) {
+        case 'image-tools':
+          return language === 'hi' ? 'फ़ोटो' : 'Photo';
+        case 'pdf-tools':
+          return 'PDF';
+        case 'convert':
+          return language === 'hi' ? 'कन्वर्टर' : 'Convert';
+        case 'document-tools':
+          return language === 'hi' ? 'गवर्नमेंट फॉर्म' : 'Govt Form';
+        default:
+          return '';
+      }
+    },
+    [language]
+  );
 
   // Auto-focus input when opened & reset search
   useEffect(() => {
@@ -127,9 +127,9 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
         onClick={onClose}
       />
 
-      {/* Flat 2D Palette Container (Linear / Notion Style) */}
+      {/* Modern Palette Container (Raycast / Linear Style) */}
       <div
-        className="relative w-full max-w-2xl rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-xl flex flex-col overflow-hidden z-10 animate-in zoom-in-98 duration-100"
+        className="relative w-full max-w-2xl rounded-xl border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-2xl flex flex-col overflow-hidden z-10 animate-in zoom-in-98 duration-100"
       >
         {/* Search Input Bar */}
         <div
@@ -235,50 +235,43 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                     onSelectTool(tool.actionSection, tool.subToolId);
                     onClose();
                   }}
-                  className={`group flex items-center justify-between p-2.5 rounded-md transition-colors duration-100 cursor-pointer ${
+                  className={`group flex items-center justify-between px-3 py-2 rounded-lg transition-colors duration-100 cursor-pointer ${
                     isActive
                       ? 'bg-zinc-100 dark:bg-zinc-800 text-zinc-950 dark:text-white'
-                      : 'text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-850'
+                      : 'text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-850/60'
                   }`}
                 >
-                  <div className="flex items-center gap-3 min-w-0">
+                  {/* Left: Icon + Tool Name + Compact Badge */}
+                  <div className="flex items-center gap-2.5 min-w-0">
                     <ToolIconBadge
                       toolId={tool.id}
                       category={tool.category}
                       iconName={tool.icon}
                       size="sm"
                     />
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-xs sm:text-sm truncate">
-                          {tToolName(tool.id, tool.name)}
-                        </span>
-                        {tool.badge && (
-                          <span
-                            className="text-[10px] font-mono px-1.5 py-0.2 rounded border border-zinc-200 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 shrink-0"
-                          >
-                            {tool.badge}
-                          </span>
-                        )}
-                      </div>
-                      <p
-                        className="text-[11px] truncate mt-0.5 text-zinc-500 dark:text-zinc-400"
-                      >
-                        {tToolDesc(tool.id, tool.description)}
-                      </p>
-                    </div>
+                    <span className="font-medium text-xs sm:text-sm truncate text-zinc-950 dark:text-zinc-100">
+                      {tToolName(tool.id, tool.name)}
+                    </span>
+                    {tool.badge && (
+                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded border border-zinc-200/80 dark:border-zinc-750 bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 shrink-0 hidden sm:inline-block">
+                        {tool.badge}
+                      </span>
+                    )}
                   </div>
 
-                  {/* Launch action pill */}
-                  <div className="flex items-center gap-2 shrink-0 ml-3">
+                  {/* Right: Category label + Action Key Pill */}
+                  <div className="flex items-center gap-2.5 shrink-0 ml-3">
+                    <span className="text-[11px] font-mono text-zinc-400 dark:text-zinc-500 hidden sm:inline-block">
+                      {getCategoryLabel(tool.category)}
+                    </span>
                     <span
-                      className={`text-[10px] font-mono px-2 py-0.5 rounded flex items-center gap-1 transition-opacity ${
+                      className={`text-[10px] font-mono px-2 py-0.5 rounded-md flex items-center gap-1 transition-all ${
                         isActive
-                          ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 font-medium'
-                          : 'opacity-0 group-hover:opacity-100 text-zinc-500 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700'
+                          ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 font-semibold shadow-xs'
+                          : 'opacity-0 group-hover:opacity-100 text-zinc-500 bg-zinc-100 dark:bg-zinc-800'
                       }`}
                     >
-                      <span>{language === 'hi' ? 'खोलें' : 'Launch'}</span>
+                      <span className="hidden sm:inline">{language === 'hi' ? 'खोलें' : 'Open'}</span>
                       <CornerDownLeft className="w-3 h-3" />
                     </span>
                   </div>

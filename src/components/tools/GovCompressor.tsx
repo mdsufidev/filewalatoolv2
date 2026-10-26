@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   FileArchive,
   CheckCircle2,
@@ -21,6 +21,7 @@ import {
   X,
   ZoomIn,
   Loader2,
+  Keyboard,
 } from 'lucide-react';
 import { Dropzone } from '../ui/Dropzone';
 import { Button } from '../ui/Button';
@@ -43,6 +44,7 @@ import {
 import { PDFDocument } from 'pdf-lib';
 import { pdfjsLib, ensurePdfWorkerInitialized } from '../../core/pdfWorker';
 import { PdfPreviewModal } from './pdf/PdfPreviewModal';
+import { GovToolGuideSection } from './gov/GovToolGuideSection';
 
 // Initialize PDF.js worker safely
 ensurePdfWorkerInitialized();
@@ -194,14 +196,26 @@ export const GovCompressor: React.FC<GovCompressorProps> = ({ initialFile, onNot
     };
   }, [previewUrl, resultUrl, resultThumbUrl]);
 
-  // Load initial file if passed from drag-and-drop or parent workspace
-  useEffect(() => {
-    if (initialFile) {
-      handleFileSelected([initialFile]);
-    }
-  }, [initialFile]);
+  const handleResetFile = useCallback(() => {
+    if (resultUrl) revokeSafeObjectURL(resultUrl);
+    if (resultThumbUrl) revokeSafeObjectURL(resultThumbUrl);
+    if (previewUrl) revokeSafeObjectURL(previewUrl);
+    setResultUrl(null);
+    setResultThumbUrl(null);
+    setResultBlob(null);
+    setSourceFile(null);
+    setPreviewUrl(null);
+  }, [previewUrl, resultThumbUrl, resultUrl]);
 
-  const handleFileSelected = async (files: File[]) => {
+  const handleReAdjust = useCallback(() => {
+    if (resultUrl) revokeSafeObjectURL(resultUrl);
+    if (resultThumbUrl) revokeSafeObjectURL(resultThumbUrl);
+    setResultUrl(null);
+    setResultThumbUrl(null);
+    setResultBlob(null);
+  }, [resultThumbUrl, resultUrl]);
+
+  const handleFileSelected = useCallback(async (files: File[]) => {
     const file = files[0];
     if (!file) return;
 
@@ -263,10 +277,37 @@ export const GovCompressor: React.FC<GovCompressorProps> = ({ initialFile, onNot
     } else {
       onNotify('Invalid File', 'Please select a PDF document or JPG/PNG image.', 'error');
     }
-  };
+  }, [onNotify, previewUrl, resultThumbUrl, resultUrl]);
+
+  // Global paste listener to paste screenshot / document directly (Ctrl+V)
+  useEffect(() => {
+    const handlePaste = (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (item.type.indexOf('image') !== -1 || item.type === 'application/pdf') {
+          const file = item.getAsFile();
+          if (file) {
+            handleFileSelected([file]);
+            break;
+          }
+        }
+      }
+    };
+    window.addEventListener('paste', handlePaste);
+    return () => window.removeEventListener('paste', handlePaste);
+  }, [handleFileSelected]);
+
+  // Load initial file if passed from drag-and-drop or parent workspace
+  useEffect(() => {
+    if (initialFile) {
+      handleFileSelected([initialFile]);
+    }
+  }, [initialFile, handleFileSelected]);
 
   // Compress Document
-  const handleCompress = async () => {
+  const handleCompress = useCallback(async () => {
     if (!sourceFile) return;
     setIsProcessing(true);
     setProgressPercent(10);
@@ -516,18 +557,18 @@ export const GovCompressor: React.FC<GovCompressorProps> = ({ initialFile, onNot
     } finally {
       setIsProcessing(false);
     }
-  };
+  }, [sourceFile, fileType, textClarityBoost, maxKb, minKb, resultUrl, resultThumbUrl, previewUrl, onNotify]);
 
-  const handleDownload = () => {
+  const handleDownload = useCallback(() => {
     if (!resultBlob || !sourceFile) return;
     const extension = fileType === 'pdf' ? '.pdf' : '.jpg';
     const cleanName = sourceFile.name.replace(/\.[^/.]+$/, '');
     const filename = `${cleanName}-compressed-under-${maxKb}kb${extension}`;
     triggerFileDownload(resultBlob, filename);
     onNotify('Download Started', `Saved ${filename}`, 'success');
-  };
+  }, [fileType, maxKb, onNotify, resultBlob, sourceFile]);
 
-  const handleCopy = async () => {
+  const handleCopy = useCallback(async () => {
     if (!resultBlob) return;
     const ok = await copyImageToClipboard(resultBlob);
     if (ok) {
@@ -535,9 +576,9 @@ export const GovCompressor: React.FC<GovCompressorProps> = ({ initialFile, onNot
     } else {
       onNotify('Copy Failed', 'Your browser could not copy image directly to clipboard.', 'error');
     }
-  };
+  }, [onNotify, resultBlob]);
 
-  const handleShare = async () => {
+  const handleShare = useCallback(async () => {
     if (!resultBlob || !sourceFile) return;
     const extension = fileType === 'pdf' ? '.pdf' : '.jpg';
     const cleanName = sourceFile.name.replace(/\.[^/.]+$/, '');
@@ -551,7 +592,97 @@ export const GovCompressor: React.FC<GovCompressorProps> = ({ initialFile, onNot
     if (shared) {
       onNotify('Shared', 'File shared successfully.', 'success');
     }
-  };
+  }, [fileType, maxKb, onNotify, resultBlob, sourceFile]);
+
+  // Global window keydown listener for zero mouse latency navigation
+  useEffect(() => {
+    const onWindowKeyDown = (e: KeyboardEvent) => {
+      const targetTag = (e.target as HTMLElement)?.tagName?.toLowerCase();
+      if (targetTag === 'input' || targetTag === 'textarea' || targetTag === 'select') return;
+      if ((e.target as HTMLElement)?.isContentEditable) return;
+
+      if (e.key === '1') {
+        e.preventDefault();
+        setSelectedPreset('under-50kb');
+        return;
+      }
+      if (e.key === '2') {
+        e.preventDefault();
+        setSelectedPreset('under-100kb');
+        return;
+      }
+      if (e.key === '3') {
+        e.preventDefault();
+        setSelectedPreset('under-200kb');
+        return;
+      }
+      if (e.key === '4') {
+        e.preventDefault();
+        setSelectedPreset('under-300kb');
+        return;
+      }
+      if (e.key === '5') {
+        e.preventDefault();
+        setSelectedPreset('under-500kb');
+        return;
+      }
+
+      if (!sourceFile) return;
+
+      // Download
+      if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
+        e.preventDefault();
+        if (resultBlob) handleDownload();
+        return;
+      }
+      if (e.key === 'd' || e.key === 'D') {
+        e.preventDefault();
+        if (resultBlob) handleDownload();
+        return;
+      }
+
+      // Copy
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'C')) {
+        if (resultBlob && fileType === 'image') {
+          e.preventDefault();
+          handleCopy();
+          return;
+        }
+      }
+
+      // Compress
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        handleCompress();
+        return;
+      }
+
+      // Reset / New
+      if (e.key === 'n' || e.key === 'N' || e.key === 'Escape') {
+        e.preventDefault();
+        handleResetFile();
+        return;
+      }
+
+      // Toggle Text Clarity
+      if (e.key === 't' || e.key === 'T') {
+        e.preventDefault();
+        setTextClarityBoost((prev) => !prev);
+        return;
+      }
+    };
+
+    window.addEventListener('keydown', onWindowKeyDown);
+    return () => window.removeEventListener('keydown', onWindowKeyDown);
+  }, [
+    sourceFile,
+    resultBlob,
+    fileType,
+    handleCompress,
+    handleDownload,
+    handleCopy,
+    handleResetFile,
+  ]);
 
   const isCompliant =
     resultBlob &&
@@ -565,300 +696,383 @@ export const GovCompressor: React.FC<GovCompressorProps> = ({ initialFile, onNot
 
   const currentStep = !sourceFile ? 1 : !resultBlob ? 2 : 3;
 
-  const handleResetFile = () => {
-    if (resultUrl) revokeSafeObjectURL(resultUrl);
-    if (resultThumbUrl) revokeSafeObjectURL(resultThumbUrl);
-    if (previewUrl) revokeSafeObjectURL(previewUrl);
-    setResultUrl(null);
-    setResultThumbUrl(null);
-    setResultBlob(null);
-    setSourceFile(null);
-    setPreviewUrl(null);
-  };
+  /* -------------------------------------------------------------
+     RENDER: EMPTY STATE (CLEAN, DIRECT DROPZONE, NO BOX-IN-BOX)
+  ------------------------------------------------------------- */
+  if (!sourceFile) {
+    return (
+      <div className="w-full max-w-7xl mx-auto space-y-8 animate-in fade-in duration-300">
+        {/* Single Authoritative Minimal Header Section */}
+        <div className="text-center space-y-3 max-w-2xl mx-auto">
+          <div
+            className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold ${
+              isDark
+                ? 'bg-zinc-800/80 text-zinc-300'
+                : 'bg-zinc-100 text-zinc-700'
+            }`}
+          >
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+            <span>
+              {language === 'hi'
+                ? 'सार्वभौमिक भारतीय सरकारी दस्तावेज़ कंप्रेसर'
+                : 'Universal Indian Government Document Compressor'}
+            </span>
+          </div>
 
-  const handleReAdjust = () => {
-    if (resultUrl) revokeSafeObjectURL(resultUrl);
-    if (resultThumbUrl) revokeSafeObjectURL(resultThumbUrl);
-    setResultUrl(null);
-    setResultThumbUrl(null);
-    setResultBlob(null);
-  };
-
-  return (
-    <div className="space-y-8 animate-in fade-in duration-200">
-      {/* 3-Step Compliance Progress Bar */}
-      <ComplianceProgressBar
-        currentStep={currentStep}
-        toolName={`Gov Document Compressor (${activePreset.name})`}
-        step1Label="Upload PDF / Image"
-        step2Label="Set Target Size Limit"
-        step3Label="Download Compressed File"
-        step1Desc="Select Aadhaar, marksheet or PDF"
-        step2Desc={`Constrain under ${maxKb} KB`}
-        step3Desc="Optimized & readable document"
-        onReset={handleResetFile}
-        onReAdjust={handleReAdjust}
-      />
-
-      {/* Hero Header */}
-      <div className="text-center space-y-2">
-        <div className="inline-flex items-center gap-2 px-2 py-0.5 rounded border border-zinc-200 dark:border-zinc-800 text-[11px] font-mono text-zinc-600 dark:text-zinc-400">
-          <FileArchive className="w-3.5 h-3.5 text-zinc-500" />
-          <span>
+          <h1
+            className={`text-3xl sm:text-4xl font-extrabold tracking-tight ${
+              isDark ? 'text-zinc-100' : 'text-zinc-950'
+            }`}
+          >
             {language === 'hi'
-              ? 'सार्वभौमिक भारतीय सरकारी दस्तावेज़ कंप्रेसर'
-              : 'Universal Indian Government Document Compressor'}
-          </span>
+              ? 'सरकारी फॉर्म दस्तावेज़ कंप्रेसर'
+              : 'General Gov Form Document Compressor'}
+          </h1>
+          <p className={`text-sm sm:text-base leading-relaxed ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>
+            {language === 'hi'
+              ? 'आधार कार्ड, मार्कशीट और प्रमाणपत्रों को 50 KB, 100 KB, 200 KB या 300 KB के भीतर कंप्रेस करें।'
+              : 'Shrink PDF proofs, certificates, and identity documents strictly under 50 KB, 100 KB, 200 KB, or 300 KB.'}
+          </p>
         </div>
-        <h1 className={`text-2xl sm:text-3xl font-bold tracking-tight ${isDark ? 'text-zinc-100' : 'text-zinc-950'}`}>
-          {language === 'hi'
-            ? 'सरकारी फॉर्म दस्तावेज़ कंप्रेसर'
-            : 'General Gov Form Document Compressor'}
-        </h1>
-        <p className={`text-sm max-w-2xl mx-auto ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>
-          {language === 'hi'
-            ? 'आधार कार्ड, मार्कशीट, जाति/आय प्रमाण पत्र और पीडीएफ को सख्त 50 KB, 100 KB, 200 KB या 300 KB के भीतर 100% स्पष्ट टेक्स्ट के साथ कंप्रेस करें।'
-            : 'Shrink PDF proofs, Aadhaar cards, marksheets, and caste/income certificates strictly under 50 KB, 100 KB, 200 KB, or 300 KB with 100% sharp, readable text.'}
-        </p>
-      </div>
 
-      {/* Preset Target Tabs */}
-      <div className="flex flex-wrap justify-center gap-2">
-        {(Object.keys(GOV_PRESETS) as GovPortalPreset[]).map((presetKey) => {
-          const isSelected = selectedPreset === presetKey;
-          const config = GOV_PRESETS[presetKey];
-          return (
-            <button
-              key={presetKey}
-              onClick={() => setSelectedPreset(presetKey)}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium border transition-colors cursor-pointer ${
-                isSelected
-                  ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 border-zinc-900 dark:border-zinc-100'
-                  : isDark
-                    ? 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
-                    : 'bg-white border-zinc-200 text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50'
-              }`}
-            >
-              <div className="flex items-center gap-1.5">
-                <span>{config.name}</span>
-              </div>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Main Workspace */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Left Column: Dropzone & File Details */}
-        <div className="lg:col-span-7 space-y-5">
-          {!sourceFile ? (
-            <div
-              className={`p-6 rounded-lg border ${
-                isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'
-              }`}
-            >
-              <Dropzone
-                onFilesSelected={handleFileSelected}
-                accept="image/*,application/pdf"
-                multiple={false}
-                title="Upload Document (PDF or Image)"
-                description="Select Aadhaar card, marksheet, certificate, or KYC document. 100% private."
-              />
-            </div>
-          ) : (
-            <div
-              className={`p-6 rounded-lg border space-y-4 ${
-                isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'
-              }`}
-            >
-              <div className={`flex items-center justify-between pb-3 border-b ${isDark ? 'border-zinc-800' : 'border-zinc-200'}`}>
-                <div className="flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  <span className={`text-xs font-medium ${isDark ? 'text-zinc-200' : 'text-zinc-900'}`}>Active Document Loaded</span>
-                </div>
-                <button
-                  onClick={() => {
-                    setSourceFile(null);
-                    if (previewUrl) revokeSafeObjectURL(previewUrl);
-                    if (resultUrl) revokeSafeObjectURL(resultUrl);
-                    if (resultThumbUrl) revokeSafeObjectURL(resultThumbUrl);
-                    setPreviewUrl(null);
-                    setResultUrl(null);
-                    setResultThumbUrl(null);
-                    setResultBlob(null);
-                  }}
-                  className="text-xs text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 cursor-pointer transition-colors"
-                >
-                  Change Document
-                </button>
-              </div>
-
-              {/* Document Info Card */}
-              <div className={`p-4 rounded-md border flex items-center justify-between ${isDark ? 'border-zinc-800 bg-zinc-950/60' : 'border-zinc-200 bg-zinc-50'}`}>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 flex items-center justify-center text-zinc-700 dark:text-zinc-300 shrink-0 overflow-hidden">
-                    {previewUrl ? (
-                      <img
-                        src={previewUrl}
-                        alt="Document Preview"
-                        className="w-full h-full object-cover"
-                      />
-                    ) : fileType === 'pdf' ? (
-                      <FileText className="w-5 h-5 text-zinc-500" />
-                    ) : (
-                      <FileImage className="w-5 h-5 text-zinc-500" />
-                    )}
-                  </div>
-                  <div>
-                    <h3 className={`text-xs font-semibold max-w-[220px] sm:max-w-xs truncate ${isDark ? 'text-zinc-100' : 'text-zinc-900'}`}>
-                      {sourceFile.name}
-                    </h3>
-                    <p className={`text-[11px] ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
-                      Original Size: {formatBytes(sourceFile.size)} ·{' '}
-                      {fileType === 'pdf' ? `${pdfPageCount} Page(s) PDF` : 'Digital Image'}
-                    </p>
-                  </div>
-                </div>
-                <span className={`text-[10px] font-mono px-2 py-0.5 rounded border ${isDark ? 'bg-zinc-800 text-zinc-300 border-zinc-700' : 'bg-white text-zinc-700 border-zinc-200'}`}>
-                  {fileType.toUpperCase()}
-                </span>
-              </div>
-
-              {/* Text Clarity & Legibility Protection Toggle (Default: Enabled) */}
-              <div
-                className={`p-3.5 rounded-md border flex items-center justify-between gap-3 ${
-                  isDark ? 'border-zinc-800 bg-zinc-950/40' : 'border-zinc-200 bg-zinc-50'
+        {/* Preset Target Tabs (Clean Pill Bar) */}
+        <div className="flex flex-wrap justify-center gap-2">
+          {(Object.keys(GOV_PRESETS) as GovPortalPreset[]).map((presetKey, idx) => {
+            const isSelected = selectedPreset === presetKey;
+            const config = GOV_PRESETS[presetKey];
+            const shortcutKey = idx < 5 ? idx + 1 : null;
+            return (
+              <button
+                key={presetKey}
+                onClick={() => setSelectedPreset(presetKey)}
+                className={`px-3 py-1.5 rounded-md text-xs font-medium border transition-colors cursor-pointer flex items-center gap-1.5 ${
+                  isSelected
+                    ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 border-zinc-900 dark:border-zinc-100'
+                    : isDark
+                      ? 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
+                      : 'bg-white border-zinc-200 text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50'
                 }`}
               >
-                <div className="space-y-0.5">
-                  <div className="flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
-                    <span className={`text-xs font-semibold ${isDark ? 'text-zinc-200' : 'text-zinc-900'}`}>
-                      Text Clarity &amp; Legibility Protection
-                    </span>
-                    <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-medium border border-emerald-500/20">
-                      Recommended
-                    </span>
-                  </div>
-                  <p className={`text-[11px] ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
-                    Removes paper noise and deepens text strokes so candidate names, roll numbers, and marks stay 100% sharp and readable.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setTextClarityBoost(!textClarityBoost)}
-                  className={`w-9 h-5 flex items-center rounded-full p-0.5 transition-colors cursor-pointer shrink-0 ${
-                    textClarityBoost ? 'bg-zinc-900 dark:bg-zinc-100 justify-end' : 'bg-zinc-300 dark:bg-zinc-700 justify-start'
-                  }`}
-                  title="Toggle Text Clarity Protection"
-                >
-                  <span className={`w-4 h-4 rounded-full bg-white dark:bg-zinc-900 shadow-sm`} />
-                </button>
-              </div>
-
-              {/* Custom Bounds Sliders if Selected */}
-              {selectedPreset === 'custom' && (
-                <div className={`p-4 rounded-md border space-y-4 ${isDark ? 'border-zinc-800 bg-zinc-950/40' : 'border-zinc-200 bg-zinc-50'}`}>
-                  <span className={`text-xs font-semibold block ${isDark ? 'text-zinc-200' : 'text-zinc-900'}`}>Custom Size Bounds</span>
-                  <Slider
-                    label="Maximum File Size (Target Upper Limit)"
-                    min={20}
-                    max={1000}
-                    step={10}
-                    unit=" KB"
-                    value={customMaxKb}
-                    onChange={(val) => setCustomMaxKb(val)}
-                  />
-                  <Slider
-                    label="Minimum File Size (Lower Threshold)"
-                    min={5}
-                    max={customMaxKb - 10}
-                    step={5}
-                    unit=" KB"
-                    value={customMinKb}
-                    onChange={(val) => setCustomMinKb(val)}
-                  />
-                </div>
-              )}
-
-              {/* Progress Indicator during compression */}
-              {isProcessing && (
-                <div className={`p-3.5 rounded-md border space-y-2 ${isDark ? 'border-zinc-800 bg-zinc-950/80' : 'border-zinc-200 bg-zinc-50'}`}>
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="flex items-center gap-1.5 font-medium text-zinc-900 dark:text-zinc-100">
-                      <Loader2 className="w-3.5 h-3.5 animate-spin text-zinc-500" />
-                      <span>{progressStage || 'Compressing...'}</span>
-                    </span>
-                    <span className="font-mono text-zinc-500">{progressPercent}%</span>
-                  </div>
-                  <div className="w-full h-1.5 rounded-full bg-zinc-200 dark:bg-zinc-800 overflow-hidden">
-                    <div
-                      className="h-full bg-zinc-900 dark:bg-zinc-100 transition-all duration-200"
-                      style={{ width: `${progressPercent}%` }}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Action Trigger */}
-              <Button
-                variant="primary"
-                onClick={handleCompress}
-                isLoading={isProcessing}
-                className="w-full py-2.5 font-medium text-xs bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:hover:bg-zinc-200 dark:text-zinc-900 rounded-md cursor-pointer"
-              >
-                <Sparkles className="w-4 h-4 mr-2" />
-                <span>Compress {fileType.toUpperCase()} Under {maxKb} KB</span>
-              </Button>
-            </div>
-          )}
+                {shortcutKey && (
+                  <kbd className={`px-1.5 py-0.2 rounded text-[10px] font-mono border ${
+                    isSelected
+                      ? 'bg-zinc-800 text-white dark:bg-zinc-200 dark:text-zinc-900 border-zinc-700 dark:border-zinc-300'
+                      : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 border-zinc-200 dark:border-zinc-700'
+                  }`}>
+                    {shortcutKey}
+                  </kbd>
+                )}
+                <span>{config.name}</span>
+              </button>
+            );
+          })}
         </div>
 
-        {/* Right Column: Portal Settings & Result Card */}
-        <div className="lg:col-span-5 space-y-5">
-          {/* Target Portal Scope Card */}
+        {/* Direct Dropzone (Centered, Max-w-3xl, Clean & Focused) */}
+        <div className="max-w-3xl mx-auto">
+          <Dropzone
+            onFilesSelected={handleFileSelected}
+            accept="image/*,application/pdf"
+            multiple={false}
+            title={`Upload Document to Compress Under ${maxKb} KB`}
+            description="Drag & drop PDF, JPG, or PNG. Processed 100% locally in browser RAM."
+          />
+        </div>
+
+        {/* Authoritative Verified Guide, Official Specifications & FAQs */}
+        <GovToolGuideSection toolId="kb-resizer" />
+      </div>
+    );
+  }
+
+  /* -------------------------------------------------------------
+     RENDER: ACTIVE WORKSPACE (DOCUMENT LOADED & READY)
+  ------------------------------------------------------------- */
+  return (
+    <div className="w-full max-w-7xl mx-auto space-y-6 animate-in fade-in duration-200">
+      {/* Pro Workspace Header Bar */}
+      <div className={`p-3.5 rounded-xl border flex flex-wrap items-center justify-between gap-3 ${
+        isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'
+      }`}>
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 overflow-hidden flex items-center justify-center shrink-0">
+            {resultThumbUrl || previewUrl ? (
+              <img
+                src={resultThumbUrl || previewUrl || ''}
+                alt="Thumbnail"
+                className="w-full h-full object-cover"
+              />
+            ) : fileType === 'pdf' ? (
+              <FileText className="w-5 h-5 text-zinc-500" />
+            ) : (
+              <FileImage className="w-5 h-5 text-zinc-500" />
+            )}
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className={`text-xs font-semibold max-w-[200px] sm:max-w-xs truncate ${isDark ? 'text-zinc-100' : 'text-zinc-900'}`}>
+                {sourceFile.name}
+              </span>
+              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700">
+                {formatBytes(sourceFile.size)} · {fileType.toUpperCase()}
+              </span>
+            </div>
+            <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-mono mt-0.5 flex items-center gap-1">
+              <CheckCircle2 className="w-3 h-3" />
+              <span>
+                {resultBlob
+                  ? `✓ 100% Portal Compliant: ${formatBytes(resultSizeBytes)} (Target: < ${maxKb} KB)`
+                  : `✓ Target Goal: Strictly Under ${maxKb} KB (${minKb}–${maxKb} KB)`}
+              </span>
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleResetFile}
+            title="Reset / New Document (Esc or N)"
+            className="px-2.5 py-1.5 rounded-md text-xs font-medium border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 transition-colors flex items-center gap-1.5 cursor-pointer"
+          >
+            <span>New</span>
+            <kbd className="px-1 py-0.2 rounded text-[10px] font-mono bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-500">N</kbd>
+          </button>
+          {resultBlob && fileType === 'image' && (
+            <button
+              onClick={handleCopy}
+              title="Copy Image (C or Ctrl+C)"
+              className="px-2.5 py-1.5 rounded-md text-xs font-medium border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 transition-colors flex items-center gap-1.5 cursor-pointer"
+            >
+              <Copy className="w-3.5 h-3.5" />
+              <span>Copy</span>
+              <kbd className="px-1 py-0.2 rounded text-[10px] font-mono bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-500">C</kbd>
+            </button>
+          )}
+          {resultBlob ? (
+            <button
+              onClick={handleDownload}
+              title="Download Result (D or Ctrl+S)"
+              className="px-3 py-1.5 rounded-md text-xs font-semibold bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors flex items-center gap-1.5 cursor-pointer"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Download</span>
+              <kbd className="px-1 py-0.2 rounded text-[10px] font-mono bg-zinc-700 dark:bg-zinc-300 text-zinc-200 dark:text-zinc-800">D</kbd>
+            </button>
+          ) : (
+            <button
+              onClick={handleCompress}
+              disabled={isProcessing}
+              title="Compress Document (Enter or Space)"
+              className="px-3 py-1.5 rounded-md text-xs font-semibold bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Compress</span>
+              <kbd className="px-1 py-0.2 rounded text-[10px] font-mono bg-zinc-700 dark:bg-zinc-300 text-zinc-200 dark:text-zinc-800">↵</kbd>
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Main Workspace (2 Columns) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* Left Column (7 cols): Document Details & Optimization Settings */}
+        <div className="lg:col-span-7 space-y-4">
           <div
-            className={`p-5 rounded-lg border space-y-4 ${
+            className={`p-6 rounded-xl border space-y-4 ${
               isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'
             }`}
           >
             <div className={`flex items-center justify-between pb-3 border-b ${isDark ? 'border-zinc-800' : 'border-zinc-200'}`}>
-              <span className={`text-xs font-medium ${isDark ? 'text-zinc-200' : 'text-zinc-900'}`}>Target Compression Goal</span>
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className={`text-xs font-semibold ${isDark ? 'text-zinc-200' : 'text-zinc-900'}`}>Active Document</span>
+              </div>
+              <button
+                onClick={handleResetFile}
+                className="text-xs text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 cursor-pointer transition-colors"
+              >
+                Change Document
+              </button>
+            </div>
+
+            {/* Document Info Card */}
+            <div className={`p-4 rounded-xl flex items-center justify-between ${isDark ? 'bg-zinc-850/60' : 'bg-zinc-100/70'}`}>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 flex items-center justify-center text-zinc-700 dark:text-zinc-300 shrink-0 overflow-hidden">
+                  {previewUrl ? (
+                    <img
+                      src={previewUrl}
+                      alt="Document Preview"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : fileType === 'pdf' ? (
+                    <FileText className="w-5 h-5 text-zinc-500" />
+                  ) : (
+                    <FileImage className="w-5 h-5 text-zinc-500" />
+                  )}
+                </div>
+                <div>
+                  <h3 className={`text-xs font-semibold max-w-[220px] sm:max-w-xs truncate ${isDark ? 'text-zinc-100' : 'text-zinc-900'}`}>
+                    {sourceFile.name}
+                  </h3>
+                  <p className={`text-[11px] ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                    Original Size: {formatBytes(sourceFile.size)} ·{' '}
+                    {fileType === 'pdf' ? `${pdfPageCount} Page(s) PDF` : 'Digital Image'}
+                  </p>
+                </div>
+              </div>
+              <span className={`text-[10px] font-mono px-2 py-0.5 rounded border ${isDark ? 'bg-zinc-800 text-zinc-300 border-zinc-700' : 'bg-white text-zinc-700 border-zinc-200'}`}>
+                {fileType.toUpperCase()}
+              </span>
+            </div>
+
+            {/* Target Preset Selector in Active Mode */}
+            <div className="space-y-2 pt-1">
+              <span className={`text-xs font-semibold block ${isDark ? 'text-zinc-300' : 'text-zinc-700'}`}>Target Size Goal:</span>
+              <div className="flex flex-wrap gap-1.5">
+                {(Object.keys(GOV_PRESETS) as GovPortalPreset[]).map((presetKey, idx) => {
+                  const isSelected = selectedPreset === presetKey;
+                  const config = GOV_PRESETS[presetKey];
+                  const shortcutKey = idx < 5 ? idx + 1 : null;
+                  return (
+                    <button
+                      key={presetKey}
+                      onClick={() => setSelectedPreset(presetKey)}
+                      className={`px-2.5 py-1 rounded-md text-xs font-medium border transition-colors cursor-pointer flex items-center gap-1.5 ${
+                        isSelected
+                          ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 border-zinc-900 dark:border-zinc-100'
+                          : isDark
+                            ? 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
+                            : 'bg-white border-zinc-200 text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50'
+                      }`}
+                    >
+                      {shortcutKey && (
+                        <kbd className={`px-1 py-0.1 rounded text-[9px] font-mono border ${
+                          isSelected
+                            ? 'bg-zinc-800 text-white dark:bg-zinc-200 dark:text-zinc-900 border-zinc-700 dark:border-zinc-300'
+                            : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 border-zinc-200 dark:border-zinc-700'
+                        }`}>
+                          {shortcutKey}
+                        </kbd>
+                      )}
+                      <span>{config.name}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Text Clarity & Legibility Protection Toggle (Default: Enabled) */}
+            <div
+              className={`p-3.5 rounded-xl flex items-center justify-between gap-3 ${
+                isDark ? 'bg-zinc-850/50' : 'bg-zinc-100/70'
+              }`}
+            >
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
+                  <span className={`text-xs font-semibold ${isDark ? 'text-zinc-200' : 'text-zinc-900'}`}>
+                    Text Clarity &amp; Legibility Protection
+                  </span>
+                  <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-medium">
+                    Recommended
+                  </span>
+                </div>
+                <p className={`text-[11px] ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                  Cleans paper grain to pure white and sharpens character strokes for 100% readability.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setTextClarityBoost(!textClarityBoost)}
+                className={`w-9 h-5 flex items-center rounded-full p-0.5 transition-colors cursor-pointer shrink-0 ${
+                  textClarityBoost ? 'bg-zinc-900 dark:bg-zinc-100 justify-end' : 'bg-zinc-300 dark:bg-zinc-700 justify-start'
+                }`}
+                title="Toggle Text Clarity Protection"
+              >
+                <span className={`w-4 h-4 rounded-full bg-white dark:bg-zinc-900 shadow-sm`} />
+              </button>
+            </div>
+
+            {/* Custom Bounds Sliders if Selected */}
+            {selectedPreset === 'custom' && (
+              <div className={`p-4 rounded-xl space-y-4 ${isDark ? 'bg-zinc-850/50' : 'bg-zinc-100/70'}`}>
+                <span className={`text-xs font-semibold block ${isDark ? 'text-zinc-200' : 'text-zinc-900'}`}>Custom Size Bounds</span>
+                <Slider
+                  label="Maximum File Size (Target Upper Limit)"
+                  min={20}
+                  max={1000}
+                  step={10}
+                  unit=" KB"
+                  value={customMaxKb}
+                  onChange={(val) => setCustomMaxKb(val)}
+                />
+                <Slider
+                  label="Minimum File Size (Lower Threshold)"
+                  min={5}
+                  max={customMaxKb - 10}
+                  step={5}
+                  unit=" KB"
+                  value={customMinKb}
+                  onChange={(val) => setCustomMinKb(val)}
+                />
+              </div>
+            )}
+
+            {/* Progress Indicator during compression */}
+            {isProcessing && (
+              <div className={`p-3.5 rounded-xl space-y-2 ${isDark ? 'bg-zinc-850/70' : 'bg-zinc-100/80'}`}>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="flex items-center gap-1.5 font-medium text-zinc-900 dark:text-zinc-100">
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-zinc-500" />
+                    <span>{progressStage || 'Compressing...'}</span>
+                  </span>
+                  <span className="font-mono text-zinc-500">{progressPercent}%</span>
+                </div>
+                <div className="w-full h-1.5 rounded-full bg-zinc-200 dark:bg-zinc-800 overflow-hidden">
+                  <div
+                    className="h-full bg-zinc-900 dark:bg-zinc-100 transition-all duration-200"
+                    style={{ width: `${progressPercent}%` }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Action Trigger */}
+            <Button
+              variant="primary"
+              onClick={handleCompress}
+              isLoading={isProcessing}
+              className="w-full py-2.5 font-medium text-xs bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:hover:bg-zinc-200 dark:text-zinc-900 rounded-md cursor-pointer"
+            >
+              <Sparkles className="w-4 h-4 mr-2" />
+              <span>Compress {fileType.toUpperCase()} Under {maxKb} KB</span>
+            </Button>
+          </div>
+        </div>
+
+        {/* Right Column (5 cols): Result & Download Card */}
+        <div className="lg:col-span-5 space-y-4">
+          <div
+            className={`p-6 rounded-xl border space-y-4 ${
+              isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'
+            }`}
+          >
+            <div className={`flex items-center justify-between pb-3 border-b ${isDark ? 'border-zinc-800' : 'border-zinc-200'}`}>
+              <span className={`text-xs font-semibold ${isDark ? 'text-zinc-200' : 'text-zinc-900'}`}>Portal Ready Output</span>
               <span className="text-[10px] font-mono px-2 py-0.5 rounded border border-zinc-300 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100">
                 &lt; {maxKb} KB
               </span>
             </div>
 
-            <div className="space-y-3 text-xs">
-              <div className={`flex items-center justify-between p-2.5 rounded-md border ${isDark ? 'border-zinc-800 bg-zinc-950/60' : 'border-zinc-200 bg-zinc-50'}`}>
-                <span className={isDark ? 'text-zinc-400' : 'text-zinc-600'}>Target Range:</span>
-                <span className="font-mono font-semibold text-emerald-600 dark:text-emerald-400">
-                  {minKb} KB – {maxKb} KB
-                </span>
-              </div>
-              <div className={`p-2.5 rounded-md border ${isDark ? 'border-zinc-800 bg-zinc-950/60' : 'border-zinc-200 bg-zinc-50'}`}>
-                <span className={`block mb-1 ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>Common Government Portals:</span>
-                <span className={`font-medium ${isDark ? 'text-zinc-200' : 'text-zinc-800'}`}>{activePreset.portalDescription}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Result Card & Checklist */}
-          <div
-            className={`p-5 rounded-lg border space-y-4 ${
-              isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'
-            }`}
-          >
-            <span className={`text-xs font-medium block ${isDark ? 'text-zinc-200' : 'text-zinc-900'}`}>Portal Ready Output</span>
-
             {/* Preview Box */}
-            <div className={`flex flex-col items-center justify-center p-4 rounded-md border border-dashed min-h-[160px] ${
+            <div className={`flex flex-col items-center justify-center p-4 rounded-xl border border-dashed min-h-[160px] ${
               isDark ? 'border-zinc-800 bg-zinc-950/40' : 'border-zinc-300 bg-zinc-50'
             }`}>
               {resultUrl ? (
                 <div className="text-center space-y-3 w-full">
                   {resultThumbUrl ? (
-                    <div className="relative group max-h-[170px] overflow-hidden rounded border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 mx-auto max-w-xs shadow-sm">
+                    <div className="relative group max-h-[170px] overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 mx-auto max-w-xs shadow-xs">
                       <img
                         src={resultThumbUrl}
                         alt="Compressed preview"
@@ -895,7 +1109,9 @@ export const GovCompressor: React.FC<GovCompressorProps> = ({ initialFile, onNot
                   <div className={`w-9 h-9 rounded-full flex items-center justify-center mx-auto ${isDark ? 'bg-zinc-800 text-zinc-400' : 'bg-zinc-200 text-zinc-600'}`}>
                     <Eye className="w-4 h-4" />
                   </div>
-                  <p className={`text-xs ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>Compressed file details will show here</p>
+                  <p className={`text-xs ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>
+                    Click "Compress {fileType.toUpperCase()}" to produce portal file
+                  </p>
                 </div>
               )}
             </div>
@@ -903,12 +1119,12 @@ export const GovCompressor: React.FC<GovCompressorProps> = ({ initialFile, onNot
             {/* Checklist */}
             <div className="space-y-2 text-xs">
               <div
-                className={`p-2.5 rounded-md border flex items-center justify-between ${
+                className={`p-2.5 rounded-lg flex items-center justify-between ${
                   resultBlob && isCompliant
-                    ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
+                    ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
                     : isDark
-                      ? 'bg-zinc-950/60 border-zinc-800 text-zinc-400'
-                      : 'bg-zinc-50 border-zinc-200 text-zinc-600'
+                      ? 'bg-zinc-850/60 text-zinc-400'
+                      : 'bg-zinc-100/70 text-zinc-600'
                 }`}
               >
                 <span className="flex items-center gap-2">
@@ -921,12 +1137,12 @@ export const GovCompressor: React.FC<GovCompressorProps> = ({ initialFile, onNot
               </div>
 
               <div
-                className={`p-2.5 rounded-md border flex items-center justify-between ${
+                className={`p-2.5 rounded-lg flex items-center justify-between ${
                   resultBlob
-                    ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
+                    ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
                     : isDark
-                      ? 'bg-zinc-950/60 border-zinc-800 text-zinc-400'
-                      : 'bg-zinc-50 border-zinc-200 text-zinc-600'
+                      ? 'bg-zinc-850/60 text-zinc-400'
+                      : 'bg-zinc-100/70 text-zinc-600'
                 }`}
               >
                 <span className="flex items-center gap-2">
@@ -936,22 +1152,6 @@ export const GovCompressor: React.FC<GovCompressorProps> = ({ initialFile, onNot
                 <span className="font-mono font-semibold text-emerald-600 dark:text-emerald-400">
                   {resultBlob ? '100% SHARP' : 'Protected'}
                 </span>
-              </div>
-
-              <div
-                className={`p-2.5 rounded-md border flex items-center justify-between ${
-                  resultBlob
-                    ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
-                    : isDark
-                      ? 'bg-zinc-950/60 border-zinc-800 text-zinc-400'
-                      : 'bg-zinc-50 border-zinc-200 text-zinc-600'
-                }`}
-              >
-                <span className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4" />
-                  100% Client-Side Privacy
-                </span>
-                <span className="font-mono font-semibold text-emerald-600 dark:text-emerald-400">Guaranteed</span>
               </div>
             </div>
 
@@ -991,6 +1191,27 @@ export const GovCompressor: React.FC<GovCompressorProps> = ({ initialFile, onNot
               </div>
             )}
           </div>
+        </div>
+      </div>
+
+      {/* Keyboard Shortcuts Strip */}
+      <div className={`p-3 rounded-xl border text-xs flex flex-wrap items-center justify-between gap-3 ${
+        isDark ? 'bg-zinc-900/60 border-zinc-800 text-zinc-400' : 'bg-zinc-50 border-zinc-200 text-zinc-600'
+      }`}>
+        <div className="flex items-center gap-2">
+          <Keyboard className="w-4 h-4 text-zinc-500" />
+          <span className="font-semibold text-zinc-800 dark:text-zinc-200">Pro Keyboard Controls:</span>
+        </div>
+        <div className="flex flex-wrap items-center gap-3 font-mono text-[11px]">
+          <span><kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-300 dark:border-zinc-700">1</kbd> &lt;50KB</span>
+          <span><kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-300 dark:border-zinc-700">2</kbd> &lt;100KB</span>
+          <span><kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-300 dark:border-zinc-700">3</kbd> &lt;200KB</span>
+          <span><kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-300 dark:border-zinc-700">4</kbd> &lt;300KB</span>
+          <span><kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-300 dark:border-zinc-700">5</kbd> &lt;500KB</span>
+          <span><kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-300 dark:border-zinc-700">T</kbd> Text Clarity</span>
+          <span><kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-300 dark:border-zinc-700">↵</kbd> Compress</span>
+          <span><kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-300 dark:border-zinc-700">D</kbd> Save</span>
+          <span><kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-300 dark:border-zinc-700">N</kbd> New</span>
         </div>
       </div>
 
@@ -1054,78 +1275,8 @@ export const GovCompressor: React.FC<GovCompressorProps> = ({ initialFile, onNot
         </div>
       )}
 
-      {/* Guide Section */}
-      <div className={`pt-8 border-t space-y-6 ${isDark ? 'border-zinc-800' : 'border-zinc-200'}`}>
-        <h2 className={`text-lg font-bold text-center ${isDark ? 'text-zinc-100' : 'text-zinc-900'}`}>
-          Indian Government Portal Document Guidelines
-        </h2>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className={`p-4 rounded-lg border space-y-2 ${isDark ? 'border-zinc-800 bg-zinc-900' : 'border-zinc-200 bg-white'}`}>
-            <span className="text-xs font-mono text-zinc-500 font-semibold">01. EPFO &amp; Aadhaar Proof</span>
-            <h3 className={`text-sm font-semibold ${isDark ? 'text-zinc-100' : 'text-zinc-900'}`}>Strict 100 KB Limit</h3>
-            <p className={`text-xs ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>
-              The EPFO unified portal strictly rejects bank passbooks and cancelled cheques exceeding 100 KB.
-            </p>
-          </div>
-
-          <div className={`p-4 rounded-lg border space-y-2 ${isDark ? 'border-zinc-800 bg-zinc-900' : 'border-zinc-200 bg-white'}`}>
-            <span className="text-xs font-mono text-zinc-500 font-semibold">02. State PSC &amp; Revenue</span>
-            <h3 className={`text-sm font-semibold ${isDark ? 'text-zinc-100' : 'text-zinc-900'}`}>Under 200 KB Norms</h3>
-            <p className={`text-xs ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>
-              Income, caste, and domicile certificates must be kept between 50 KB and 200 KB for online verification.
-            </p>
-          </div>
-
-          <div className={`p-4 rounded-lg border space-y-2 ${isDark ? 'border-zinc-800 bg-zinc-900' : 'border-zinc-200 bg-white'}`}>
-            <span className="text-xs font-mono text-zinc-500 font-semibold">03. High Legibility</span>
-            <h3 className={`text-sm font-semibold ${isDark ? 'text-zinc-100' : 'text-zinc-900'}`}>Adaptive Quality Search</h3>
-            <p className={`text-xs ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>
-              We apply binary search and adaptive contrast filtering to keep letters deep black and background pure white, ensuring maximum text readability at low file sizes.
-            </p>
-          </div>
-        </div>
-
-        {/* FAQs */}
-        <div className={`p-5 rounded-lg border space-y-3 ${isDark ? 'border-zinc-800 bg-zinc-900' : 'border-zinc-200 bg-white'}`}>
-          <h3 className={`text-sm font-bold mb-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>Frequently Asked Questions</h3>
-          {[
-            {
-              q: 'How does FileWala compress documents without making text blurry?',
-              a: 'Scanned certificates and marksheets usually contain scanner grain and dirty paper backgrounds that waste 80% of file size. FileWala cleans the background to pure white and enhances the contrast of letters and numbers. Because pure white takes almost zero bytes in compression, full quality is dedicated to the text, keeping every letter and digit razor-sharp.',
-            },
-            {
-              q: 'How do I compress my marksheet or Aadhaar proof under 100 KB?',
-              a: 'Select the "Under 100 KB" preset above, upload your PDF or image, and click "Compress Document". The tool automatically calculates the optimal compression to keep the file strictly between 20 KB and 100 KB.',
-            },
-            {
-              q: 'Is my Aadhaar card or PAN safe to compress here?',
-              a: 'Yes, 100%. All compression operations run locally inside your web browser using HTML5 Canvas and WebAssembly. No files or personal data are ever uploaded to any server or third party.',
-            },
-            {
-              q: 'Can I compress multi-page PDF documents?',
-              a: 'Yes. Multi-page PDFs are rendered and optimized page-by-page client-side. The file size budget is evenly balanced across all pages to meet portal size limits.',
-            },
-          ].map((faq, idx) => (
-            <div key={idx} className={`border-b pb-3 last:border-b-0 ${isDark ? 'border-slate-800/60' : 'border-slate-200'}`}>
-              <button
-                onClick={() => setOpenFaq(openFaq === idx ? null : idx)}
-                className={`w-full flex items-center justify-between text-left text-xs font-semibold cursor-pointer py-1 ${isDark ? 'text-slate-300 hover:text-white' : 'text-slate-700 hover:text-slate-950'}`}
-              >
-                <span>{faq.q}</span>
-                <ChevronDown
-                  className={`w-3.5 h-3.5 transition-transform ${
-                    openFaq === idx ? 'rotate-180 text-blue-500 dark:text-blue-400' : 'text-slate-400'
-                  }`}
-                />
-              </button>
-              {openFaq === idx && (
-                <p className={`text-xs mt-1.5 leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{faq.a}</p>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
+      {/* Authoritative Verified Guide, Official Specifications & FAQs */}
+      <GovToolGuideSection toolId="kb-resizer" />
     </div>
   );
 };

@@ -38,6 +38,7 @@ import {
   Info
 } from 'lucide-react';
 import { useTheme } from '../../core/themeContext';
+import { ImageToolGuideSection } from './image/ImageToolGuideSection';
 import { formatBytes, triggerFileDownload, createSafeObjectURL, revokeSafeObjectURL } from '../../utils/memory';
 import { CanvasEngine, ImageFormat } from '../../core/engine/CanvasEngine';
 
@@ -118,272 +119,10 @@ function getAspectRatioLabel(width: number, height: number): string {
 }
 
 /**
- * Detailed Reference & Knowledge Base Component for Image Resizer
+ * Standardized Schema-Matched Guide & Knowledge Base for Image Resizer
  */
-const ResizerGuideAndFaq: React.FC<{ isDark: boolean }> = ({ isDark }) => {
-  return (
-    <div className="w-full space-y-6 pt-6">
-      {/* 1. Aspect Ratio & Dimensions Guide */}
-      <div
-        className={`p-6 rounded-lg border ${
-          isDark
-            ? 'bg-zinc-900 border-zinc-800'
-            : 'bg-white border-zinc-200'
-        }`}
-      >
-        <div className="flex items-center gap-2 mb-2">
-          <Layers className="w-4 h-4 text-blue-500" />
-          <h3
-            className={`text-sm font-bold tracking-tight ${
-              isDark ? 'text-white' : 'text-slate-900'
-            }`}
-          >
-            Understanding Aspect Ratio & Resolution
-          </h3>
-        </div>
-        <p
-          className={`text-xs mb-4 leading-relaxed ${
-            isDark ? 'text-slate-400' : 'text-slate-600'
-          }`}
-        >
-          Aspect ratio is the proportional relationship between an image's width and height. Locking the aspect ratio prevents distortion and accidental stretching:
-        </p>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-          <div
-            className={`p-3.5 rounded-xl border space-y-1.5 ${
-              isDark ? 'bg-slate-950/60 border-slate-800' : 'bg-slate-50 border-slate-200'
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <span className="font-bold text-xs text-blue-400 font-mono">1:1 Square</span>
-              <span className="text-[10px] font-mono text-slate-500">1080×1080</span>
-            </div>
-            <p className={`text-[11px] leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-              Standard for Instagram feed posts, profile avatars, WhatsApp profile icons, and e-commerce product grids.
-            </p>
-          </div>
-
-          <div
-            className={`p-3.5 rounded-xl border space-y-1.5 ${
-              isDark ? 'bg-slate-950/60 border-slate-800' : 'bg-slate-50 border-slate-200'
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <span className="font-bold text-xs text-emerald-400 font-mono">16:9 Widescreen</span>
-              <span className="text-[10px] font-mono text-slate-500">1920×1080</span>
-            </div>
-            <p className={`text-[11px] leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-              The standard for YouTube thumbnails, presentation slides, desktop wallpapers, and television displays.
-            </p>
-          </div>
-
-          <div
-            className={`p-3.5 rounded-xl border space-y-1.5 ${
-              isDark ? 'bg-slate-950/60 border-slate-800' : 'bg-slate-50 border-slate-200'
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <span className="font-bold text-xs text-purple-400 font-mono">9:16 Vertical</span>
-              <span className="text-[10px] font-mono text-slate-500">1080×1920</span>
-            </div>
-            <p className={`text-[11px] leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-              Optimal for Instagram Stories, Reels, TikTok, YouTube Shorts, and full-screen mobile smartphone wallpaper.
-            </p>
-          </div>
-
-          <div
-            className={`p-3.5 rounded-xl border space-y-1.5 ${
-              isDark ? 'bg-slate-950/60 border-slate-800' : 'bg-slate-50 border-slate-200'
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <span className="font-bold text-xs text-amber-400 font-mono">4:3 Standard</span>
-              <span className="text-[10px] font-mono text-slate-500">1200×900</span>
-            </div>
-            <p className={`text-[11px] leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-              Classic photographic format used by tablet screens, iPad cameras, print media, and vintage monitors.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* 2. Fit Mode Explanation */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div
-          className={`p-6 rounded-lg border ${
-            isDark
-              ? 'bg-zinc-900 border-zinc-800'
-              : 'bg-white border-zinc-200'
-          }`}
-        >
-          <div className="flex items-center gap-2 mb-2">
-            <SlidersHorizontal className="w-4 h-4 text-emerald-500" />
-            <h3
-              className={`text-sm font-bold tracking-tight ${
-                isDark ? 'text-white' : 'text-slate-900'
-              }`}
-            >
-              Fit Mode Reference (Unconstrained Dimensions)
-            </h3>
-          </div>
-          <p
-            className={`text-xs mb-3.5 leading-relaxed ${
-              isDark ? 'text-slate-400' : 'text-slate-600'
-            }`}
-          >
-            When aspect ratio is unlocked and target dimensions differ from original:
-          </p>
-
-          <div className="space-y-2.5 text-xs">
-            <div className={`p-3 rounded-xl border ${isDark ? 'bg-slate-950/40 border-slate-800/80' : 'bg-slate-50 border-slate-200'}`}>
-              <div className="font-bold text-blue-400 font-mono">Stretch (Default)</div>
-              <p className={`text-[11px] mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                Fills target canvas completely. May introduce distortion if proportions deviate significantly from original.
-              </p>
-            </div>
-
-            <div className={`p-3 rounded-xl border ${isDark ? 'bg-slate-950/40 border-slate-800/80' : 'bg-slate-50 border-slate-200'}`}>
-              <div className="font-bold text-emerald-400 font-mono">Contain (Pad)</div>
-              <p className={`text-[11px] mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                Fits entire image inside target dimensions with zero cropping. Adds neat padding around edges to match canvas size.
-              </p>
-            </div>
-
-            <div className={`p-3 rounded-xl border ${isDark ? 'bg-slate-950/40 border-slate-800/80' : 'bg-slate-50 border-slate-200'}`}>
-              <div className="font-bold text-amber-400 font-mono">Cover (Crop)</div>
-              <p className={`text-[11px] mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                Scales image proportionally to completely fill target frame, cleanly cropping overflowing edges from center.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Government Portal Presets & Rules */}
-        <div
-          className={`p-6 rounded-lg border ${
-            isDark
-              ? 'bg-zinc-900 border-zinc-800'
-              : 'bg-white border-zinc-200'
-          }`}
-        >
-          <div className="flex items-center gap-2 mb-2">
-            <Target className="w-4 h-4 text-indigo-500" />
-            <h3
-              className={`text-sm font-bold tracking-tight ${
-                isDark ? 'text-white' : 'text-slate-900'
-              }`}
-            >
-              Government Portal Resolution Rules
-            </h3>
-          </div>
-          <p
-            className={`text-xs mb-3.5 leading-relaxed ${
-              isDark ? 'text-slate-400' : 'text-slate-600'
-            }`}
-          >
-            Recommended dimensions for official exam and identification submissions:
-          </p>
-
-          <div className="space-y-2.5 text-xs">
-            <div className={`p-3 rounded-xl border ${isDark ? 'bg-slate-950/40 border-slate-800/80' : 'bg-slate-50 border-slate-200'}`}>
-              <div className="flex items-center justify-between mb-0.5">
-                <span className="font-bold text-indigo-400">PAN Card Photo (NSDL / UTIITSL)</span>
-                <span className="font-mono text-[10px] text-indigo-400 border border-indigo-500/20 px-1 rounded">213 × 213 px</span>
-              </div>
-              <p className={`text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                300 DPI resolution, exact square format. Supported directly via popular target presets.
-              </p>
-            </div>
-
-            <div className={`p-3 rounded-xl border ${isDark ? 'bg-slate-950/40 border-slate-800/80' : 'bg-slate-50 border-slate-200'}`}>
-              <div className="flex items-center justify-between mb-0.5">
-                <span className="font-bold text-indigo-400">Signature Upload Portals</span>
-                <span className="font-mono text-[10px] text-indigo-400 border border-indigo-500/20 px-1 rounded">300 × 120 px</span>
-              </div>
-              <p className={`text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                5:2 panoramic aspect ratio suitable for signature boxes on passport and competitive exam forms.
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* 3. Frequently Asked Questions (FAQ) */}
-      <div
-        className={`p-6 rounded-lg border ${
-          isDark
-            ? 'bg-zinc-900 border-zinc-800'
-            : 'bg-white border-zinc-200'
-        }`}
-      >
-        <div className="flex items-center gap-2 mb-4">
-          <ShieldCheck className="w-4 h-4 text-emerald-500" />
-          <h3
-            className={`text-sm font-bold tracking-tight ${
-              isDark ? 'text-white' : 'text-slate-900'
-            }`}
-          >
-            Frequently Asked Questions (FAQ)
-          </h3>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 text-xs">
-          <div
-            className={`p-3.5 rounded-xl border space-y-1 ${
-              isDark ? 'bg-slate-950/40 border-slate-800/80' : 'bg-slate-50 border-slate-200'
-            }`}
-          >
-            <h4 className={`font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>
-              Does resizing down reduce image quality?
-            </h4>
-            <p className={`leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-              No. When downscaling, the canvas engine utilizes high-quality bicubic filtering to smoothly resample pixels, maintaining sharpness while reducing byte weight.
-            </p>
-          </div>
-
-          <div
-            className={`p-3.5 rounded-xl border space-y-1 ${
-              isDark ? 'bg-slate-950/40 border-slate-800/80' : 'bg-slate-50 border-slate-200'
-            }`}
-          >
-            <h4 className={`font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>
-              Can I enlarge images beyond original resolution?
-            </h4>
-            <p className={`leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-              Yes! You can scale up to 16,000 pixels. The canvas uses smooth interpolation, although natural physical camera sensors cannot invent brand-new micro-details.
-            </p>
-          </div>
-
-          <div
-            className={`p-3.5 rounded-xl border space-y-1 ${
-              isDark ? 'bg-slate-950/40 border-slate-800/80' : 'bg-slate-50 border-slate-200'
-            }`}
-          >
-            <h4 className={`font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>
-              Can I convert format while resizing?
-            </h4>
-            <p className={`leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-              Yes! You can choose Match Original, WebP (saves 30-50% size), JPEG (universal compatibility), or PNG (lossless) in the Format dropdown before downloading.
-            </p>
-          </div>
-
-          <div
-            className={`p-3.5 rounded-xl border space-y-1 ${
-              isDark ? 'bg-slate-950/40 border-slate-800/80' : 'bg-slate-50 border-slate-200'
-            }`}
-          >
-            <h4 className={`font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>
-              Are my photos uploaded to any server?
-            </h4>
-            <p className={`leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-              No. 100% of image rendering and resizing takes place client-side within your browser using HTML5 Canvas. Zero data leaves your computer.
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+const ResizerGuideAndFaq: React.FC<{ isDark?: boolean }> = () => {
+  return <ImageToolGuideSection toolId="image-resizer" />;
 };
 
 export const ResizerTool: React.FC<ResizerToolProps> = ({ onNotify, initialFile }) => {
@@ -919,7 +658,7 @@ export const ResizerTool: React.FC<ResizerToolProps> = ({ onNotify, initialFile 
   };
 
   // Reset to initial state
-  const handleReset = () => {
+  const handleReset = useCallback(() => {
     revokeAllTrackedUrls();
     lastResizedUrlRef.current = null;
     loadedInitialFileRef.current = null;
@@ -928,37 +667,61 @@ export const ResizerTool: React.FC<ResizerToolProps> = ({ onNotify, initialFile 
     setErrorMessage(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
     if (workspaceFileInputRef.current) workspaceFileInputRef.current.value = '';
-  };
+  }, [revokeAllTrackedUrls]);
+
+  // Global Keyboard Navigation
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
+      if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+
+      if (e.key === 'n' || e.key === 'N' || e.key === 'Escape') {
+        if (sourceImage) {
+          e.preventDefault();
+          handleReset();
+          onNotify('Reset', 'Cleared image.', 'info');
+          return;
+        }
+      }
+
+      if (e.key === 'd' || e.key === 'D') {
+        if (resizedResult) {
+          e.preventDefault();
+          handleDownload();
+          return;
+        }
+      }
+
+      if (e.key === 'Enter') {
+        if (resizedResult) {
+          e.preventDefault();
+          handleDownload();
+          return;
+        }
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [sourceImage, resizedResult, handleDownload, handleReset, onNotify]);
 
   /* -------------------------------------------------------------
      RENDER: EMPTY STATE (DROPZONE & FEATURE HIGHLIGHTS)
   ------------------------------------------------------------- */
   if (!sourceImage) {
     return (
-      <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-300">
+      <div className="w-full max-w-7xl mx-auto space-y-8 animate-in fade-in duration-300 select-none">
         {/* Single Authoritative Header Section */}
-        <div className="text-center space-y-3 max-w-2xl mx-auto">
-          <div
-            className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold border ${
-              isDark
-                ? 'bg-slate-900 border-slate-800 text-slate-300'
-                : 'bg-white border-slate-200 text-slate-700 shadow-xs'
-            }`}
-          >
+        <div className="text-center space-y-2.5 max-w-2xl mx-auto">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-medium uppercase tracking-wider text-zinc-600 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-850">
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-            <span>100% Client-Side Engine · Zero Cloud Uploads</span>
+            <span>100% Client-Side Engine · Zero Uploads</span>
           </div>
 
-          <h2
-            className={`text-3xl sm:text-4xl font-extrabold tracking-tight ${
-              isDark ? 'text-white' : 'text-slate-950'
-            }`}
-          >
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-zinc-950 dark:text-zinc-50">
             Image Resizer
-          </h2>
-          <p className={`text-sm sm:text-base leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-            Scale and resize images by exact pixel dimensions or percentage while maintaining crisp aspect ratios.
-            Processed entirely in your browser using high-speed HTML5 Canvas.
+          </h1>
+          <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 max-w-md mx-auto leading-relaxed">
+            Scale and resize images by exact pixel dimensions or percentage with aspect ratio lock.
           </p>
         </div>
 
@@ -969,8 +732,6 @@ export const ResizerTool: React.FC<ResizerToolProps> = ({ onNotify, initialFile 
             <span>{errorMessage}</span>
           </div>
         )}
-
-
 
         {/* Fitts's Law Large Dropzone */}
         <div
@@ -1019,25 +780,13 @@ export const ResizerTool: React.FC<ResizerToolProps> = ({ onNotify, initialFile 
               <UploadCloud className="w-6 h-6" />
             </div>
 
-            <div className="space-y-1.5">
+            <div className="space-y-1">
               <h3 className={`text-base sm:text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
                 Choose an image or drag & drop here
               </h3>
-              <p className={`text-xs sm:text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                Supports <span className="font-semibold text-slate-300">PNG, JPEG, WebP</span> up to 50MB (Paste via Ctrl+V)
+              <p className={`text-xs ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                Supports PNG, JPEG, WebP, AVIF · Press Ctrl+V to paste
               </p>
-            </div>
-
-            <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
-              <span className={`px-2.5 py-1 rounded-md text-[11px] font-mono font-medium border ${isDark ? 'bg-slate-950/70 border-slate-800 text-slate-400' : 'bg-slate-100 border-slate-200 text-slate-600'}`}>
-                .PNG
-              </span>
-              <span className={`px-2.5 py-1 rounded-md text-[11px] font-mono font-medium border ${isDark ? 'bg-slate-950/70 border-slate-800 text-slate-400' : 'bg-slate-100 border-slate-200 text-slate-600'}`}>
-                .JPG / .JPEG
-              </span>
-              <span className={`px-2.5 py-1 rounded-md text-[11px] font-mono font-medium border ${isDark ? 'bg-slate-950/70 border-slate-800 text-slate-400' : 'bg-slate-100 border-slate-200 text-slate-600'}`}>
-                .WEBP
-              </span>
             </div>
 
             <div className="pt-2">
@@ -1060,16 +809,16 @@ export const ResizerTool: React.FC<ResizerToolProps> = ({ onNotify, initialFile 
           </div>
         </div>
 
-        {/* Popular Presets Showcase */}
-        <div className={`p-6 rounded-lg border ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'}`}>
+        {/* Popular Presets Showcase (Soft Unboxed Style) */}
+        <div className={`p-6 rounded-xl ${isDark ? 'bg-zinc-900/60' : 'bg-zinc-100/70'}`}>
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <Grid className="w-4 h-4 text-blue-500" />
-              <h4 className={`text-xs font-bold uppercase tracking-wider ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+              <h4 className={`text-xs font-bold uppercase tracking-wider ${isDark ? 'text-zinc-300' : 'text-zinc-700'}`}>
                 Popular Target Resolutions
               </h4>
             </div>
-            <span className={`text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+            <span className={`text-[11px] ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
               One-click standard presets
             </span>
           </div>
@@ -1078,19 +827,19 @@ export const ResizerTool: React.FC<ResizerToolProps> = ({ onNotify, initialFile 
             {POPULAR_PRESETS.slice(0, 8).map((p) => (
               <div
                 key={p.label}
-                className={`p-3 rounded-xl border text-center transition-colors ${
+                className={`p-3 rounded-xl text-center transition-colors ${
                   isDark
-                    ? 'bg-slate-950/60 border-slate-800/80'
-                    : 'bg-slate-50 border-slate-200'
+                    ? 'bg-zinc-800/60 hover:bg-zinc-800'
+                    : 'bg-white hover:bg-white/90 shadow-xs'
                 }`}
               >
-                <div className={`font-semibold text-xs truncate ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
+                <div className={`font-semibold text-xs truncate ${isDark ? 'text-zinc-200' : 'text-zinc-800'}`}>
                   {p.label}
                 </div>
-                <div className="text-[11px] font-mono text-blue-400 mt-1">
+                <div className="text-[11px] font-mono text-blue-500 dark:text-blue-400 mt-1">
                   {p.width} × {p.height}
                 </div>
-                <div className={`text-[10px] mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                <div className={`text-[10px] mt-0.5 ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
                   {p.aspectRatioLabel}
                 </div>
               </div>
@@ -1112,7 +861,7 @@ export const ResizerTool: React.FC<ResizerToolProps> = ({ onNotify, initialFile 
       onDragOver={handleWorkspaceDragOver}
       onDragLeave={handleWorkspaceDragLeave}
       onDrop={handleWorkspaceDrop}
-      className="max-w-6xl mx-auto space-y-6 animate-in fade-in duration-200 relative"
+      className="w-full max-w-7xl mx-auto space-y-6 animate-in fade-in duration-200 relative"
     >
       {/* Hidden input for replacing image from workspace */}
       <input
@@ -1140,9 +889,9 @@ export const ResizerTool: React.FC<ResizerToolProps> = ({ onNotify, initialFile 
         </div>
       )}
 
-      {/* Top Header Bar with Source Info and Reset Button */}
+      {/* Top Header Bar with Source Info and Actions */}
       <div
-        className={`flex flex-wrap items-center justify-between gap-4 p-4 border rounded-lg ${
+        className={`flex flex-wrap items-center justify-between gap-4 p-4 rounded-xl border ${
           isDark
             ? 'bg-zinc-900 border-zinc-800 text-zinc-100'
             : 'bg-white border-zinc-200 text-zinc-900'
@@ -1165,8 +914,8 @@ export const ResizerTool: React.FC<ResizerToolProps> = ({ onNotify, initialFile 
             <h3 className={`text-sm font-semibold truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>
               {sourceImage.name}
             </h3>
-            <div className={`flex flex-wrap items-center gap-2 text-xs mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-              <span className="font-mono text-blue-400">
+            <div className={`flex flex-wrap items-center gap-2 text-xs mt-0.5 ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
+              <span className="font-mono text-blue-500 dark:text-blue-400">
                 Original: {sourceImage.width} × {sourceImage.height} px
               </span>
               <span>·</span>
@@ -1174,7 +923,7 @@ export const ResizerTool: React.FC<ResizerToolProps> = ({ onNotify, initialFile 
                 {getAspectRatioLabel(sourceImage.width, sourceImage.height)}
               </span>
               <span>·</span>
-              <span className={`font-semibold ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>
+              <span className={`font-semibold ${isDark ? 'text-zinc-200' : 'text-zinc-700'}`}>
                 {formatBytes(sourceImage.sizeBytes)}
               </span>
             </div>
@@ -1185,10 +934,10 @@ export const ResizerTool: React.FC<ResizerToolProps> = ({ onNotify, initialFile 
           {/* Change File Button */}
           <button
             onClick={() => workspaceFileInputRef.current?.click()}
-            className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold border transition-colors cursor-pointer ${
+            className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
               isDark
-                ? 'bg-slate-950 border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800'
-                : 'bg-slate-50 border-slate-200 text-slate-700 hover:text-slate-950 hover:bg-slate-100'
+                ? 'bg-zinc-800 hover:bg-zinc-700 text-zinc-200'
+                : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-800'
             }`}
           >
             <UploadCloud className="w-3.5 h-3.5" />
@@ -1198,10 +947,10 @@ export const ResizerTool: React.FC<ResizerToolProps> = ({ onNotify, initialFile 
           {/* Reset Button */}
           <button
             onClick={handleReset}
-            className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold border transition-colors cursor-pointer ${
+            className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
               isDark
-                ? 'bg-slate-950 border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800'
-                : 'bg-slate-50 border-slate-200 text-slate-700 hover:text-slate-950 hover:bg-slate-100'
+                ? 'bg-zinc-800 hover:bg-zinc-700 text-zinc-200'
+                : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-800'
             }`}
           >
             <RefreshCw className="w-3.5 h-3.5" />
@@ -1212,10 +961,10 @@ export const ResizerTool: React.FC<ResizerToolProps> = ({ onNotify, initialFile 
           <button
             disabled={!resizedResult || isProcessing}
             onClick={handleDownload}
-            className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold shadow-md transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
+            className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-bold shadow-xs transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
               isDark
-                ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-950/40 border border-blue-500'
-                : 'bg-slate-900 hover:bg-slate-800 text-white shadow-slate-900/20 border border-slate-900'
+                ? 'bg-blue-600 hover:bg-blue-500 text-white'
+                : 'bg-zinc-900 hover:bg-zinc-800 text-white'
             }`}
           >
             <Download className="w-4 h-4" />
@@ -1258,34 +1007,34 @@ export const ResizerTool: React.FC<ResizerToolProps> = ({ onNotify, initialFile 
 
           {/* Unit Mode Switcher: Exact Pixels vs Percentage */}
           <div
-            className={`flex p-1 rounded-xl border text-xs ${
-              isDark ? 'bg-slate-950/80 border-slate-800' : 'bg-slate-100 border-slate-200'
+            className={`flex p-1 rounded-lg text-xs ${
+              isDark ? 'bg-zinc-800/80' : 'bg-zinc-100'
             }`}
           >
             <button
               onClick={() => setUnitMode('pixels')}
-              className={`flex-1 py-1.5 rounded-lg font-medium transition-all cursor-pointer ${
+              className={`flex-1 py-1.5 rounded-md font-medium transition-all cursor-pointer ${
                 unitMode === 'pixels'
                   ? isDark
-                    ? 'bg-slate-800 text-white font-bold shadow-xs border border-slate-700/80'
-                    : 'bg-white text-slate-950 font-bold shadow-xs border border-slate-200'
+                    ? 'bg-zinc-700 text-white font-bold shadow-xs'
+                    : 'bg-white text-zinc-950 font-bold shadow-xs'
                   : isDark
-                    ? 'text-slate-400 hover:text-white'
-                    : 'text-slate-600 hover:text-slate-950'
+                    ? 'text-zinc-400 hover:text-white'
+                    : 'text-zinc-600 hover:text-zinc-950'
               }`}
             >
               Exact Pixels (px)
             </button>
             <button
               onClick={() => setUnitMode('percentage')}
-              className={`flex-1 py-1.5 rounded-lg font-medium transition-all cursor-pointer ${
+              className={`flex-1 py-1.5 rounded-md font-medium transition-all cursor-pointer ${
                 unitMode === 'percentage'
                   ? isDark
-                    ? 'bg-slate-800 text-white font-bold shadow-xs border border-slate-700/80'
-                    : 'bg-white text-slate-950 font-bold shadow-xs border border-slate-200'
+                    ? 'bg-zinc-700 text-white font-bold shadow-xs'
+                    : 'bg-white text-zinc-950 font-bold shadow-xs'
                   : isDark
-                    ? 'text-slate-400 hover:text-white'
-                    : 'text-slate-600 hover:text-slate-950'
+                    ? 'text-zinc-400 hover:text-white'
+                    : 'text-zinc-600 hover:text-zinc-950'
               }`}
             >
               Scale by %
@@ -1298,10 +1047,10 @@ export const ResizerTool: React.FC<ResizerToolProps> = ({ onNotify, initialFile 
               {/* Width / Link Icon / Height Row */}
               <div>
                 <div className="flex items-center justify-between text-xs font-semibold mb-1.5">
-                  <span className={isDark ? 'text-slate-300' : 'text-slate-700'}>
+                  <span className={isDark ? 'text-zinc-300' : 'text-zinc-700'}>
                     Target Dimensions
                   </span>
-                  <span className="font-mono text-[11px] text-blue-400">
+                  <span className="font-mono text-[11px] text-blue-500 dark:text-blue-400">
                     {getAspectRatioLabel(width, height)}
                   </span>
                 </div>
@@ -1317,13 +1066,13 @@ export const ResizerTool: React.FC<ResizerToolProps> = ({ onNotify, initialFile 
                         value={width || ''}
                         onChange={(e) => handleWidthChange(e.target.value)}
                         placeholder="Width"
-                        className={`w-full px-3 py-2.5 text-sm font-mono rounded-xl border focus:outline-none transition-all ${
+                        className={`w-full px-3 py-2.5 text-sm font-mono rounded-lg border focus:outline-none transition-all ${
                           isDark
-                            ? 'bg-slate-950/80 border-slate-800 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500'
-                            : 'bg-white border-slate-300 text-slate-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500'
+                            ? 'bg-zinc-800/80 border-zinc-700 text-white focus:border-zinc-500'
+                            : 'bg-white border-zinc-300 text-zinc-900 focus:border-zinc-400'
                         }`}
                       />
-                      <span className={`absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-mono pointer-events-none ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                      <span className={`absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-mono pointer-events-none ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`}>
                         W (px)
                       </span>
                     </div>
@@ -1334,20 +1083,20 @@ export const ResizerTool: React.FC<ResizerToolProps> = ({ onNotify, initialFile 
                     type="button"
                     onClick={handleToggleLockRatio}
                     title={lockRatio ? 'Aspect Ratio is Locked (Click to Unlock)' : 'Aspect Ratio is Unlocked (Click to Lock)'}
-                    className={`p-2.5 rounded-xl border transition-all cursor-pointer flex items-center justify-center shrink-0 ${
+                    className={`p-2.5 rounded-lg border transition-all cursor-pointer flex items-center justify-center shrink-0 ${
                       lockRatio
                         ? isDark
                           ? 'bg-blue-600/20 text-blue-400 border-blue-500/40 hover:bg-blue-600/30 shadow-xs'
                           : 'bg-blue-50 text-blue-600 border-blue-300 hover:bg-blue-100 shadow-xs'
                         : isDark
-                          ? 'bg-slate-950 text-slate-500 border-slate-800 hover:text-slate-300 hover:border-slate-700'
-                          : 'bg-slate-100 text-slate-400 border-slate-200 hover:text-slate-700 hover:border-slate-300'
+                          ? 'bg-zinc-800 text-zinc-400 border-zinc-700 hover:text-zinc-200'
+                          : 'bg-zinc-100 text-zinc-400 border-zinc-300 hover:text-zinc-700'
                     }`}
                   >
                     {lockRatio ? (
                       <LinkIcon className="w-4 h-4 text-blue-400" />
                     ) : (
-                      <Unlink className="w-4 h-4 text-slate-400" />
+                      <Unlink className="w-4 h-4 text-zinc-400" />
                     )}
                   </button>
 
@@ -1361,13 +1110,13 @@ export const ResizerTool: React.FC<ResizerToolProps> = ({ onNotify, initialFile 
                         value={height || ''}
                         onChange={(e) => handleHeightChange(e.target.value)}
                         placeholder="Height"
-                        className={`w-full px-3 py-2.5 text-sm font-mono rounded-xl border focus:outline-none transition-all ${
+                        className={`w-full px-3 py-2.5 text-sm font-mono rounded-lg border focus:outline-none transition-all ${
                           isDark
-                            ? 'bg-slate-950/80 border-slate-800 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500'
-                            : 'bg-white border-slate-300 text-slate-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500'
+                            ? 'bg-zinc-800/80 border-zinc-700 text-white focus:border-zinc-500'
+                            : 'bg-white border-zinc-300 text-zinc-900 focus:border-zinc-400'
                         }`}
                       />
-                      <span className={`absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-mono pointer-events-none ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                      <span className={`absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-mono pointer-events-none ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`}>
                         H (px)
                       </span>
                     </div>
@@ -1375,22 +1124,22 @@ export const ResizerTool: React.FC<ResizerToolProps> = ({ onNotify, initialFile 
                 </div>
 
                 <div className="flex items-center justify-between text-[11px] mt-1.5 px-0.5">
-                  <span className={isDark ? 'text-slate-500' : 'text-slate-400'}>
+                  <span className={isDark ? 'text-zinc-500' : 'text-zinc-400'}>
                     Min: 1 px · Max: 16,000 px
                   </span>
-                  <span className={`font-mono ${lockRatio ? 'text-emerald-400' : 'text-slate-400'}`}>
+                  <span className={`font-mono ${lockRatio ? 'text-emerald-500 dark:text-emerald-400' : 'text-zinc-400'}`}>
                     {lockRatio ? '🔗 Proportional' : '🔓 Independent'}
                   </span>
                 </div>
               </div>
 
               {/* Quick Presets Selection */}
-              <div className={`space-y-2 pt-3 border-t ${isDark ? 'border-slate-800/80' : 'border-slate-200'}`}>
+              <div className={`space-y-2 pt-3 border-t ${isDark ? 'border-zinc-800' : 'border-zinc-200'}`}>
                 <div className="flex items-center justify-between text-xs font-semibold">
-                  <span className={isDark ? 'text-slate-300' : 'text-slate-700'}>
+                  <span className={isDark ? 'text-zinc-300' : 'text-zinc-700'}>
                     Popular Target Presets
                   </span>
-                  <span className={`text-[10px] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                  <span className={`text-[10px] ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`}>
                     Instant click to set
                   </span>
                 </div>
@@ -1401,18 +1150,18 @@ export const ResizerTool: React.FC<ResizerToolProps> = ({ onNotify, initialFile 
                       key={p.label}
                       type="button"
                       onClick={() => applyPreset(p)}
-                      className={`p-2 rounded-xl text-left border transition-all cursor-pointer truncate ${
+                      className={`p-2 rounded-lg text-left transition-all cursor-pointer truncate ${
                         width === p.width && height === p.height
                           ? isDark
-                            ? 'bg-blue-600/20 border-blue-500/40 text-blue-300'
-                            : 'bg-blue-50 border-blue-300 text-blue-700'
+                            ? 'bg-blue-600/20 text-blue-300 font-semibold'
+                            : 'bg-blue-50 text-blue-700 font-semibold'
                           : isDark
-                            ? 'bg-slate-950/60 border-slate-800 text-slate-300 hover:border-slate-700 hover:bg-slate-900'
-                            : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100 hover:border-slate-300'
+                            ? 'bg-zinc-800/60 text-zinc-300 hover:bg-zinc-800'
+                            : 'bg-zinc-100/70 text-zinc-700 hover:bg-zinc-100'
                       }`}
                     >
                       <div className="text-[11px] font-medium truncate">{p.label}</div>
-                      <div className="text-[10px] font-mono text-slate-400 mt-0.5">
+                      <div className="text-[10px] font-mono text-zinc-400 dark:text-zinc-500 mt-0.5">
                         {p.width}×{p.height}
                       </div>
                     </button>
@@ -1425,10 +1174,10 @@ export const ResizerTool: React.FC<ResizerToolProps> = ({ onNotify, initialFile 
             <div className="space-y-4">
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-xs">
-                  <span className={`font-semibold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                  <span className={`font-semibold ${isDark ? 'text-zinc-300' : 'text-zinc-700'}`}>
                     Scaling Factor
                   </span>
-                  <span className="font-mono text-sm font-bold text-blue-400">
+                  <span className="font-mono text-sm font-bold text-blue-500 dark:text-blue-400">
                     {percentage}%
                   </span>
                 </div>
@@ -1440,31 +1189,31 @@ export const ResizerTool: React.FC<ResizerToolProps> = ({ onNotify, initialFile 
                   step="5"
                   value={percentage}
                   onChange={(e) => handlePercentageChange(parseInt(e.target.value, 10))}
-                  className="w-full h-2 rounded-lg appearance-none cursor-pointer accent-blue-500 bg-slate-800"
+                  className="w-full h-2 rounded-lg appearance-none cursor-pointer accent-blue-500 bg-zinc-800"
                 />
 
-                <div className="flex items-center justify-between text-[11px] font-mono text-slate-400">
+                <div className="flex items-center justify-between text-[11px] font-mono text-zinc-400">
                   <span>10% (Mini)</span>
                   <span>100% (Original)</span>
                   <span>200% (2× HD)</span>
                 </div>
               </div>
 
-              {/* Quick Percentage Chips */}
+              {/* Quick Percentage Chips (Soft Tiles) */}
               <div className="grid grid-cols-5 gap-1.5">
                 {[25, 50, 75, 100, 150].map((pct) => (
                   <button
                     key={pct}
                     type="button"
                     onClick={() => handlePercentageChange(pct)}
-                    className={`py-1.5 rounded-xl text-xs font-mono font-medium border transition-colors cursor-pointer ${
+                    className={`py-1.5 rounded-lg text-xs font-mono font-medium transition-colors cursor-pointer ${
                       percentage === pct
                         ? isDark
-                          ? 'bg-blue-600 text-white border-blue-500 font-bold'
-                          : 'bg-slate-900 text-white border-slate-900 font-bold'
+                          ? 'bg-zinc-100 text-zinc-900 font-bold'
+                          : 'bg-zinc-900 text-white font-bold'
                         : isDark
-                          ? 'bg-slate-950 text-slate-300 border-slate-800 hover:border-slate-700'
-                          : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                          ? 'bg-zinc-800/80 text-zinc-300 hover:bg-zinc-800'
+                          : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200'
                     }`}
                   >
                     {pct}%
@@ -1473,19 +1222,19 @@ export const ResizerTool: React.FC<ResizerToolProps> = ({ onNotify, initialFile 
               </div>
 
               <div
-                className={`p-3 rounded-xl border text-xs space-y-1 ${
-                  isDark ? 'bg-slate-950/60 border-slate-800' : 'bg-slate-50 border-slate-200'
+                className={`p-3 rounded-lg text-xs space-y-1 ${
+                  isDark ? 'bg-zinc-800/60' : 'bg-zinc-100/80'
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Result Dimensions:</span>
-                  <span className="font-mono font-semibold text-blue-400">
+                  <span className={isDark ? 'text-zinc-400' : 'text-zinc-500'}>Result Dimensions:</span>
+                  <span className="font-mono font-semibold text-blue-500 dark:text-blue-400">
                     {width} × {height} px
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-[11px]">
-                  <span className={isDark ? 'text-slate-500' : 'text-slate-400'}>Aspect Ratio:</span>
-                  <span className="font-mono text-slate-400">
+                  <span className={isDark ? 'text-zinc-400' : 'text-zinc-500'}>Aspect Ratio:</span>
+                  <span className="font-mono text-zinc-400">
                     {getAspectRatioLabel(width, height)}
                   </span>
                 </div>
@@ -1495,10 +1244,10 @@ export const ResizerTool: React.FC<ResizerToolProps> = ({ onNotify, initialFile 
 
           {/* Fit Mode Options (When aspect ratio is custom) */}
           {!lockRatio && (
-            <div className={`space-y-2 pt-3 border-t ${isDark ? 'border-slate-800/80' : 'border-slate-200'}`}>
+            <div className={`space-y-2 pt-3 border-t ${isDark ? 'border-zinc-800' : 'border-zinc-200'}`}>
               <div className="flex items-center justify-between text-xs font-semibold">
-                <span className={isDark ? 'text-slate-300' : 'text-slate-700'}>Canvas Fit Mode</span>
-                <span className={`text-[10px] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                <span className={isDark ? 'text-zinc-300' : 'text-zinc-700'}>Canvas Fit Mode</span>
+                <span className={`text-[10px] ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
                   Custom ratio mapping
                 </span>
               </div>
@@ -1515,14 +1264,14 @@ export const ResizerTool: React.FC<ResizerToolProps> = ({ onNotify, initialFile 
                     key={mode.id}
                     type="button"
                     onClick={() => setFitMode(mode.id)}
-                    className={`py-2 px-1 rounded-xl font-medium border text-center transition-all cursor-pointer ${
+                    className={`py-2 px-1 rounded-lg font-medium text-center transition-all cursor-pointer ${
                       fitMode === mode.id
                         ? isDark
-                          ? 'bg-blue-600/20 text-blue-300 border-blue-500/40 font-bold'
-                          : 'bg-blue-50 text-blue-700 border-blue-300 font-bold'
+                          ? 'bg-blue-600/20 text-blue-300 font-bold'
+                          : 'bg-blue-50 text-blue-700 font-bold'
                         : isDark
-                          ? 'bg-slate-950 text-slate-400 border-slate-800 hover:text-white'
-                          : 'bg-slate-50 text-slate-600 border-slate-200 hover:text-slate-900'
+                          ? 'bg-zinc-800/80 text-zinc-400 hover:text-white'
+                          : 'bg-zinc-100 text-zinc-600 hover:text-zinc-900'
                     }`}
                   >
                     {mode.name}
@@ -1533,10 +1282,10 @@ export const ResizerTool: React.FC<ResizerToolProps> = ({ onNotify, initialFile 
           )}
 
           {/* Format Selector & Quality */}
-          <div className={`space-y-3 pt-3 border-t ${isDark ? 'border-slate-800/80' : 'border-slate-200'}`}>
+          <div className={`space-y-3 pt-3 border-t ${isDark ? 'border-zinc-800' : 'border-zinc-200'}`}>
             <div className="flex items-center justify-between text-xs font-semibold">
-              <span className={isDark ? 'text-slate-300' : 'text-slate-700'}>Output Format</span>
-              <span className={`text-[10px] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+              <span className={isDark ? 'text-zinc-300' : 'text-zinc-700'}>Output Format</span>
+              <span className={`text-[10px] ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
                 Convert on resize
               </span>
             </div>
@@ -1554,14 +1303,14 @@ export const ResizerTool: React.FC<ResizerToolProps> = ({ onNotify, initialFile 
                   key={fmt.id}
                   type="button"
                   onClick={() => setOutputFormat(fmt.id)}
-                  className={`py-2 rounded-xl font-medium border text-center transition-all cursor-pointer ${
+                  className={`py-2 rounded-lg font-medium text-center transition-all cursor-pointer ${
                     outputFormat === fmt.id
                       ? isDark
-                        ? 'bg-blue-600 text-white border-blue-500 font-bold shadow-xs'
-                        : 'bg-slate-900 text-white border-slate-900 font-bold shadow-xs'
+                        ? 'bg-zinc-100 text-zinc-900 font-bold shadow-xs'
+                        : 'bg-zinc-900 text-white font-bold shadow-xs'
                       : isDark
-                        ? 'bg-slate-950 text-slate-400 border-slate-800 hover:text-white'
-                        : 'bg-slate-50 text-slate-600 border-slate-200 hover:text-slate-950'
+                        ? 'bg-zinc-800/80 text-zinc-400 hover:text-white'
+                        : 'bg-zinc-100 text-zinc-600 hover:text-zinc-950'
                   }`}
                 >
                   {fmt.name}
@@ -1573,10 +1322,10 @@ export const ResizerTool: React.FC<ResizerToolProps> = ({ onNotify, initialFile 
             {getEffectiveFormat() !== 'image/png' && (
               <div className="space-y-1.5 pt-2">
                 <div className="flex items-center justify-between text-xs">
-                  <span className={`font-medium ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                  <span className={`font-medium ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>
                     Output Quality
                   </span>
-                  <span className="font-mono text-xs font-semibold text-blue-400">
+                  <span className="font-mono text-xs font-semibold text-blue-500 dark:text-blue-400">
                     {quality}%
                   </span>
                 </div>
@@ -1587,14 +1336,14 @@ export const ResizerTool: React.FC<ResizerToolProps> = ({ onNotify, initialFile 
                   step="5"
                   value={quality}
                   onChange={(e) => setQuality(parseInt(e.target.value, 10))}
-                  className="w-full h-1.5 rounded-lg appearance-none cursor-pointer accent-blue-500 bg-slate-800"
+                  className="w-full h-1.5 rounded-lg appearance-none cursor-pointer accent-blue-500 bg-zinc-800"
                 />
               </div>
             )}
 
             {/* Custom Output Filename */}
             <div className="space-y-1.5 pt-2">
-              <label className={`block text-xs font-medium ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+              <label className={`block text-xs font-medium ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>
                 Filename Preview
               </label>
               <div className="relative">
@@ -1603,10 +1352,10 @@ export const ResizerTool: React.FC<ResizerToolProps> = ({ onNotify, initialFile 
                   value={customFilename}
                   onChange={(e) => setCustomFilename(e.target.value)}
                   placeholder="Filename"
-                  className={`w-full px-3 py-2 text-xs font-mono rounded-xl border focus:outline-none ${
+                  className={`w-full px-3 py-2 text-xs font-mono rounded-lg border focus:outline-none ${
                     isDark
-                      ? 'bg-slate-950 border-slate-800 text-white focus:border-blue-500'
-                      : 'bg-slate-50 border-slate-300 text-slate-900 focus:border-blue-500'
+                      ? 'bg-zinc-800/80 border-zinc-700 text-white focus:border-zinc-500'
+                      : 'bg-white border-zinc-300 text-zinc-900 focus:border-zinc-400'
                   }`}
                 />
                 <span className={`absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-mono pointer-events-none ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
@@ -1709,10 +1458,10 @@ export const ResizerTool: React.FC<ResizerToolProps> = ({ onNotify, initialFile 
                   type="button"
                   onClick={handleCopyToClipboard}
                   disabled={!resizedResult}
-                  className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border text-[11px] font-medium transition-colors cursor-pointer disabled:opacity-50 ${
+                  className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors cursor-pointer disabled:opacity-50 ${
                     isDark
-                      ? 'bg-slate-900 border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800'
-                      : 'bg-white border-slate-200 text-slate-700 hover:text-slate-900 hover:bg-slate-50'
+                      ? 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white'
+                      : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700 hover:text-zinc-900'
                   }`}
                 >
                   <Copy className="w-3 h-3 text-blue-500" />
@@ -1724,10 +1473,10 @@ export const ResizerTool: React.FC<ResizerToolProps> = ({ onNotify, initialFile 
                     type="button"
                     onClick={handleShare}
                     disabled={!resizedResult}
-                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border text-[11px] font-medium transition-colors cursor-pointer disabled:opacity-50 ${
+                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors cursor-pointer disabled:opacity-50 ${
                       isDark
-                        ? 'bg-slate-900 border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800'
-                        : 'bg-white border-slate-200 text-slate-700 hover:text-slate-900 hover:bg-slate-50'
+                        ? 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white'
+                        : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700 hover:text-zinc-900'
                     }`}
                   >
                     <Share2 className="w-3 h-3 text-indigo-500" />
@@ -1737,46 +1486,46 @@ export const ResizerTool: React.FC<ResizerToolProps> = ({ onNotify, initialFile 
               </div>
             </div>
 
-            {/* Metrics Breakdown Bar */}
+            {/* Metrics Breakdown Bar (Soft Unboxed Style) */}
             <div
-              className={`grid grid-cols-2 sm:grid-cols-4 gap-3 p-3.5 rounded-xl border text-xs ${
+              className={`grid grid-cols-2 sm:grid-cols-4 gap-3 p-3.5 rounded-xl text-xs ${
                 isDark
-                  ? 'bg-slate-950/60 border-slate-800/80'
-                  : 'bg-slate-50 border-slate-200'
+                  ? 'bg-zinc-800/50'
+                  : 'bg-zinc-100/80'
               }`}
             >
               <div>
-                <span className={`block text-[11px] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                <span className={`block text-[11px] ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
                   Target Resolution
                 </span>
-                <span className={`font-mono font-bold ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
+                <span className={`font-mono font-bold ${isDark ? 'text-zinc-100' : 'text-zinc-900'}`}>
                   {width} × {height} px
                 </span>
               </div>
 
               <div>
-                <span className={`block text-[11px] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                <span className={`block text-[11px] ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
                   Aspect Ratio
                 </span>
-                <span className={`font-mono font-medium ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
+                <span className={`font-mono font-medium ${isDark ? 'text-zinc-200' : 'text-zinc-800'}`}>
                   {getAspectRatioLabel(width, height)}
                 </span>
               </div>
 
               <div>
-                <span className={`block text-[11px] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                <span className={`block text-[11px] ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
                   Format & Codec
                 </span>
-                <span className={`font-semibold uppercase text-blue-400`}>
+                <span className="font-semibold uppercase text-blue-500 dark:text-blue-400">
                   {getEffectiveFormat().replace('image/', '')}
                 </span>
               </div>
 
               <div>
-                <span className={`block text-[11px] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                <span className={`block text-[11px] ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
                   Estimated Size
                 </span>
-                <span className={`font-mono font-bold ${resizedResult ? 'text-emerald-400' : isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                <span className={`font-mono font-bold ${resizedResult ? 'text-emerald-500 dark:text-emerald-400' : isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>
                   {resizedResult ? formatBytes(resizedResult.sizeBytes) : '—'}
                 </span>
               </div>
@@ -1786,10 +1535,10 @@ export const ResizerTool: React.FC<ResizerToolProps> = ({ onNotify, initialFile 
             <button
               disabled={isProcessing}
               onClick={handleDownload}
-              className={`w-full py-3 px-4 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md ${
+              className={`w-full py-3 px-4 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs ${
                 isDark
-                  ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-900/30'
-                  : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/20'
+                  ? 'bg-emerald-600 hover:bg-emerald-500 text-white'
+                  : 'bg-emerald-600 hover:bg-emerald-700 text-white'
               }`}
             >
               <Download className="w-4 h-4" />

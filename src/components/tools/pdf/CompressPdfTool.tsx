@@ -29,7 +29,9 @@ import {
 } from 'lucide-react';
 import { formatBytes, triggerFileDownload } from '../../../utils/memory';
 import { useTheme } from '../../../core/themeContext';
+import { Dropzone } from '../../ui/Dropzone';
 import { PdfPreviewModal } from './PdfPreviewModal';
+import { PdfToolGuideSection } from './PdfToolGuideSection';
 
 // Ensure unified PDF.js worker is ready
 ensurePdfWorkerInitialized();
@@ -564,8 +566,63 @@ export const CompressPdfTool: React.FC<CompressPdfToolProps> = ({ onNotify, init
     onNotify?.('Download Started', `Saved ${result.filename} (${formatBytes(result.compressedSize)})`, 'success');
   };
 
+  // Global Zero-Latency Keyboard Engine
+  useEffect(() => {
+    const onWindowKeyDown = (e: KeyboardEvent) => {
+      const targetTag = (e.target as HTMLElement)?.tagName?.toLowerCase();
+      if (targetTag === 'input' || targetTag === 'textarea' || targetTag === 'select') return;
+
+      if (e.key === '1') {
+        e.preventDefault();
+        setSelectedPreset('extreme');
+        onNotify?.('Preset: Extreme Compression', 'Smallest Size (Up to 85%)', 'info');
+        return;
+      }
+      if (e.key === '2') {
+        e.preventDefault();
+        setSelectedPreset('recommended');
+        onNotify?.('Preset: Recommended / Balanced', 'Crisp text & graphics', 'info');
+        return;
+      }
+      if (e.key === '3') {
+        e.preventDefault();
+        setSelectedPreset('low');
+        onNotify?.('Preset: Low Compression', 'Highest visual quality', 'info');
+        return;
+      }
+
+      if (!file) return;
+
+      if (e.key === 'd' || e.key === 'D' || ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S'))) {
+        e.preventDefault();
+        if (result) {
+          handleDownloadResult();
+        } else {
+          handleExecuteCompress();
+        }
+        return;
+      }
+
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        handleExecuteCompress();
+        return;
+      }
+
+      if (e.key === 'n' || e.key === 'N' || e.key === 'Escape') {
+        e.preventDefault();
+        handleReset();
+        onNotify?.('Reset', 'Cleared document.', 'info');
+        return;
+      }
+    };
+
+    window.addEventListener('keydown', onWindowKeyDown);
+    return () => window.removeEventListener('keydown', onWindowKeyDown);
+  }, [file, result, handleDownloadResult, handleExecuteCompress, handleReset, onNotify]);
+
   return (
-    <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-300">
+    <div className="w-full max-w-7xl mx-auto space-y-8 animate-in fade-in duration-300">
       {/* Hidden File Input */}
       <input
         ref={fileInputRef}
@@ -575,7 +632,7 @@ export const CompressPdfTool: React.FC<CompressPdfToolProps> = ({ onNotify, init
         onChange={handleFileInputChange}
       />
 
-      {/* Tool Header (Exact UI/UX matching MergePdfTool) */}
+      {/* Tool Header */}
       <div className="text-center space-y-2.5 max-w-2xl mx-auto">
         <div
           className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold border ${
@@ -600,9 +657,43 @@ export const CompressPdfTool: React.FC<CompressPdfToolProps> = ({ onNotify, init
             isDark ? 'text-slate-400' : 'text-slate-600'
           }`}
         >
-          Reduce PDF file size up to 85% while retaining sharp text and vector graphics.
-          Optimized client-side in your browser with zero data leaving your device.
+          Reduce PDF file size up to 85% while preserving sharp text and vector graphics.
         </p>
+      </div>
+
+      {/* Preset Target Tabs (Clean Pill Bar) */}
+      <div className="flex flex-wrap justify-center gap-2">
+        {(['extreme', 'recommended', 'low'] as CompressionPreset[]).map((pKey, idx) => {
+          const p = PRESETS[pKey];
+          const isSelected = selectedPreset === pKey;
+          const shortcutNum = idx + 1;
+          return (
+            <button
+              key={pKey}
+              type="button"
+              onClick={() => setSelectedPreset(pKey)}
+              className={`px-3 py-1.5 rounded-md text-xs font-medium border transition-colors cursor-pointer flex items-center gap-1.5 ${
+                isSelected
+                  ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 border-zinc-900 dark:border-zinc-100'
+                  : isDark
+                    ? 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
+                    : 'bg-white border-zinc-200 text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50'
+              }`}
+            >
+              <kbd
+                className={`px-1.5 py-0.2 rounded text-[10px] font-mono border ${
+                  isSelected
+                    ? 'bg-zinc-800 text-white dark:bg-zinc-200 dark:text-zinc-900 border-zinc-700 dark:border-zinc-300'
+                    : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 border-zinc-200 dark:border-zinc-700'
+                }`}
+              >
+                {shortcutNum}
+              </kbd>
+              <span>{p.title}</span>
+              <span className="text-[10px] opacity-70">({p.estimatedReduction})</span>
+            </button>
+          );
+        })}
       </div>
 
       {/* Error Banner */}
@@ -781,75 +872,13 @@ export const CompressPdfTool: React.FC<CompressPdfToolProps> = ({ onNotify, init
         /* WORKSPACE: DROPZONE & CONFIGURATION */
         <div className="space-y-6">
           {!file ? (
-            /* Dropzone with "Browse Computer" & "Try with Sample PDF" buttons */
-            <div
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-              onClick={() => fileInputRef.current?.click()}
-              className={`relative group border border-dashed rounded-lg p-8 sm:p-12 text-center cursor-pointer transition-colors duration-150 select-none ${
-                isDragOver
-                  ? isDark
-                    ? 'border-zinc-500 bg-zinc-800/40'
-                    : 'border-zinc-500 bg-zinc-50'
-                  : isDark
-                    ? 'border-zinc-800 bg-zinc-900 hover:border-zinc-700'
-                    : 'border-zinc-300 bg-white hover:border-zinc-400'
-              }`}
-            >
-              <div className="flex flex-col items-center justify-center space-y-3.5">
-                <div
-                  className={`w-12 h-12 rounded-md flex items-center justify-center transition-colors border ${
-                    isDark
-                      ? 'bg-zinc-800 border-zinc-700 text-zinc-300'
-                      : 'bg-zinc-100 border-zinc-200 text-zinc-700'
-                  }`}
-                >
-                  <UploadCloud className="w-6 h-6" />
-                </div>
-
-                <div className="space-y-1">
-                  <h3 className={`text-base sm:text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                    Select PDF document or drag & drop here
-                  </h3>
-                  <p className={`text-xs sm:text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                    Reduce file size while preserving high visual quality. 100% processed client-side.
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-3 pt-1">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      fileInputRef.current?.click();
-                    }}
-                    className={`px-3.5 py-1.5 rounded-md text-xs font-semibold border transition-colors cursor-pointer ${
-                      isDark
-                        ? 'bg-zinc-100 hover:bg-zinc-200 text-zinc-900 border-zinc-200'
-                        : 'bg-zinc-900 hover:bg-zinc-800 text-white border-zinc-900'
-                    }`}
-                  >
-                    Browse Computer
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleLoadSamplePdf();
-                    }}
-                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium border transition-colors cursor-pointer ${
-                      isDark
-                        ? 'bg-zinc-800 border-zinc-700 text-zinc-300 hover:text-white'
-                        : 'bg-zinc-100 border-zinc-200 text-zinc-700 hover:text-zinc-900 hover:bg-zinc-200'
-                    }`}
-                  >
-                    <Sparkles className="w-3.5 h-3.5 text-zinc-500" />
-                    <span>Try with Sample PDF</span>
-                  </button>
-                </div>
-              </div>
+            <div className="max-w-3xl mx-auto">
+              <Dropzone
+                onFilesSelected={(files: File[]) => handleProcessFile(files[0])}
+                accept="application/pdf,.pdf"
+                title="Upload PDF Document to Compress"
+                description={`Drag & drop or click to browse. Selected: ${PRESETS[selectedPreset].title}.`}
+              />
             </div>
           ) : (
             /* Document Queue Card with Live Preview & Controls */
@@ -1065,247 +1094,8 @@ export const CompressPdfTool: React.FC<CompressPdfToolProps> = ({ onNotify, init
         </div>
       )}
 
-      {/* 4-Step Compress Workflow Guide */}
-      <div
-        className={`p-6 rounded-lg border space-y-4 ${
-          isDark
-            ? 'bg-zinc-900 border-zinc-800'
-            : 'bg-white border-zinc-200'
-        }`}
-      >
-        <div className="flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-zinc-500" />
-          <h3
-            className={`text-xs font-semibold uppercase tracking-wider ${
-              isDark ? 'text-zinc-300' : 'text-zinc-700'
-            }`}
-          >
-            How PDF Compression Works in FileWala
-          </h3>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          <div
-            className={`p-3.5 rounded-md border ${
-              isDark ? 'bg-zinc-950/60 border-zinc-800' : 'bg-zinc-50 border-zinc-200'
-            }`}
-          >
-            <div className="flex items-center gap-2 mb-1.5">
-              <span className="w-5 h-5 rounded border border-zinc-300 dark:border-zinc-700 bg-zinc-200 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 text-[10px] font-mono font-bold flex items-center justify-center shrink-0">
-                1
-              </span>
-              <span className={`text-xs font-semibold ${isDark ? 'text-zinc-100' : 'text-zinc-900'}`}>
-                Add PDF File
-              </span>
-            </div>
-            <p className={`text-[11px] leading-relaxed ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
-              Drag and drop any PDF file up to 250 MB or click Browse Computer to select from your device.
-            </p>
-          </div>
-
-          <div
-            className={`p-3.5 rounded-md border ${
-              isDark ? 'bg-zinc-950/60 border-zinc-800' : 'bg-zinc-50 border-zinc-200'
-            }`}
-          >
-            <div className="flex items-center gap-2 mb-1.5">
-              <span className="w-5 h-5 rounded border border-zinc-300 dark:border-zinc-700 bg-zinc-200 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 text-[10px] font-mono font-bold flex items-center justify-center shrink-0">
-                2
-              </span>
-              <span className={`text-xs font-semibold ${isDark ? 'text-zinc-100' : 'text-zinc-900'}`}>
-                Choose Preset
-              </span>
-            </div>
-            <p className={`text-[11px] leading-relaxed ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
-              Select Extreme (max compression), Recommended (balanced), or Low (print quality) with 1 click.
-            </p>
-          </div>
-
-          <div
-            className={`p-3.5 rounded-md border ${
-              isDark ? 'bg-zinc-950/60 border-zinc-800' : 'bg-zinc-50 border-zinc-200'
-            }`}
-          >
-            <div className="flex items-center gap-2 mb-1.5">
-              <span className="w-5 h-5 rounded border border-zinc-300 dark:border-zinc-700 bg-zinc-200 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 text-[10px] font-mono font-bold flex items-center justify-center shrink-0">
-                3
-              </span>
-              <span className={`text-xs font-semibold ${isDark ? 'text-zinc-100' : 'text-zinc-900'}`}>
-                In-Browser Engine
-              </span>
-            </div>
-            <p className={`text-[11px] leading-relaxed ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
-              Click Compress Now to optimize streams and images locally in your browser with zero server delay.
-            </p>
-          </div>
-
-          <div
-            className={`p-3.5 rounded-md border ${
-              isDark ? 'bg-zinc-950/60 border-zinc-800' : 'bg-zinc-50 border-zinc-200'
-            }`}
-          >
-            <div className="flex items-center gap-2 mb-1.5">
-              <span className="w-5 h-5 rounded border border-zinc-300 dark:border-zinc-700 bg-zinc-200 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 text-[10px] font-mono font-bold flex items-center justify-center shrink-0">
-                4
-              </span>
-              <span className={`text-xs font-semibold ${isDark ? 'text-zinc-100' : 'text-zinc-900'}`}>
-                Save & Download
-              </span>
-            </div>
-            <p className={`text-[11px] leading-relaxed ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
-              Review your live reduction percentage (e.g. 75% saved) and download your optimized PDF instantly.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Feature & Privacy Highlights */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
-        <div
-          className={`p-4 rounded-lg border space-y-1.5 ${
-            isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'
-          }`}
-        >
-          <div
-            className={`font-semibold text-xs flex items-center gap-1.5 ${
-              isDark ? 'text-zinc-200' : 'text-zinc-800'
-            }`}
-          >
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-            <span>100% Confidential & Secure</span>
-          </div>
-          <p className={`text-xs leading-relaxed ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
-            Documents remain strictly in your local memory. Never sent over the internet — safe for tax records, legal files, and IDs.
-          </p>
-        </div>
-
-        <div
-          className={`p-4 rounded-lg border space-y-1.5 ${
-            isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'
-          }`}
-        >
-          <div
-            className={`font-semibold text-xs flex items-center gap-1.5 ${
-              isDark ? 'text-zinc-200' : 'text-zinc-800'
-            }`}
-          >
-            <FileCheck className="w-3.5 h-3.5 text-zinc-500" />
-            <span>Smart Image Optimization</span>
-          </div>
-          <p className={`text-xs leading-relaxed ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
-            Cleans bloated embedded graphics and metadata tables while maintaining crisp, readable typography.
-          </p>
-        </div>
-
-        <div
-          className={`p-4 rounded-lg border space-y-1.5 ${
-            isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'
-          }`}
-        >
-          <div
-            className={`font-semibold text-xs flex items-center gap-1.5 ${
-              isDark ? 'text-zinc-200' : 'text-zinc-800'
-            }`}
-          >
-            <Sparkles className="w-3.5 h-3.5 text-zinc-500" />
-            <span>No File Size or Count Caps</span>
-          </div>
-          <p className={`text-xs leading-relaxed ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
-            Compress small documents or 200 MB reports with zero paywalls, no login requirements, and no watermarks.
-          </p>
-        </div>
-      </div>
-
-      {/* Frequently Asked Questions (FAQ) */}
-      <div
-        className={`p-6 rounded-lg border space-y-4 ${
-          isDark
-            ? 'bg-zinc-900 border-zinc-800'
-            : 'bg-white border-zinc-200'
-        }`}
-      >
-        <div className="flex items-center gap-2 mb-2">
-          <HelpCircle className="w-4 h-4 text-blue-500" />
-          <h3
-            className={`text-sm font-bold tracking-tight ${
-              isDark ? 'text-white' : 'text-slate-900'
-            }`}
-          >
-            Compress PDF FAQs
-          </h3>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 text-xs">
-          <div
-            className={`p-3.5 rounded-xl border space-y-1 ${
-              isDark ? 'bg-slate-950/40 border-slate-800/80' : 'bg-slate-50 border-slate-200'
-            }`}
-          >
-            <h4 className={`font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>
-              Are my documents uploaded to any remote server?
-            </h4>
-            <p className={`leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-              No. FileWala runs 100% locally on your computer inside the browser using WebAssembly and client-side JavaScript. No document data is ever transmitted to the cloud.
-            </p>
-          </div>
-
-          <div
-            className={`p-3.5 rounded-xl border space-y-1 ${
-              isDark ? 'bg-slate-950/40 border-slate-800/80' : 'bg-slate-50 border-slate-200'
-            }`}
-          >
-            <h4 className={`font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>
-              Which compression preset should I choose?
-            </h4>
-            <p className={`leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-              Use <strong>Extreme</strong> if you need to email a large file under strict attachment limits. Use <strong>Recommended</strong> for everyday viewing and sharing. Use <strong>Low</strong> if you plan to print.
-            </p>
-          </div>
-
-          <div
-            className={`p-3.5 rounded-xl border space-y-1 ${
-              isDark ? 'bg-slate-950/40 border-slate-800/80' : 'bg-slate-50 border-slate-200'
-            }`}
-          >
-            <h4 className={`font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>
-              Will compression make the file size larger?
-            </h4>
-            <p className={`leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-              No. Our engine compares the compressed file with your original file. If the file is already maximally optimized, we retain the original file bytes so it never inflates.
-            </p>
-          </div>
-
-          <div
-            className={`p-3.5 rounded-xl border space-y-1 ${
-              isDark ? 'bg-slate-950/40 border-slate-800/80' : 'bg-slate-50 border-slate-200'
-            }`}
-          >
-            <h4 className={`font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>
-              Will my document text remain sharp and readable?
-            </h4>
-            <p className={`leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-              Yes. Text and fonts are rendered at optimal resolution while redundant image data and uncompressed object tables are deflated.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Security & Client-Side Notice Footer */}
-      <div
-        className={`p-4 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs ${
-          isDark
-            ? 'bg-slate-900/30 border-slate-800/60 text-slate-400'
-            : 'bg-slate-50 border-slate-200 text-slate-500'
-        }`}
-      >
-        <div className="flex items-center gap-2">
-          <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
-          <span>
-            <strong>Zero Server Processing:</strong> Your PDF bytes never leave this browser tab. Compression runs locally via WebAssembly and Canvas pipelines.
-          </span>
-        </div>
-        <span className="font-mono text-[11px] text-slate-500 shrink-0">Memory Safety Guaranteed</span>
-      </div>
+      {/* Comprehensive Educational & Technical Guide Section */}
+      <PdfToolGuideSection toolId="compress-pdf" />
 
       {/* Built-in PDF Preview & Comparison Modal */}
       <PdfPreviewModal

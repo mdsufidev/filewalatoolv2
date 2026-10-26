@@ -28,6 +28,7 @@ export const GovtToolsSeoGuide: React.FC<GovtToolsSeoGuideProps> = ({
   const portalSpecs = [
     {
       portal: 'UPSC Civil Services / OTR',
+      officialUrl: 'https://upsconline.nic.in/',
       exam: 'IAS, IFS, IPS, NDA, CDS, CMS',
       photoSize: '350 × 350 px (1:1 Ratio)',
       photoKb: '20 KB to 300 KB',
@@ -40,42 +41,46 @@ export const GovtToolsSeoGuide: React.FC<GovtToolsSeoGuideProps> = ({
     },
     {
       portal: 'SSC (Staff Selection Commission)',
+      officialUrl: 'https://ssc.gov.in',
       exam: 'CGL, CHSL, MTS, GD, CPO, Steno',
-      photoSize: '100 × 120 px (3.5 × 4.5 cm)',
+      photoSize: '350 × 450 px (3.5 × 4.5 cm)',
       photoKb: '20 KB to 50 KB (Strict)',
       sigSize: '140 × 60 px (4.0 × 2.0 cm)',
       sigKb: '10 KB to 20 KB (Strict)',
       dpi: '200 DPI',
-      specialRule: language === 'hi' ? 'बिना टोपी व चश्मे के सीधा चेहरा, सिग्नेचर 10–20 KB में ही हो' : 'No cap, no tinted glasses. Signature strictly 10–20 KB in horizontal ratio',
+      specialRule: language === 'hi' ? 'सीधा चेहरा (नए पोर्टल पर लाइव वेबकैम), सिग्नेचर 140×60 px strictly 10–20 KB' : 'Straight face (Live webcam capture on ssc.gov.in), signature strictly 140×60 px, 10–20 KB',
       toolId: 'ssc-resizer',
       toolName: 'SSC Resizer',
     },
     {
       portal: 'PAN Card (Protean NSDL / UTIITSL)',
+      officialUrl: 'https://tinpan.proteantech.in/',
       exam: 'New PAN Card (Form 49A / 49AA)',
-      photoSize: '200 × 230 px (2.5 × 3.5 cm)',
-      photoKb: '20 KB to 50 KB',
-      sigSize: '354 × 157 px (4.5 × 2.0 cm)',
-      sigKb: 'Under 50 KB',
-      dpi: '200 DPI (Strict Header)',
-      specialRule: language === 'hi' ? 'सख्त 200 DPI रिज़ॉल्यूशन, सिग्नेचर केवल सफेद बैकग्राउंड पर' : 'Strict 200 DPI embedded metadata; signature must have pure white background',
+      photoSize: 'NSDL: 197×276 px · UTIITSL: 213×213 px',
+      photoKb: 'NSDL: 20–50 KB · UTIITSL: 15–30 KB',
+      sigSize: 'NSDL: 354×157 px · UTIITSL: 400×200 px',
+      sigKb: 'NSDL: < 50 KB · UTIITSL: < 60 KB',
+      dpi: 'NSDL: 200 DPI · UTIITSL: 300/600 DPI',
+      specialRule: language === 'hi' ? 'सख्त 200/300 DPI रिज़ॉल्यूशन, सिग्नेचर केवल सफेद बैकग्राउंड पर' : 'Strict 200/300 DPI embedded metadata; signature must have pure white background',
       toolId: 'pan-photo-resize',
       toolName: 'PAN Photo Resizer',
     },
     {
       portal: 'MEA Passport Seva (PSK)',
+      officialUrl: 'https://www.passportindia.gov.in/psp',
       exam: 'Fresh Passport, Reissue, Tatkaal',
-      photoSize: '350 × 450 px (35 × 45 mm)',
-      photoKb: 'Under 300 KB',
+      photoSize: '630 × 810 px (Digital) · 350 × 450 px (Print)',
+      photoKb: '10 KB to 250 KB (Strict)',
       sigSize: '400 × 200 px (4.0 × 2.0 cm)',
       sigKb: 'Under 100 KB',
       dpi: '300 DPI',
-      specialRule: language === 'hi' ? 'चेहरा 70–80% हिस्से में दिखे, बैकग्राउंड शुद्ध सफेद या हल्का' : '70–80% facial coverage, pure white background, sharp natural contrast',
+      specialRule: language === 'hi' ? 'चेहरा 80–85% हिस्से में दिखे, बैकग्राउंड शुद्ध सफेद, 10–250 KB' : '80–85% facial coverage, pure white background, strictly 10–250 KB',
       toolId: 'passport-photo-resize',
       toolName: 'Passport Photo Resizer',
     },
     {
       portal: 'Sarkari Certificates & Marksheets',
+      officialUrl: 'https://unifiedportal-mem.epfindia.gov.in/memberinterface/',
       exam: 'EPFO, BPSC, UPPSC, State PSC, IBPS',
       photoSize: 'PDF or JPG/PNG Document',
       photoKb: 'Strictly Under 100 KB / 200 KB',
@@ -188,8 +193,20 @@ export const GovtToolsSeoGuide: React.FC<GovtToolsSeoGuideProps> = ({
                     }`}
                   >
                     <td className="py-3 px-4">
-                      <div className="font-semibold text-zinc-950 dark:text-zinc-100">
-                        {spec.portal}
+                      <div className="font-semibold text-zinc-950 dark:text-zinc-100 flex items-center gap-1.5">
+                        <span>{spec.portal}</span>
+                        {spec.officialUrl && (
+                          <a
+                            href={spec.officialUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-zinc-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                            title="Official Portal"
+                            aria-label={`Official portal for ${spec.portal}`}
+                          >
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                        )}
                       </div>
                       <div className="text-[11px] text-zinc-500">
                         {spec.exam}
@@ -330,28 +347,31 @@ export const GovtToolsSeoGuide: React.FC<GovtToolsSeoGuideProps> = ({
           {faqs.map((faq, idx) => {
             const isOpen = openFaqIndex === idx;
             return (
-              <div
+              <details
                 key={idx}
-                className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden"
+                open={isOpen}
+                onToggle={(e) => {
+                  const isNowOpen = e.currentTarget.open;
+                  if (isNowOpen) {
+                    setOpenFaqIndex(idx);
+                  } else if (openFaqIndex === idx) {
+                    setOpenFaqIndex(null);
+                  }
+                }}
+                className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden group"
               >
-                <button
-                  type="button"
-                  onClick={() => setOpenFaqIndex(isOpen ? null : idx)}
-                  className="w-full p-4 text-left text-xs sm:text-sm font-semibold text-zinc-950 dark:text-zinc-100 flex items-center justify-between gap-4 cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-850/50 transition-colors"
-                >
+                <summary className="w-full p-4 text-left text-xs sm:text-sm font-semibold text-zinc-950 dark:text-zinc-100 flex items-center justify-between gap-4 cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-850/50 transition-colors list-none [&::-webkit-details-marker]:hidden select-none">
                   <span>{faq.q}</span>
                   <ChevronDown
                     className={`w-4 h-4 text-zinc-500 shrink-0 transition-transform duration-150 ${
                       isOpen ? 'rotate-180 text-zinc-950 dark:text-zinc-100' : ''
                     }`}
                   />
-                </button>
-                {isOpen && (
-                  <div className="px-4 pb-4 pt-0 text-xs sm:text-sm leading-relaxed text-zinc-600 dark:text-zinc-400 border-t border-zinc-100 dark:border-zinc-800 pt-3">
-                    {faq.a}
-                  </div>
-                )}
-              </div>
+                </summary>
+                <div className="px-4 pb-4 pt-0 text-xs sm:text-sm leading-relaxed text-zinc-600 dark:text-zinc-400 border-t border-zinc-100 dark:border-zinc-800 pt-3">
+                  {faq.a}
+                </div>
+              </details>
             );
           })}
         </div>

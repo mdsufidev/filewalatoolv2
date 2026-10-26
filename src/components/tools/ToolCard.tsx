@@ -3,6 +3,7 @@ import { ArrowRight } from 'lucide-react';
 import { ToolItem } from '../../core/toolsData';
 import { ToolIconBadge } from './ToolIconBadge';
 import { useLanguage } from '../../core/languageContext';
+import { getToolRouteUrl } from '../../core/urlRoutes';
 
 interface ToolCardProps {
   tool: ToolItem;
@@ -15,11 +16,11 @@ interface ToolCardProps {
 }
 
 /**
- * Minimalist 2D Flat Tool Card (Notion / Linear / Swiss design inspired)
- * - Flat solid surface with 1px clean border
- * - Structured rounded-lg corners (no 3D depth, no heavy shadows)
- * - Fast subtle hover feedback (150ms border & surface tint)
- * - Crisp, high-contrast typography
+ * Practical, Human-Crafted Tool Card
+ * - Semantic anchor tag with canonical route destination
+ * - Solid 1px neutral border with subtle hover feedback
+ * - Restrained typography and zero floating/gradient effects
+ * - High density and clean vertical alignment
  */
 export const ToolCard: React.FC<ToolCardProps> = ({
   tool,
@@ -28,29 +29,34 @@ export const ToolCard: React.FC<ToolCardProps> = ({
   description,
 }) => {
   const { language } = useLanguage();
+  const href = getToolRouteUrl(tool.actionSection, tool.subToolId);
 
-  const handleClick = () => {
+  const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    // Preserve default browser behavior for modifier keys or middle click (open in new tab/window)
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) {
+      return;
+    }
+    e.preventDefault();
     onLaunch(tool.actionSection, tool.subToolId);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' || e.key === ' ') {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLAnchorElement>) => {
+    if (e.key === ' ') {
       e.preventDefault();
-      handleClick();
+      onLaunch(tool.actionSection, tool.subToolId);
     }
   };
 
   return (
-    <div
+    <a
+      href={href}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
-      role="button"
-      tabIndex={0}
       aria-label={`Open ${title}`}
-      className="group relative flex flex-col justify-between p-4.5 sm:p-5 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600 hover:bg-zinc-50/50 dark:hover:bg-zinc-850/50 transition-colors duration-150 cursor-pointer min-h-[210px] sm:min-h-[220px] select-none text-left focus:outline-none focus-visible:ring-1 focus-visible:ring-zinc-900 dark:focus-visible:ring-zinc-100"
+      className="group flex flex-col justify-between p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors duration-150 cursor-pointer min-h-[140px] select-none text-left no-underline focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950 dark:focus-visible:ring-zinc-100"
     >
       <div>
-        {/* Top Header: Neutral 2D Icon at top-left + Minimalist Badge */}
+        {/* Top Header: Signature Red Icon + Optional subtle Badge */}
         <div className="flex items-start justify-between gap-2">
           <ToolIconBadge
             toolId={tool.id}
@@ -59,28 +65,22 @@ export const ToolCard: React.FC<ToolCardProps> = ({
           />
 
           {tool.badge && (
-            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-200/80 dark:border-zinc-700/80 shrink-0">
+            <span className="text-[10px] font-mono text-zinc-400 dark:text-zinc-500 bg-zinc-50 dark:bg-zinc-850 px-1.5 py-0.5 rounded border border-zinc-200/60 dark:border-zinc-800 shrink-0">
               {tool.badge}
             </span>
           )}
         </div>
 
-        {/* Tool Name beneath icon */}
-        <h3 className="text-[15px] sm:text-base font-semibold text-zinc-900 dark:text-zinc-100 tracking-tight leading-snug mt-3">
+        {/* Tool Name */}
+        <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 tracking-tight mt-3 group-hover:text-[#E11D2A] transition-colors">
           {title}
         </h3>
 
-        {/* Short, muted description */}
-        <p className="mt-1.5 text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed font-normal line-clamp-3">
+        {/* Short, readable description matching wireframe */}
+        <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400 leading-normal line-clamp-2 font-normal">
           {description}
         </p>
       </div>
-
-      {/* Subtle 2D Action indicator */}
-      <div className="mt-4 pt-2.5 border-t border-zinc-100 dark:border-zinc-800/80 flex items-center justify-between text-xs font-medium text-zinc-500 dark:text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-zinc-100 transition-colors duration-150">
-        <span>{language === 'hi' ? 'खोलें' : 'Open'}</span>
-        <ArrowRight className="w-3.5 h-3.5 text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-zinc-100 transition-colors duration-150" />
-      </div>
-    </div>
+    </a>
   );
 };

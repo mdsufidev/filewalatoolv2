@@ -171,8 +171,7 @@ export const ImageToolsWrapper: React.FC<{
   const primaryFile = initialFiles && initialFiles.length > 0 ? initialFiles[0] : null;
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-200">
-
+    <div className="w-full max-w-7xl mx-auto space-y-12 animate-in fade-in duration-200 select-none">
       {/* Render active tool */}
       <div className="pt-2">
         {activeTool === 'compressor' && <CompressorTool onNotify={onNotify} initialFile={primaryFile} />}
@@ -186,88 +185,6 @@ export const ImageToolsWrapper: React.FC<{
         {activeTool === 'palette' && <PaletteExtractorTool onNotify={onNotify} />}
         {activeTool === 'adjust' && <FilterWatermarkTool onNotify={onNotify} />}
         {activeTool === 'batch' && <BatchTool onNotify={onNotify} />}
-      </div>
-
-      {/* Subtle Explore More Image Utilities Section (Placed at bottom, zero clutter) */}
-      <div
-        className={`pt-10 border-t ${
-          isDark ? 'border-slate-800/80' : 'border-slate-200'
-        }`}
-      >
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-6">
-          <div>
-            <h3
-              className={`text-base font-bold tracking-tight ${
-                isDark ? 'text-white' : 'text-slate-900'
-              }`}
-            >
-              Explore More Image Utilities
-            </h3>
-            <p
-              className={`text-xs mt-0.5 ${
-                isDark ? 'text-slate-400' : 'text-slate-500'
-              }`}
-            >
-              Other client-side canvas tools in the FileWala suite (processed 100% locally)
-            </p>
-          </div>
-          <span
-            className={`text-[11px] font-mono px-2.5 py-0.5 rounded-full border self-start sm:self-auto ${
-              isDark
-                ? 'bg-slate-900 border-slate-800 text-slate-400'
-                : 'bg-slate-100 border-slate-200 text-slate-600'
-            }`}
-          >
-            Zero Server Uploads
-          </span>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-          {IMAGE_TOOLS_LIST.filter((t) => t.id !== activeTool).map((t) => (
-            <button
-              key={t.id}
-              onClick={() => {
-                setActiveTool(t.id);
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              className={`p-3.5 rounded-lg border text-left transition-colors duration-150 cursor-pointer group flex flex-col justify-between ${
-                isDark
-                  ? 'bg-zinc-900 border-zinc-800 hover:border-zinc-700 hover:bg-zinc-800/80'
-                  : 'bg-white border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50'
-              }`}
-            >
-              <div className="flex items-center gap-2.5 mb-2">
-                <div
-                  className={`w-7 h-7 rounded-lg flex items-center justify-center border transition-colors shrink-0 ${
-                    isDark
-                      ? 'bg-slate-900 border-slate-800 text-slate-400 group-hover:text-blue-400 group-hover:border-blue-500/30'
-                      : 'bg-slate-100 border-slate-200 text-slate-600 group-hover:text-blue-600 group-hover:border-blue-300'
-                  }`}
-                >
-                  {t.icon}
-                </div>
-                <div className="min-w-0">
-                  <h4
-                    className={`text-xs font-semibold truncate transition-colors ${
-                      isDark
-                        ? 'text-slate-200 group-hover:text-white'
-                        : 'text-slate-800 group-hover:text-slate-950'
-                    }`}
-                  >
-                    {t.label}
-                  </h4>
-                </div>
-              </div>
-              <p
-                className={`text-[11px] line-clamp-2 leading-relaxed ${
-                  isDark ? 'text-slate-400' : 'text-slate-500'
-                }`}
-              >
-                {t.description}
-              </p>
-            </button>
-          ))}
-        </div>
       </div>
     </div>
   );

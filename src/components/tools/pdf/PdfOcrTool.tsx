@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import { formatBytes, triggerFileDownload } from '../../../utils/memory';
 import { useTheme } from '../../../core/themeContext';
+import { Dropzone } from '../../ui/Dropzone';
 import { PdfToolGuideSection } from './PdfToolGuideSection';
 
 // Ensure unified PDF.js worker is ready
@@ -731,8 +732,43 @@ export const PdfOcrTool: React.FC<PdfOcrToolProps> = ({ onNotify }) => {
     return matches ? matches.length : 0;
   }, [result, searchQuery]);
 
+  // Global Keyboard Shortcuts
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
+      if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+
+      if (!file) return;
+
+      if (e.key === 'n' || e.key === 'N' || e.key === 'Escape') {
+        e.preventDefault();
+        handleReset();
+        onNotify?.('Reset', 'Cleared PDF document.', 'info');
+        return;
+      }
+
+      if (e.key === 'd' || e.key === 'D') {
+        if (result) {
+          e.preventDefault();
+          handleDownloadTxt();
+          return;
+        }
+      }
+
+      if (e.key === 'Enter') {
+        if (!result && !isProcessing) {
+          e.preventDefault();
+          handleExecuteOcr();
+          return;
+        }
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [file, result, isProcessing, handleExecuteOcr, handleDownloadTxt, handleReset, onNotify]);
+
   return (
-    <div className="w-full max-w-5xl mx-auto space-y-8 animate-in fade-in duration-200">
+    <div className="w-full max-w-7xl mx-auto space-y-8 animate-in fade-in duration-200">
       {/* Hidden File Input */}
       <input
         ref={fileInputRef}
@@ -742,7 +778,7 @@ export const PdfOcrTool: React.FC<PdfOcrToolProps> = ({ onNotify }) => {
         onChange={handleFileInputChange}
       />
 
-      {/* Header Banner - Stripe / Vercel Aesthetic */}
+      {/* Header Banner */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-slate-800/80">
         <div>
           <div className="flex items-center gap-2.5 mb-1.5">
@@ -766,7 +802,7 @@ export const PdfOcrTool: React.FC<PdfOcrToolProps> = ({ onNotify }) => {
             </div>
           </div>
           <p className={`text-xs sm:text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-            Extract editable, searchable text from scanned or digital PDF documents directly in your browser using client-side Tesseract.js.
+            Extract editable, searchable text from scanned or digital PDF documents using client-side Tesseract.js.
           </p>
         </div>
 
@@ -785,51 +821,14 @@ export const PdfOcrTool: React.FC<PdfOcrToolProps> = ({ onNotify }) => {
 
       {/* Main Workspace Body */}
       {!file ? (
-        /* =========================================================================
-           1. DROPZONE STATE (Empty Workspace)
-        ========================================================================= */
         <div className="space-y-6">
-          <div
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-            onClick={() => fileInputRef.current?.click()}
-            className={`border border-dashed rounded-lg p-10 sm:p-14 text-center cursor-pointer transition-colors duration-150 select-none ${
-              isDragOver
-                ? 'border-zinc-900 dark:border-zinc-100 bg-zinc-100/50 dark:bg-zinc-800/50'
-                : 'border-zinc-300 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-zinc-400 dark:hover:border-zinc-700 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30'
-            }`}
-          >
-            <div className="w-12 h-12 rounded-md border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/60 text-zinc-700 dark:text-zinc-300 flex items-center justify-center mx-auto mb-4">
-              <UploadCloud className="w-6 h-6" />
-            </div>
-
-            <h3
-              className={`text-sm sm:text-base font-semibold tracking-tight mb-1.5 ${
-                isDark ? 'text-zinc-100' : 'text-zinc-900'
-              }`}
-            >
-              Drop scanned PDF here, or <span className="underline underline-offset-4">browse files</span>
-            </h3>
-
-            <p className="text-xs text-zinc-500 max-w-md mx-auto">
-              Supports invoices, receipts, book scans, legal agreements, and flattened documents. Optical Character Recognition (OCR) runs locally.
-            </p>
-
-            <div className="flex flex-wrap items-center justify-center gap-4 mt-5 text-xs text-zinc-500">
-              <span className="flex items-center gap-1.5">
-                <CheckCircle2 className="w-3.5 h-3.5 text-zinc-500" />
-                Scanned & Image PDF Support
-              </span>
-              <span className="flex items-center gap-1.5">
-                <CheckCircle2 className="w-3.5 h-3.5 text-zinc-500" />
-                Multi-Language Models
-              </span>
-              <span className="flex items-center gap-1.5">
-                <CheckCircle2 className="w-3.5 h-3.5 text-zinc-500" />
-                Searchable Export
-              </span>
-            </div>
+          <div className="max-w-3xl mx-auto">
+            <Dropzone
+              onFilesSelected={(files: File[]) => handleProcessFile(files[0])}
+              accept="application/pdf,.pdf"
+              title="Upload PDF for OCR Text Extraction"
+              description="Drag & drop or click to browse. Runs 100% locally in browser RAM."
+            />
           </div>
 
           {errorMessage && (
@@ -1440,81 +1439,8 @@ export const PdfOcrTool: React.FC<PdfOcrToolProps> = ({ onNotify }) => {
         </div>
       )}
 
-      {/* Security & Client-Side Notice Footer */}
-      <div
-        className={`p-3.5 rounded-md border flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs ${
-          isDark
-            ? 'bg-zinc-900 border-zinc-800 text-zinc-400'
-            : 'bg-zinc-50 border-zinc-200 text-zinc-500'
-        }`}
-      >
-        <div className="flex items-center gap-2">
-          <ShieldCheck className="w-4 h-4 text-cyan-500 shrink-0" />
-          <span>
-            <strong>100% Client-Side OCR:</strong> Powered by Tesseract.js running inside an isolated browser Web Worker. Confidential documents never leave your device.
-          </span>
-        </div>
-        <span className="font-mono text-[11px] text-slate-500 shrink-0">Memory Safety Guaranteed</span>
-      </div>
-
-      {/* Educational & How It Works Guidance Section */}
-      <PdfToolGuideSection
-        toolName="PDF to Text & OCR Extractor"
-        tagline="Extract editable text from digital PDFs or scanned paper documents using client-side OCR."
-        steps={[
-          {
-            step: 1,
-            title: 'Drop PDF Document',
-            description: 'Upload your digital or scanned PDF. You can select specific pages or extract the entire file.',
-            icon: <FileText className="w-4 h-4 text-cyan-400" />,
-          },
-          {
-            step: 2,
-            title: 'Select OCR Language & Mode',
-            description: 'Choose between Hybrid, OCR-Only, or Digital Text extraction and select your document language.',
-            icon: <Search className="w-4 h-4 text-blue-400" />,
-          },
-          {
-            step: 3,
-            title: 'Copy or Download .txt',
-            description: 'Inspect extracted text in real time, copy to clipboard with 1-click, or export as a clean text file.',
-            icon: <Download className="w-4 h-4 text-emerald-400" />,
-          },
-        ]}
-        tips={[
-          {
-            title: 'Hybrid Extraction Mode',
-            description: 'Hybrid mode automatically extracts digital selectable text first; if a page is a scanned image, it triggers Tesseract.js OCR automatically.',
-          },
-          {
-            title: 'Multilingual Support',
-            description: 'Select Spanish, French, German, Hindi, Japanese, or Arabic to load optimized trained language data.',
-          },
-          {
-            title: 'Search Within Extracted Text',
-            description: 'Use the built-in search filter to highlight and jump to specific keywords across all processed pages.',
-          },
-        ]}
-        faqs={[
-          {
-            question: 'How does client-side OCR work in the browser?',
-            answer: 'Tesseract.js compiles the open-source Tesseract OCR engine into WebAssembly. It executes inside a background Web Worker on your device, processing image data directly from HTML5 Canvas without network requests.',
-          },
-          {
-            question: 'Why is OCR slower on large scanned PDFs?',
-            answer: 'Optical Character Recognition analyzes every pixel to detect characters and words. For multi-page scans, the progress bar keeps you updated as each page is rendered and recognized.',
-          },
-          {
-            question: 'Can I export the extracted text to Word or TXT?',
-            answer: 'Yes! You can copy text directly to clipboard, download as a formatted .txt document, or use our PDF to Word converter for formatted DOCX output.',
-          },
-        ]}
-        privacyNotes={[
-          'WebAssembly Tesseract.js runs in an isolated Web Worker',
-          'Zero cloud uploads or external AI API calls',
-          'Text and document streams are erased on page refresh',
-        ]}
-      />
+      {/* Comprehensive Educational & Technical Guide Section */}
+      <PdfToolGuideSection toolId="pdf-to-text" />
     </div>
   );
 };

@@ -6,24 +6,21 @@ import {
   Eraser,
   Paintbrush,
   Eye,
-  Pipette,
   Check,
-  Undo2,
-  Sliders,
-  Layers,
   ShieldCheck,
   Copy,
   Share2,
   Wand2,
   RotateCcw,
   Zap,
+  Cpu,
+  Sliders,
+  AlertCircle,
   HelpCircle,
-  ChevronDown,
-  ChevronUp,
-  Lightbulb,
-  UploadCloud,
+  Layers,
 } from 'lucide-react';
 import { Dropzone } from '../../ui/Dropzone';
+import { ImageToolGuideSection } from './ImageToolGuideSection';
 import { Button } from '../../ui/Button';
 import { Slider } from '../../ui/Slider';
 import { useImageUpload } from '../../../hooks/useImageUpload';
@@ -33,27 +30,41 @@ import {
   shareFileOrBlob,
   isShareSupported,
 } from '../../../utils/clipboardAndShare';
+import { useTheme } from '../../../core/themeContext';
 
 interface BackgroundRemoverToolProps {
   onNotify: (title: string, desc?: string, type?: 'success' | 'error' | 'info') => void;
   initialFiles?: File[] | null;
 }
 
+export type RemovalEngine = 'fast' | 'ai';
 export type BgReplacement = 'transparent' | 'white' | 'blue' | 'grey' | 'custom' | 'blur';
 export type ToolMode = 'wand' | 'erase' | 'restore';
+
+// Dynamic CDN configurations for Zero-Vercel-Bundle-Bloat
+const ORT_CDN_URL = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/ort.all.min.js';
+const ORT_WASM_PATH = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/';
+const AI_MODEL_URL = 'https://huggingface.co/briaai/RMBG-1.4/resolve/main/onnx/model.onnx';
+const MODEL_CACHE_NAME = 'filewala-ai-model-cache-v1';
+const AI_INPUT_SIZE = 1024;
 
 export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
   onNotify,
   initialFiles,
 }) => {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const { currentImage, loadFile, reset: resetImage } = useImageUpload();
 
-  // Active Tool Mode
+  // Dual-Engine Mode: Fast (Canvas 2D + BFS) vs AI Smart (WebGPU + ONNX RMBG-1.4)
+  const [engineMode, setEngineMode] = useState<RemovalEngine>('fast');
+  const [hasWebGPU, setHasWebGPU] = useState<boolean | null>(null);
+
+  // Active Tool Mode (Manual Brush / Wand)
   const [activeToolMode, setActiveToolMode] = useState<ToolMode>('wand');
 
-  // Algorithm Settings
+  // Fast Algorithm Settings
   const [tolerance, setTolerance] = useState<number>(28); // 5 to 75%
-  const [feather, setFeather] = useState<number>(2); // 0 to 6px
   const [brushSize, setBrushSize] = useState<number>(28); // 5 to 80px
 
   // Background Replacement
@@ -63,13 +74,36 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
 
   // Result state
   const [resultBlob, setResultBlob] = useState<Blob | null>(null);
-  const [resultUrl, setResultUrl] = useState<string | null>(null);
   const [removedObjectCount, setRemovedObjectCount] = useState<number>(0);
-  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
 
+  // AI Pipeline State
+  const [aiStatus, setAiStatus] = useState<string>('Ready');
+  const [aiProgress, setAiProgress] = useState<number>(0);
+  const [isAiProcessing, setIsAiProcessing] = useState<boolean>(false);
+  const [aiInferenceTimeMs, setAiInferenceTimeMs] = useState<number | null>(null);
+
+  // Refs
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const maskCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const isDrawingRef = useRef<boolean>(false);
+  const aiSessionRef = useRef<any>(null);
+
+  // Detect WebGPU hardware availability on mount
+  useEffect(() => {
+    async function checkWebGPU() {
+      if (typeof window !== 'undefined' && 'navigator' in window && 'gpu' in navigator && (navigator as any).gpu) {
+        try {
+          const adapter = await (navigator as any).gpu.requestAdapter();
+          setHasWebGPU(!!adapter);
+        } catch {
+          setHasWebGPU(false);
+        }
+      } else {
+        setHasWebGPU(false);
+      }
+    }
+    checkWebGPU();
+  }, []);
 
   // Load initial file if provided
   useEffect(() => {
@@ -78,36 +112,148 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
     }
   }, [initialFiles, loadFile, currentImage]);
 
-  // Initialize mask canvas and auto-clean perimeter edges on image load
-  useEffect(() => {
-    if (!currentImage) {
-      maskCanvasRef.current = null;
-      setResultBlob(null);
-      if (resultUrl) URL.revokeObjectURL(resultUrl);
-      setResultUrl(null);
-      setRemovedObjectCount(0);
-      return;
-    }
+  /* -------------------------------------------------------------
+     DYNAMIC ONNX RUNTIME CDN LOADER & CACHESTORAGE MANAGER
+  ------------------------------------------------------------- */
+  const loadOrtFromCDN = useCallback(async (): Promise<any> => {
+    if (typeof window === 'undefined') return null;
+    if ((window as any).ort) return (window as any).ort;
 
+    return new Promise((resolve, reject) => {
+      const existingScript = document.querySelector(`script[src="${ORT_CDN_URL}"]`);
+      if (existingScript) {
+        const checkInterval = setInterval(() => {
+          if ((window as any).ort) {
+            clearInterval(checkInterval);
+            resolve((window as any).ort);
+          }
+        }, 50);
+        return;
+      }
+
+      const script = document.createElement('script');
+      script.src = ORT_CDN_URL;
+      script.async = true;
+      script.onload = () => {
+        const ort = (window as any).ort;
+        if (ort) {
+          ort.env.wasm.wasmPaths = ORT_WASM_PATH;
+          ort.env.wasm.numThreads = Math.min(4, typeof navigator !== 'undefined' ? navigator.hardwareConcurrency || 2 : 2);
+          resolve(ort);
+        } else {
+          reject(new Error('Failed to bind window.ort'));
+        }
+      };
+      script.onerror = () => reject(new Error('Failed to load ONNX Runtime Web from CDN'));
+      document.head.appendChild(script);
+    });
+  }, []);
+
+  const getCachedModelBuffer = useCallback(async (url: string): Promise<ArrayBuffer> => {
+    if (typeof window !== 'undefined' && 'caches' in window) {
+      try {
+        const cache = await caches.open(MODEL_CACHE_NAME);
+        const cachedRes = await cache.match(url);
+        if (cachedRes) {
+          return await cachedRes.arrayBuffer();
+        }
+        setAiStatus('Downloading Neural Weights (~40MB, cached locally)...');
+        const fetchRes = await fetch(url);
+        if (!fetchRes.ok) throw new Error(`HTTP ${fetchRes.status}`);
+
+        await cache.put(url, fetchRes.clone());
+        return await fetchRes.arrayBuffer();
+      } catch (err) {
+        console.warn('CacheStorage read failed, falling back to direct network fetch:', err);
+      }
+    }
+    const res = await fetch(url);
+    return await res.arrayBuffer();
+  }, []);
+
+  /* -------------------------------------------------------------
+     COMPOSITING RENDER PIPELINE
+  ------------------------------------------------------------- */
+  const renderCompositedResult = useCallback(() => {
+    if (!currentImage || !canvasRef.current) return;
     const img = currentImage.imageElement;
-    const w = img.naturalWidth;
-    const h = img.naturalHeight;
+    const canvas = canvasRef.current;
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
 
-    const mask = document.createElement('canvas');
-    mask.width = w;
-    mask.height = h;
-    const mctx = mask.getContext('2d');
-    if (mctx) {
-      mctx.clearRect(0, 0, w, h);
+    const w = canvas.width;
+    const h = canvas.height;
+
+    // 1. Draw source image onto offscreen canvas
+    const fgCanvas = document.createElement('canvas');
+    fgCanvas.width = w;
+    fgCanvas.height = h;
+    const fgCtx = fgCanvas.getContext('2d');
+    if (!fgCtx) return;
+
+    fgCtx.drawImage(img, 0, 0, w, h);
+    const fgImgData = fgCtx.getImageData(0, 0, w, h);
+    const data = fgImgData.data;
+
+    // 2. Apply Mask if present
+    if (maskCanvasRef.current) {
+      const mctx = maskCanvasRef.current.getContext('2d');
+      if (mctx) {
+        const maskData = mctx.getImageData(0, 0, w, h).data;
+        for (let i = 0; i < data.length; i += 4) {
+          if (maskData[i + 3] > 0) {
+            if (maskData[i] > 200) {
+              // Red = Erased -> Transparent
+              data[i + 3] = 0;
+            } else if (maskData[i + 2] > 200) {
+              // Blue = Restored -> Full opacity
+              data[i + 3] = 255;
+            }
+          }
+        }
+      }
     }
-    maskCanvasRef.current = mask;
 
-    // Perform auto edge-connected background clean from 4 corners
-    autoCleanBorderBackground(img, mask, tolerance);
-  }, [currentImage]);
+    fgCtx.putImageData(fgImgData, 0, 0);
 
-  // Auto edge-connected background clean (BFS flood fill from image perimeter)
-  const autoCleanBorderBackground = (
+    // 3. Clear base canvas
+    ctx.clearRect(0, 0, w, h);
+
+    // 4. Render Background Layer
+    if (bgMode === 'white') {
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, w, h);
+    } else if (bgMode === 'blue') {
+      ctx.fillStyle = '#0077cc';
+      ctx.fillRect(0, 0, w, h);
+    } else if (bgMode === 'grey') {
+      ctx.fillStyle = '#334155';
+      ctx.fillRect(0, 0, w, h);
+    } else if (bgMode === 'custom') {
+      ctx.fillStyle = customBgColor;
+      ctx.fillRect(0, 0, w, h);
+    } else if (bgMode === 'blur') {
+      ctx.save();
+      ctx.filter = 'blur(14px)';
+      ctx.drawImage(img, -20, -20, w + 40, h + 40);
+      ctx.restore();
+    }
+
+    // 5. Draw transparent cutout foreground
+    ctx.drawImage(fgCanvas, 0, 0);
+
+    // 6. Generate output Blob
+    canvas.toBlob((blob) => {
+      setResultBlob(blob);
+    }, 'image/png');
+  }, [currentImage, bgMode, customBgColor]);
+
+  /* -------------------------------------------------------------
+     FAST MODE: BFS FLOOD-FILL PERIMETER CLEAN
+  ------------------------------------------------------------- */
+  const autoCleanBorderBackground = useCallback((
     img: HTMLImageElement,
     mask: HTMLCanvasElement,
     tol: number
@@ -117,6 +263,7 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
     const tempCanvas = document.createElement('canvas');
     tempCanvas.width = w;
     tempCanvas.height = h;
+
     const ctx = tempCanvas.getContext('2d');
     const mctx = mask.getContext('2d');
     if (!ctx || !mctx) return;
@@ -125,7 +272,6 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
     const srcData = ctx.getImageData(0, 0, w, h).data;
     const maskData = mctx.getImageData(0, 0, w, h);
 
-    // Sample perimeter points (4 corners + edge centers)
     const seedPoints = [
       [2, 2],
       [w - 3, 2],
@@ -162,7 +308,6 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
         maskData.data[idx + 2] = 0;
         maskData.data[idx + 3] = 255;
 
-        // 4 neighbors
         const nbrs = [
           [x + 1, y],
           [x - 1, y],
@@ -195,9 +340,177 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
 
     mctx.putImageData(maskData, 0, 0);
     renderCompositedResult();
-  };
+  }, [renderCompositedResult]);
 
-  // Magic Wand Click: Flood Fill Erase from clicked object point
+  /* -------------------------------------------------------------
+     AI SMART MODE: ONNX RUNTIME WEBGPU INFERENCE PIPELINE
+  ------------------------------------------------------------- */
+  const runAiInference = useCallback(async () => {
+    if (!currentImage || !maskCanvasRef.current) return;
+    setIsAiProcessing(true);
+    setAiProgress(15);
+    setAiStatus('Loading ONNX Engine from CDN...');
+
+    try {
+      const ort = await loadOrtFromCDN();
+      setAiProgress(35);
+
+      if (!aiSessionRef.current) {
+        setAiStatus('Loading RMBG-1.4 Neural Model...');
+        const modelBuffer = await getCachedModelBuffer(AI_MODEL_URL);
+        setAiProgress(60);
+
+        setAiStatus(hasWebGPU ? 'Compiling WebGPU Shaders...' : 'Initializing WASM Threads...');
+        const ep = hasWebGPU ? ['webgpu', 'wasm'] : ['wasm'];
+
+        aiSessionRef.current = await ort.InferenceSession.create(modelBuffer, {
+          executionProviders: ep,
+          graphOptimizationLevel: 'all',
+        });
+      }
+
+      setAiProgress(75);
+      setAiStatus(hasWebGPU ? 'Running Inference via WebGPU...' : 'Running Inference via CPU WASM...');
+
+      // 1. Prepare CHW Float32 Normalized Tensor
+      const img = currentImage.imageElement;
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = AI_INPUT_SIZE;
+      tempCanvas.height = AI_INPUT_SIZE;
+      const tctx = tempCanvas.getContext('2d');
+      if (!tctx) throw new Error('Failed to create intermediate AI canvas context');
+
+      tctx.imageSmoothingEnabled = true;
+      tctx.imageSmoothingQuality = 'high';
+      tctx.drawImage(img, 0, 0, AI_INPUT_SIZE, AI_INPUT_SIZE);
+
+      const imgData = tctx.getImageData(0, 0, AI_INPUT_SIZE, AI_INPUT_SIZE);
+      const { data } = imgData;
+
+      const mean = [0.485, 0.456, 0.406];
+      const std = [0.229, 0.224, 0.225];
+      const planeSize = AI_INPUT_SIZE * AI_INPUT_SIZE;
+      const float32Data = new Float32Array(3 * planeSize);
+
+      for (let i = 0; i < planeSize; i++) {
+        const r = data[i * 4] / 255.0;
+        const g = data[i * 4 + 1] / 255.0;
+        const b = data[i * 4 + 2] / 255.0;
+
+        float32Data[i] = (r - mean[0]) / std[0];
+        float32Data[planeSize + i] = (g - mean[1]) / std[1];
+        float32Data[planeSize * 2 + i] = (b - mean[2]) / std[2];
+      }
+
+      const inputTensor = new ort.Tensor('float32', float32Data, [1, 3, AI_INPUT_SIZE, AI_INPUT_SIZE]);
+      const startTime = performance.now();
+
+      const inputName = aiSessionRef.current.inputNames[0];
+      const outputName = aiSessionRef.current.outputNames[0];
+      const feeds = { [inputName]: inputTensor };
+
+      const results = await aiSessionRef.current.run(feeds);
+      const elapsed = Math.round(performance.now() - startTime);
+      setAiInferenceTimeMs(elapsed);
+
+      setAiProgress(90);
+      setAiStatus('Compositing Neural Alpha Mask...');
+
+      const outputTensor = results[outputName];
+      const maskFloat = outputTensor.data as Float32Array;
+
+      // 2. Upsample Mask to Full Resolution onto maskCanvasRef
+      const w = img.naturalWidth;
+      const h = img.naturalHeight;
+      const maskCanvas = maskCanvasRef.current;
+      maskCanvas.width = w;
+      maskCanvas.height = h;
+      const mctx = maskCanvas.getContext('2d');
+      if (!mctx) return;
+
+      // Create low-res mask image data
+      const lowResMaskCanvas = document.createElement('canvas');
+      lowResMaskCanvas.width = AI_INPUT_SIZE;
+      lowResMaskCanvas.height = AI_INPUT_SIZE;
+      const lctx = lowResMaskCanvas.getContext('2d');
+      if (!lctx) return;
+
+      const lowResImgData = lctx.createImageData(AI_INPUT_SIZE, AI_INPUT_SIZE);
+      const lData = lowResImgData.data;
+
+      for (let i = 0; i < maskFloat.length; i++) {
+        const alpha = Math.min(255, Math.max(0, Math.round(maskFloat[i] * 255)));
+        const idx = i * 4;
+        // In our mask schema: Red = Erased (background), so background is where alpha < 128
+        if (alpha < 128) {
+          lData[idx] = 255; // Red = Erased
+          lData[idx + 1] = 0;
+          lData[idx + 2] = 0;
+          lData[idx + 3] = 255;
+        } else {
+          lData[idx] = 0;
+          lData[idx + 1] = 0;
+          lData[idx + 2] = 0;
+          lData[idx + 3] = 0; // Transparent mask = keep foreground
+        }
+      }
+      lctx.putImageData(lowResImgData, 0, 0);
+
+      // Upsample to full resolution using canvas bilinear scaling
+      mctx.clearRect(0, 0, w, h);
+      mctx.imageSmoothingEnabled = true;
+      mctx.imageSmoothingQuality = 'high';
+      mctx.drawImage(lowResMaskCanvas, 0, 0, w, h);
+
+      setAiProgress(100);
+      setAiStatus('Complete');
+      renderCompositedResult();
+      onNotify('AI Cutout Complete', `Processed via ${hasWebGPU ? 'WebGPU' : 'WASM'} in ${elapsed}ms.`, 'success');
+    } catch (err: any) {
+      console.error('AI Smart Mode Inference failed:', err);
+      setAiStatus('Neural processing failed. Switched to Fast Mode.');
+      setEngineMode('fast');
+      onNotify('AI Notice', 'Model execution could not finish on this device. Switched to Fast Form Mode.', 'info');
+      if (currentImage && maskCanvasRef.current) {
+        autoCleanBorderBackground(currentImage.imageElement, maskCanvasRef.current, tolerance);
+      }
+    } finally {
+      setIsAiProcessing(false);
+    }
+  }, [currentImage, loadOrtFromCDN, getCachedModelBuffer, hasWebGPU, renderCompositedResult, autoCleanBorderBackground, tolerance, onNotify]);
+
+  /* -------------------------------------------------------------
+     INITIALIZE ON IMAGE LOAD OR ENGINE SWITCH
+  ------------------------------------------------------------- */
+  useEffect(() => {
+    if (!currentImage) {
+      maskCanvasRef.current = null;
+      setResultBlob(null);
+      setRemovedObjectCount(0);
+      return;
+    }
+
+    const img = currentImage.imageElement;
+    const w = img.naturalWidth;
+    const h = img.naturalHeight;
+
+    const mask = document.createElement('canvas');
+    mask.width = w;
+    mask.height = h;
+    const mctx = mask.getContext('2d');
+    if (mctx) mctx.clearRect(0, 0, w, h);
+    maskCanvasRef.current = mask;
+
+    if (engineMode === 'fast') {
+      autoCleanBorderBackground(img, mask, tolerance);
+    } else {
+      runAiInference();
+    }
+  }, [currentImage, engineMode]);
+
+  /* -------------------------------------------------------------
+     MANUAL TOOLS (MAGIC WAND & ERASER BRUSH)
+  ------------------------------------------------------------- */
   const runMagicWandAt = (clickX: number, clickY: number) => {
     if (!currentImage || !maskCanvasRef.current) return;
     const img = currentImage.imageElement;
@@ -270,11 +583,10 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
 
     mctx.putImageData(maskImgData, 0, 0);
     setRemovedObjectCount((prev) => prev + 1);
-    onNotify('Object Erased', 'Clicked background object removed instantly.', 'info');
+    onNotify('Object Erased', 'Selected background region removed.', 'info');
     renderCompositedResult();
   };
 
-  // Freehand Brush Paint (Erase or Restore)
   const paintManualBrush = (x: number, y: number) => {
     if (!maskCanvasRef.current) return;
     const mctx = maskCanvasRef.current.getContext('2d');
@@ -294,87 +606,7 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
     renderCompositedResult();
   };
 
-  // Main Compositing Render Pipeline
-  const renderCompositedResult = useCallback(() => {
-    if (!currentImage || !canvasRef.current) return;
-    const img = currentImage.imageElement;
-    const canvas = canvasRef.current;
-    canvas.width = img.naturalWidth;
-    canvas.height = img.naturalHeight;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const w = canvas.width;
-    const h = canvas.height;
-
-    // 1. Draw source image onto offscreen canvas
-    const fgCanvas = document.createElement('canvas');
-    fgCanvas.width = w;
-    fgCanvas.height = h;
-    const fgCtx = fgCanvas.getContext('2d');
-    if (!fgCtx) return;
-
-    fgCtx.drawImage(img, 0, 0, w, h);
-    const fgImgData = fgCtx.getImageData(0, 0, w, h);
-    const data = fgImgData.data;
-
-    // 2. Apply Mask if present
-    if (maskCanvasRef.current) {
-      const mctx = maskCanvasRef.current.getContext('2d');
-      if (mctx) {
-        const maskData = mctx.getImageData(0, 0, w, h).data;
-        for (let i = 0; i < data.length; i += 4) {
-          if (maskData[i + 3] > 0) {
-            if (maskData[i] > 200) {
-              // Red = Erased -> Make transparent
-              data[i + 3] = 0;
-            } else if (maskData[i + 2] > 200) {
-              // Blue = Restored -> Keep full opacity
-              data[i + 3] = 255;
-            }
-          }
-        }
-      }
-    }
-
-    fgCtx.putImageData(fgImgData, 0, 0);
-
-    // 3. Clear base canvas
-    ctx.clearRect(0, 0, w, h);
-
-    // 4. Render Background Layer
-    if (bgMode === 'white') {
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, w, h);
-    } else if (bgMode === 'blue') {
-      ctx.fillStyle = '#0077cc';
-      ctx.fillRect(0, 0, w, h);
-    } else if (bgMode === 'grey') {
-      ctx.fillStyle = '#334155';
-      ctx.fillRect(0, 0, w, h);
-    } else if (bgMode === 'custom') {
-      ctx.fillStyle = customBgColor;
-      ctx.fillRect(0, 0, w, h);
-    } else if (bgMode === 'blur') {
-      ctx.save();
-      ctx.filter = 'blur(14px)';
-      ctx.drawImage(img, -20, -20, w + 40, h + 40);
-      ctx.restore();
-    }
-
-    // 5. Draw transparent cutout foreground
-    ctx.drawImage(fgCanvas, 0, 0);
-
-    // 6. Generate output Blob for download & copy
-    canvas.toBlob((blob) => {
-      if (blob) {
-        setResultBlob(blob);
-        if (resultUrl) URL.revokeObjectURL(resultUrl);
-        setResultUrl(URL.createObjectURL(blob));
-      }
-    }, 'image/png');
-  }, [currentImage, bgMode, customBgColor, resultUrl]);
-
+  // Re-composite when background mode changes without touching the mask
   useEffect(() => {
     renderCompositedResult();
   }, [bgMode, customBgColor, renderCompositedResult]);
@@ -418,19 +650,6 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
     }
   };
 
-  // Re-run Auto Edge Clean
-  const handleReRunAutoClean = () => {
-    if (!currentImage || !maskCanvasRef.current) return;
-    const mctx = maskCanvasRef.current.getContext('2d');
-    if (mctx) {
-      mctx.clearRect(0, 0, maskCanvasRef.current.width, maskCanvasRef.current.height);
-    }
-    setRemovedObjectCount(0);
-    autoCleanBorderBackground(currentImage.imageElement, maskCanvasRef.current, tolerance);
-    onNotify('Auto Clean Re-run', 'Perimeter background cleaned with updated tolerance.', 'success');
-  };
-
-  // Reset all manual strokes
   const handleResetMask = () => {
     if (!maskCanvasRef.current) return;
     const mctx = maskCanvasRef.current.getContext('2d');
@@ -442,32 +661,26 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
     onNotify('Reset', 'All erased areas restored to original image.', 'info');
   };
 
-  // Download Output PNG
-  const handleDownload = () => {
+  // Export handlers
+  const handleDownload = useCallback(() => {
     if (!resultBlob || !currentImage) return;
     const baseName = currentImage.name.replace(/\.[^/.]+$/, '');
     const outName = `${baseName}-cutout.png`;
     triggerFileDownload(resultBlob, outName);
     onNotify('Download Started', `Saved "${outName}" with transparent background.`, 'success');
-  };
+  }, [resultBlob, currentImage, onNotify]);
 
-  // Copy Image to Clipboard
-  const handleCopy = async () => {
+  const handleCopy = useCallback(async () => {
     if (!resultBlob) return;
     const ok = await copyImageToClipboard(resultBlob);
     if (ok) {
-      onNotify(
-        'Copied to Clipboard',
-        'Cutout image copied. You can now paste (Ctrl+V) it anywhere with transparency.',
-        'success'
-      );
+      onNotify('Copied to Clipboard', 'Cutout image copied. You can now paste (Ctrl+V) it anywhere.', 'success');
     } else {
       onNotify('Copy Failed', 'Your browser could not copy image directly to clipboard.', 'error');
     }
-  };
+  }, [resultBlob, onNotify]);
 
-  // Native Web Share
-  const handleShare = async () => {
+  const handleShare = useCallback(async () => {
     if (!resultBlob || !currentImage) return;
     const baseName = currentImage.name.replace(/\.[^/.]+$/, '');
     const outName = `${baseName}-cutout.png`;
@@ -480,93 +693,221 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
     if (shared) {
       onNotify('Shared', 'Cutout shared successfully.', 'success');
     }
-  };
+  }, [resultBlob, currentImage, onNotify]);
+
+  // Global Keyboard Navigation
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
+      if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+
+      if (e.key === 'n' || e.key === 'N' || e.key === 'Escape') {
+        if (currentImage) {
+          e.preventDefault();
+          resetImage();
+          onNotify('Reset', 'Cleared image.', 'info');
+          return;
+        }
+      }
+
+      if (e.key === 'd' || e.key === 'D') {
+        if (resultBlob) {
+          e.preventDefault();
+          handleDownload();
+          return;
+        }
+      }
+
+      if (e.key === 'Enter') {
+        if (engineMode === 'ai' && !isAiProcessing) {
+          e.preventDefault();
+          runAiInference();
+          return;
+        } else if (resultBlob) {
+          e.preventDefault();
+          handleDownload();
+          return;
+        }
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [currentImage, resultBlob, engineMode, isAiProcessing, handleDownload, resetImage, runAiInference, onNotify]);
 
   return (
-    <div className="w-full max-w-6xl mx-auto space-y-6 animate-in fade-in duration-200">
-      {/* Header Info */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-zinc-200 dark:border-zinc-800">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="p-1 rounded bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200">
-              <Zap className="w-4 h-4 text-emerald-500" />
-            </span>
-            <h1 className="text-xl font-bold tracking-tight text-zinc-950 dark:text-white">
-              Instant Background Remover
-            </h1>
-            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold uppercase flex items-center gap-1">
-              <Zap className="w-2.5 h-2.5" /> Instant (0ms Lag)
-            </span>
-          </div>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-            Fast edge-connected perimeter cleaning, magic wand object eraser, and precision brush controls. 100% in-browser with zero upload delay.
-          </p>
+    <div className="w-full max-w-7xl mx-auto space-y-6 sm:space-y-8 animate-in fade-in duration-200 select-none">
+      {/* Header Section */}
+      <div className="text-center space-y-2.5 max-w-2xl mx-auto">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-medium uppercase tracking-wider text-zinc-600 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-850">
+          <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+          <span>100% Client-Side Engine · Zero Uploads</span>
         </div>
-
-        {currentImage && (
-          <div className="flex items-center gap-2 shrink-0">
-            <Button variant="outline" size="sm" onClick={resetImage} className="text-xs">
-              <RefreshCw className="w-3.5 h-3.5 mr-1" />
-              New Photo
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleCopy}
-              disabled={!resultBlob}
-              className="text-xs font-medium"
-              title="Copy cutout image to clipboard"
-            >
-              <Copy className="w-3.5 h-3.5 mr-1" />
-              Copy
-            </Button>
-            {isShareSupported() && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleShare}
-                disabled={!resultBlob}
-                className="text-xs font-medium"
-                title="Share cutout"
-              >
-                <Share2 className="w-3.5 h-3.5 mr-1" />
-                Share
-              </Button>
-            )}
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={handleDownload}
-              disabled={!resultBlob}
-              className="text-xs font-semibold"
-            >
-              <Download className="w-3.5 h-3.5 mr-1" />
-              Download PNG
-            </Button>
-          </div>
-        )}
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-zinc-950 dark:text-zinc-50">
+          Instant Background Remover
+        </h1>
+        <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 max-w-md mx-auto leading-relaxed">
+          Remove backgrounds with 0ms flood-fill or WebGPU neural AI directly in browser RAM.
+        </p>
       </div>
 
-      {/* Upload Zone */}
-      {!currentImage && (
-        <div className="p-4 sm:p-8 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+      {/* Dual-Model Engine Mode Toggle Switch */}
+      <div className="flex items-center justify-between flex-wrap gap-3 p-2 rounded-xl bg-zinc-100 dark:bg-zinc-850 border border-zinc-200 dark:border-zinc-800">
+        <div className="flex items-center gap-1.5 w-full sm:w-auto">
+          <button
+            type="button"
+            onClick={() => setEngineMode('fast')}
+            className={`flex-1 sm:flex-none py-1.5 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+              engineMode === 'fast'
+                ? 'bg-white dark:bg-zinc-900 text-zinc-950 dark:text-white shadow-xs'
+                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+            }`}
+          >
+            <Zap className="w-3.5 h-3.5 text-amber-500" />
+            <span>Fast Form Mode</span>
+            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-zinc-200 dark:bg-zinc-750 text-zinc-700 dark:text-zinc-300">
+              0ms
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setEngineMode('ai')}
+            className={`flex-1 sm:flex-none py-1.5 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+              engineMode === 'ai'
+                ? 'bg-white dark:bg-zinc-900 text-zinc-950 dark:text-white shadow-xs'
+                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5 text-blue-500" />
+            <span>AI Smart Mode</span>
+            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400">
+              WebGPU
+            </span>
+          </button>
+        </div>
+
+        <div className="flex items-center gap-2 text-xs font-mono text-zinc-500 px-2">
+          <Cpu className="w-3.5 h-3.5 text-emerald-500" />
+          <span>Hardware: {hasWebGPU ? 'WebGPU Accelerated ⚡' : 'WASM CPU Fallback'}</span>
+        </div>
+      </div>
+
+      {/* Upload Zone (Unboxed 2D Flat Dropzone) */}
+      {!currentImage ? (
+        <div className="max-w-3xl mx-auto">
           <Dropzone
             onFilesSelected={(files) => {
               if (files.length > 0) loadFile(files[0]);
             }}
             accept="image/*"
             title="Drop image here for instant background removal"
-            description="Instant client-side processing · No model download waiting · Supports PNG, JPG, WebP"
+            description="100% Client-Side Engine · Instant 0ms BFS or WebGPU Neural AI · Supports PNG, JPG, WebP"
           />
         </div>
-      )}
+      ) : (
+        /* Active Workspace */
+        <div className="space-y-6">
+          {/* Active Workspace Top Header Bar */}
+          <div
+            className={`flex flex-wrap items-center justify-between gap-4 p-3.5 sm:p-4 border rounded-xl ${
+              isDark
+                ? 'bg-zinc-900 border-zinc-800 text-zinc-100'
+                : 'bg-white border-zinc-200 text-zinc-900'
+            }`}
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              <div
+                className={`w-10 h-10 rounded-lg overflow-hidden shrink-0 flex items-center justify-center border ${
+                  isDark ? 'bg-zinc-950 border-zinc-800' : 'bg-zinc-100 border-zinc-200'
+                }`}
+              >
+                <img
+                  src={currentImage.previewUrl}
+                  alt="Source"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div className="min-w-0">
+                <h3 className={`text-xs sm:text-sm font-semibold truncate ${isDark ? 'text-white' : 'text-zinc-900'}`}>
+                  {currentImage.name}
+                </h3>
+                <div className={`flex items-center gap-2 text-[11px] font-mono mt-0.5 ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                  <span>{currentImage.width} × {currentImage.height} px</span>
+                  {engineMode === 'ai' && aiInferenceTimeMs !== null && (
+                    <>
+                      <span>·</span>
+                      <span className="text-blue-500 dark:text-blue-400">Neural: {aiInferenceTimeMs}ms</span>
+                    </>
+                  )}
+                  {engineMode === 'fast' && removedObjectCount > 0 && (
+                    <>
+                      <span>·</span>
+                      <span className="text-emerald-500">{removedObjectCount} erased</span>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
 
-      {/* Active Workspace */}
-      {currentImage && (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={resetImage}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+                  isDark
+                    ? 'bg-zinc-800 hover:bg-zinc-750 text-zinc-200'
+                    : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700'
+                }`}
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                <span>New Photo</span>
+              </button>
+
+              <button
+                disabled={!resultBlob}
+                onClick={handleCopy}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer disabled:opacity-50 ${
+                  isDark
+                    ? 'bg-zinc-800 hover:bg-zinc-750 text-zinc-200'
+                    : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700'
+                }`}
+              >
+                <Copy className="w-3.5 h-3.5" />
+                <span>Copy</span>
+              </button>
+
+              {isShareSupported() && (
+                <button
+                  disabled={!resultBlob}
+                  onClick={handleShare}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer disabled:opacity-50 ${
+                    isDark
+                      ? 'bg-zinc-800 hover:bg-zinc-750 text-zinc-200'
+                      : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700'
+                  }`}
+                >
+                  <Share2 className="w-3.5 h-3.5" />
+                  <span>Share</span>
+                </button>
+              )}
+
+              <button
+                disabled={!resultBlob}
+                onClick={handleDownload}
+                className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
+                  isDark
+                    ? 'bg-zinc-100 hover:bg-zinc-200 text-zinc-900'
+                    : 'bg-zinc-900 hover:bg-zinc-800 text-white'
+                }`}
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Download PNG</span>
+              </button>
+            </div>
+          </div>
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* Left Column: Interactive Canvas View (8 cols) */}
           <div className="lg:col-span-8 space-y-3">
-            <div className="p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 space-y-3">
+            <div className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 space-y-3">
               {/* Canvas Controls Bar */}
               <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-zinc-100 dark:border-zinc-800 text-xs">
                 <div className="flex items-center gap-1.5">
@@ -574,7 +915,15 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
                   <span className="font-mono text-zinc-500 text-[11px]">
                     {currentImage.width}×{currentImage.height}px
                   </span>
-                  {removedObjectCount > 0 && (
+                  {engineMode === 'ai' && aiInferenceTimeMs !== null && (
+                    <>
+                      <span className="text-zinc-300 dark:text-zinc-700">·</span>
+                      <span className="text-[11px] font-mono text-blue-600 dark:text-blue-400">
+                        Neural Run: {aiInferenceTimeMs}ms
+                      </span>
+                    </>
+                  )}
+                  {engineMode === 'fast' && removedObjectCount > 0 && (
                     <>
                       <span className="text-zinc-300 dark:text-zinc-700">·</span>
                       <span className="text-[11px] font-mono text-emerald-600 dark:text-emerald-400">
@@ -585,23 +934,43 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={handleReRunAutoClean}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 hover:bg-zinc-100 text-zinc-700 dark:text-zinc-300 cursor-pointer"
-                    title="Re-run border flood fill with current tolerance"
-                  >
-                    <RotateCcw className="w-3 h-3" />
-                    <span>Auto Re-Clean</span>
-                  </button>
+                  {engineMode === 'ai' ? (
+                    <button
+                      type="button"
+                      disabled={isAiProcessing}
+                      onClick={runAiInference}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 text-zinc-700 dark:text-zinc-300 cursor-pointer transition-colors disabled:opacity-50"
+                      title="Re-run AI Neural Segmentation"
+                    >
+                      <RefreshCw className={`w-3 h-3 ${isAiProcessing ? 'animate-spin' : ''}`} />
+                      <span>Re-run AI</span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!currentImage || !maskCanvasRef.current) return;
+                        const mctx = maskCanvasRef.current.getContext('2d');
+                        if (mctx) mctx.clearRect(0, 0, maskCanvasRef.current.width, maskCanvasRef.current.height);
+                        setRemovedObjectCount(0);
+                        autoCleanBorderBackground(currentImage.imageElement, maskCanvasRef.current, tolerance);
+                        onNotify('Auto Clean Re-run', 'Perimeter background cleaned with updated tolerance.', 'success');
+                      }}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 text-zinc-700 dark:text-zinc-300 cursor-pointer transition-colors"
+                      title="Re-run border flood fill with current tolerance"
+                    >
+                      <RotateCcw className="w-3 h-3" />
+                      <span>Auto Re-Clean</span>
+                    </button>
+                  )}
 
                   <button
                     type="button"
                     onClick={() => setShowOriginal((prev) => !prev)}
-                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs border cursor-pointer transition-colors ${
+                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs cursor-pointer transition-colors ${
                       showOriginal
-                        ? 'bg-zinc-900 text-white border-zinc-900 font-semibold dark:bg-zinc-100 dark:text-zinc-900'
-                        : 'bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-50'
+                        ? 'bg-zinc-900 text-white font-semibold dark:bg-zinc-100 dark:text-zinc-900'
+                        : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200'
                     }`}
                   >
                     <Eye className="w-3 h-3" />
@@ -610,9 +979,28 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
                 </div>
               </div>
 
+              {/* AI Processing Bar */}
+              {engineMode === 'ai' && isAiProcessing && (
+                <div className="space-y-1.5 p-2 rounded-lg bg-blue-500/10 border border-blue-500/20 text-xs text-blue-600 dark:text-blue-400">
+                  <div className="flex items-center justify-between font-mono text-[11px]">
+                    <div className="flex items-center gap-1.5">
+                      <RefreshCw className="w-3 h-3 animate-spin" />
+                      <span>{aiStatus}</span>
+                    </div>
+                    <span>{aiProgress}%</span>
+                  </div>
+                  <div className="w-full bg-blue-200 dark:bg-blue-950 h-1.5 rounded-full overflow-hidden">
+                    <div
+                      className="bg-blue-600 h-full transition-all duration-200"
+                      style={{ width: `${aiProgress}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+
               {/* Viewport with Checkerboard Background */}
               <div
-                className="relative rounded border border-zinc-200 dark:border-zinc-800 overflow-hidden flex items-center justify-center min-h-[350px] max-h-[580px] p-2"
+                className="relative rounded-lg border border-zinc-200 dark:border-zinc-800 overflow-hidden flex items-center justify-center min-h-[350px] max-h-[580px] p-2"
                 style={{
                   backgroundImage:
                     'linear-gradient(45deg, #f0f0f0 25%, transparent 25%), linear-gradient(-45deg, #f0f0f0 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #f0f0f0 75%), linear-gradient(-45deg, transparent 75%, #f0f0f0 75%)',
@@ -655,24 +1043,28 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
                   <Wand2 className="w-3.5 h-3.5 text-amber-500" />
                   <span>
                     {activeToolMode === 'wand'
-                      ? 'Magic Wand Active: Click any background object to erase it completely'
+                      ? 'Magic Wand Active: Click any background spot to erase it'
                       : activeToolMode === 'erase'
-                      ? 'Erase Brush Active: Click & drag to erase any stray spots'
+                      ? 'Erase Brush Active: Click & drag to erase stray spots'
                       : 'Restore Brush Active: Click & drag to restore subjects'}
                   </span>
                 </div>
-                <span>Fast &amp; Instant (Zero Latency)</span>
+                <span>
+                  {engineMode === 'ai'
+                    ? `AI RMBG-1.4 Neural Engine (${hasWebGPU ? 'WebGPU' : 'WASM'})`
+                    : 'Fast BFS Flood-Fill (0ms Latency)'}
+                </span>
               </div>
             </div>
           </div>
 
           {/* Right Column: Controls & Settings (4 cols) */}
           <div className="lg:col-span-4 space-y-4">
-            {/* Interactive Eraser Tools */}
-            <div className="p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 space-y-3">
+            {/* Interactive Eraser / Touch-up Tools */}
+            <div className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 space-y-3">
               <div className="flex items-center justify-between pb-2 border-b border-zinc-100 dark:border-zinc-800">
                 <span className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-white font-mono">
-                  Select Tool
+                  Manual Refinement Tools
                 </span>
                 <button
                   type="button"
@@ -687,10 +1079,10 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
                 <button
                   type="button"
                   onClick={() => setActiveToolMode('wand')}
-                  className={`flex flex-col items-center gap-1 p-2 rounded-md border text-center transition-colors cursor-pointer ${
+                  className={`flex flex-col items-center gap-1 p-2 rounded-lg text-center transition-colors cursor-pointer ${
                     activeToolMode === 'wand'
-                      ? 'border-amber-500 bg-amber-500/10 text-amber-600 font-semibold dark:border-amber-400 dark:text-amber-400'
-                      : 'border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50'
+                      ? 'bg-amber-500/10 text-amber-600 font-semibold dark:text-amber-400'
+                      : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-750'
                   }`}
                   title="Click on any background object to erase it"
                 >
@@ -701,10 +1093,10 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
                 <button
                   type="button"
                   onClick={() => setActiveToolMode('erase')}
-                  className={`flex flex-col items-center gap-1 p-2 rounded-md border text-center transition-colors cursor-pointer ${
+                  className={`flex flex-col items-center gap-1 p-2 rounded-lg text-center transition-colors cursor-pointer ${
                     activeToolMode === 'erase'
-                      ? 'border-rose-500 bg-rose-500/10 text-rose-600 font-semibold dark:border-rose-400 dark:text-rose-400'
-                      : 'border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50'
+                      ? 'bg-rose-500/10 text-rose-600 font-semibold dark:text-rose-400'
+                      : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-750'
                   }`}
                   title="Swipe freehand to erase objects"
                 >
@@ -715,10 +1107,10 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
                 <button
                   type="button"
                   onClick={() => setActiveToolMode('restore')}
-                  className={`flex flex-col items-center gap-1 p-2 rounded-md border text-center transition-colors cursor-pointer ${
+                  className={`flex flex-col items-center gap-1 p-2 rounded-lg text-center transition-colors cursor-pointer ${
                     activeToolMode === 'restore'
-                      ? 'border-blue-500 bg-blue-500/10 text-blue-600 font-semibold dark:border-blue-400 dark:text-blue-400'
-                      : 'border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50'
+                      ? 'bg-blue-500/10 text-blue-600 font-semibold dark:text-blue-400'
+                      : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-750'
                   }`}
                   title="Swipe freehand to restore masked details"
                 >
@@ -742,18 +1134,18 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
               )}
             </div>
 
-            {/* Tolerance & Sensitivity Controls */}
-            <div className="p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 space-y-4">
+            {/* Tolerance & Sensitivity Controls (Fast Mode & Wand) */}
+            <div className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 space-y-4">
               <div className="flex items-center justify-between pb-2 border-b border-zinc-100 dark:border-zinc-800">
                 <span className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-white font-mono">
-                  Magic Wand Sensitivity
+                  {engineMode === 'fast' ? 'Flood-Fill Tolerance' : 'Magic Wand Tolerance'}
                 </span>
                 <span className="text-[11px] font-mono text-zinc-500">{tolerance}%</span>
               </div>
 
               <div className="space-y-1.5">
                 <Slider
-                  label="Object Removal Tolerance"
+                  label="Color Distance Threshold"
                   min={5}
                   max={75}
                   step={1}
@@ -762,13 +1154,13 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
                   unit="%"
                 />
                 <p className="text-[10px] text-zinc-400">
-                  Higher tolerance erases larger color variations and shadows.
+                  Higher tolerance removes larger color variations and soft edge shadows.
                 </p>
               </div>
             </div>
 
             {/* Background Output Mode */}
-            <div className="p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 space-y-3">
+            <div className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 space-y-3">
               <span className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-white font-mono block pb-2 border-b border-zinc-100 dark:border-zinc-800">
                 Replace Background
               </span>
@@ -777,10 +1169,10 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
                 <button
                   type="button"
                   onClick={() => setBgMode('transparent')}
-                  className={`p-2 rounded-md border text-xs font-medium text-center transition-colors cursor-pointer ${
+                  className={`p-2 rounded-lg text-xs font-medium text-center transition-colors cursor-pointer ${
                     bgMode === 'transparent'
-                      ? 'border-zinc-950 bg-zinc-900 text-white font-semibold dark:border-white dark:bg-white dark:text-zinc-950'
-                      : 'border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50'
+                      ? 'bg-zinc-900 text-white font-semibold dark:bg-zinc-100 dark:text-zinc-950'
+                      : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-750'
                   }`}
                 >
                   Transparent PNG
@@ -789,10 +1181,10 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
                 <button
                   type="button"
                   onClick={() => setBgMode('white')}
-                  className={`p-2 rounded-md border text-xs font-medium text-center transition-colors cursor-pointer ${
+                  className={`p-2 rounded-lg text-xs font-medium text-center transition-colors cursor-pointer ${
                     bgMode === 'white'
-                      ? 'border-zinc-950 bg-zinc-900 text-white font-semibold dark:border-white dark:bg-white dark:text-zinc-950'
-                      : 'border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50'
+                      ? 'bg-zinc-900 text-white font-semibold dark:bg-zinc-100 dark:text-zinc-950'
+                      : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-750'
                   }`}
                 >
                   Solid White
@@ -801,10 +1193,10 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
                 <button
                   type="button"
                   onClick={() => setBgMode('blue')}
-                  className={`p-2 rounded-md border text-xs font-medium text-center transition-colors cursor-pointer ${
+                  className={`p-2 rounded-lg text-xs font-medium text-center transition-colors cursor-pointer ${
                     bgMode === 'blue'
-                      ? 'border-zinc-950 bg-zinc-900 text-white font-semibold dark:border-white dark:bg-white dark:text-zinc-950'
-                      : 'border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50'
+                      ? 'bg-zinc-900 text-white font-semibold dark:bg-zinc-100 dark:text-zinc-950'
+                      : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-750'
                   }`}
                 >
                   Passport Blue
@@ -813,10 +1205,10 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
                 <button
                   type="button"
                   onClick={() => setBgMode('blur')}
-                  className={`p-2 rounded-md border text-xs font-medium text-center transition-colors cursor-pointer ${
+                  className={`p-2 rounded-lg text-xs font-medium text-center transition-colors cursor-pointer ${
                     bgMode === 'blur'
-                      ? 'border-zinc-950 bg-zinc-900 text-white font-semibold dark:border-white dark:bg-white dark:text-zinc-950'
-                      : 'border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50'
+                      ? 'bg-zinc-900 text-white font-semibold dark:bg-zinc-100 dark:text-zinc-950'
+                      : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-750'
                   }`}
                 >
                   Blur Bokeh BG
@@ -825,16 +1217,16 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
                 <button
                   type="button"
                   onClick={() => setBgMode('grey')}
-                  className={`p-2 rounded-md border text-xs font-medium text-center transition-colors cursor-pointer ${
+                  className={`p-2 rounded-lg text-xs font-medium text-center transition-colors cursor-pointer ${
                     bgMode === 'grey'
-                      ? 'border-zinc-950 bg-zinc-900 text-white font-semibold dark:border-white dark:bg-white dark:text-zinc-950'
-                      : 'border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50'
+                      ? 'bg-zinc-900 text-white font-semibold dark:bg-zinc-100 dark:text-zinc-950'
+                      : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-750'
                   }`}
                 >
                   Studio Grey
                 </button>
 
-                <div className="flex items-center gap-1.5 p-1 rounded-md border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800">
+                <div className="flex items-center gap-1.5 p-1 rounded-lg bg-zinc-100 dark:bg-zinc-800">
                   <input
                     type="color"
                     value={customBgColor}
@@ -887,138 +1279,11 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
             </div>
           </div>
         </div>
-      )}
-
-      {/* ========================================================= */}
-      {/* HOW TO REMOVE BACKGROUND GUIDE SECTION (Flat 2D Linear) */}
-      {/* ========================================================= */}
-      <div className="pt-8 border-t border-zinc-200 dark:border-zinc-800 space-y-8">
-        {/* Section Header */}
-        <div className="text-center space-y-1.5 max-w-xl mx-auto">
-          <h2 className="text-lg sm:text-xl font-bold tracking-tight text-zinc-950 dark:text-white flex items-center justify-center gap-2">
-            <Zap className="w-4 h-4 text-emerald-500" />
-            <span>How to Remove Background in 3 Easy Steps</span>
-          </h2>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400">
-            Fast, client-side, zero cloud upload procedure to erase backgrounds and unwanted objects.
-          </p>
-        </div>
-
-        {/* 3 Steps Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 space-y-2">
-            <div className="flex items-center gap-2">
-              <span className="w-5 h-5 rounded-full bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 text-xs font-mono font-bold flex items-center justify-center">
-                1
-              </span>
-              <h3 className="text-xs font-bold text-zinc-900 dark:text-zinc-100 uppercase tracking-wider">
-                Upload Any Photo
-              </h3>
-            </div>
-            <p className="text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
-              Drag &amp; drop or select any JPG, PNG, or WebP photo. Image data is decoded strictly in your local device RAM with 100% privacy and zero server transfer.
-            </p>
-          </div>
-
-          <div className="p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 space-y-2">
-            <div className="flex items-center gap-2">
-              <span className="w-5 h-5 rounded-full bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 text-xs font-mono font-bold flex items-center justify-center">
-                2
-              </span>
-              <h3 className="text-xs font-bold text-zinc-900 dark:text-zinc-100 uppercase tracking-wider">
-                Wand Erase Objects
-              </h3>
-            </div>
-            <p className="text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
-              Border background is automatically cleared. Click any remaining object (chair, shadow, frame, stranger) with the <strong>Magic Wand</strong> to erase it in &lt;10ms, or use the <strong>Erase Brush</strong> for fine touch-ups.
-            </p>
-          </div>
-
-          <div className="p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 space-y-2">
-            <div className="flex items-center gap-2">
-              <span className="w-5 h-5 rounded-full bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 text-xs font-mono font-bold flex items-center justify-center">
-                3
-              </span>
-              <h3 className="text-xs font-bold text-zinc-900 dark:text-zinc-100 uppercase tracking-wider">
-                Pick Background &amp; Save
-              </h3>
-            </div>
-            <p className="text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
-              Keep transparent alpha PNG, replace with Solid White, Passport Blue, or Blur Bokeh. Click <strong>Copy Image</strong> for direct Ctrl+V pasting anywhere or click <strong>Download PNG</strong>.
-            </p>
-          </div>
-        </div>
-
-        {/* Pro Tips Box */}
-        <div className="p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 space-y-2">
-          <div className="flex items-center gap-2 text-xs font-bold text-zinc-900 dark:text-white uppercase tracking-wider">
-            <Lightbulb className="w-4 h-4 text-amber-500" />
-            <span>Pro Tips for Multiple Background Objects</span>
-          </div>
-          <ul className="text-xs text-zinc-600 dark:text-zinc-400 space-y-1 list-disc list-inside">
-            <li><strong>Multiple Objects in Background:</strong> Click on each unwanted object one by one with the Magic Wand. Each clicked object is instantly wiped.</li>
-            <li><strong>Accidentally erased a subject detail?</strong> Switch to the <strong>Restore Brush</strong> and swipe over the area to paint back the original pixels.</li>
-            <li><strong>Adjusting Sensitivity:</strong> If an object has varied lighting, increase the <strong>Tolerance slider</strong> to 35-45% before clicking.</li>
-          </ul>
-        </div>
-
-        {/* Frequently Asked Questions */}
-        <div className="p-4 sm:p-5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 space-y-3">
-          <div className="flex items-center gap-2 pb-2 border-b border-zinc-100 dark:border-zinc-800">
-            <HelpCircle className="w-4 h-4 text-zinc-500" />
-            <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-white font-mono">
-              Background Remover FAQs
-            </h3>
-          </div>
-
-          <div className="space-y-2">
-            {[
-              {
-                q: 'How do I erase multiple unwanted objects from the background?',
-                a: 'Keep the Magic Wand tool active and simply click on each unwanted object in the background (such as a chair, wall hanging, shadow, or another person). Each clicked region will be identified and erased in under 10 milliseconds.',
-              },
-              {
-                q: 'Are my personal and government photos uploaded to any server?',
-                a: 'Never. All pixel analysis and canvas editing happen 100% locally in your web browser memory. Zero files are sent to or stored on any cloud server.',
-              },
-              {
-                q: 'Can I use this to make Passport or Visa photos with a white or blue background?',
-                a: 'Yes! After your background is removed, simply select "Solid White" or "Passport Blue" in the "Replace Background" panel to instantly generate official passport-compliant photos.',
-              },
-              {
-                q: 'Why is this tool faster than cloud AI background removers?',
-                a: 'Cloud AI services upload large images to a queue and take 10-20 seconds. FileWala runs directly in your local browser canvas using instant flood-fill and boundary math, delivering immediate 0ms response without waiting.',
-              },
-            ].map((faq, idx) => {
-              const isOpen = openFaqIndex === idx;
-              return (
-                <div
-                  key={idx}
-                  className="rounded-md border border-zinc-200 dark:border-zinc-800 overflow-hidden"
-                >
-                  <button
-                    type="button"
-                    onClick={() => setOpenFaqIndex(isOpen ? null : idx)}
-                    className="w-full p-3 text-left flex items-center justify-between gap-3 text-xs font-medium text-zinc-900 dark:text-zinc-100 bg-zinc-50/50 dark:bg-zinc-900/50 hover:bg-zinc-100/50 dark:hover:bg-zinc-800/50 transition-colors cursor-pointer"
-                  >
-                    <span>{faq.q}</span>
-                    {isOpen ? (
-                      <ChevronUp className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
-                    ) : (
-                      <ChevronDown className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
-                    )}
-                  </button>
-                  {isOpen && (
-                    <div className="p-3 text-xs leading-relaxed text-zinc-600 dark:text-zinc-400 bg-white dark:bg-zinc-900 border-t border-zinc-200 dark:border-zinc-800">
-                      {faq.a}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
       </div>
+    )}
+
+      {/* Standardized Schema-Matched Guide & Knowledge Base */}
+      <ImageToolGuideSection toolId="bg-remover" />
     </div>
   );
 };

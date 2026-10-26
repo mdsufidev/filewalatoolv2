@@ -173,30 +173,26 @@ export const Dropzone: React.FC<DropzoneProps> = ({
               : displayTitle}
           </h3>
 
-          <p className={`text-xs mt-1 ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
-            {displayDesc}
-          </p>
+          {displayDesc && (
+            <p className={`text-xs mt-1 max-w-sm ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
+              {displayDesc}
+            </p>
+          )}
 
           <div
-            className={`flex flex-wrap items-center justify-center gap-2 mt-3.5 text-[11px] font-mono ${
+            className={`flex items-center justify-center gap-2 mt-3 text-[11px] font-mono ${
               isDark ? 'text-zinc-500' : 'text-zinc-400'
             }`}
           >
             <span>
               {language === 'hi'
-                ? 'JPG, PNG, WebP, PDF समर्थित'
-                : 'Supports JPG, PNG, WebP, AVIF, GIF, BMP'}
+                ? 'पेस्ट करने के लिए Ctrl+V दबाएं'
+                : 'Press Ctrl+V to paste'}
             </span>
             <span>·</span>
-            <span>
+            <span className="text-emerald-600 dark:text-emerald-400 font-medium">
               {language === 'hi'
-                ? 'पेस्ट (Ctrl+V) भी कर सकते हैं'
-                : 'Paste (Ctrl+V) anywhere'}
-            </span>
-            <span>·</span>
-            <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
-              {language === 'hi'
-                ? '🔒 100% प्राइवेट (डिवाइस में प्रोसेस)'
+                ? '🔒 100% प्राइवेट (डिवाइस में)'
                 : '🔒 100% Private (In-Browser)'}
             </span>
           </div>

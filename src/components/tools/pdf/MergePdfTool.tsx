@@ -27,7 +27,9 @@ import {
 } from 'lucide-react';
 import { formatBytes, triggerFileDownload } from '../../../utils/memory';
 import { useTheme } from '../../../core/themeContext';
+import { Dropzone } from '../../ui/Dropzone';
 import { PdfPreviewModal } from './PdfPreviewModal';
+import { PdfToolGuideSection } from './PdfToolGuideSection';
 
 export interface MergePdfFileItem {
   id: string;
@@ -536,14 +538,49 @@ export const MergePdfTool: React.FC<MergePdfToolProps> = ({ onNotify, initialFil
     setOutputFilename('merged-document.pdf');
   };
 
+  // Keyboard navigation
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
+      if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+
+      if (e.key === 'n' || e.key === 'N' || e.key === 'Escape') {
+        if (files.length > 0 || mergedResult) {
+          e.preventDefault();
+          handleResetForNewSet();
+          onNotify?.('Reset', 'Cleared PDF queue.', 'info');
+          return;
+        }
+      }
+
+      if (e.key === 'd' || e.key === 'D') {
+        if (mergedResult) {
+          e.preventDefault();
+          handleDownload();
+          return;
+        }
+      }
+
+      if (e.key === 'Enter') {
+        if (files.length >= 2 && !mergedResult) {
+          e.preventDefault();
+          handleExecuteMerge();
+          return;
+        }
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [files.length, mergedResult, handleDownload, handleExecuteMerge, onNotify]);
+
   // Calculate queue statistics
   const totalQueueSize = files.reduce((acc, f) => acc + f.size, 0);
   const totalKnownPages = files.reduce((acc, f) => acc + (f.pageCount || 0), 0);
   const allPagesResolved = files.every((f) => f.pageCount !== null);
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-300">
-      {/* Tool Header (Clean, professional, zero-slop Stripe/Vercel aesthetic) */}
+    <div className="w-full max-w-7xl mx-auto space-y-8 animate-in fade-in duration-300">
+      {/* Tool Header */}
       <div className="text-center space-y-2.5 max-w-2xl mx-auto">
         <div
           className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold border ${
@@ -569,7 +606,6 @@ export const MergePdfTool: React.FC<MergePdfToolProps> = ({ onNotify, initialFil
           }`}
         >
           Combine multiple PDF documents into a single organized file in seconds.
-          Reorder documents with simple controls and merge entirely in your browser with zero data leaving your device.
         </p>
       </div>
 
@@ -700,71 +736,47 @@ export const MergePdfTool: React.FC<MergePdfToolProps> = ({ onNotify, initialFil
       ) : (
         /* WORKSPACE: DROPZONE & QUEUE MANAGEMENT */
         <div className="space-y-6">
-          {/* Dropzone (shown prominently when empty, or collapsible) */}
-          <div
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-            onClick={() => fileInputRef.current?.click()}
-            className={`border border-dashed rounded-lg p-8 sm:p-12 text-center cursor-pointer transition-colors duration-150 select-none ${
-              isDragOver
-                ? 'border-zinc-900 dark:border-zinc-100 bg-zinc-100/50 dark:bg-zinc-800/50'
-                : 'border-zinc-300 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-zinc-400 dark:hover:border-zinc-700 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30'
-            }`}
-          >
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="application/pdf,.pdf"
-              multiple
-              className="hidden"
-              onChange={(e) => {
-                if (e.target.files) handleAddFiles(e.target.files);
-              }}
-            />
+          {files.length === 0 ? (
+            <div className="max-w-3xl mx-auto">
+              <Dropzone
+                onFilesSelected={(files: File[]) => handleAddFiles(files)}
+                multiple
+                accept="application/pdf,.pdf"
+                title="Select PDF Files to Merge"
+                description="Drag & drop or click to browse. Select 2 or more PDF documents."
+              />
+            </div>
+          ) : (
+            <div
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              onClick={() => fileInputRef.current?.click()}
+              className={`border border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors duration-150 select-none ${
+                isDragOver
+                  ? 'border-zinc-900 dark:border-zinc-100 bg-zinc-100/50 dark:bg-zinc-800/50'
+                  : 'border-zinc-300 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-zinc-400 dark:hover:border-zinc-700 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30'
+              }`}
+            >
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="application/pdf,.pdf"
+                multiple
+                className="hidden"
+                onChange={(e) => {
+                  if (e.target.files) handleAddFiles(e.target.files);
+                }}
+              />
 
-            <div className="flex flex-col items-center justify-center space-y-3">
-              <div className="w-12 h-12 rounded-md border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/60 text-zinc-700 dark:text-zinc-300 flex items-center justify-center">
-                <UploadCloud className="w-6 h-6" />
-              </div>
-
-              <div className="space-y-1">
-                <h3 className={`text-sm sm:text-base font-semibold ${isDark ? 'text-zinc-100' : 'text-zinc-900'}`}>
-                  {files.length === 0
-                    ? 'Select PDF files or drag & drop here'
-                    : 'Drop more PDF documents to add to queue'}
-                </h3>
-                <p className="text-xs text-zinc-500">
-                  Select multiple files simultaneously. 100% processed client-side.
-                </p>
-              </div>
-
-              <div className="flex items-center gap-2 pt-1">
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    fileInputRef.current?.click();
-                  }}
-                  className="px-3.5 py-1.5 rounded-md text-xs font-medium border border-zinc-900 dark:border-zinc-100 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors cursor-pointer"
-                >
-                  Browse Computer
-                </button>
-
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleLoadSamplePdfs();
-                  }}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-                >
-                  <Sparkles className="w-3.5 h-3.5 text-zinc-500" />
-                  <span>Try Sample PDFs</span>
-                </button>
+              <div className="flex items-center justify-center gap-3">
+                <UploadCloud className="w-5 h-5 text-zinc-500" />
+                <span className={`text-xs sm:text-sm font-medium ${isDark ? 'text-zinc-200' : 'text-zinc-800'}`}>
+                  Drop more PDF documents here or click to browse
+                </span>
               </div>
             </div>
-          </div>
+          )}
 
           {/* DOCUMENT QUEUE & REORDERING LIST */}
           {files.length > 0 && (
@@ -1013,174 +1025,8 @@ export const MergePdfTool: React.FC<MergePdfToolProps> = ({ onNotify, initialFil
         </div>
       )}
 
-      {/* 4-Step Merge Workflow Guide */}
-      <div
-        className={`p-5 rounded-lg border space-y-4 ${
-          isDark
-            ? 'bg-zinc-900 border-zinc-800'
-            : 'bg-white border-zinc-200'
-        }`}
-      >
-        <div className="flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-zinc-500" />
-          <h3
-            className={`text-xs font-bold uppercase tracking-wider ${
-              isDark ? 'text-zinc-200' : 'text-zinc-800'
-            }`}
-          >
-            How PDF Merging Works in FileWala
-          </h3>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          <div className="p-3 rounded-md border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/40">
-            <div className="flex items-center gap-2 mb-1.5">
-              <span className="w-5 h-5 rounded-full bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-[10px] font-bold flex items-center justify-center shrink-0">
-                1
-              </span>
-              <span className={`text-xs font-semibold ${isDark ? 'text-zinc-100' : 'text-zinc-900'}`}>
-                Add PDF Files
-              </span>
-            </div>
-            <p className="text-[11px] leading-relaxed text-zinc-500">
-              Drag and drop multiple `.pdf` documents simultaneously or click Browse to select.
-            </p>
-          </div>
-
-          <div className="p-3 rounded-md border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/40">
-            <div className="flex items-center gap-2 mb-1.5">
-              <span className="w-5 h-5 rounded-full bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-[10px] font-bold flex items-center justify-center shrink-0">
-                2
-              </span>
-              <span className={`text-xs font-semibold ${isDark ? 'text-zinc-100' : 'text-zinc-900'}`}>
-                Reorder Queue
-              </span>
-            </div>
-            <p className="text-[11px] leading-relaxed text-zinc-500">
-              Use the Up (↑) and Down (↓) buttons to position documents in your desired page sequence.
-            </p>
-          </div>
-
-          <div className="p-3 rounded-md border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/40">
-            <div className="flex items-center gap-2 mb-1.5">
-              <span className="w-5 h-5 rounded-full bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-[10px] font-bold flex items-center justify-center shrink-0">
-                3
-              </span>
-              <span className={`text-xs font-semibold ${isDark ? 'text-zinc-100' : 'text-zinc-900'}`}>
-                Set Filename
-              </span>
-            </div>
-            <p className="text-[11px] leading-relaxed text-zinc-500">
-              Customize your combined PDF name or keep the default `merged-document.pdf`.
-            </p>
-          </div>
-
-          <div className="p-3 rounded-md border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/40">
-            <div className="flex items-center gap-2 mb-1.5">
-              <span className="w-5 h-5 rounded-full bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-[10px] font-bold flex items-center justify-center shrink-0">
-                4
-              </span>
-              <span className={`text-xs font-semibold ${isDark ? 'text-zinc-100' : 'text-zinc-900'}`}>
-                1-Click Download
-              </span>
-            </div>
-            <p className="text-[11px] leading-relaxed text-zinc-500">
-              Click Merge to generate and download the final combined PDF without any server delay.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Feature & Privacy Highlights */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <div className="p-3.5 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 space-y-1.5">
-          <div className={`font-semibold text-xs flex items-center gap-1.5 ${isDark ? 'text-zinc-200' : 'text-zinc-800'}`}>
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-            <span>100% Confidential & Secure</span>
-          </div>
-          <p className="text-xs leading-relaxed text-zinc-500">
-            Documents remain in your local RAM. They are never sent across the internet, making it compliant for bank statements, tax forms, and IDs.
-          </p>
-        </div>
-
-        <div className="p-3.5 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 space-y-1.5">
-          <div className={`font-semibold text-xs flex items-center gap-1.5 ${isDark ? 'text-zinc-200' : 'text-zinc-800'}`}>
-            <FileCheck className="w-3.5 h-3.5 text-zinc-500" />
-            <span>Zero Quality Loss</span>
-          </div>
-          <p className="text-xs leading-relaxed text-zinc-500">
-            Embedded vector fonts, high-resolution imagery, and page dimensions are preserved losslessly using `pdf-lib` stream copying.
-          </p>
-        </div>
-
-        <div className="p-3.5 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 space-y-1.5">
-          <div className={`font-semibold text-xs flex items-center gap-1.5 ${isDark ? 'text-zinc-200' : 'text-zinc-800'}`}>
-            <Sparkles className="w-3.5 h-3.5 text-zinc-500" />
-            <span>No File Size or Count Caps</span>
-          </div>
-          <p className="text-xs leading-relaxed text-zinc-500">
-            Merge 2 documents or 50 documents without paywalls, sign-up requirements, or watermarks.
-          </p>
-        </div>
-      </div>
-
-      {/* Frequently Asked Questions (FAQ) */}
-      <div
-        className={`p-5 rounded-lg border space-y-4 ${
-          isDark
-            ? 'bg-zinc-900 border-zinc-800'
-            : 'bg-white border-zinc-200'
-        }`}
-      >
-        <div className="flex items-center gap-2 mb-2">
-          <HelpCircle className="w-4 h-4 text-zinc-500" />
-          <h3
-            className={`text-sm font-semibold tracking-tight ${
-              isDark ? 'text-zinc-100' : 'text-zinc-900'
-            }`}
-          >
-            Merge PDF FAQs
-          </h3>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-          <div className="p-3 rounded-md border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/40 space-y-1">
-            <h4 className={`font-semibold ${isDark ? 'text-zinc-100' : 'text-zinc-900'}`}>
-              Are my documents uploaded to any remote server?
-            </h4>
-            <p className="leading-relaxed text-zinc-500">
-              No. FileWala runs 100% locally on your computer inside the browser using WebAssembly and client-side JavaScript. No document data is ever transmitted to the cloud.
-            </p>
-          </div>
-
-          <div className="p-3 rounded-md border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/40 space-y-1">
-            <h4 className={`font-semibold ${isDark ? 'text-zinc-100' : 'text-zinc-900'}`}>
-              How are pages combined in the final PDF?
-            </h4>
-            <p className="leading-relaxed text-zinc-500">
-              Pages are merged strictly according to the order listed in the document queue (#1 first, then #2, then #3, etc.). Use the Up (↑) and Down (↓) buttons to adjust the sequence before clicking Merge.
-            </p>
-          </div>
-
-          <div className="p-3 rounded-md border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/40 space-y-1">
-            <h4 className={`font-semibold ${isDark ? 'text-zinc-100' : 'text-zinc-900'}`}>
-              Does merging reduce image or scan resolution?
-            </h4>
-            <p className="leading-relaxed text-zinc-500">
-              No. `pdf-lib` performs direct page stream copies without rasterizing or downscaling images, preserving exact vector paths, fonts, and print resolutions.
-            </p>
-          </div>
-
-          <div className="p-3 rounded-md border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/40 space-y-1">
-            <h4 className={`font-semibold ${isDark ? 'text-zinc-100' : 'text-zinc-900'}`}>
-              Can I merge password-protected PDFs?
-            </h4>
-            <p className="leading-relaxed text-zinc-500">
-              Encrypted PDFs must be unlocked before merging. If a PDF has strict document password encryption, decrypt or print it to PDF first to remove the lock.
-            </p>
-          </div>
-        </div>
-      </div>
+      {/* Comprehensive Educational & Technical Guide Section */}
+      <PdfToolGuideSection toolId="merge-pdf" />
 
       {/* Built-in PDF Document Preview Modal */}
       <PdfPreviewModal

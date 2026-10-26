@@ -308,16 +308,48 @@ export const ImageToPdfTool: React.FC<ImageToPdfToolProps> = ({ onNotify }) => {
     onNotify('Download Started', `Saved ${filename}`, 'success');
   };
 
+  // Keyboard navigation
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
+      if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+
+      if (images.length === 0) return;
+
+      if (e.key === 'n' || e.key === 'N' || e.key === 'Escape') {
+        e.preventDefault();
+        clearAllImages();
+        return;
+      }
+
+      if (e.key === 'd' || e.key === 'D') {
+        if (generatedPdfBlob) {
+          e.preventDefault();
+          handleDownloadPdf();
+          return;
+        }
+      }
+
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        handleCompileToPdf();
+        return;
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [images.length, generatedPdfBlob, handleCompileToPdf, handleDownloadPdf, clearAllImages]);
+
   return (
-    <div className="space-y-8 animate-in fade-in duration-200">
+    <div className="w-full max-w-7xl mx-auto space-y-8 animate-in fade-in duration-200">
       {/* Header Info */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className={`text-xl font-bold tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
+          <h1 className={`text-xl font-bold tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
             Image to PDF Converter
-          </h2>
+          </h1>
           <p className={`text-xs mt-1 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-            Turn multiple JPG, PNG, and WebP photos into a clean, printable PDF document client-side.
+            Convert JPG, PNG, and WebP photos into a clean, printable PDF document.
           </p>
         </div>
         {images.length > 0 && (
@@ -335,25 +367,24 @@ export const ImageToPdfTool: React.FC<ImageToPdfToolProps> = ({ onNotify }) => {
               isLoading={isCompiling}
               leftIcon={<FilePlus className="w-4 h-4" />}
             >
-              Compile {images.length} Image{images.length > 1 ? 's' : ''} to PDF
+              <span>Compile {images.length} Image{images.length > 1 ? 's' : ''} to PDF</span>
+              <kbd className="ml-1.5 px-1.5 py-0.2 rounded text-[10px] font-mono bg-white/20 text-white">
+                ↵
+              </kbd>
             </Button>
           </div>
         )}
       </div>
 
-      {/* Main Dropzone / Image Workspace */}
+      {/* Direct Clean Dropzone (Centered, Max-w-3xl, Zero Outer Wrapper Box!) */}
       {images.length === 0 ? (
-        <div
-          className={`rounded-lg border p-6 md:p-8 ${
-            isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'
-          }`}
-        >
+        <div className="max-w-3xl mx-auto">
           <Dropzone
             onFilesSelected={handleFilesAdded}
             multiple
             accept="image/png,image/jpeg,image/webp,.jpg,.jpeg,.png,.webp"
-            title="Drop JPG, PNG, or WebP photos here"
-            description="Add multiple photos at once. You can reorder, rotate, and adjust layout before compiling."
+            title="Upload Images to Convert to PDF"
+            description="Drag & drop or click to browse JPG, PNG, or WebP photos."
           />
         </div>
       ) : (
@@ -606,68 +637,8 @@ export const ImageToPdfTool: React.FC<ImageToPdfToolProps> = ({ onNotify }) => {
         </div>
       )}
 
-      {/* Educational & How It Works Guidance Section */}
-      <PdfToolGuideSection
-        toolName="Image to PDF Converter"
-        tagline="Compile camera photos, scans, and graphic files into a single, standardized PDF document."
-        steps={[
-          {
-            step: 1,
-            title: 'Drop & Add Images',
-            description: 'Select or drag multiple JPG, PNG, or WebP files. You can upload as many images as you need.',
-            icon: <UploadCloud className="w-4 h-4 text-blue-400" />,
-          },
-          {
-            step: 2,
-            title: 'Reorder & Adjust Layout',
-            description: 'Arrange page order using left/right triggers, rotate sideways photos, and choose A4 or Letter sizes.',
-            icon: <Sliders className="w-4 h-4 text-emerald-400" />,
-          },
-          {
-            step: 3,
-            title: 'Compile & Download',
-            description: 'Click Compile to build a pristine vector-compatible PDF client-side with zero quality loss.',
-            icon: <Download className="w-4 h-4 text-purple-400" />,
-          },
-        ]}
-        tips={[
-          {
-            title: 'Fit Image Option',
-            description: 'Choose "Fit Image" under Page Size if you want each page to adapt dynamically to the exact aspect ratio of each photo.',
-          },
-          {
-            title: 'Lossless Compression',
-            description: 'Original PNG clarity and JPEG pixel dimensions are preserved intact inside the compiled document structure.',
-          },
-          {
-            title: 'Keyboard Reordering',
-            description: 'Use the left and right directional buttons on each card to ensure your pages follow your exact desired page order.',
-          },
-        ]}
-        faqs={[
-          {
-            question: 'Are my uploaded images sent to any external server?',
-            answer: 'No. Every photo is decoded, resized, and packaged into the PDF binary strictly inside your browser using pdf-lib and WebAssembly. No data travels over the network.',
-          },
-          {
-            question: 'What is the maximum number of images I can compile?',
-            answer: 'Because processing is client-side, it depends on your device RAM. In general, 50 to 100 high-resolution photos can be compiled smoothly in modern browsers without memory lag.',
-          },
-          {
-            question: 'Can I mix different image dimensions and aspect ratios?',
-            answer: 'Yes! The compiler centers each image inside standard A4/Letter margins or scales each page directly to the photo using the "Fit Image" mode.',
-          },
-          {
-            question: 'Does this tool support WebP images?',
-            answer: 'Yes. WebP images are parsed via HTML5 Canvas and embedded as high-fidelity PNG representations into the PDF output.',
-          },
-        ]}
-        privacyNotes={[
-          'Zero cloud uploads or server storage',
-          'Instant memory deallocation via URL revocation',
-          'Compatible with offline execution',
-        ]}
-      />
+      {/* Comprehensive Educational & Technical Guide Section */}
+      <PdfToolGuideSection toolId="image-to-pdf" />
 
       {/* Built-in PDF Preview Modal */}
       {previewModalOpen && generatedPdfBlob && (

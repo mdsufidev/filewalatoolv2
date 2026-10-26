@@ -27,7 +27,14 @@ import type { PdfToolId } from './components/tools/PdfTools';
 import type { ConverterToolId } from './components/tools/FormatConverterSuite';
 import type { GovDocumentToolId } from './components/tools/DocumentTools';
 import { ToolCategory, ALL_TOOLS, CATEGORIES_CONFIG } from './core/toolsData';
-import { getToolRouteUrl, getCategoryRouteUrl, getPageRouteUrl } from './core/urlRoutes';
+import {
+  getToolRouteUrl,
+  getCategoryRouteUrl,
+  getPageRouteUrl,
+  resolveRouteFromUrl,
+  type ActiveToolState,
+  type ActivePageType,
+} from './core/urlRoutes';
 import { ThemeProvider } from './core/themeContext';
 import { LanguageProvider, useLanguage } from './core/languageContext';
 import { ArrowLeft, Home, Grid, ChevronRight, Loader2, Mail, X } from 'lucide-react';
@@ -56,6 +63,9 @@ const TermsAndConditions = lazy(() =>
 const ContactUs = lazy(() => import('./components/pages/ContactUs').then((m) => ({ default: m.ContactUs })));
 const DesktopAppPage = lazy(() =>
   import('./components/pages/DesktopAppPage').then((m) => ({ default: m.DesktopAppPage }))
+);
+const PrivacyPolicy = lazy(() =>
+  import('./components/pages/PrivacyPolicy').then((m) => ({ default: m.PrivacyPolicy }))
 );
 const AdminPanel = lazy(() => import('./components/admin/AdminPanel').then((m) => ({ default: m.AdminPanel })));
 const SignInModal = lazy(() => import('./components/auth/SignInModal').then((m) => ({ default: m.SignInModal })));
@@ -88,12 +98,24 @@ const DocumentTools = lazy(() =>
 );
 
 
-export interface ActiveToolState {
-  section: 'image-tools' | 'pdf-tools' | 'convert' | 'document-tools';
-  subToolId: string;
+export interface AppComponentsOverride {
+  ImageToolsWrapper?: React.ComponentType<any>;
+  PdfTools?: React.ComponentType<any>;
+  FormatConverterSuite?: React.ComponentType<any>;
+  DocumentTools?: React.ComponentType<any>;
+  AboutUs?: React.ComponentType<any>;
+  Disclaimer?: React.ComponentType<any>;
+  TermsAndConditions?: React.ComponentType<any>;
+  ContactUs?: React.ComponentType<any>;
+  DesktopAppPage?: React.ComponentType<any>;
+  PrivacyPolicy?: React.ComponentType<any>;
+  PrivacyModal?: React.ComponentType<any>;
 }
 
-export type ActivePageType = 'about' | 'disclaimer' | 'terms' | 'contact' | 'admin' | 'desktop' | null;
+export interface AppProps {
+  initialPath?: string;
+  toolComponents?: AppComponentsOverride;
+}
 
 const PageSuspenseFallback: React.FC = () => (
   <div className="min-h-[50vh] flex flex-col items-center justify-center space-y-3 py-16 text-slate-500 dark:text-slate-400">
@@ -102,17 +124,40 @@ const PageSuspenseFallback: React.FC = () => (
   </div>
 );
 
-function MainApp() {
-  const [selectedCategory, setSelectedCategory] = useState<ToolCategory>('all');
-  const [activeTool, setActiveTool] = useState<ActiveToolState | null>(null);
-  const [activePage, setActivePage] = useState<ActivePageType>(null);
+function MainApp({ initialPath, toolComponents }: { initialPath?: string; toolComponents?: AppComponentsOverride } = {}) {
+  const ResolvedImageToolsWrapper = toolComponents?.ImageToolsWrapper || ImageToolsWrapper;
+  const ResolvedPdfTools = toolComponents?.PdfTools || PdfTools;
+  const ResolvedFormatConverterSuite = toolComponents?.FormatConverterSuite || FormatConverterSuite;
+  const ResolvedDocumentTools = toolComponents?.DocumentTools || DocumentTools;
+  const ResolvedAboutUs = toolComponents?.AboutUs || AboutUs;
+  const ResolvedDisclaimer = toolComponents?.Disclaimer || Disclaimer;
+  const ResolvedTermsAndConditions = toolComponents?.TermsAndConditions || TermsAndConditions;
+  const ResolvedContactUs = toolComponents?.ContactUs || ContactUs;
+  const ResolvedDesktopAppPage = toolComponents?.DesktopAppPage || DesktopAppPage;
+  const ResolvedPrivacyPolicy = toolComponents?.PrivacyPolicy || PrivacyPolicy;
+  const ResolvedPrivacyModal = toolComponents?.PrivacyModal || PrivacyModal;
+
+  // Synchronously compute initial route state so that SSR and client hydration initialize identically
+  const [initialResolved] = useState(() => {
+    if (initialPath) {
+      return resolveRouteFromUrl(initialPath);
+    }
+    if (typeof window !== 'undefined') {
+      return resolveRouteFromUrl(window.location.pathname, window.location.hash);
+    }
+    return resolveRouteFromUrl('/');
+  });
+
+  const [selectedCategory, setSelectedCategory] = useState<ToolCategory>(initialResolved.selectedCategory);
+  const [activeTool, setActiveTool] = useState<ActiveToolState | null>(initialResolved.activeTool);
+  const [activePage, setActivePage] = useState<ActivePageType>(initialResolved.activePage);
 
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => getStoredAuthUser());
   const [isSignInModalOpen, setIsSignInModalOpen] = useState<boolean>(false);
   const [signInInitialEmail, setSignInInitialEmail] = useState<string>('');
   const [resetPasswordOobCode, setResetPasswordOobCode] = useState<string | null>(null);
   const [isAccountSettingsOpen, setIsAccountSettingsOpen] = useState<boolean>(false);
-  const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState<boolean>(false);
+  const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState<boolean>(() => Boolean(initialResolved.isPrivacyModalOpen));
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState<boolean>(false);
   const [isShortcutsHelpOpen, setIsShortcutsHelpOpen] = useState<boolean>(false);
   const [isVerificationBannerDismissed, setIsVerificationBannerDismissed] = useState<boolean>(false);
@@ -208,9 +253,9 @@ function MainApp() {
     [safeScrollToTop]
   );
 
-  // Navigate to Informational Pages (About Us, Disclaimer, Terms, Contact, Admin, Desktop)
+  // Navigate to Informational Pages (About Us, Disclaimer, Terms, Contact, Admin, Desktop, Privacy)
   const handleNavigatePage = useCallback(
-    (page: 'about' | 'disclaimer' | 'terms' | 'contact' | 'admin' | 'desktop') => {
+    (page: 'about' | 'disclaimer' | 'terms' | 'contact' | 'admin' | 'desktop' | 'privacy') => {
       setActivePage(page);
       setActiveTool(null);
       setPendingDroppedFiles(null);
@@ -403,261 +448,30 @@ function MainApp() {
     hasActiveTool: activeTool !== null,
   });
 
-  // Deep linking via URL route/hash on initial mount & navigation
+  // Deep linking via URL route/hash on navigation & popstate
   useEffect(() => {
     const handleUrlRoute = () => {
-      const rawHash = window.location.hash.replace(/^#\/?/, '').trim();
-      const rawPath = window.location.pathname
-        .split('?')[0]
-        .replace(/^\//, '')
-        .replace(/\/$/, '')
-        .trim();
-      const query = decodeURIComponent(rawHash || rawPath);
-      if (!query) {
-        setActivePage(null);
-        return;
-      }
-
       // Direct .EXE custom URL download trigger
+      const rawPath = window.location.pathname.replace(/^\//, '').replace(/\/$/, '').toLowerCase();
       if (
-        query.toLowerCase() === 'download/v1.0.0/filewala-tool-setup-1.0.0.exe' ||
-        query.toLowerCase() === 'download/latest' ||
-        query.toLowerCase() === 'download/windows'
+        rawPath === 'download/v1.0.0/filewala-tool-setup-1.0.0.exe' ||
+        rawPath === 'download/latest' ||
+        rawPath === 'download/windows'
       ) {
         window.location.href =
           'https://github.com/mdsufidev/pixcutbgremover/releases/download/v1.0.0/FileWala-TOOL-Setup-1.0.0.exe';
         return;
       }
 
-      // Check for standalone informational pages
-      if (query === 'about' || query === 'about-us') {
-        setActivePage('about');
-        setActiveTool(null);
-        return;
-      }
-      if (
-        query === 'desktop' ||
-        query === 'download' ||
-        query === 'windows' ||
-        query === 'desktop-app' ||
-        query === 'filewala-desktop'
-      ) {
-        setActivePage('desktop');
-        setActiveTool(null);
-        return;
-      }
-      if (query === 'disclaimer') {
-        setActivePage('disclaimer');
-        setActiveTool(null);
-        return;
-      }
-      if (
-        query === 'terms' ||
-        query === 'terms-and-conditions' ||
-        query === 'terms-of-service' ||
-        query === 'tos'
-      ) {
-        setActivePage('terms');
-        setActiveTool(null);
-        return;
-      }
-      if (query === 'contact' || query === 'contact-us') {
-        setActivePage('contact');
-        setActiveTool(null);
-        return;
-      }
-      if (query === 'admin' || query === 'admin-panel' || query === 'console') {
-        setActivePage('admin');
-        setActiveTool(null);
-        return;
-      }
-      if (query === 'privacy' || query === 'privacy-policy') {
+      const resolved = resolveRouteFromUrl(window.location.pathname, window.location.hash);
+      setActivePage(resolved.activePage);
+      setActiveTool(resolved.activeTool);
+      setSelectedCategory(resolved.selectedCategory);
+      if (resolved.isPrivacyModalOpen) {
         setIsPrivacyModalOpen(true);
-        setActivePage(null);
-        setActiveTool(null);
-        return;
-      }
-      if (query === 'tools' || query === 'all-tools') {
-        setActivePage(null);
-        setActiveTool(null);
-        setSelectedCategory('all');
-        return;
-      }
-      if (query === 'convert-tools' || query === 'convert') {
-        setActivePage(null);
-        setActiveTool(null);
-        setSelectedCategory('convert');
-        return;
-      }
-
-      setActivePage(null);
-
-      // Clean aliases for PDF routes like /pdf-tools/merge
-      const pdfToolAliases: Record<string, string> = {
-        'pdf-tools/merge': 'merge-pdf',
-        'pdf-tools/merge-pdf': 'merge-pdf',
-        'pdf/merge': 'merge-pdf',
-        'pdf-tools/compress': 'compress-pdf',
-        'pdf-tools/compress-pdf': 'compress-pdf',
-        'pdf/compress': 'compress-pdf',
-        'pdf-tools/to-image': 'pdf-to-jpg',
-        'pdf-tools/to-images': 'pdf-to-jpg',
-        'pdf-tools/image': 'pdf-to-jpg',
-        'pdf-tools/images': 'pdf-to-jpg',
-        'pdf/to-image': 'pdf-to-jpg',
-        'pdf/image': 'pdf-to-jpg',
-        'to-image': 'pdf-to-jpg',
-        'pdf-tools/to-jpg': 'pdf-to-jpg',
-        'pdf-tools/image-to-pdf': 'image-to-pdf',
-        'pdf-tools/split': 'split-pdf',
-        'pdf-tools/rotate': 'rotate-pdf',
-        'pdf-tools/to-text': 'pdf-to-text',
-        'pdf-tools/ocr': 'pdf-to-text',
-        'pdf/ocr': 'pdf-to-text',
-        'ocr': 'pdf-to-text',
-        'pdf-tools/word': 'pdf-to-word',
-        'pdf-tools/pdf-to-word': 'pdf-to-word',
-        'pdf-tools/to-word': 'pdf-to-word',
-        'pdf/word': 'pdf-to-word',
-        'word': 'pdf-to-word',
-        'document-tools/pan-resizer': 'pan-photo-resize',
-        'document-tools/pan-photo-resizer': 'pan-photo-resize',
-        'document-tools/pan-photo-resize': 'pan-photo-resize',
-        'document-tools/pan-photo': 'pan-photo-resize',
-        'document-tools/photo-resizer': 'pan-photo-resize',
-        'pan-resizer': 'pan-photo-resize',
-        'pan-photo-resizer': 'pan-photo-resize',
-        'pan-photo-resize': 'pan-photo-resize',
-        'pan-photo': 'pan-photo-resize',
-        'document-tools/pan-signature-resizer': 'signature-resize',
-        'document-tools/pan-signature-resize': 'signature-resize',
-        'document-tools/pan-signature': 'signature-resize',
-        'document-tools/signature-resizer': 'signature-resize',
-        'document-tools/signature-resize': 'signature-resize',
-        'document-tools/signature': 'signature-resize',
-        'pan-signature-resizer': 'signature-resize',
-        'pan-signature-resize': 'signature-resize',
-        'pan-signature': 'signature-resize',
-        'signature-resize': 'signature-resize',
-        'signature-resizer': 'signature-resize',
-        'document-tools/passport-photo-resizer': 'passport-photo-resize',
-        'document-tools/passport-photo-resize': 'passport-photo-resize',
-        'document-tools/passport-photo': 'passport-photo-resize',
-        'document-tools/passport-resizer': 'passport-photo-resize',
-        'document-tools/passport-resize': 'passport-photo-resize',
-        'document-tools/passport': 'passport-photo-resize',
-        'passport-photo-resizer': 'passport-photo-resize',
-        'passport-photo-resize': 'passport-photo-resize',
-        'passport-resizer': 'passport-photo-resize',
-        'passport-photo': 'passport-photo-resize',
-        'document-tools/passport-signature-resizer': 'passport-signature-resize',
-        'document-tools/passport-signature-resize': 'passport-signature-resize',
-        'document-tools/passport-signature': 'passport-signature-resize',
-        'passport-signature-resizer': 'passport-signature-resize',
-        'passport-signature': 'passport-signature-resize',
-        'document-tools/upsc-photo-maker': 'upsc-photo-maker',
-        'document-tools/upsc-photo-resizer': 'upsc-photo-maker',
-        'document-tools/upsc-photo': 'upsc-photo-maker',
-        'document-tools/upsc-resizer': 'upsc-photo-maker',
-        'document-tools/upsc': 'upsc-photo-maker',
-        'upsc-photo-maker': 'upsc-photo-maker',
-        'upsc-photo-resizer': 'upsc-photo-maker',
-        'upsc-photo': 'upsc-photo-maker',
-        'upsc-resizer': 'upsc-photo-maker',
-        'upsc': 'upsc-photo-maker',
-        'document-tools/ssc-photo-signature': 'ssc-resizer',
-        'document-tools/ssc-resizer': 'ssc-resizer',
-        'document-tools/ssc-photo': 'ssc-resizer',
-        'document-tools/ssc-signature': 'ssc-resizer',
-        'document-tools/ssc': 'ssc-resizer',
-        'ssc-photo-signature': 'ssc-resizer',
-        'ssc-resizer': 'ssc-resizer',
-        'ssc': 'ssc-resizer',
-        'document-tools/upsc-ssc-resizer': 'upsc-photo-maker',
-        'document-tools/upsc-ssc': 'upsc-photo-maker',
-        'document-tools/gov-compressor': 'gov-compressor',
-        'document-tools/gov-compress': 'gov-compressor',
-        'document-tools/document-compressor': 'gov-compressor',
-        'gov-compressor': 'gov-compressor',
-        'gov-compress': 'gov-compressor',
-
-        // Flagship & Sitemap Clean Slugs
-        'compress-image': 'compressor',
-        'image-compressor': 'compressor',
-        'image-resizer': 'resizer',
-        'crop-image': 'cropper',
-        'bg-remover': 'bg-remover',
-        'background-remover': 'bg-remover',
-        'remove-bg': 'bg-remover',
-        'remove-background': 'bg-remover',
-        'image-tools/bg-remover': 'bg-remover',
-        'image-tools/background-remover': 'bg-remover',
-        'batch-image-cropper': 'batch',
-        'batch-processor': 'batch',
-        'merge-pdf': 'merge-pdf',
-        'combine-pdf': 'merge-pdf',
-        'compress-pdf': 'compress-pdf',
-        'heic-to-jpg': 'heic-to-jpg',
-        'image-to-pdf': 'image-to-pdf',
-        'govt-photo-signature-resizer': 'pan-photo-resize',
-        'gov-document-compressor': 'gov-compressor',
-        'pdf-to-word': 'pdf-to-word',
-        'resume-builder': 'pdf-to-word',
-        'kb-resizer': 'gov-compressor',
-        'delete-pdf-pages': 'split-pdf',
-        'watermark-pdf': 'watermark',
-        'watermark-image': 'watermark',
-        'watermark': 'watermark',
-        'protect-pdf': 'compress-pdf',
-        'word-to-pdf': 'pdf-to-word',
-        'pdf-to-image': 'pdf-to-jpg',
-        'pdf-to-jpg': 'pdf-to-jpg',
-        'pdf-to-text': 'pdf-to-text',
-        'pdf-ocr': 'pdf-to-text',
-        'jpg-to-png': 'jpg-to-png',
-        'png-to-jpg': 'png-to-jpg',
-        'png-to-webp': 'png-to-webp',
-        'webp-to-jpg': 'webp-to-jpg',
-        'jpg-to-webp': 'jpg-to-webp',
-        'avif-to-jpg': 'avif-to-jpg',
-        'svg-to-png': 'svg-to-png',
-        'round-corners': 'rounded',
-        'rounded-corners': 'rounded',
-        'meme-generator': 'meme',
-        'meme': 'meme',
-        'color-palette': 'palette',
-        'palette': 'palette',
-        'image-to-base64': 'base64',
-        'base64': 'base64',
-        'filter-adjust': 'adjust',
-        'adjust': 'adjust',
-        'filters': 'adjust',
-      };
-
-      const resolvedSubTool = pdfToolAliases[query] || query;
-
-      // Check if matches a category
-      const matchedCat = CATEGORIES_CONFIG.find((c) => c.id === query);
-      if (matchedCat) {
-        setActiveTool(null);
-        setSelectedCategory(matchedCat.id);
-        return;
-      }
-
-      // Check if hash matches a tool subToolId or id
-      const matchedTool = ALL_TOOLS.find(
-        (t) => t.subToolId === resolvedSubTool || t.id === resolvedSubTool
-      );
-      if (matchedTool) {
-        setActiveTool({
-          section: matchedTool.actionSection,
-          subToolId: matchedTool.subToolId,
-        });
-        setSelectedCategory(matchedTool.actionSection);
       }
     };
 
-    handleUrlRoute();
     window.addEventListener('popstate', handleUrlRoute);
     window.addEventListener('hashchange', handleUrlRoute);
     return () => {
@@ -800,7 +614,13 @@ function MainApp() {
       </a>
 
       {/* Dynamic SEO, AEO & GEO Metadata / JSON-LD Schema Engine */}
-      <ToolSeoHead activeTool={activeTool} activePage={activePage} selectedCategory={selectedCategory} />
+      <ToolSeoHead
+        activeTool={activeTool}
+        activePage={activePage}
+        selectedCategory={selectedCategory}
+        isPrivacyModalOpen={isPrivacyModalOpen}
+        currentPath={typeof window !== 'undefined' ? window.location.pathname : initialPath}
+      />
 
       {/* Top Navbar */}
       <Navbar
@@ -867,34 +687,40 @@ function MainApp() {
             <Suspense fallback={<PageSuspenseFallback />}>
               <div className="w-full">
                 {activePage === 'about' && (
-                  <AboutUs
+                  <ResolvedAboutUs
                     onBackHome={() => handleGoHome('all')}
                     onNavigate={handleNavigatePage}
                   />
                 )}
                 {activePage === 'desktop' && (
-                  <DesktopAppPage
+                  <ResolvedDesktopAppPage
                     onBackHome={() => handleGoHome('all')}
                     onNavigate={handleNavigatePage}
                   />
                 )}
                 {activePage === 'disclaimer' && (
-                  <Disclaimer
+                  <ResolvedDisclaimer
                     onBackHome={() => handleGoHome('all')}
                     onNavigate={handleNavigatePage}
                   />
                 )}
                 {activePage === 'terms' && (
-                  <TermsAndConditions
+                  <ResolvedTermsAndConditions
                     onBackHome={() => handleGoHome('all')}
                     onNavigate={handleNavigatePage}
                   />
                 )}
                 {activePage === 'contact' && (
-                  <ContactUs
+                  <ResolvedContactUs
                     onBackHome={() => handleGoHome('all')}
                     onNavigate={handleNavigatePage}
                     onNotify={addToast}
+                  />
+                )}
+                {activePage === 'privacy' && (
+                  <ResolvedPrivacyPolicy
+                    onBackHome={() => handleGoHome('all')}
+                    onNavigate={handleNavigatePage}
                   />
                 )}
                 {activePage === 'admin' && (
@@ -917,6 +743,7 @@ function MainApp() {
               onOpenPrivacyModal={handleOpenPrivacyModal}
               onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
               onNavigatePage={handleNavigatePage}
+              currentPath={typeof window !== 'undefined' ? window.location.pathname : initialPath}
             />
           ) : (
             /* =========================================================================
@@ -1025,7 +852,7 @@ function MainApp() {
                 <Suspense fallback={<PageSuspenseFallback />}>
                   <div className="w-full">
                     {activeTool.section === 'image-tools' && (
-                      <ImageToolsWrapper
+                      <ResolvedImageToolsWrapper
                         initialTool={activeTool.subToolId as OptimizerToolId}
                         initialFiles={pendingDroppedFiles}
                         onClearPendingFiles={() => setPendingDroppedFiles(null)}
@@ -1034,7 +861,7 @@ function MainApp() {
                     )}
 
                     {activeTool.section === 'pdf-tools' && (
-                      <PdfTools
+                      <ResolvedPdfTools
                         initialTab={activeTool.subToolId as PdfToolId}
                         initialFiles={pendingDroppedFiles}
                         onClearPendingFiles={() => setPendingDroppedFiles(null)}
@@ -1043,7 +870,7 @@ function MainApp() {
                     )}
 
                     {activeTool.section === 'convert' && (
-                      <FormatConverterSuite
+                      <ResolvedFormatConverterSuite
                         initialToolId={activeTool.subToolId as ConverterToolId}
                         initialFiles={pendingDroppedFiles}
                         onClearPendingFiles={() => setPendingDroppedFiles(null)}
@@ -1052,7 +879,7 @@ function MainApp() {
                     )}
 
                     {activeTool.section === 'document-tools' && (
-                      <DocumentTools
+                      <ResolvedDocumentTools
                         initialTab={activeTool.subToolId as GovDocumentToolId}
                         initialFiles={pendingDroppedFiles}
                         onClearPendingFiles={() => setPendingDroppedFiles(null)}
@@ -1107,7 +934,7 @@ function MainApp() {
         )}
 
         {isPrivacyModalOpen && (
-          <PrivacyModal
+          <ResolvedPrivacyModal
             isOpen={isPrivacyModalOpen}
             onClose={handleClosePrivacyModal}
           />
@@ -1162,11 +989,11 @@ function MainApp() {
   );
 }
 
-export default function App() {
+export default function App({ initialPath, toolComponents }: AppProps = {}) {
   return (
     <ThemeProvider>
       <LanguageProvider>
-        <MainApp />
+        <MainApp initialPath={initialPath} toolComponents={toolComponents} />
       </LanguageProvider>
     </ThemeProvider>
   );

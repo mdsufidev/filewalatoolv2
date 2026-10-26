@@ -36,6 +36,7 @@ import {
   triggerFileDownload,
 } from '../../../utils/memory';
 import { useTheme } from '../../../core/themeContext';
+import { Dropzone } from '../../ui/Dropzone';
 import { PdfPreviewModal } from './PdfPreviewModal';
 import { PdfToolGuideSection } from './PdfToolGuideSection';
 import {
@@ -622,11 +623,46 @@ export const PdfToImageTool: React.FC<PdfToImageToolProps> = ({ onNotify }) => {
     setRangeMode('all');
   };
 
+  // Keyboard navigation
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
+      if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+
+      if (!file) return;
+
+      if (e.key === 'n' || e.key === 'N' || e.key === 'Escape') {
+        e.preventDefault();
+        handleReset();
+        onNotify?.('Reset', 'Cleared PDF document.', 'info');
+        return;
+      }
+
+      if (e.key === 'd' || e.key === 'D') {
+        if (renderedPages.length > 0) {
+          e.preventDefault();
+          handleDownloadAllZip();
+          return;
+        }
+      }
+
+      if (e.key === 'Enter') {
+        if (renderedPages.length === 0) {
+          e.preventDefault();
+          handleExecuteConvert();
+          return;
+        }
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [file, renderedPages.length, handleDownloadAllZip, handleExecuteConvert, handleReset, onNotify]);
+
   const totalRenderedSize = renderedPages.reduce((acc, curr) => acc + curr.size, 0);
 
   return (
-    <div className="max-w-6xl mx-auto space-y-10 animate-in fade-in duration-200">
-      {/* HEADER SECTION (Stripe/Vercel Aesthetic) */}
+    <div className="w-full max-w-7xl mx-auto space-y-10 animate-in fade-in duration-200">
+      {/* HEADER SECTION */}
       <div className="text-center space-y-3 max-w-2xl mx-auto">
         <div
           className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold border ${
@@ -652,33 +688,8 @@ export const PdfToImageTool: React.FC<PdfToImageToolProps> = ({ onNotify }) => {
             isDark ? 'text-slate-400' : 'text-slate-600'
           }`}
         >
-          Convert PDF pages into high-resolution JPG, lossless PNG, or WebP images in your browser.
-          Zero files uploaded to any server. Memory safe and lightning fast.
+          Convert PDF pages into high-resolution JPG, lossless PNG, or WebP images in seconds.
         </p>
-
-        {/* Trust Pill */}
-        <div className="flex items-center justify-center gap-4 text-xs pt-1 flex-wrap">
-          <span className="inline-flex items-center gap-1.5 text-emerald-500 font-medium">
-            <ShieldCheck className="w-4 h-4" />
-            <span>100% In-Browser Privacy</span>
-          </span>
-          <span className="text-slate-600 dark:text-slate-600">•</span>
-          <span
-            className={`font-mono text-[11px] ${
-              isDark ? 'text-slate-400' : 'text-slate-500'
-            }`}
-          >
-            Mozilla PDF.js + HTML5 Canvas
-          </span>
-          <span className="text-slate-600 dark:text-slate-600">•</span>
-          <span
-            className={`font-mono text-[11px] ${
-              isDark ? 'text-slate-400' : 'text-slate-500'
-            }`}
-          >
-            Zero Server Processing
-          </span>
-        </div>
       </div>
 
       {/* ERROR BANNER */}
@@ -707,78 +718,13 @@ export const PdfToImageTool: React.FC<PdfToImageToolProps> = ({ onNotify }) => {
       <div className="space-y-6">
         {/* 1. SINGLE FILE DROPZONE (When no file is selected) */}
         {!file ? (
-          <div
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-            onClick={() => fileInputRef.current?.click()}
-            className={`border border-dashed rounded-lg p-8 sm:p-12 text-center cursor-pointer transition-colors duration-150 select-none ${
-              isDragOver
-                ? 'border-zinc-900 dark:border-zinc-100 bg-zinc-100/50 dark:bg-zinc-800/50'
-                : 'border-zinc-300 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-zinc-400 dark:hover:border-zinc-700 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30'
-            }`}
-          >
-            <input
-              ref={fileInputRef}
-              type="file"
+          <div className="max-w-3xl mx-auto">
+            <Dropzone
+              onFilesSelected={(files: File[]) => handleFileSelected(files[0])}
               accept="application/pdf,.pdf"
-              className="hidden"
-              onChange={(e) => {
-                if (e.target.files && e.target.files[0]) {
-                  handleFileSelected(e.target.files[0]);
-                }
-              }}
+              title="Upload PDF to Convert to Images"
+              description="Drag & drop or click to browse. Converts pages to JPG, PNG, or WebP."
             />
-
-            <div className="flex flex-col items-center justify-center space-y-3.5 max-w-md mx-auto">
-              <div
-                className={`w-12 h-12 rounded-md flex items-center justify-center border ${
-                  isDark
-                    ? 'bg-zinc-900 border-zinc-800 text-zinc-300'
-                    : 'bg-zinc-50 border-zinc-200 text-zinc-700'
-                }`}
-              >
-                <UploadCloud className="w-6 h-6" />
-              </div>
-
-              <div className="space-y-1">
-                <h3
-                  className={`text-sm sm:text-base font-semibold tracking-tight ${
-                    isDark ? 'text-zinc-100' : 'text-zinc-900'
-                  }`}
-                >
-                  Select PDF or drag and drop here
-                </h3>
-                <p className="text-xs text-zinc-500">
-                  Supports multi-page PDF documents. Converts to JPG, PNG, or WebP client-side.
-                </p>
-              </div>
-
-              <div className="flex items-center gap-2 pt-1">
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    fileInputRef.current?.click();
-                  }}
-                  className="px-3.5 py-1.5 rounded-md text-xs font-medium border border-zinc-900 dark:border-zinc-100 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors cursor-pointer"
-                >
-                  Browse PDF File
-                </button>
-
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleLoadSamplePdf();
-                  }}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-                >
-                  <Sparkles className="w-3.5 h-3.5 text-zinc-500" />
-                  <span>Try 3-Page Sample PDF</span>
-                </button>
-              </div>
-            </div>
           </div>
         ) : (
           /* 2. ACTIVE FILE CARD & CONVERSION CONFIGURATION WORKSPACE */
@@ -1404,167 +1350,6 @@ export const PdfToImageTool: React.FC<PdfToImageToolProps> = ({ onNotify }) => {
             )}
           </div>
         )}
-
-        {/* 4. WORKFLOW GUIDE: "HOW IT WORKS" */}
-        <div
-          className={`p-5 rounded-lg border space-y-4 ${
-            isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            <Zap className="w-4 h-4 text-zinc-500" />
-            <h3
-              className={`text-xs font-bold uppercase tracking-wider ${
-                isDark ? 'text-zinc-200' : 'text-zinc-800'
-              }`}
-            >
-              How PDF to Image Conversion Works
-            </h3>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <div className="p-3 rounded-md border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/40 space-y-1.5">
-              <div className="flex items-center gap-2">
-                <span className="w-5 h-5 rounded-full bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-[10px] font-bold flex items-center justify-center">
-                  1
-                </span>
-                <h4 className={`text-xs font-semibold ${isDark ? 'text-zinc-100' : 'text-zinc-900'}`}>
-                  Select Your PDF Document
-                </h4>
-              </div>
-              <p className="text-xs leading-relaxed text-zinc-500">
-                Drop or browse any multi-page PDF. The file is parsed instantly inside your browser
-                with zero uploads.
-              </p>
-            </div>
-
-            <div className="p-3 rounded-md border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/40 space-y-1.5">
-              <div className="flex items-center gap-2">
-                <span className="w-5 h-5 rounded-full bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-[10px] font-bold flex items-center justify-center">
-                  2
-                </span>
-                <h4 className={`text-xs font-semibold ${isDark ? 'text-zinc-100' : 'text-zinc-900'}`}>
-                  Customize Format & DPI Scale
-                </h4>
-              </div>
-              <p className="text-xs leading-relaxed text-zinc-500">
-                Choose JPG (Standard), PNG (Lossless), or WebP (Optimized), pick your DPI (72, 150,
-                or 300 Ultra HD), and select all pages or custom ranges.
-              </p>
-            </div>
-
-            <div className="p-3 rounded-md border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/40 space-y-1.5">
-              <div className="flex items-center gap-2">
-                <span className="w-5 h-5 rounded-full bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-[10px] font-bold flex items-center justify-center">
-                  3
-                </span>
-                <h4 className={`text-xs font-semibold ${isDark ? 'text-zinc-100' : 'text-zinc-900'}`}>
-                  Download Single or ZIP Batch
-                </h4>
-              </div>
-              <p className="text-xs leading-relaxed text-zinc-500">
-                Inspect your rendered pages in the interactive gallery, download single images, or
-                package all pages into a clean .zip file with one click.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* 5. FREQUENTLY ASKED QUESTIONS ACCORDION */}
-        <div
-          className={`p-5 rounded-lg border space-y-3 ${
-            isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'
-          }`}
-        >
-          <div className="flex items-center gap-2 mb-2">
-            <Info className="w-4 h-4 text-zinc-500" />
-            <h3
-              className={`text-xs font-bold uppercase tracking-wider ${
-                isDark ? 'text-zinc-200' : 'text-zinc-800'
-              }`}
-            >
-              Frequently Asked Questions
-            </h3>
-          </div>
-
-          <div className="space-y-2">
-            {[
-              {
-                q: 'Are my PDF files uploaded to an external server?',
-                a: 'Never. All PDF parsing and HTML5 Canvas rendering happen 100% locally in your web browser using Mozilla PDF.js. Your document data never leaves your computer, ensuring absolute privacy for sensitive contracts, bank statements, and IDs.',
-              },
-              {
-                q: 'What is the difference between JPG, PNG, and WebP for PDF conversion?',
-                a: 'JPG is universally compatible with standard file sizes and a clean white background. PNG provides 100% lossless image quality with maximum crispness for fine text and tables. WebP produces 25-35% smaller file sizes than JPG with comparable visual quality.',
-              },
-              {
-                q: 'What DPI resolution should I choose?',
-                a: '1x (72 DPI) is ideal for quick web previews and email thumbnails. 2x (150 DPI) provides the optimal balance of sharp text readability and reasonable image size. 3x (300 DPI) provides Ultra HD print quality, perfect for high-resolution graphics and printing.',
-              },
-              {
-                q: 'Can I convert specific pages rather than the whole PDF?',
-                a: 'Yes. Switch to "Custom Range" and type page numbers like "1-3, 5, 8". FileWala will only render the specified pages and skip the rest, saving processing time and disk space.',
-              },
-            ].map((faq, idx) => {
-              const isOpen = openFaq === idx;
-              return (
-                <div
-                  key={idx}
-                  className={`rounded-md border transition-colors ${
-                    isDark ? 'border-zinc-800 bg-zinc-950' : 'border-zinc-200 bg-zinc-50'
-                  }`}
-                >
-                  <button
-                    type="button"
-                    onClick={() => setOpenFaq(isOpen ? null : idx)}
-                    className="w-full p-3 text-left flex items-center justify-between gap-3 cursor-pointer"
-                  >
-                    <span
-                      className={`text-xs sm:text-sm font-medium ${
-                        isDark ? 'text-zinc-100' : 'text-zinc-900'
-                      }`}
-                    >
-                      {faq.q}
-                    </span>
-                    {isOpen ? (
-                      <ChevronUp className="w-4 h-4 text-zinc-400 shrink-0" />
-                    ) : (
-                      <ChevronDown className="w-4 h-4 text-zinc-400 shrink-0" />
-                    )}
-                  </button>
-                  {isOpen && (
-                    <div className="px-3 pb-3 pt-1 border-t border-zinc-200 dark:border-zinc-800">
-                      <p className="text-xs leading-relaxed text-zinc-500">
-                        {faq.a}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* 6. SECURITY NOTICE FOOTER */}
-        <div
-          className={`p-3.5 rounded-md border flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs ${
-            isDark
-              ? 'bg-zinc-900 border-zinc-800 text-zinc-400'
-              : 'bg-zinc-50 border-zinc-200 text-zinc-500'
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
-            <span>
-              <strong>Zero Server Processing:</strong> All PDF page rendering to images happens 100%
-              client-side in your browser using Mozilla PDF.js and HTML5 Canvas. Memory safe with
-              immediate object URL garbage collection.
-            </span>
-          </div>
-          <span className="font-mono text-[11px] text-zinc-500 shrink-0">
-            100% In-Browser Privacy
-          </span>
-        </div>
       </div>
 
       {/* BUILT-IN SOURCE PDF PREVIEW MODAL */}
@@ -1668,64 +1453,8 @@ export const PdfToImageTool: React.FC<PdfToImageToolProps> = ({ onNotify }) => {
         </div>
       )}
 
-      {/* Educational & How It Works Guidance Section */}
-      <PdfToolGuideSection
-        toolName="PDF to Image Converter"
-        tagline="Extract and export PDF pages as high-resolution JPG, PNG, or WebP images client-side."
-        steps={[
-          {
-            step: 1,
-            title: 'Drop PDF File',
-            description: 'Select or drag your PDF document. Page count and document dimensions are analyzed instantly.',
-            icon: <FileImage className="w-4 h-4 text-amber-400" />,
-          },
-          {
-            step: 2,
-            title: 'Select Format & Resolution',
-            description: 'Choose JPG (Standard), PNG (Lossless), or WebP (Ultra compact), and choose 1x, 2x, or 3x DPI scale.',
-            icon: <Sliders className="w-4 h-4 text-blue-400" />,
-          },
-          {
-            step: 3,
-            title: 'Download Images or ZIP',
-            description: 'Download individual page photos directly, or package all pages into an instant .ZIP archive.',
-            icon: <Download className="w-4 h-4 text-emerald-400" />,
-          },
-        ]}
-        tips={[
-          {
-            title: '2x & 3x Crisp Resolution',
-            description: 'Select 2x High Resolution (144 DPI) or 3x Ultra HD (216 DPI) for super sharp text and crystal-clear vector line rendering.',
-          },
-          {
-            title: 'PNG vs WebP',
-            description: 'Choose PNG for zero-compression lossless rendering with optional transparency; use WebP for modern web sharing at small file sizes.',
-          },
-          {
-            title: 'Bulk ZIP Packaging',
-            description: 'Click "Download All as ZIP" to archive all converted pages into a neat folder on your computer in seconds.',
-          },
-        ]}
-        faqs={[
-          {
-            question: 'Are my PDF documents uploaded to an external server?',
-            answer: 'Never. PDF page rendering is carried out 100% client-side inside your browser via pdfjs-dist and HTML5 Canvas. No document or image leaves your device.',
-          },
-          {
-            question: 'What is the benefit of 3x Ultra HD scale?',
-            answer: 'Standard PDFs render at 72 DPI (1x). 3x scale renders each page at 216 DPI, tripling pixel density so small footnotes and complex charts appear tack sharp.',
-          },
-          {
-            question: 'Can I convert only specific pages?',
-            answer: 'Yes! Select the "Custom Pages" tab under Page Selection and type ranges like "1-3, 5, 8". Only those selected pages will be rendered and downloaded.',
-          },
-        ]}
-        privacyNotes={[
-          'HTML5 Canvas rendering runs strictly in browser memory',
-          'Zero cloud storage or tracking',
-          'Object URLs automatically revoked to avoid memory leaks',
-        ]}
-      />
+      {/* Comprehensive Educational & Technical Guide Section */}
+      <PdfToolGuideSection toolId="pdf-to-image" />
     </div>
   );
 };

@@ -203,46 +203,78 @@ export const RotatePdfTool: React.FC<RotatePdfToolProps> = ({ onNotify }) => {
     setRotatedPdfBlob(null);
   };
 
+  // Global Keyboard Shortcuts
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
+      if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+
+      if (!file) return;
+
+      if (e.key === 'n' || e.key === 'N' || e.key === 'Escape') {
+        e.preventDefault();
+        handleReset();
+        return;
+      }
+
+      if (e.key === 'r' || e.key === 'R') {
+        e.preventDefault();
+        rotateAllPages('cw');
+        return;
+      }
+
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        handleSaveRotatedPdf();
+        return;
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [file, rotateAllPages, handleSaveRotatedPdf]);
+
   return (
-    <div className="space-y-8 animate-in fade-in duration-200">
+    <div className="w-full max-w-7xl mx-auto space-y-8 animate-in fade-in duration-200">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className={`text-xl font-bold tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
+          <h1 className={`text-xl font-bold tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
             Rotate PDF Pages
-          </h2>
+          </h1>
           <p className={`text-xs mt-1 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-            Permanently rotate individual or all PDF pages 90°, 180°, or 270° clockwise or counter-clockwise.
+            Rotate individual or all pages 90°, 180°, or 270° with instant client-side preview.
           </p>
         </div>
         {file && (
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={handleReset} className="text-xs">
-              Change PDF
+              <span>Change PDF</span>
+              <kbd className="ml-1.5 px-1.5 py-0.2 rounded text-[10px] font-mono bg-zinc-100 dark:bg-zinc-800 text-zinc-500 border border-zinc-200 dark:border-zinc-700">
+                Esc
+              </kbd>
             </Button>
             <Button
               onClick={handleSaveRotatedPdf}
               isLoading={isSaving}
               leftIcon={<RotateCw className="w-4 h-4" />}
             >
-              Save Rotated PDF
+              <span>Save Rotated PDF</span>
+              <kbd className="ml-1.5 px-1.5 py-0.2 rounded text-[10px] font-mono bg-white/20 text-white">
+                ↵
+              </kbd>
             </Button>
           </div>
         )}
       </div>
 
-      {/* Dropzone or Workspace */}
+      {/* Direct Clean Dropzone (Centered, Max-w-3xl, Zero Outer Wrapper Box!) */}
       {!file ? (
-        <div
-          className={`rounded-lg border p-6 md:p-8 ${
-            isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'
-          }`}
-        >
+        <div className="max-w-3xl mx-auto">
           <Dropzone
             onFilesSelected={(files) => handlePdfLoaded(files[0])}
             accept="application/pdf,.pdf"
-            title="Drop PDF to rotate orientation"
-            description="Fix upside-down scans or landscape/portrait discrepancies 100% in your browser."
+            title="Upload PDF to Rotate Pages"
+            description="Drag & drop or click to browse. Fix orientation 100% in browser RAM."
           />
         </div>
       ) : (
@@ -470,64 +502,8 @@ export const RotatePdfTool: React.FC<RotatePdfToolProps> = ({ onNotify }) => {
         </div>
       )}
 
-      {/* Educational & How It Works Guidance Section */}
-      <PdfToolGuideSection
-        toolName="Rotate PDF Pages"
-        tagline="Fix page orientation, upside-down scans, and landscape diagrams permanently."
-        steps={[
-          {
-            step: 1,
-            title: 'Drop PDF File',
-            description: 'Drag your PDF document into the workspace. Every page is rendered into a visual preview card.',
-            icon: <FileText className="w-4 h-4 text-purple-400" />,
-          },
-          {
-            step: 2,
-            title: 'Rotate Individually or in Batch',
-            description: 'Use the 90° CW / CCW buttons on individual page cards, or use "Rotate All CW" to flip the whole file.',
-            icon: <RotateCw className="w-4 h-4 text-blue-400" />,
-          },
-          {
-            step: 3,
-            title: 'Save & Download',
-            description: 'Click "Save Rotated PDF" to update document orientation metadata losslessly and download.',
-            icon: <Download className="w-4 h-4 text-emerald-400" />,
-          },
-        ]}
-        tips={[
-          {
-            title: 'Zero Re-compression',
-            description: 'Rotating PDF pages only modifies the standard /Rotate dictionary entry in the PDF tree. Vector lines, fonts, and photos are never re-compressed.',
-          },
-          {
-            title: 'Fix Upside-Down Scans',
-            description: 'Click "90° CW" twice on any upside-down page to perform a clean 180° rotation.',
-          },
-          {
-            title: 'Preserve Bookmarks & Links',
-            description: 'Because internal document streams remain untouched, bookmarks, outlines, and form fields are completely preserved.',
-          },
-        ]}
-        faqs={[
-          {
-            question: 'Will rotating pages degrade my document quality or file size?',
-            answer: 'No. The operation is 100% lossless. In standard PDF architecture, rotation is an internal metadata flag (0, 90, 180, or 270 degrees). The content streams are completely untouched.',
-          },
-          {
-            question: 'Can I rotate only a specific single page?',
-            answer: 'Yes! Every page card has its own dedicated 90° CW and 90° CCW triggers, so you can orient single pages independently without affecting others.',
-          },
-          {
-            question: 'Does this persist when opening the file in Adobe Acrobat or Apple Preview?',
-            answer: 'Yes. The rotation is saved permanently to the PDF file specification, so every PDF viewer, browser, and printer will display the new orientation.',
-          },
-        ]}
-        privacyNotes={[
-          'All rotation updates execute 100% in-browser',
-          'Zero cloud uploads or server processing',
-          'Compatible with private, financial, and confidential documents',
-        ]}
-      />
+      {/* Comprehensive Educational & Technical Guide Section */}
+      <PdfToolGuideSection toolId="rotate-pdf" />
 
       {/* Built-in Preview Modal */}
       {previewModalOpen && rotatedPdfBlob && (

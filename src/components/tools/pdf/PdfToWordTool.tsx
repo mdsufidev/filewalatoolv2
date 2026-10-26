@@ -35,7 +35,9 @@ import {
 } from 'lucide-react';
 import { formatBytes, triggerFileDownload } from '../../../utils/memory';
 import { useTheme } from '../../../core/themeContext';
+import { Dropzone } from '../../ui/Dropzone';
 import { PdfPreviewModal } from './PdfPreviewModal';
+import { PdfToolGuideSection } from './PdfToolGuideSection';
 
 // Ensure unified PDF.js worker is ready
 ensurePdfWorkerInitialized();
@@ -880,8 +882,43 @@ export const PdfToWordTool: React.FC<PdfToWordToolProps> = ({ onNotify }) => {
     onNotify?.('Copied to Clipboard', 'Extracted text copied.', 'success');
   };
 
+  // Keyboard navigation
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
+      if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+
+      if (!file) return;
+
+      if (e.key === 'n' || e.key === 'N' || e.key === 'Escape') {
+        e.preventDefault();
+        handleReset();
+        onNotify?.('Reset', 'Cleared document.', 'info');
+        return;
+      }
+
+      if (e.key === 'd' || e.key === 'D') {
+        if (result) {
+          e.preventDefault();
+          handleDownloadDocx();
+          return;
+        }
+      }
+
+      if (e.key === 'Enter') {
+        if (!result) {
+          e.preventDefault();
+          handleExecuteConvertToWord();
+          return;
+        }
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [file, result, handleDownloadDocx, handleExecuteConvertToWord, handleReset, onNotify]);
+
   return (
-    <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-300">
+    <div className="w-full max-w-7xl mx-auto space-y-8 animate-in fade-in duration-300">
       {/* Hidden File Input */}
       <input
         ref={fileInputRef}
@@ -891,7 +928,7 @@ export const PdfToWordTool: React.FC<PdfToWordToolProps> = ({ onNotify }) => {
         onChange={handleFileInputChange}
       />
 
-      {/* Tool Header (Exact UI/UX matching MergePdfTool) */}
+      {/* Tool Header */}
       <div className="text-center space-y-2.5 max-w-2xl mx-auto">
         <div
           className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold border ${
@@ -917,7 +954,6 @@ export const PdfToWordTool: React.FC<PdfToWordToolProps> = ({ onNotify }) => {
           }`}
         >
           Transform PDF documents into editable Microsoft Word (.docx) files in seconds.
-          Preserves typography, aligned paragraphs, and unified colors directly in your browser.
         </p>
       </div>
 
@@ -1087,75 +1123,13 @@ export const PdfToWordTool: React.FC<PdfToWordToolProps> = ({ onNotify }) => {
         /* WORKSPACE: DROPZONE & CONFIGURATION */
         <div className="space-y-6">
           {!file ? (
-            /* Dropzone matching MergePdfTool */
-            <div
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-              onClick={() => fileInputRef.current?.click()}
-              className={`relative group border border-dashed rounded-lg p-8 sm:p-12 text-center cursor-pointer transition-colors duration-150 select-none ${
-                isDragOver
-                  ? isDark
-                    ? 'border-zinc-500 bg-zinc-800/40'
-                    : 'border-zinc-500 bg-zinc-50'
-                  : isDark
-                    ? 'border-zinc-800 bg-zinc-900 hover:border-zinc-700'
-                    : 'border-zinc-300 bg-white hover:border-zinc-400'
-              }`}
-            >
-              <div className="flex flex-col items-center justify-center space-y-3.5">
-                <div
-                  className={`w-12 h-12 rounded-md flex items-center justify-center transition-colors border ${
-                    isDark
-                      ? 'bg-zinc-800 border-zinc-700 text-zinc-300'
-                      : 'bg-zinc-100 border-zinc-200 text-zinc-700'
-                  }`}
-                >
-                  <UploadCloud className="w-6 h-6" />
-                </div>
-
-                <div className="space-y-1">
-                  <h3 className={`text-base sm:text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                    Select PDF document or drag & drop here
-                  </h3>
-                  <p className={`text-xs sm:text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                    Converts pages into clean, editable Microsoft Word (.docx) documents. 100% processed client-side.
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-3 pt-1">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      fileInputRef.current?.click();
-                    }}
-                    className={`px-3.5 py-1.5 rounded-md text-xs font-semibold border transition-colors cursor-pointer ${
-                      isDark
-                        ? 'bg-zinc-100 hover:bg-zinc-200 text-zinc-900 border-zinc-200'
-                        : 'bg-zinc-900 hover:bg-zinc-800 text-white border-zinc-900'
-                    }`}
-                  >
-                    Browse Computer
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleLoadSamplePdf();
-                    }}
-                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium border transition-colors cursor-pointer ${
-                      isDark
-                        ? 'bg-zinc-800 border-zinc-700 text-zinc-300 hover:text-white'
-                        : 'bg-zinc-100 border-zinc-200 text-zinc-700 hover:text-zinc-900 hover:bg-zinc-200'
-                    }`}
-                  >
-                    <Sparkles className="w-3.5 h-3.5 text-zinc-500" />
-                    <span>Try with Sample PDF</span>
-                  </button>
-                </div>
-              </div>
+            <div className="max-w-3xl mx-auto">
+              <Dropzone
+                onFilesSelected={(files: File[]) => handleProcessFile(files[0])}
+                accept="application/pdf,.pdf"
+                title="Upload PDF Document to Convert to Word"
+                description="Drag & drop or click to browse. Generates genuine editable .docx."
+              />
             </div>
           ) : (
             /* Document Queue Card with Live Preview & Controls matching MergePdfTool */
@@ -1477,248 +1451,6 @@ export const PdfToWordTool: React.FC<PdfToWordToolProps> = ({ onNotify }) => {
         </div>
       )}
 
-      {/* 4-Step PDF to Word Workflow Guide */}
-      <div
-        className={`p-6 rounded-lg border space-y-4 ${
-          isDark
-            ? 'bg-zinc-900 border-zinc-800'
-            : 'bg-white border-zinc-200'
-        }`}
-      >
-        <div className="flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-zinc-500" />
-          <h3
-            className={`text-xs font-semibold uppercase tracking-wider ${
-              isDark ? 'text-zinc-300' : 'text-zinc-700'
-            }`}
-          >
-            How PDF to Word Conversion Works in FileWala
-          </h3>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          <div
-            className={`p-3.5 rounded-md border ${
-              isDark ? 'bg-zinc-950/60 border-zinc-800' : 'bg-zinc-50 border-zinc-200'
-            }`}
-          >
-            <div className="flex items-center gap-2 mb-1.5">
-              <span className="w-5 h-5 rounded border border-zinc-300 dark:border-zinc-700 bg-zinc-200 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 text-[10px] font-mono font-bold flex items-center justify-center shrink-0">
-                1
-              </span>
-              <span className={`text-xs font-semibold ${isDark ? 'text-zinc-100' : 'text-zinc-900'}`}>
-                Add PDF Document
-              </span>
-            </div>
-            <p className={`text-[11px] leading-relaxed ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
-              Drag and drop any PDF file up to 200 MB or click Browse Computer to select from your device.
-            </p>
-          </div>
-
-          <div
-            className={`p-3.5 rounded-md border ${
-              isDark ? 'bg-zinc-950/60 border-zinc-800' : 'bg-zinc-50 border-zinc-200'
-            }`}
-          >
-            <div className="flex items-center gap-2 mb-1.5">
-              <span className="w-5 h-5 rounded border border-zinc-300 dark:border-zinc-700 bg-zinc-200 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 text-[10px] font-mono font-bold flex items-center justify-center shrink-0">
-                2
-              </span>
-              <span className={`text-xs font-semibold ${isDark ? 'text-zinc-100' : 'text-zinc-900'}`}>
-                Layout & Palette
-              </span>
-            </div>
-            <p className={`text-[11px] leading-relaxed ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
-              Select continuous flowing paragraphs or page breaks, with clean uniform colors for Word.
-            </p>
-          </div>
-
-          <div
-            className={`p-3.5 rounded-md border ${
-              isDark ? 'bg-zinc-950/60 border-zinc-800' : 'bg-zinc-50 border-zinc-200'
-            }`}
-          >
-            <div className="flex items-center gap-2 mb-1.5">
-              <span className="w-5 h-5 rounded border border-zinc-300 dark:border-zinc-700 bg-zinc-200 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 text-[10px] font-mono font-bold flex items-center justify-center shrink-0">
-                3
-              </span>
-              <span className={`text-xs font-semibold ${isDark ? 'text-zinc-100' : 'text-zinc-900'}`}>
-                100% In-Browser Engine
-              </span>
-            </div>
-            <p className={`text-[11px] leading-relaxed ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
-              Paragraphs, bold headings, and bullet lists are structured locally in RAM without server latency.
-            </p>
-          </div>
-
-          <div
-            className={`p-3.5 rounded-md border ${
-              isDark ? 'bg-zinc-950/60 border-zinc-800' : 'bg-zinc-50 border-zinc-200'
-            }`}
-          >
-            <div className="flex items-center gap-2 mb-1.5">
-              <span className="w-5 h-5 rounded border border-zinc-300 dark:border-zinc-700 bg-zinc-200 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 text-[10px] font-mono font-bold flex items-center justify-center shrink-0">
-                4
-              </span>
-              <span className={`text-xs font-semibold ${isDark ? 'text-zinc-100' : 'text-zinc-900'}`}>
-                1-Click .DOCX Download
-              </span>
-            </div>
-            <p className={`text-[11px] leading-relaxed ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
-              Download your genuine Microsoft Word document ready to edit, copy, and share immediately.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Feature & Privacy Highlights */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
-        <div
-          className={`p-4 rounded-lg border space-y-1.5 ${
-            isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'
-          }`}
-        >
-          <div
-            className={`font-semibold text-xs flex items-center gap-1.5 ${
-              isDark ? 'text-zinc-200' : 'text-zinc-800'
-            }`}
-          >
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-            <span>100% Confidential & Secure</span>
-          </div>
-          <p className={`text-xs leading-relaxed ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
-            Documents remain strictly in your local memory. Never sent over the internet — compliant for contracts, business reports, and private docs.
-          </p>
-        </div>
-
-        <div
-          className={`p-4 rounded-lg border space-y-1.5 ${
-            isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'
-          }`}
-        >
-          <div
-            className={`font-semibold text-xs flex items-center gap-1.5 ${
-              isDark ? 'text-zinc-200' : 'text-zinc-800'
-            }`}
-          >
-            <FileCheck className="w-3.5 h-3.5 text-zinc-500" />
-            <span>True Editable Paragraphs</span>
-          </div>
-          <p className={`text-xs leading-relaxed ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
-            Generates real Word text elements, headings, and lists in Calibri typography — not locked screenshots or messy image scans.
-          </p>
-        </div>
-
-        <div
-          className={`p-4 rounded-lg border space-y-1.5 ${
-            isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'
-          }`}
-        >
-          <div
-            className={`font-semibold text-xs flex items-center gap-1.5 ${
-              isDark ? 'text-zinc-200' : 'text-zinc-800'
-            }`}
-          >
-            <Sparkles className="w-3.5 h-3.5 text-zinc-500" />
-            <span>No File Size or Count Caps</span>
-          </div>
-          <p className={`text-xs leading-relaxed ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
-            Convert multi-page presentations or single-page invoices with zero paywalls, no login requirements, and no watermarks.
-          </p>
-        </div>
-      </div>
-
-      {/* Frequently Asked Questions (FAQ) */}
-      <div
-        className={`p-6 rounded-lg border space-y-4 ${
-          isDark
-            ? 'bg-zinc-900 border-zinc-800'
-            : 'bg-white border-zinc-200'
-        }`}
-      >
-        <div className="flex items-center gap-2 mb-2">
-          <HelpCircle className="w-4 h-4 text-zinc-500" />
-          <h3
-            className={`text-sm font-semibold tracking-tight ${
-              isDark ? 'text-zinc-100' : 'text-zinc-900'
-            }`}
-          >
-            PDF to Word FAQs
-          </h3>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 text-xs">
-          <div
-            className={`p-3.5 rounded-md border space-y-1 ${
-              isDark ? 'bg-zinc-950/60 border-zinc-800' : 'bg-zinc-50 border-zinc-200'
-            }`}
-          >
-            <h4 className={`font-semibold ${isDark ? 'text-zinc-100' : 'text-zinc-900'}`}>
-              Will the downloaded Word (.docx) file be fully editable?
-            </h4>
-            <p className={`leading-relaxed ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>
-              Yes! Unlike basic converters that paste pictures into Word, FileWala generates genuine editable paragraphs, headings, and text runs with Calibri font.
-            </p>
-          </div>
-
-          <div
-            className={`p-3.5 rounded-md border space-y-1 ${
-              isDark ? 'bg-zinc-950/60 border-zinc-800' : 'bg-zinc-50 border-zinc-200'
-            }`}
-          >
-            <h4 className={`font-semibold ${isDark ? 'text-zinc-100' : 'text-zinc-900'}`}>
-              How is text color and font mix-matching prevented?
-            </h4>
-            <p className={`leading-relaxed ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>
-              Our engine normalizes body text font sizes to 11pt and eliminates noisy subpixel canvas color artifacts, ensuring crisp, uniform readability throughout.
-            </p>
-          </div>
-
-          <div
-            className={`p-3.5 rounded-md border space-y-1 ${
-              isDark ? 'bg-zinc-950/60 border-zinc-800' : 'bg-zinc-50 border-zinc-200'
-            }`}
-          >
-            <h4 className={`font-semibold ${isDark ? 'text-zinc-100' : 'text-zinc-900'}`}>
-              Can scanned PDFs or photo documents be converted?
-            </h4>
-            <p className={`leading-relaxed ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>
-              Yes! When a scanned or image-based PDF is detected, built-in Tesseract.js OCR automatically recognizes characters and formats them into clean paragraphs.
-            </p>
-          </div>
-
-          <div
-            className={`p-3.5 rounded-md border space-y-1 ${
-              isDark ? 'bg-zinc-950/60 border-zinc-800' : 'bg-zinc-50 border-zinc-200'
-            }`}
-          >
-            <h4 className={`font-semibold ${isDark ? 'text-zinc-100' : 'text-zinc-900'}`}>
-              Are my documents uploaded to any remote server?
-            </h4>
-            <p className={`leading-relaxed ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>
-              No. FileWala runs 100% locally on your computer inside the browser using WebAssembly and client-side JavaScript. No document data is ever transmitted to the cloud.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Security & Client-Side Notice Footer */}
-      <div
-        className={`p-4 rounded-md border flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs ${
-          isDark
-            ? 'bg-zinc-900 border-zinc-800 text-zinc-400'
-            : 'bg-zinc-50 border-zinc-200 text-zinc-600'
-        }`}
-      >
-        <div className="flex items-center gap-2">
-          <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
-          <span>
-            <strong>Zero Server Processing:</strong> Your PDF bytes never leave this browser tab. All conversion, paragraph formatting, and Word compilation run locally.
-          </span>
-        </div>
-        <span className="font-mono text-[11px] text-zinc-500 shrink-0">100% In-Browser Privacy</span>
-      </div>
-
       {/* TEXT PREVIEW MODAL */}
       {isPreviewOpen && result && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
@@ -1792,6 +1524,9 @@ export const PdfToWordTool: React.FC<PdfToWordToolProps> = ({ onNotify }) => {
           </div>
         </div>
       )}
+
+      {/* Comprehensive Educational & Technical Guide Section */}
+      <PdfToolGuideSection toolId="pdf-to-word" />
 
       {/* Built-in PDF Document Preview Modal */}
       <PdfPreviewModal

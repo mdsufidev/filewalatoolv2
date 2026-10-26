@@ -112,7 +112,13 @@
   <!-- Core Utility & PDF Converter Tools -->
   <url>
     <loc>https://www.filewalatool.com/crop-image</loc>
-    <lastmod>2026-10-14</lastmod>
+    <lastmod>2026-10-25</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.filewalatool.com/bg-remover</loc>
+    <lastmod>2026-10-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>

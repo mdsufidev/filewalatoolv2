@@ -1,8 +1,7 @@
 import React from 'react';
-import { ShieldCheck, Cpu, Flame, Layers } from 'lucide-react';
+import { ShieldCheck, Cpu, Flame } from 'lucide-react';
 import { MainNavSection } from './Navbar';
 import { useLanguage } from '../../core/languageContext';
-import { Logo } from '../ui/Logo';
 
 interface HeroSectionProps {
   onSelectSection: (section: MainNavSection) => void;
@@ -16,7 +15,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
   const { t, language } = useLanguage();
 
   return (
-    <div className="relative pt-8 pb-12 overflow-hidden border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 transition-colors">
+    <div className="relative pt-8 pb-12 overflow-hidden border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 transition-colors select-none">
       <div className="relative max-w-4xl mx-auto px-4 text-center space-y-5">
         {/* Flat Minimalist 2D Status Tag */}
         <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 text-xs font-mono">
@@ -38,12 +37,12 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               }}
             />
           </div>
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 leading-[1.1]">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 leading-[1.15]">
             FileWala<span className="text-[#E11D2A]">Tool</span> {language === 'hi' ? 'सुइट' : 'Suite'}
           </h1>
         </div>
 
-        <p className="max-w-2xl mx-auto text-xs sm:text-sm text-zinc-600 dark:text-slate-400 leading-relaxed font-normal">
+        <p className="max-w-2xl mx-auto text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed font-normal">
           {language === 'hi' ? (
             <>
               सरकारी फॉर्म्स (<strong>UPSC, SSC, PAN</strong>) के लिए फोटो-साइन रिसाइज़ करें, <strong>PDF मर्ज व कंप्रेस</strong> करें और फॉर्मेट बदलें। 100% प्राइवेट और पूरी तरह मुफ़्त।
@@ -56,17 +55,17 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
         </p>
 
         {/* Feature Badges Bar */}
-        <div className="flex flex-wrap items-center justify-center gap-5 pt-1 text-xs font-medium text-zinc-500 dark:text-slate-400">
+        <div className="flex flex-wrap items-center justify-center gap-5 pt-1 text-xs font-medium text-zinc-500 dark:text-zinc-400">
           <div className="flex items-center gap-1.5">
             <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
             <span>{t('hero.featurePrivacy', 'Files Never Leave Your Device')}</span>
           </div>
-          <span className="text-zinc-300 dark:text-slate-700">·</span>
+          <span className="text-zinc-300 dark:text-zinc-700">·</span>
           <div className="flex items-center gap-1.5">
-            <Cpu className="w-4 h-4 text-zinc-700 dark:text-slate-300" />
+            <Cpu className="w-4 h-4 text-zinc-700 dark:text-zinc-300" />
             <span>{t('hero.featureGpu', 'Instant 2s In-Browser Processing')}</span>
           </div>
-          <span className="text-zinc-300 dark:text-slate-700">·</span>
+          <span className="text-zinc-300 dark:text-zinc-700">·</span>
           <div className="flex items-center gap-1.5">
             <Flame className="w-4 h-4 text-amber-500 dark:text-amber-400" />
             <span>{t('hero.featureFree', '100% Free Forever')}</span>

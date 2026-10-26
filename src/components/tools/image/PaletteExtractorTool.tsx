@@ -1,8 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Pipette, Copy, Check, RefreshCw, Palette, Download } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Pipette, Copy, Check, RefreshCw, Palette, Download, ShieldCheck } from 'lucide-react';
+import { ImageToolGuideSection } from './ImageToolGuideSection';
 import { Dropzone } from '../../ui/Dropzone';
 import { Button } from '../../ui/Button';
 import { useImageUpload } from '../../../hooks/useImageUpload';
+import { useTheme } from '../../../core/themeContext';
 
 interface ColorSwatch {
   hex: string;
@@ -142,32 +144,125 @@ export const PaletteExtractorTool: React.FC<{
     setHoveredColor({ hex, x: e.clientX, y: e.clientY });
   };
 
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+
+  // Global Keyboard Navigation
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
+      if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+
+      if (e.key === 'n' || e.key === 'N' || e.key === 'Escape') {
+        if (currentImage) {
+          e.preventDefault();
+          resetImage();
+          onNotify('Reset', 'Cleared workspace.', 'info');
+          return;
+        }
+      }
+
+      if (e.key === 'c' || e.key === 'C' || e.key === 'Enter') {
+        if (palette.length > 0) {
+          e.preventDefault();
+          handleCopyCssVariables();
+          return;
+        }
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [currentImage, palette.length, handleCopyCssVariables, resetImage, onNotify]);
+
   return (
-    <div className="max-w-6xl mx-auto space-y-6 animate-in fade-in duration-200">
-      <div className="text-center space-y-1.5 max-w-xl mx-auto">
-        <h3 className="text-2xl font-bold tracking-tight text-zinc-950">
-          Color Palette Extractor (Image Color Picker)
-        </h3>
-        <p className="text-xs text-zinc-500 font-medium">
-          Target Keyword: <em>Extract color palette from image / Image color picker</em>
-        </p>
-        <p className="text-xs text-zinc-400">
-          Ideal for UI/UX designers and frontend developers to extract dominant brand colors, inspect pixels, and copy ready-to-use CSS variables.
+    <div className="w-full max-w-7xl mx-auto space-y-6 sm:space-y-8 animate-in fade-in duration-200 select-none">
+      {/* Header Section */}
+      <div className="text-center space-y-2.5 max-w-2xl mx-auto">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-medium uppercase tracking-wider text-zinc-600 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-850">
+          <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+          <span>100% Client-Side Engine · Zero Uploads</span>
+        </div>
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-zinc-950 dark:text-zinc-50">
+          Color Palette Extractor
+        </h1>
+        <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 max-w-md mx-auto leading-relaxed">
+          Extract dominant color swatches, sample pixel colors with live eyedropper, and export ready-to-use CSS variables.
         </p>
       </div>
 
       {!currentImage ? (
-        <Dropzone
-          onFilesSelected={(files) => loadFile(files[0])}
-          title="Drop image to extract color palette"
-          description="PNG, JPG, WebP, SVG supported"
-        />
+        <div className="max-w-3xl mx-auto">
+          <Dropzone
+            onFilesSelected={(files) => loadFile(files[0])}
+            title="Drop image to extract color palette"
+            description="PNG, JPG, WebP, SVG supported · 100% Client-Side"
+          />
+        </div>
       ) : (
+        <div className="space-y-6">
+          {/* Active Workspace Top Header Bar */}
+          <div
+            className={`flex flex-wrap items-center justify-between gap-4 p-3.5 sm:p-4 border rounded-xl ${
+              isDark
+                ? 'bg-zinc-900 border-zinc-800 text-zinc-100'
+                : 'bg-white border-zinc-200 text-zinc-900'
+            }`}
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              <div
+                className={`w-10 h-10 rounded-lg overflow-hidden shrink-0 flex items-center justify-center border ${
+                  isDark ? 'bg-zinc-950 border-zinc-800' : 'bg-zinc-100 border-zinc-200'
+                }`}
+              >
+                <img
+                  src={currentImage.previewUrl}
+                  alt="Source"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div className="min-w-0">
+                <h3 className={`text-xs sm:text-sm font-semibold truncate ${isDark ? 'text-white' : 'text-zinc-900'}`}>
+                  {currentImage.name}
+                </h3>
+                <div className={`flex items-center gap-2 text-[11px] font-mono mt-0.5 ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                  <span>{currentImage.width} × {currentImage.height} px</span>
+                  <span>·</span>
+                  <span className="text-purple-500 font-semibold">{palette.length} Colors Found</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={resetImage}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+                  isDark
+                    ? 'bg-zinc-800 hover:bg-zinc-750 text-zinc-200'
+                    : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700'
+                }`}
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                <span>Change Image</span>
+              </button>
+
+              <button
+                onClick={handleCopyCssVariables}
+                className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+                  isDark
+                    ? 'bg-zinc-100 hover:bg-zinc-200 text-zinc-900'
+                    : 'bg-zinc-900 hover:bg-zinc-800 text-white'
+                }`}
+              >
+                <Copy className="w-3.5 h-3.5" />
+                <span>Copy CSS Variables</span>
+              </button>
+            </div>
+          </div>
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* Swatches (5 cols) */}
-          <div className="lg:col-span-5 bg-white border border-zinc-200 rounded-lg p-5 space-y-5">
-            <div className="flex items-center justify-between pb-3 border-b border-zinc-100">
-              <span className="text-xs font-bold text-zinc-800 uppercase tracking-wider">
+          <div className="lg:col-span-5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 space-y-5">
+            <div className="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800">
+              <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200 uppercase tracking-wider">
                 Dominant Palette ({palette.length})
               </span>
               <Button variant="outline" size="sm" onClick={resetImage} leftIcon={<RefreshCw className="w-3.5 h-3.5" />}>
@@ -182,25 +277,25 @@ export const PaletteExtractorTool: React.FC<{
                   <div
                     key={`${swatch.hex}-${idx}`}
                     onClick={() => handleCopyHex(swatch.hex)}
-                    className="flex items-center justify-between p-2.5 rounded-xl border border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50 transition-all cursor-pointer group"
+                    className="flex items-center justify-between p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-800/60 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all cursor-pointer group"
                   >
                     <div className="flex items-center gap-3">
                       <div
-                        className="w-9 h-9 rounded-lg border border-zinc-300 shadow-xs group-hover:scale-105 transition-transform shrink-0"
+                        className="w-9 h-9 rounded-lg border border-zinc-300 dark:border-zinc-700 shadow-xs group-hover:scale-105 transition-transform shrink-0"
                         style={{ backgroundColor: swatch.hex }}
                       />
                       <div>
-                        <span className="text-xs font-mono font-bold text-zinc-900 block">
+                        <span className="text-xs font-mono font-bold text-zinc-900 dark:text-white block">
                           {swatch.hex}
                         </span>
-                        <span className="text-[10px] text-zinc-400 font-mono">
+                        <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-mono">
                           {swatch.rgb}
                         </span>
                       </div>
                     </div>
 
-                    <button className="text-xs text-zinc-400 group-hover:text-zinc-900 inline-flex items-center gap-1">
-                      {isCopied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                    <button className="text-xs text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-white inline-flex items-center gap-1">
+                      {isCopied ? <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                       <span className="text-[11px] font-medium">{isCopied ? 'Copied' : 'Copy'}</span>
                     </button>
                   </div>
@@ -220,21 +315,21 @@ export const PaletteExtractorTool: React.FC<{
           </div>
 
           {/* Interactive Image Display & Eyedropper (7 cols) */}
-          <div className="lg:col-span-7 bg-white border border-zinc-200 rounded-lg p-5 space-y-4">
+          <div className="lg:col-span-7 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-zinc-800 uppercase tracking-wider flex items-center gap-1.5">
+              <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200 uppercase tracking-wider flex items-center gap-1.5">
                 <Pipette className="w-3.5 h-3.5 text-blue-600" />
                 Hover Eyedropper Inspector
               </span>
               {hoveredColor && (
-                <div className="flex items-center gap-2 bg-zinc-100 px-2.5 py-1 rounded-lg border border-zinc-200 text-xs font-mono font-bold">
-                  <div className="w-3.5 h-3.5 rounded-full border border-zinc-300" style={{ backgroundColor: hoveredColor.hex }} />
+                <div className="flex items-center gap-2 bg-zinc-100 dark:bg-zinc-800 px-2.5 py-1 rounded-lg text-xs font-mono font-bold text-zinc-900 dark:text-white">
+                  <div className="w-3.5 h-3.5 rounded-full border border-zinc-300 dark:border-zinc-600" style={{ backgroundColor: hoveredColor.hex }} />
                   <span>{hoveredColor.hex}</span>
                 </div>
               )}
             </div>
 
-            <div className="relative rounded-xl border border-zinc-200 bg-zinc-100/50 p-4 flex items-center justify-center min-h-[380px] overflow-hidden">
+            <div className="relative rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-100/50 dark:bg-zinc-950 p-4 flex items-center justify-center min-h-[380px] overflow-hidden">
               <img
                 ref={imageDisplayRef}
                 src={currentImage.previewUrl}
@@ -249,7 +344,10 @@ export const PaletteExtractorTool: React.FC<{
             </p>
           </div>
         </div>
+      </div>
       )}
+      {/* Educational Guide, Specs, Pro Tips & Schema-Matched FAQs */}
+      <ImageToolGuideSection toolId="color-palette" />
     </div>
   );
 };

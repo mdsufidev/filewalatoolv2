@@ -255,46 +255,72 @@ export const SplitPdfTool: React.FC<SplitPdfToolProps> = ({ onNotify }) => {
     setExtractedZipBlob(null);
   };
 
+  // Keyboard navigation
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
+      if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+
+      if (!file) return;
+
+      if (e.key === 'n' || e.key === 'N' || e.key === 'Escape') {
+        e.preventDefault();
+        handleReset();
+        return;
+      }
+
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        handleExecuteSplit(false);
+        return;
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [file, handleExecuteSplit]);
+
   return (
-    <div className="space-y-8 animate-in fade-in duration-200">
+    <div className="w-full max-w-7xl mx-auto space-y-8 animate-in fade-in duration-200">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className={`text-xl font-bold tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
+          <h1 className={`text-xl font-bold tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
             Split PDF & Extract Pages
-          </h2>
+          </h1>
           <p className={`text-xs mt-1 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-            Extract custom page ranges or separate every page into individual single-page documents 100% client-side.
+            Separate pages or extract custom page ranges into clean PDF documents.
           </p>
         </div>
         {file && (
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={handleReset} className="text-xs">
-              Change PDF
+              <span>Change PDF</span>
+              <kbd className="ml-1.5 px-1.5 py-0.2 rounded text-[10px] font-mono bg-zinc-100 dark:bg-zinc-800 text-zinc-500 border border-zinc-200 dark:border-zinc-700">
+                Esc
+              </kbd>
             </Button>
             <Button
               onClick={() => handleExecuteSplit(false)}
               isLoading={isProcessing}
               leftIcon={<Scissors className="w-4 h-4" />}
             >
-              Extract {parsedPageIndices.length} Page{parsedPageIndices.length > 1 ? 's' : ''}
+              <span>Extract {parsedPageIndices.length} Page{parsedPageIndices.length > 1 ? 's' : ''}</span>
+              <kbd className="ml-1.5 px-1.5 py-0.2 rounded text-[10px] font-mono bg-white/20 text-white">
+                ↵
+              </kbd>
             </Button>
           </div>
         )}
       </div>
 
-      {/* Dropzone or Workspace */}
+      {/* Direct Clean Dropzone (Centered, Max-w-3xl, Zero Outer Wrapper Box!) */}
       {!file ? (
-        <div
-          className={`rounded-lg border p-6 md:p-8 ${
-            isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'
-          }`}
-        >
+        <div className="max-w-3xl mx-auto">
           <Dropzone
             onFilesSelected={(files) => handlePdfLoaded(files[0])}
             accept="application/pdf,.pdf"
-            title="Drop PDF here to split or extract pages"
-            description="Supports multi-page documents of any size. All operations execute strictly in your browser."
+            title="Upload PDF to Split or Extract Pages"
+            description="Drag & drop or click to browse. Supports multi-page documents."
           />
         </div>
       ) : (
@@ -559,64 +585,8 @@ export const SplitPdfTool: React.FC<SplitPdfToolProps> = ({ onNotify }) => {
         </div>
       )}
 
-      {/* Educational & How It Works Guidance Section */}
-      <PdfToolGuideSection
-        toolName="Split PDF Tool"
-        tagline="Extract single pages, custom sections, or divide large PDF documents into individual files."
-        steps={[
-          {
-            step: 1,
-            title: 'Drop PDF Document',
-            description: 'Select or drag your PDF into the workspace. All page count data is detected instantly.',
-            icon: <FileText className="w-4 h-4 text-rose-400" />,
-          },
-          {
-            step: 2,
-            title: 'Specify Pages or Range',
-            description: 'Use custom range syntax (e.g. 1-3, 5), toggle individual thumbnail cards, or choose Split All.',
-            icon: <Scissors className="w-4 h-4 text-blue-400" />,
-          },
-          {
-            step: 3,
-            title: 'Extract & Download',
-            description: 'Download your chosen pages as a single combined PDF or cleanly archived into a ZIP file.',
-            icon: <Download className="w-4 h-4 text-emerald-400" />,
-          },
-        ]}
-        tips={[
-          {
-            title: 'Range Syntax Examples',
-            description: 'Type "1-4, 7, 10-12" to extract pages 1 through 4, page 7, and pages 10 through 12 simultaneously.',
-          },
-          {
-            title: 'Split All to ZIP',
-            description: 'Choose "Split All Pages (ZIP)" to instantly turn a 50-page PDF into 50 individual single-page PDF files.',
-          },
-          {
-            title: 'Zero Re-compression',
-            description: 'Pages are extracted directly from the raw PDF stream with zero loss of vector sharpness or text clarity.',
-          },
-        ]}
-        faqs={[
-          {
-            question: 'Will splitting reduce the quality of vectors or embedded images?',
-            answer: 'No. The pdf-lib engine extracts the native binary PDF streams directly without re-rasterizing them, preserving 100% vector text, links, and original photo resolution.',
-          },
-          {
-            question: 'Can I extract non-consecutive pages into one PDF?',
-            answer: 'Yes! Simply use commas to separate distinct page numbers (e.g. "1, 3, 5, 8") and click "Extract to Single PDF".',
-          },
-          {
-            question: 'Is there a limit on how many pages can be split?',
-            answer: 'Because processing happens client-side in browser memory, documents up to hundreds of pages can be split smoothly.',
-          },
-        ]}
-        privacyNotes={[
-          'All PDF stream manipulation is 100% in-browser',
-          'No files uploaded to any web servers',
-          'Safe for confidential contracts, financial, and medical documents',
-        ]}
-      />
+      {/* Comprehensive Educational & Technical Guide Section */}
+      <PdfToolGuideSection toolId="split-pdf" />
 
       {/* Preview Modal */}
       {previewModalOpen && previewBlob && (

@@ -14,11 +14,10 @@ interface ToolGridProps {
 }
 
 /**
- * Responsive CSS Grid for Tool Cards
- * - Desktop: 5-6 columns with consistent 16px gaps
- * - Tablet: 3-4 columns
- * - Mobile: 1-2 columns
- * - Neat row alignment with identical minimum card heights
+ * Responsive Wireframe Grid for Tool Cards
+ * - Desktop/Tablet: 2 wide columns matching wireframe specification
+ * - Mobile: 1 column
+ * - Generous horizontal space for title and description
  */
 export const ToolGrid: React.FC<ToolGridProps> = ({
   tools,
@@ -29,7 +28,7 @@ export const ToolGrid: React.FC<ToolGridProps> = ({
 }) => {
   return (
     <div
-      className={`grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 sm:gap-4.5 ${className}`}
+      className={`grid grid-cols-1 md:grid-cols-2 gap-4 ${className}`}
     >
       {tools.map((tool) => (
         <ToolCard

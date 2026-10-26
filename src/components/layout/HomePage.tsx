@@ -4,6 +4,7 @@ import {
   X,
   Zap,
   ShieldCheck,
+  BadgeCheck,
   FileBadge,
   Linkedin,
   Instagram,
@@ -23,6 +24,7 @@ import {
   ALL_TOOLS,
   CATEGORIES_CONFIG,
   ToolCategory,
+  searchTools,
 } from '../../core/toolsData';
 import { useTheme } from '../../core/themeContext';
 import { useLanguage } from '../../core/languageContext';
@@ -30,6 +32,7 @@ import { ToolCategoryFilter } from '../tools/ToolCategoryFilter';
 import { ToolGrid } from '../tools/ToolGrid';
 import { TrustCertificationSection } from './TrustCertificationSection';
 import { GovtToolsSeoGuide } from '../seo/GovtToolsSeoGuide';
+import { CategoryHubGuide } from '../seo/CategoryHubGuide';
 
 interface HomePageProps {
   selectedCategory: ToolCategory;
@@ -41,171 +44,10 @@ interface HomePageProps {
   onOpenPrivacyModal?: () => void;
   onOpenCommandPalette?: () => void;
   onNavigatePage?: (page: 'about' | 'disclaimer' | 'terms' | 'contact' | 'desktop') => void;
+  currentPath?: string;
 }
 
-// Everyday Hindi / Hinglish and English search keywords mapping
-const SEARCH_ALIASES: Record<string, string[]> = {
-  'upsc-photo-maker': [
-    'upsc',
-    'name date',
-    'dop',
-    'date of photo',
-    'tarikh',
-    'naam',
-    'upsc form',
-    'stamp',
-    'civil services',
-    'ias',
-    'nda',
-    'cds',
-  ],
-  'ssc-resizer': [
-    'ssc',
-    'cgl',
-    'chsl',
-    'mts',
-    'gd',
-    '20kb',
-    '50kb',
-    '10kb',
-    '20 kb',
-    'sign',
-    'hastakshar',
-    'signature',
-    'ssc photo',
-    'ssc sign',
-  ],
-  'pan-photo-resize': [
-    'pan',
-    'pan card',
-    '200 dpi',
-    'nsdl',
-    'protean',
-    'utiitsl',
-    'uti',
-    'photo resize',
-    'pan photo',
-  ],
-  'signature-resize': [
-    'pan sign',
-    'pan signature',
-    'hastakshar',
-    'safed sign',
-    'white background sign',
-    '50kb',
-  ],
-  'passport-photo-resize': [
-    'passport',
-    'seva',
-    '35x45',
-    '350x450',
-    '300 dpi',
-    'blue background',
-    'white background',
-    'mea',
-    'visa photo',
-  ],
-  'passport-signature-resize': [
-    'passport sign',
-    'passport signature',
-    'mea sign',
-    '400x200',
-  ],
-  'gov-compressor': [
-    'aadhar',
-    'aadhaar',
-    'marksheet',
-    'certificate',
-    '100kb',
-    '200kb',
-    'epfo',
-    'sarathi',
-    'document kam',
-    'size kam',
-    'pdf kam',
-  ],
-  'compressor': [
-    'compress',
-    'size kam',
-    'chhota',
-    'kb',
-    'mb to kb',
-    'reduce size',
-    'photo size',
-    'compress image',
-    'photo kam',
-    'chhoti photo',
-    '20kb',
-    '50kb',
-    '100kb',
-  ],
-  'resizer': [
-    'pixel',
-    'resize',
-    'dimension',
-    'scale',
-    'badalna',
-    'photo resize',
-    '800x600',
-    'width height',
-  ],
-  'cropper': [
-    'crop',
-    'katna',
-    'katna photo',
-    'rotate',
-    'ghomana',
-    'seedha',
-    'aspect ratio',
-    '1:1',
-    'square',
-    'passport crop',
-  ],
-  'merge-pdf': [
-    'merge',
-    'jodna',
-    'ek sath',
-    'combine',
-    'combine pdf',
-    'join pdf',
-    'multiple pdf',
-    'marksheet merge',
-    'pdf jodein',
-    'ek pdf',
-  ],
-  'compress-pdf': [
-    'compress pdf',
-    'pdf size kam',
-    'pdf 100kb',
-    'pdf 200kb',
-    'shrink pdf',
-    'chhota pdf',
-    'kam size pdf',
-  ],
-  'pdf-to-word': ['word', 'docx', 'edit pdf', 'pdf se word', 'editable'],
-  'pdf-to-jpg': ['pdf to photo', 'pdf se image', 'pdf to jpg', 'pdf to png'],
-  'image-to-pdf': [
-    'photo to pdf',
-    'image to pdf',
-    'jpg to pdf',
-    'pdf banana',
-    'photo se pdf',
-    'marksheet pdf',
-  ],
-  'split-pdf': ['split', 'page alag', 'extract pages', 'tukde'],
-  'rotate-pdf': ['rotate', 'ulta', 'seedha', 'rotate pdf', 'sidha'],
-  'heic-to-jpg': [
-    'iphone',
-    'apple',
-    'heic',
-    'heif',
-    'iphone photo',
-    'ios photo',
-    'heic to jpg',
-  ],
-  'png-to-webp': ['webp', 'png', 'transparent', 'lightweight'],
-  'webp-to-jpg': ['webp to jpg', 'webp convert', 'jpg convert'],
-};
+
 
 export const HomePage: React.FC<HomePageProps> = ({
   selectedCategory,
@@ -213,6 +55,7 @@ export const HomePage: React.FC<HomePageProps> = ({
   onLaunchTool,
   onOpenCommandPalette,
   onNavigatePage,
+  currentPath,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const { theme } = useTheme();
@@ -233,41 +76,121 @@ export const HomePage: React.FC<HomePageProps> = ({
     }
   }, [language]);
 
-  // Filter tools based on category and search query (with Hinglish/Hindi alias support)
+  const isToolsDirectory = currentPath?.replace(/\/$/, '') === '/tools';
+
+  const heroContent = useMemo(() => {
+    if (isToolsDirectory) {
+      return {
+        tag: language === 'hi' ? 'फ़ाइलवाला टूल्स डायरेक्टरी' : 'All Tools Directory · Client-Side Suite',
+        title: language === 'hi' ? (
+          <>
+            फ़ाइलवाला टूल्स डायरेक्टरी — <span className="text-zinc-950 dark:text-white underline decoration-zinc-300 dark:decoration-zinc-700 underline-offset-4">सभी मुफ़्त टूल्स</span>
+          </>
+        ) : (
+          <>
+            All Free In-Browser File Tools &amp; <span className="text-zinc-950 dark:text-white underline decoration-zinc-300 dark:decoration-zinc-700 underline-offset-4">Document Utilities</span>
+          </>
+        ),
+        desc: language === 'hi'
+          ? 'सभी इमेज ऑप्टिमाइज़र, PDF टूल्स, फॉर्मेट कन्वर्टर और सरकारी फॉर्म फोटो रिसाइज़र का पूरा इंडेक्स। शून्य सर्वर अपलोड।'
+          : 'Complete searchable catalog of client-side file tools. Resize images, compress and merge PDFs, convert formats, and format government exam documents without cloud uploads.',
+      };
+    }
+
+    if (selectedCategory === 'image-tools') {
+      return {
+        tag: language === 'hi' ? 'इमेज ऑप्टिमाइज़र व क्रिएटिव सुइट' : 'Image Optimizers & Creative Suite',
+        title: language === 'hi' ? (
+          <>
+            मुफ़्त ऑनलाइन इमेज टूल्स — <span className="text-zinc-950 dark:text-white underline decoration-zinc-300 dark:decoration-zinc-700 underline-offset-4">फोटो कंप्रेसर व रिसाइज़र</span>
+          </>
+        ) : (
+          <>
+            Free In-Browser Image Tools &amp; <span className="text-zinc-950 dark:text-white underline decoration-zinc-300 dark:decoration-zinc-700 underline-offset-4">Photo Optimizers</span>
+          </>
+        ),
+        desc: language === 'hi'
+          ? 'फोटो का साइज़ (KB) कम करें, पिक्सल बदलें, क्रॉप करें, वाटरमार्क लगाएं और बैकग्राउंड हटाएं। 100% ऑन-डिवाइस प्राइवेसी।'
+          : 'Compress image size, resize pixel dimensions, crop, remove backgrounds, rounded corners, and watermark photos with zero cloud uploads.',
+      };
+    }
+
+    if (selectedCategory === 'pdf-tools') {
+      return {
+        tag: language === 'hi' ? 'PDF दस्तावेज़ टूल्स' : 'PDF Document Utilities',
+        title: language === 'hi' ? (
+          <>
+            प्राइवेट ऑनलाइन PDF टूल्स — <span className="text-zinc-950 dark:text-white underline decoration-zinc-300 dark:decoration-zinc-700 underline-offset-4">मर्ज, कंप्रेस व कन्वर्ट</span>
+          </>
+        ) : (
+          <>
+            Private In-Browser PDF Tools &amp; <span className="text-zinc-950 dark:text-white underline decoration-zinc-300 dark:decoration-zinc-700 underline-offset-4">Document Utilities</span>
+          </>
+        ),
+        desc: language === 'hi'
+          ? 'PDF फाइलों को जोड़ें, कंप्रेस करें, स्प्लिट करें, रोटेट करें और वर्ड में बदलें — संवेदनशील दस्तावेज़ आपके डिवाइस में ही सुरक्षित रहते हैं।'
+          : 'Merge, compress, split, rotate, convert to Word, and extract text from PDFs directly in your browser with zero server uploads.',
+      };
+    }
+
+    if (selectedCategory === 'convert') {
+      return {
+        tag: language === 'hi' ? 'इमेज फॉर्मेट कन्वर्टर' : 'Image Format Converters & Codecs',
+        title: language === 'hi' ? (
+          <>
+            फास्ट इमेज फॉर्मेट कन्वर्टर — <span className="text-zinc-950 dark:text-white underline decoration-zinc-300 dark:decoration-zinc-700 underline-offset-4">WebP, PNG, JPG व HEIC</span>
+          </>
+        ) : (
+          <>
+            Fast Client-Side Format Converters — <span className="text-zinc-950 dark:text-white underline decoration-zinc-300 dark:decoration-zinc-700 underline-offset-4">HEIC, WebP, PNG &amp; JPG</span>
+          </>
+        ),
+        desc: language === 'hi'
+          ? 'iPhone (HEIC) फोटो, WebP, PNG, JPG और AVIF को बिना किसी सीमा के तुरंत कन्वर्ट करें। 100% क्लाइंट-साइड।'
+          : 'Convert between HEIC/iPhone, WebP, JPG, PNG, and AVIF formats instantly in your browser without uploading to any server.',
+      };
+    }
+
+    if (selectedCategory === 'document-tools') {
+      return {
+        tag: language === 'hi' ? 'सरकारी फॉर्म्स व परीक्षा टूल्स' : 'Govt & Exam Portal Compliance',
+        title: language === 'hi' ? (
+          <>
+            सरकारी फॉर्म फोटो व साइन रिसाइज़र — <span className="text-zinc-950 dark:text-white underline decoration-zinc-300 dark:decoration-zinc-700 underline-offset-4">UPSC, SSC व पैन कार्ड</span>
+          </>
+        ) : (
+          <>
+            Indian Government Document &amp; <span className="text-zinc-950 dark:text-white underline decoration-zinc-300 dark:decoration-zinc-700 underline-offset-4">Photo Resizer Suite</span>
+          </>
+        ),
+        desc: language === 'hi'
+          ? 'UPSC (नाम व तारीख स्टैम्प), SSC, पैन कार्ड और पासपोर्ट सेवा के लिए सही 200 DPI और 20KB-50KB साइज़ में फोटो-साइन तैयार करें।'
+          : 'Format exam photos and signatures to official Indian government portal standards (Protean NSDL, UTIITSL, Passport Seva, UPSC, SSC, and EPFO).',
+      };
+    }
+
+    // Default: Home Page ('/')
+    return {
+      tag: `${greeting} · ${language === 'hi' ? '100% प्राइवेट व क्लाइंट-साइड सुइट' : '100% Private Client-Side Suite'}`,
+      title: language === 'hi' ? (
+        <>
+          मुफ़्त ऑनलाइन फ़ाइल व इमेज टूल्स
+        </>
+      ) : (
+        <>
+          Free Online File &amp; Image Tools
+        </>
+      ),
+      desc: language === 'hi'
+        ? 'फ़ोटो और फाइलों को कंप्रेस, कन्वर्ट, रिसाइज़ और मैनेज करें — एक ही जगह पर।'
+        : 'Compress, convert, resize and manage your files in one place.',
+    };
+  }, [isToolsDirectory, selectedCategory, language, greeting]);
+
+  // Filter and rank tools using canonical search algorithm
   const filteredTools = useMemo(() => {
-    let list = ALL_TOOLS;
-
-    if (selectedCategory !== 'all') {
-      list = list.filter((t) => t.category === selectedCategory);
-    }
-
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase().trim();
-      list = list.filter((t) => {
-        const nameMatch = t.name.toLowerCase().includes(q);
-        const descMatch = t.description.toLowerCase().includes(q);
-        const keywordMatch = t.targetKeyword.toLowerCase().includes(q);
-        const badgeMatch = t.badge && t.badge.toLowerCase().includes(q);
-        const translatedNameMatch = tToolName(t.id).toLowerCase().includes(q);
-        const translatedDescMatch = tToolDesc(t.id).toLowerCase().includes(q);
-        const aliasMatch = SEARCH_ALIASES[t.id]?.some(
-          (alias) => alias.toLowerCase().includes(q) || q.includes(alias.toLowerCase())
-        );
-
-        return Boolean(
-          nameMatch ||
-            descMatch ||
-            keywordMatch ||
-            badgeMatch ||
-            translatedNameMatch ||
-            translatedDescMatch ||
-            aliasMatch
-        );
-      });
-    }
-
-    return list;
-  }, [selectedCategory, searchQuery, tToolName, tToolDesc]);
+    return searchTools(ALL_TOOLS, searchQuery, selectedCategory);
+  }, [selectedCategory, searchQuery]);
 
   const activeCategoryMeta = useMemo(() => {
     return CATEGORIES_CONFIG.find((c) => c.id === selectedCategory) || CATEGORIES_CONFIG[0];
@@ -322,71 +245,35 @@ export const HomePage: React.FC<HomePageProps> = ({
   return (
     <div className="w-full flex flex-col items-center">
       {/* =========================================================================
-          HERO SECTION (Minimalist 2D Swiss / Linear Design)
+          HERO SECTION (Compact, Practical, Human-Crafted Utility Hero)
       ========================================================================= */}
-      <section className="relative w-full pt-10 pb-12 sm:pt-14 sm:pb-16 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center space-y-5">
+      <section className="w-full bg-white dark:bg-zinc-950 py-8 sm:py-10">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
           
-          {/* Status Label (Clean Flat 2D Tag) */}
-          <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 text-xs font-mono">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-            <span>
-              {greeting} · {language === 'hi' ? '100% प्राइवेट व क्लाइंट-साइड सुइट' : '100% Private Client-Side Suite'}
-            </span>
-          </div>
-
-          {/* Headline & Empathetic Subtitle (Swiss Typography) */}
-          <div className="space-y-3">
-            <h1 className="text-3xl sm:text-5xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 leading-[1.15]">
-              {language === 'hi' ? (
-                <>
-                  सरकारी फॉर्म्स व फ़ाइलें, <span className="text-zinc-950 dark:text-white underline decoration-zinc-300 dark:decoration-zinc-700 underline-offset-4">अब चुटकियों में आसान</span>
-                </>
-              ) : (
-                <>
-                  Stop Worrying About Form Rejections. <span className="text-zinc-950 dark:text-white underline decoration-zinc-300 dark:decoration-zinc-700 underline-offset-4">Ready in Seconds.</span>
-                </>
-              )}
-            </h1>
-
-            <p className="max-w-2xl mx-auto text-sm sm:text-base text-zinc-600 dark:text-zinc-400 leading-relaxed font-normal">
-              {language === 'hi' ? (
-                <>
-                  UPSC, SSC, PAN कार्ड या पासपोर्ट के लिए सही साइज़ और KB में फोटो-साइन तैयार करें, या PDF मर्ज व कंप्रेस करें। 100% मुफ़्त और प्राइवेट।
-                </>
-              ) : (
-                <>
-                  Format exam photos for UPSC, SSC, PAN, and Passport, or compress and merge PDFs directly in your browser. 100% private and completely free.
-                </>
-              )}
-            </p>
-          </div>
-
-          {/* Minimal 3-Point Guarantee (Flat 2D inline) */}
-          <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 pt-1 text-xs font-mono text-zinc-500 dark:text-zinc-400">
-            <div className="flex items-center gap-1.5">
-              <ShieldCheck className="w-3.5 h-3.5 text-zinc-700 dark:text-zinc-300" />
-              <span>{language === 'hi' ? '100% ऑन-डिवाइस (नो क्लाउड)' : 'Zero Cloud Uploads'}</span>
+          {/* Status Label (Hidden on clean home wireframe, visible on category hubs) */}
+          {(selectedCategory !== 'all' || isToolsDirectory) && (
+            <div className="inline-flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400 font-mono mb-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+              <span>{heroContent.tag}</span>
             </div>
-            <span className="text-zinc-300 dark:text-zinc-700 hidden sm:inline">/</span>
-            <div className="flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5 text-zinc-700 dark:text-zinc-300" />
-              <span>{language === 'hi' ? 'सिर्फ 2 सेकंड में तैयार' : '2-Second Execution'}</span>
-            </div>
-            <span className="text-zinc-300 dark:text-zinc-700 hidden sm:inline">/</span>
-            <div className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-3.5 h-3.5 text-zinc-700 dark:text-zinc-300" />
-              <span>{language === 'hi' ? '100% फॉर्म मंज़ूर' : 'Portal Compliant'}</span>
-            </div>
-          </div>
+          )}
 
-          {/* Minimalist 2D Search Bar */}
-          <div className="max-w-xl mx-auto pt-2">
+          {/* Headline & Empathetic Subtitle (Exact H1 text preserved) */}
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 leading-tight">
+            {heroContent.title}
+          </h1>
+
+          <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400 max-w-2xl mx-auto leading-relaxed">
+            {heroContent.desc}
+          </p>
+
+          {/* Clean & Professional 2D Search Bar */}
+          <div className="max-w-xl mx-auto mt-5">
             <div
-              className={`relative flex items-center rounded-lg px-3.5 py-2.5 transition-colors border ${
+              className={`relative flex items-center h-11 rounded-xl px-3.5 border transition-all ${
                 isDark
-                  ? 'bg-zinc-900 border-zinc-800 focus-within:border-zinc-500'
-                  : 'bg-white border-zinc-300 focus-within:border-zinc-900'
+                  ? 'bg-zinc-900/60 border-zinc-800 focus-within:border-zinc-600 focus-within:bg-zinc-900'
+                  : 'bg-zinc-50/60 border-zinc-200 focus-within:border-zinc-400 focus-within:bg-white'
               }`}
             >
               <Search className="w-4 h-4 shrink-0 mr-2.5 text-zinc-400" />
@@ -396,44 +283,70 @@ export const HomePage: React.FC<HomePageProps> = ({
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder={
                   language === 'hi'
-                    ? 'यहाँ खोजें (जैसे: SSC photo 20kb, PDF जोड़ें, UPSC date, HEIC)...'
-                    : "Type what you need (e.g. 'SSC photo 20kb', 'merge marksheets', 'upsc')..."
+                    ? 'टूल्स खोजें...'
+                    : 'Search tools...'
                 }
-                className="w-full bg-transparent text-sm focus:outline-none text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500"
+                className="w-full bg-transparent text-sm focus:outline-none text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 font-normal"
               />
               {searchQuery ? (
                 <button
+                  type="button"
                   onClick={() => setSearchQuery('')}
-                  className="p-1 rounded text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors cursor-pointer"
+                  className="p-1 rounded text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors cursor-pointer"
                   title="Clear search"
                 >
-                  <X className="w-3.5 h-3.5" />
+                  <X className="w-4 h-4" />
                 </button>
               ) : (
-                <button
-                  type="button"
+                <kbd
                   onClick={() => onOpenCommandPalette?.()}
-                  className="text-[10px] font-mono px-1.5 py-0.5 rounded shrink-0 hidden sm:inline-flex items-center border border-zinc-200 dark:border-zinc-700 text-zinc-500 bg-zinc-50 dark:bg-zinc-800 cursor-pointer"
-                  title="Quick Search (Ctrl + K)"
+                  className="hidden sm:inline-flex items-center px-1.5 py-0.5 text-[10px] font-mono font-medium text-zinc-400 dark:text-zinc-500 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded select-none cursor-pointer hover:text-zinc-700 dark:hover:text-zinc-300 hover:border-zinc-300 dark:hover:border-zinc-600 transition-colors shrink-0"
+                  title="Quick Command Palette (Ctrl + K)"
                 >
-                  Ctrl+K
-                </button>
+                  Ctrl K
+                </kbd>
               )}
             </div>
 
             {searchQuery && (
-              <p className="text-xs text-left mt-2 px-1 text-zinc-500 font-mono">
-                {filteredTools.length} tools matching "{searchQuery}"
-              </p>
+              <div className="flex items-center justify-between text-xs mt-2 px-1 text-zinc-500 font-mono">
+                <span>{filteredTools.length} tools matching "{searchQuery}"</span>
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="underline hover:text-zinc-900 dark:hover:text-white cursor-pointer"
+                >
+                  Clear search
+                </button>
+              </div>
             )}
           </div>
+
+          {/* Calm, Integrated Trust Metadata (No floating pill clutter) */}
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-x-5 gap-y-1 text-xs text-zinc-500 dark:text-zinc-400">
+            <span className="inline-flex items-center gap-1.5">
+              <ShieldCheck className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-400" />
+              <span>{language === 'hi' ? '100% ऑन-डिवाइस (नो क्लाउड)' : 'Zero Cloud Uploads'}</span>
+            </span>
+            <span className="text-zinc-300 dark:text-zinc-700 hidden sm:inline">•</span>
+            <span className="inline-flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-400" />
+              <span>{language === 'hi' ? 'सिर्फ 2 सेकंड में तैयार' : '2-Second Execution'}</span>
+            </span>
+            <span className="text-zinc-300 dark:text-zinc-700 hidden sm:inline">•</span>
+            <span className="inline-flex items-center gap-1.5">
+              <CheckCircle2 className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-400" />
+              <span>{language === 'hi' ? '100% फॉर्म मंज़ूर' : 'Portal Compliant'}</span>
+            </span>
+          </div>
+
         </div>
       </section>
 
       {/* =========================================================
-          CATEGORY TABS (Flat 2D Linear Segment Control)
+          CATEGORY NAVIGATION (Clean Segmented Tab Strip)
       ========================================================= */}
-      <section className="w-full max-w-[1440px] px-4 sm:px-6 lg:px-8 pt-8 mb-6">
+      <section className="w-full max-w-7xl px-4 sm:px-6 lg:px-8 pt-4 mb-6">
         <ToolCategoryFilter
           selectedCategory={selectedCategory}
           onSelectCategory={onSelectCategory}
@@ -441,15 +354,15 @@ export const HomePage: React.FC<HomePageProps> = ({
       </section>
 
       {/* =========================================================
-          TOOL CARDS: 5-6 COLUMN FLAT 2D CARD GRID
+          TOOL CARDS CATALOG
       ========================================================= */}
-      <section className="w-full max-w-[1440px] px-4 sm:px-6 lg:px-8 mb-16">
+      <section className="w-full max-w-7xl px-4 sm:px-6 lg:px-8 mb-16">
         {/* Case 1: Search Query active */}
         {searchQuery ? (
           <div>
             {filteredTools.length === 0 ? (
               <div
-                className={`text-center py-16 px-4 rounded-lg max-w-md mx-auto border ${
+                className={`text-center py-16 px-4 rounded-md max-w-md mx-auto border ${
                   isDark
                     ? 'bg-zinc-900/40 border-zinc-800'
                     : 'bg-white border-zinc-200'
@@ -465,6 +378,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                     : 'Try searching for "compress", "resize", "pdf", "heic", or "upsc".'}
                 </p>
                 <button
+                  type="button"
                   onClick={() => {
                     setSearchQuery('');
                     onSelectCategory('all');
@@ -484,43 +398,24 @@ export const HomePage: React.FC<HomePageProps> = ({
             )}
           </div>
         ) : selectedCategory !== 'all' ? (
-          /* Case 2: Specific Category Filter Selected */
+          /* Case 2: Specific Category Filter Selected (No card-in-card) */
           <div>
-            <div
-              className={`rounded-lg p-5 mb-5 flex flex-col md:flex-row md:items-center justify-between gap-4 border ${
-                isDark
-                  ? 'bg-zinc-900/60 border-zinc-800'
-                  : 'bg-white border-zinc-200'
-              }`}
-            >
+            <div className="mb-6 flex flex-col sm:flex-row sm:items-baseline justify-between gap-3">
               <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-500">
-                    {activeCategoryMeta.badge}
-                  </span>
-                  <span className="text-xs text-zinc-400">•</span>
-                  <span className="text-xs font-mono text-zinc-500">
-                    {filteredTools.length} tools
-                  </span>
-                </div>
-                <h2 className="text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
+                <h2 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 mb-1">
                   {activeCategoryMeta.name}
                 </h2>
-                <p className="text-xs mt-0.5 max-w-2xl text-zinc-500 dark:text-zinc-400 leading-relaxed">
+                <p className="text-xs text-zinc-600 dark:text-zinc-400 max-w-2xl leading-relaxed">
                   {activeCategoryMeta.description}
                 </p>
               </div>
 
               <button
+                type="button"
                 onClick={() => onSelectCategory('all')}
-                className={`inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md border transition-colors duration-150 shrink-0 cursor-pointer self-start md:self-auto ${
-                  isDark
-                    ? 'bg-zinc-800 hover:bg-zinc-700 text-white border-zinc-700'
-                    : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-800 border-zinc-200'
-                }`}
+                className="text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white flex items-center gap-1.5 cursor-pointer shrink-0 self-start sm:self-auto transition-colors"
               >
-                <span>{language === 'hi' ? 'सभी 40+ टूल्स' : 'View All 40+ Tools'}</span>
-                <ArrowRight className="w-3.5 h-3.5" />
+                <span>{language === 'hi' ? '← सभी टूल्स' : '← All Tools'}</span>
               </button>
             </div>
 
@@ -535,50 +430,44 @@ export const HomePage: React.FC<HomePageProps> = ({
             {selectedCategory === 'document-tools' && (
               <GovtToolsSeoGuide
                 onSelectTool={onLaunchTool}
-                className="mt-14 pt-10 border-t border-zinc-200/80 dark:border-zinc-800/80"
+                className="mt-14 pt-6"
+              />
+            )}
+
+            {/* Category Hub Educational Guides & FAQs */}
+            {selectedCategory === 'image-tools' && (
+              <CategoryHubGuide
+                categoryId="image-tools"
+                onLaunchTool={onLaunchTool}
+                className="mt-14 pt-6"
+              />
+            )}
+
+            {selectedCategory === 'pdf-tools' && (
+              <CategoryHubGuide
+                categoryId="pdf-tools"
+                onLaunchTool={onLaunchTool}
+                className="mt-14 pt-6"
+              />
+            )}
+
+            {selectedCategory === 'convert' && (
+              <CategoryHubGuide
+                categoryId="convert"
+                onLaunchTool={onLaunchTool}
+                className="mt-14 pt-6"
               />
             )}
           </div>
         ) : (
-          /* Case 3: All Tools View - Grouped under Curated Sections */
-          <div className="space-y-10">
-            {categorizedSections.map((section) => (
-              <div key={section.id} className="space-y-3.5">
-                {/* Section Header (Swiss Typography) */}
-                <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-2.5">
-                  <div className="flex items-center gap-2.5">
-                    <span className="text-xl">{section.emoji}</span>
-                    <div>
-                      <h2 className="text-base font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-                        <span>{section.title}</span>
-                        <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-500 border border-zinc-200 dark:border-zinc-700">
-                          {section.tools.length}
-                        </span>
-                      </h2>
-                      <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-                        {section.subtitle}
-                      </p>
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={() => onSelectCategory(section.id)}
-                    className="hidden sm:inline-flex items-center gap-1 text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white cursor-pointer shrink-0"
-                  >
-                    <span>{language === 'hi' ? 'पूरा देखें' : `View all ${section.tools.length}`}</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-
-                {/* Flat 2D Card Grid */}
-                <ToolGrid
-                  tools={section.tools}
-                  onLaunch={onLaunchTool}
-                  tToolName={tToolName}
-                  tToolDesc={tToolDesc}
-                />
-              </div>
-            ))}
+          /* Case 3: All Tools View - Unified Clean Tool Grid */
+          <div>
+            <ToolGrid
+              tools={filteredTools}
+              onLaunch={onLaunchTool}
+              tToolName={tToolName}
+              tToolDesc={tToolDesc}
+            />
           </div>
         )}
       </section>
@@ -586,7 +475,7 @@ export const HomePage: React.FC<HomePageProps> = ({
       {/* =========================================================
           FILEWALA DESKTOP FOR WINDOWS (OFFLINE AI & BATCH SUITE)
       ========================================================= */}
-      <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20 border-t border-zinc-200/80 dark:border-zinc-800/80 select-none">
+      <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 sm:py-16 select-none">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
           {/* Left Column: Information & Direct CTA */}
           <div className="lg:col-span-6 space-y-5">
@@ -711,7 +600,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                 />
               </picture>
 
-              <figcaption className="p-3 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-[11px] text-zinc-500 flex items-center justify-between">
+              <figcaption className="p-3 bg-white dark:bg-zinc-950 text-[11px] text-zinc-500 flex items-center justify-between">
                 <span>Direct Split-Slider preview with face pore restoration and NVIDIA CUDA acceleration.</span>
                 <button
                   type="button"
@@ -728,13 +617,13 @@ export const HomePage: React.FC<HomePageProps> = ({
       </section>
 
       {/* =========================================================
-          HUMAN TRUST & GUARANTEE SECTION (Unboxed Flat 2D Linear Design)
+          WHY CHOOSE FILEWALATOOL (Unboxed Architecture, Zero Lines, 2D Flat, Crisp Text)
       ========================================================= */}
-      <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20 border-t border-zinc-200/80 dark:border-zinc-800/80 select-none">
+      <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20 select-none">
         {/* Section Header */}
-        <div className="text-center max-w-3xl mx-auto space-y-3 mb-12">
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-mono font-medium uppercase tracking-wider text-zinc-600 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-850 border border-zinc-200 dark:border-zinc-750">
-            <span>{language === 'hi' ? 'सुविधा व लाभ' : 'Core Advantages'}</span>
+        <div className="text-center max-w-3xl mx-auto space-y-2.5 mb-12 sm:mb-14">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-medium uppercase tracking-wider text-zinc-600 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-850">
+            <span>{language === 'hi' ? 'मुख्य विशेषताएं' : 'Core Advantages'}</span>
           </div>
 
           <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-zinc-950 dark:text-zinc-50 tracking-tight">
@@ -742,65 +631,74 @@ export const HomePage: React.FC<HomePageProps> = ({
               ? 'FileWalaTool क्यों चुनें?'
               : 'Why Choose FileWalaTool?'}
           </h2>
-          <p className="text-sm sm:text-base text-zinc-600 dark:text-zinc-400 max-w-2xl mx-auto leading-relaxed font-normal">
+          <p className="text-sm sm:text-base text-zinc-600 dark:text-zinc-400 max-w-xl mx-auto leading-relaxed font-normal">
             {language === 'hi'
-              ? 'कोई साइबर कैफ़े जाने की ज़रूरत नहीं — अपने फोन या लैपटॉप से 1 क्लिक में दस्तावेज़ तैयार करें।'
-              : 'No need to visit a cyber café or pay for software. Process your documents safely in seconds.'}
+              ? 'फोन या लैपटॉप से सीधे अपने दस्तावेज़ सुरक्षित और तुरंत तैयार करें।'
+              : 'Prepare form-ready documents safely in seconds directly from your browser.'}
           </p>
         </div>
 
-        {/* 3 Open Architectural Columns (Unboxed, Bada Bada, Flat 2D) */}
+        {/* 3 Open Architectural Columns (Unboxed: No Boxes, No Lines) */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-12 text-left mb-14">
-          {/* Feature 1 */}
-          <div className="flex flex-col items-start space-y-3">
-            <div className="w-10 h-10 rounded-lg bg-zinc-100 dark:bg-zinc-850 border border-zinc-200 dark:border-zinc-750 flex items-center justify-center text-zinc-900 dark:text-zinc-100 shrink-0">
-              <ShieldCheck className="w-5 h-5 stroke-[1.75]" />
+          {/* Feature 1: 100% Private & Safe */}
+          <div className="group flex flex-col items-start space-y-3 select-none">
+            <div className="w-12 h-12 rounded-xl bg-emerald-500 text-white flex items-center justify-center shrink-0 transition-transform duration-200 ease-out group-hover:scale-110">
+              <ShieldCheck className="w-6 h-6 stroke-[2]" />
             </div>
-            <h3 className="text-base sm:text-lg font-semibold text-zinc-950 dark:text-zinc-100 tracking-tight">
+            <div className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono font-medium tracking-wide uppercase bg-zinc-100 dark:bg-zinc-850 text-zinc-600 dark:text-zinc-400">
+              {language === 'hi' ? 'नो क्लाउड' : 'Zero Uploads'}
+            </div>
+            <h3 className="text-base sm:text-lg font-semibold text-zinc-950 dark:text-zinc-50 tracking-tight">
               {language === 'hi' ? '100% प्राइवेट व सुरक्षित' : '100% Private & Safe'}
             </h3>
-            <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed font-normal">
+            <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed font-normal">
               {language === 'hi'
-                ? 'आपकी फोटो और मार्कशीट कभी किसी सर्वर पर अपलोड नहीं होतीं। सारा काम आपके फोन/ब्राउज़र में ही होता है।'
-                : 'Your files never leave your device. All processing happens in-memory inside your browser, ensuring total privacy.'}
+                ? 'फाइलें कभी सर्वर पर नहीं जातीं। सारा काम आपके डिवाइस के ब्राउज़र में ही होता है।'
+                : 'Zero cloud uploads. All processing executes securely in your local browser memory.'}
             </p>
           </div>
 
-          {/* Feature 2 */}
-          <div className="flex flex-col items-start space-y-3">
-            <div className="w-10 h-10 rounded-lg bg-zinc-100 dark:bg-zinc-850 border border-zinc-200 dark:border-zinc-750 flex items-center justify-center text-zinc-900 dark:text-zinc-100 shrink-0">
-              <FileBadge className="w-5 h-5 stroke-[1.75]" />
+          {/* Feature 2: Govt Forms Calibrated */}
+          <div className="group flex flex-col items-start space-y-3 select-none">
+            <div className="w-12 h-12 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 transition-transform duration-200 ease-out group-hover:scale-110">
+              <BadgeCheck className="w-6 h-6 stroke-[2]" />
             </div>
-            <h3 className="text-base sm:text-lg font-semibold text-zinc-950 dark:text-zinc-100 tracking-tight">
-              {language === 'hi' ? 'सरकारी फॉर्म्स के लिए 100% सटीक' : 'Pre-configured for Govt Forms'}
+            <div className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono font-medium tracking-wide uppercase bg-zinc-100 dark:bg-zinc-850 text-zinc-600 dark:text-zinc-400">
+              {language === 'hi' ? 'फॉर्म मंज़ूर' : 'Portal Compliant'}
+            </div>
+            <h3 className="text-base sm:text-lg font-semibold text-zinc-950 dark:text-zinc-50 tracking-tight">
+              {language === 'hi' ? 'सरकारी फॉर्म्स मानक' : 'Govt Portal Ready'}
             </h3>
-            <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed font-normal">
+            <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed font-normal">
               {language === 'hi'
-                ? 'UPSC, SSC, PAN Card, और Passport Seva के लिए निर्धारित साइज़ (20-50 KB, 350x450 px, 200 DPI) अपने आप सेट हैं।'
-                : 'Official pixel dimensions, DPI, and KB limits for UPSC (Name & Date stamp), SSC, PAN, and Passport Seva are built-in.'}
+                ? 'UPSC, SSC, PAN व Passport Seva के लिए तय साइज़ (KB) और DPI पहले से सेट हैं।'
+                : 'Built-in official pixel dimensions, DPI, and KB limits for UPSC, SSC, PAN, and Passport Seva.'}
             </p>
           </div>
 
-          {/* Feature 3 */}
-          <div className="flex flex-col items-start space-y-3">
-            <div className="w-10 h-10 rounded-lg bg-zinc-100 dark:bg-zinc-850 border border-zinc-200 dark:border-zinc-750 flex items-center justify-center text-zinc-900 dark:text-zinc-100 shrink-0">
-              <Zap className="w-5 h-5 stroke-[1.75]" />
+          {/* Feature 3: Instant & Free Forever */}
+          <div className="group flex flex-col items-start space-y-3 select-none">
+            <div className="w-12 h-12 rounded-xl bg-blue-500 text-white flex items-center justify-center shrink-0 transition-transform duration-200 ease-out group-hover:scale-110">
+              <Zap className="w-6 h-6 stroke-[2]" />
             </div>
-            <h3 className="text-base sm:text-lg font-semibold text-zinc-950 dark:text-zinc-100 tracking-tight">
-              {language === 'hi' ? 'सुपरफास्ट व हमेशा मुफ्त' : 'Instant & Free Forever'}
+            <div className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono font-medium tracking-wide uppercase bg-zinc-100 dark:bg-zinc-850 text-zinc-600 dark:text-zinc-400">
+              {language === 'hi' ? 'हमेशा मुफ़्त' : 'Free Forever'}
+            </div>
+            <h3 className="text-base sm:text-lg font-semibold text-zinc-950 dark:text-zinc-50 tracking-tight">
+              {language === 'hi' ? 'सुपरफास्ट व मुफ़्त' : 'Instant & Free'}
             </h3>
-            <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed font-normal">
+            <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed font-normal">
               {language === 'hi'
-                ? 'कोई इंतज़ार नहीं, कोई वॉटरमार्क नहीं, और कोई फीस नहीं। जितनी चाहें उतनी फाइलें प्रोसेस करें।'
-                : 'Zero queue delays, no exported watermarks, and no hidden subscriptions. Process as many files as you want.'}
+                ? 'बिना इंतज़ार, वॉटरमार्क या फीस के असीमित फाइलें तेज़ी से प्रोसेस करें।'
+                : 'Zero wait queues, no watermarks, and no fees. Unlimited fast processing on any device.'}
             </p>
           </div>
         </div>
 
-        {/* Creator & Mission Spotlight Strip (Unboxed, Flat 2D) */}
-        <div className="pt-8 border-t border-zinc-200/80 dark:border-zinc-800/80 flex flex-col sm:flex-row items-center justify-between gap-4">
+        {/* Creator & Mission Spotlight Strip (Unboxed: No Box, No Line, Clean Minimalist) */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-5 pt-2">
           <div className="flex items-center gap-3.5">
-            <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0 border border-zinc-200 dark:border-zinc-750 bg-zinc-100 dark:bg-zinc-850">
+            <div className="w-11 h-11 rounded-full overflow-hidden shrink-0 bg-zinc-100 dark:bg-zinc-850">
               <img
                 src="/founder-muhammad-sufiyan.webp"
                 alt="Mohammad Sufiyan (@mdsufidev)"
@@ -813,17 +711,17 @@ export const HomePage: React.FC<HomePageProps> = ({
               />
             </div>
             <div>
-              <p className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-2 flex-wrap">
+              <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-2 flex-wrap">
                 <span>Handcrafted by Mohammad Sufiyan</span>
-                <span className="font-mono text-zinc-500 text-[11px]">(@mdsufidev)</span>
-                <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-750">
+                <span className="font-mono text-zinc-500 text-xs">(@mdsufidev)</span>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400">
                   Kushinagar, UP
                 </span>
               </p>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+              <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">
                 {language === 'hi'
-                  ? 'भारत के छात्रों, नौकरी आवेदकों और साइबर कैफ़े ऑपरेटरों की मदद के लिए बनाया गया सरल और सुरक्षित टूल।'
-                  : 'Minimalist browser utilities made to help students and applicants prepare form-ready documents.'}
+                  ? 'छात्रों और नौकरी आवेदकों के लिए बनाया गया सुरक्षित, तेज़ और मुफ़्त टूल।'
+                  : 'Minimalist, private browser utilities for Indian students and applicants.'}
               </p>
             </div>
           </div>
@@ -833,29 +731,29 @@ export const HomePage: React.FC<HomePageProps> = ({
               href="https://linkedin.com/in/mdsufidev"
               target="_blank"
               rel="noopener noreferrer"
-              className="p-2 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-500 hover:text-zinc-950 dark:hover:text-white hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors duration-150"
+              className="p-2.5 rounded-lg bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-850 dark:hover:bg-zinc-800 text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white transition-colors"
               title="LinkedIn"
               aria-label="LinkedIn profile"
             >
-              <Linkedin className="w-3.5 h-3.5" />
+              <Linkedin className="w-4 h-4" />
             </a>
             <a
               href="https://instagram.com/mdsufidev"
               target="_blank"
               rel="noopener noreferrer"
-              className="p-2 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-500 hover:text-zinc-950 dark:hover:text-white hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors duration-150"
+              className="p-2.5 rounded-lg bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-850 dark:hover:bg-zinc-800 text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white transition-colors"
               title="Instagram"
               aria-label="Instagram profile"
             >
-              <Instagram className="w-3.5 h-3.5" />
+              <Instagram className="w-4 h-4" />
             </a>
             <button
               type="button"
               onClick={() => onNavigatePage?.('about')}
-              className="text-xs font-medium px-3 py-1.5 rounded-md bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors duration-150 cursor-pointer flex items-center gap-1"
+              className="text-xs font-medium px-3.5 py-2 rounded-lg bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors cursor-pointer flex items-center gap-1.5"
             >
               <span>About</span>
-              <ArrowUpRight className="w-3 h-3" />
+              <ArrowUpRight className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>

@@ -3,6 +3,42 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @layer base {
+  :root {
+    --canvas: #ffffff;
+    --surface: #fafafa;
+    --surface-hover: #f4f4f5;
+    --surface-active: #e4e4e7;
+    --border-subtle: #e4e4e7;
+    --border-strong: #d4d4d8;
+    --text-primary: #09090b;
+    --text-secondary: #52525b;
+    --text-muted: #71717a;
+    --brand-red: #e11d2a;
+    --brand-red-hover: #c81420;
+    --interactive-accent: #0284c7;
+    --success: #059669;
+    --warning: #d97706;
+    --error: #dc2626;
+  }
+
+  html.dark {
+    --canvas: #09090b;
+    --surface: #121215;
+    --surface-hover: #18181b;
+    --surface-active: #27272a;
+    --border-subtle: #27272a;
+    --border-strong: #3f3f46;
+    --text-primary: #f4f4f5;
+    --text-secondary: #a1a1aa;
+    --text-muted: #71717a;
+    --brand-red: #ef4444;
+    --brand-red-hover: #dc2626;
+    --interactive-accent: #38bdf8;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --error: #f87171;
+  }
+
   html {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -40,6 +76,17 @@
     color: #18181b;
   }
 
+  /* High-Contrast Crisp Selection */
+  ::selection {
+    background-color: #18181b;
+    color: #ffffff;
+  }
+
+  html.dark ::selection {
+    background-color: #f4f4f5;
+    color: #09090b;
+  }
+
   /* Minimalist 2D Flat Scrollbar */
   html.light ::-webkit-scrollbar {
     width: 6px;
@@ -70,4 +117,41 @@
   html.dark ::-webkit-scrollbar-thumb:hover {
     background: #3f3f46;
   }
+
+  /* Reduced Motion Safety */
+  @media (prefers-reduced-motion: reduce) {
+    *, ::before, ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+/* Right-to-Left Slide-Over Drawer Animations */
+@keyframes drawerSlideInRight {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes drawerFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-drawer-in {
+  animation: drawerSlideInRight 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-backdrop-in {
+  animation: drawerFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }

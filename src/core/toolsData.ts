@@ -13,6 +13,7 @@ export interface ToolItem {
   icon: string;
   actionSection: 'image-tools' | 'pdf-tools' | 'convert' | 'document-tools';
   subToolId: string;
+  searchAliases?: string[];
 }
 
 export interface CategoryMeta {
@@ -28,7 +29,7 @@ export const CATEGORIES_CONFIG: CategoryMeta[] = [
   {
     id: 'all',
     name: 'All Tools',
-    count: 45,
+    count: 44,
     badge: 'Complete Suite',
     tagline: 'Complete suite of 40+ free browser file utilities',
     description: 'Every tool you need for images, PDFs, format conversions, and government exam forms — completely private and free.',
@@ -36,7 +37,7 @@ export const CATEGORIES_CONFIG: CategoryMeta[] = [
   {
     id: 'image-tools',
     name: 'Image Tools',
-    count: 20,
+    count: 19,
     badge: 'Popular',
     tagline: 'Compress, resize, crop, filter & edit photos',
     description: 'Reduce KB size, resize by pixels, crop, watermark, add filters, and extract palettes right in your browser.',
@@ -531,9 +532,9 @@ export const ALL_TOOLS: ToolItem[] = [
     id: 'pan-photo-resize',
     name: 'PAN Photo Resizer',
     category: 'document-tools',
-    description: 'Crop and scale passport photos with interactive viewport to exact 200×230 px, 20–50 KB, and 200 DPI JPEG for Protean (NSDL) & UTIITSL.',
-    targetKeyword: 'PAN card photo resizer 200x230 200 DPI online',
-    badge: '200×230 px · 200 DPI',
+    description: 'Crop and scale passport photos to exact 197×276 px (NSDL Protean) or 213×213 px (UTIITSL), 20–50 KB, and 200/300 DPI.',
+    targetKeyword: 'PAN card photo resizer 197x276 213x213 200 DPI online',
+    badge: 'NSDL & UTIITSL Compliant',
     badgeColor: 'emerald',
     icon: 'UserCheck',
     actionSection: 'document-tools',
@@ -555,9 +556,9 @@ export const ALL_TOOLS: ToolItem[] = [
     id: 'passport-photo-resize',
     name: 'Passport Photo Resizer',
     category: 'document-tools',
-    description: 'Format passport photo to 350×450 px (35×45 mm) under 300 KB at 300 DPI with biometric head-framing guide for MEA Passport Seva.',
-    targetKeyword: 'Passport photo size compressor under 300kb 350x450 35x45mm',
-    badge: '35×45 mm · 300 DPI',
+    description: 'Format passport photo to 630×810 px (Digital) or 350×450 px (Print) under 250 KB at 300 DPI with biometric guide for MEA Passport Seva.',
+    targetKeyword: 'Passport photo size compressor under 250kb 630x810 350x450',
+    badge: '630×810 px · 10–250 KB',
     badgeColor: 'blue',
     icon: 'FileBadge',
     actionSection: 'document-tools',
@@ -591,7 +592,7 @@ export const ALL_TOOLS: ToolItem[] = [
     id: 'ssc-resizer',
     name: 'SSC Photo & Signature Resizer',
     category: 'document-tools',
-    description: 'Strict byte-bound compressor for SSC CGL, CHSL, MTS, and GD. Photo: strictly 20–50 KB (100×120 px); Signature: strictly 10–20 KB (140×60 px).',
+    description: 'Strict byte-bound compressor for SSC CGL, CHSL, MTS, and GD. Photo: 350×450 px (20–50 KB); Signature: strictly 10–20 KB (140×60 px).',
     targetKeyword: 'SSC photo and signature resizer 20kb 50kb 10kb 20kb',
     badge: 'SSC Strict Limits',
     badgeColor: 'rose',
@@ -612,3 +613,336 @@ export const ALL_TOOLS: ToolItem[] = [
     subToolId: 'gov-compressor',
   },
 ];
+
+// ==========================================
+// CANONICAL SEARCH ALIASES & SEARCH FUNCTION
+// ==========================================
+
+export const TOOL_SEARCH_ALIASES: Record<string, string[]> = {
+  // Document Tools (Govt & Exam Forms)
+  'upsc-photo-maker': [
+    'upsc', 'name date', 'dop', 'date of photo', 'tarikh', 'naam', 'upsc form', 'stamp', 'civil services', 'ias', 'nda', 'cds',
+    'upsc photo', 'upsc photo maker', 'upsc photo resizer', 'यूपीएससी', 'तारीख', 'नाम', 'फोटो नाम तारीख', 'upsc signature'
+  ],
+  'ssc-resizer': [
+    'ssc', 'cgl', 'chsl', 'mts', 'gd', '20kb', '50kb', '10kb', '20 kb', 'sign', 'hastakshar', 'signature', 'ssc photo', 'ssc sign',
+    'ssc signature', 'ssc photo resizer', 'हस्ताक्षर', 'एसएससी', 'sign resize', 'signature resize', 'photo sign'
+  ],
+  'pan-photo-resize': [
+    'pan', 'pan card', '200 dpi', 'nsdl', 'protean', 'utiitsl', 'uti', 'photo resize', 'pan photo', '197x276', '213x213', '200x230',
+    'pan card photo', 'pan photo resize', 'pan photo resizer', 'पैन कार्ड', 'पैन कार्ड फोटो', 'पैन फोटो'
+  ],
+  'signature-resize': [
+    'pan sign', 'pan signature', 'hastakshar', 'safed sign', 'white background sign', '50kb', '354x157',
+    'pan card sign', 'sign resize', 'signature resize', 'हस्ताक्षर', 'दस्तखत', 'पैन हस्ताक्षर'
+  ],
+  'passport-photo-resize': [
+    'passport', 'seva', '630x810', '35x45', '350x450', '300 dpi', 'blue background', 'white background', 'mea', 'visa photo',
+    'passport photo', 'passport size', 'passport photo resize', 'पासपोर्ट', 'पासपोर्ट फोटो', 'पासपोर्ट साइज'
+  ],
+  'passport-signature-resize': [
+    'passport sign', 'passport signature', 'mea sign', '400x200', 'passport seva sign', 'passport sign resize',
+    'पासपोर्ट हस्ताक्षर', 'पासपोर्ट साइन'
+  ],
+  'gov-compressor': [
+    'aadhar', 'aadhaar', 'marksheet', 'certificate', '100kb', '200kb', '500kb', 'epfo', 'sarathi', 'document kam', 'size kam', 'pdf kam',
+    'gov compressor', 'document compressor', 'kb resizer', '50kb', 'आधार', 'सर्टिफिकेट', 'सरकारी फॉर्म कंप्रेसर'
+  ],
+
+  // Image Utilities
+  'compressor': [
+    'compress', 'size kam', 'chhota', 'kb', 'mb to kb', 'reduce size', 'photo size', 'compress image', 'photo kam', 'chhoti photo',
+    '20kb', '50kb', '100kb', '200kb', 'image compressor', 'photo resize', 'compress photo', 'reduce image size', 'reduce photo size',
+    'kb kam kare', 'कंप्रेस', 'फोटो कंप्रेस', 'कंप्रेसर', 'साइज कम करें'
+  ],
+  'resizer': [
+    'pixel', 'resize', 'dimension', 'scale', 'badalna', 'photo resize', '800x600', 'width height', 'image resizer',
+    'resize photo', 'resize image', 'pixel resize', 'scale image', 'photo ka size badalna', 'रिसाइज', 'फोटो रिसाइज', 'रिसाइजर', 'पिक्सल बदलें'
+  ],
+  'cropper': [
+    'crop', 'katna', 'katna photo', 'rotate', 'ghomana', 'seedha', 'aspect ratio', '1:1', 'square', 'passport crop',
+    'image cropper', 'crop photo', 'crop image', 'फोटो काटना', 'क्रॉप', 'फोटो घुमाएं'
+  ],
+  'bg-remover': [
+    'background remover', 'bg remover', 'transparent', 'remove bg', 'safed background', 'white background', 'photo background',
+    'transparent png', 'cutout', 'remove background', 'बैकग्राउंड', 'बैकग्राउंड हटाएं', 'फोटो बैकग्राउंड', 'ट्रांसपेरेंट'
+  ],
+  'batch-img': [
+    'batch', 'bulk', 'multiple photos', 'batch crop', 'zip download', 'batch processor', 'bulk crop', 'batch compress',
+    'एक साथ फोटो', 'थोक फोटो', 'batch image'
+  ],
+  'batch': [
+    'batch', 'bulk', 'multiple photos', 'batch crop', 'zip download', 'batch processor', 'bulk crop', 'batch compress',
+    'एक साथ फोटो', 'थोक फोटो', 'batch image'
+  ],
+  'adjust-img': [
+    'filter', 'brightness', 'contrast', 'adjust', 'photo filter', 'chamak', 'filter adjust', 'saturation',
+    'रंग बदलना', 'फोटो फिल्टर', 'ब्राइटनेस'
+  ],
+  'adjust': [
+    'filter', 'brightness', 'contrast', 'adjust', 'photo filter', 'chamak', 'filter adjust', 'saturation',
+    'रंग बदलना', 'फोटो फिल्टर', 'ब्राइटनेस'
+  ],
+  'rounded-img': [
+    'round corners', 'rounded', 'circle crop', 'circle avatar', 'border radius', 'gol photo', 'round photo', 'avatar maker',
+    'rounded corner', 'गोल फोटो', 'कॉर्नर राउंड'
+  ],
+  'rounded': [
+    'round corners', 'rounded', 'circle crop', 'circle avatar', 'border radius', 'gol photo', 'round photo', 'avatar maker',
+    'rounded corner', 'गोल फोटो', 'कॉर्नर राउंड'
+  ],
+  'watermark-img': [
+    'watermark', 'logo', 'add text to image', 'protect photo', 'stamp', 'watermark photo', 'image watermark',
+    'watermarker', 'वाटरमार्क', 'फोटो पर नाम'
+  ],
+  'watermark': [
+    'watermark', 'logo', 'add text to image', 'protect photo', 'stamp', 'watermark photo', 'image watermark',
+    'watermarker', 'वाटरमार्क', 'फोटो पर नाम'
+  ],
+  'meme-img': [
+    'meme', 'meme generator', 'add caption', 'photo text', 'funny photo', 'caption maker', 'meme maker',
+    'मीम', 'मीम जनरेटर', 'फोटो पर लिखें'
+  ],
+  'meme': [
+    'meme', 'meme generator', 'add caption', 'photo text', 'funny photo', 'caption maker', 'meme maker',
+    'मीम', 'मीम जनरेटर', 'फोटो पर लिखें'
+  ],
+  'palette-img': [
+    'palette', 'color palette', 'eyedropper', 'hex code', 'color picker', 'extract color', 'color extractor',
+    'रंग चुनना', 'कलर पैलेट'
+  ],
+  'palette': [
+    'palette', 'color palette', 'eyedropper', 'hex code', 'color picker', 'extract color', 'color extractor',
+    'रंग चुनना', 'कलर पैलेट'
+  ],
+  'base64-img': [
+    'base64', 'image to base64', 'data uri', 'base64 string', 'html img', 'base64 converter', 'इमेज से बेस64'
+  ],
+  'base64': [
+    'base64', 'image to base64', 'data uri', 'base64 string', 'html img', 'base64 converter', 'इमेज से बेस64'
+  ],
+
+  // PDF Tools
+  'merge-pdf': [
+    'merge', 'jodna', 'ek sath', 'combine', 'combine pdf', 'join pdf', 'multiple pdf', 'marksheet merge', 'pdf jodein', 'ek pdf',
+    'pdf merge', 'merge pdf', 'पीडीएफ जोड़ें', 'पीडीएफ मर्ज', 'मर्ज पीडीएफ'
+  ],
+  'compress-pdf': [
+    'compress pdf', 'pdf size kam', 'pdf 100kb', 'pdf 200kb', 'shrink pdf', 'chhota pdf', 'kam size pdf',
+    'pdf compress', 'reduce pdf size', 'पीडीएफ कंप्रेस', 'पीडीएफ साइज कम करें'
+  ],
+  'pdf-to-word': [
+    'word', 'docx', 'edit pdf', 'pdf se word', 'editable', 'pdf to word', 'pdf to docx', 'convert pdf to word',
+    'पीडीएफ से वर्ड', 'वर्ड में बदलें'
+  ],
+  'pdf-to-jpg': [
+    'pdf to photo', 'pdf se image', 'pdf to jpg', 'pdf to png', 'pdf to image', 'convert pdf to image',
+    'पीडीएफ से फोटो', 'पीडीएफ से जेपीजी'
+  ],
+  'image-to-pdf': [
+    'photo to pdf', 'image to pdf', 'jpg to pdf', 'pdf banana', 'photo se pdf', 'marksheet pdf',
+    'png to pdf', 'convert image to pdf', 'फोटो से पीडीएफ', 'इमेज से पीडीएफ', 'img to pdf'
+  ],
+  'split-pdf': [
+    'split', 'page alag', 'extract pages', 'tukde', 'split pdf', 'pdf split', 'extract pdf pages', 'separate pdf',
+    'पीडीएफ अलग करें', 'पेज निकालें'
+  ],
+  'rotate-pdf': [
+    'rotate', 'ulta', 'seedha', 'rotate pdf', 'sidha', 'turn pdf', 'पीडीएफ घुमाएं'
+  ],
+  'pdf-to-text': [
+    'pdf to text', 'ocr', 'tesseract', 'extract text', 'searchable pdf', 'pdf padhna', 'pdf ocr', 'scanned pdf to text',
+    'पीडीएफ से टेक्स्ट', 'टेक्स्ट निकालें'
+  ],
+
+  // Format Converters (both id and subToolId keys)
+  'heic-to-jpg': [
+    'iphone', 'apple', 'heic', 'heif', 'iphone photo', 'ios photo', 'heic to jpg', 'convert heic to jpg', 'heic converter',
+    'आईफोन फोटो', 'हेइक से जेपीजी'
+  ],
+  'heic-to-jpg-img': [
+    'iphone', 'apple', 'heic', 'heif', 'iphone photo', 'ios photo', 'heic to jpg', 'convert heic to jpg', 'heic converter',
+    'आईफोन फोटो', 'हेइक से जेपीजी'
+  ],
+  'convert-heic-jpg': [
+    'iphone', 'apple', 'heic', 'heif', 'iphone photo', 'ios photo', 'heic to jpg', 'convert heic to jpg', 'heic converter',
+    'आईफोन फोटो', 'हेइक से जेपीजी'
+  ],
+  'png-to-webp': [
+    'webp', 'png', 'transparent', 'lightweight', 'png to webp', 'convert png to webp', 'webp converter', 'पीएनजी से वेबपी'
+  ],
+  'png-to-webp-img': [
+    'webp', 'png', 'transparent', 'lightweight', 'png to webp', 'convert png to webp', 'webp converter', 'पीएनजी से वेबपी'
+  ],
+  'convert-png-webp': [
+    'webp', 'png', 'transparent', 'lightweight', 'png to webp', 'convert png to webp', 'webp converter', 'पीएनजी से वेबपी'
+  ],
+  'webp-to-jpg': [
+    'webp to jpg', 'webp convert', 'jpg convert', 'convert webp to jpg', 'webp to jpeg', 'वेबपी से जेपीजी'
+  ],
+  'webp-to-jpg-img': [
+    'webp to jpg', 'webp convert', 'jpg convert', 'convert webp to jpg', 'webp to jpeg', 'वेबपी से जेपीजी'
+  ],
+  'convert-webp-jpg': [
+    'webp to jpg', 'webp convert', 'jpg convert', 'convert webp to jpg', 'webp to jpeg', 'वेबपी से जेपीजी'
+  ],
+  'jpg-to-png': [
+    'jpg to png', 'jpeg to png', 'convert jpg to png', 'lossless png', 'जेपीजी से पीएनजी'
+  ],
+  'jpg-to-png-img': [
+    'jpg to png', 'jpeg to png', 'convert jpg to png', 'lossless png', 'जेपीजी से पीएनजी'
+  ],
+  'convert-jpg-png': [
+    'jpg to png', 'jpeg to png', 'convert jpg to png', 'lossless png', 'जेपीजी से पीएनजी'
+  ],
+  'png-to-jpg': [
+    'png to jpg', 'png to jpeg', 'convert png to jpg', 'white background fill', 'पीएनजी से जेपीजी'
+  ],
+  'png-to-jpg-img': [
+    'png to jpg', 'png to jpeg', 'convert png to jpg', 'white background fill', 'पीएनजी से जेपीजी'
+  ],
+  'convert-png-jpg': [
+    'png to jpg', 'png to jpeg', 'convert png to jpg', 'white background fill', 'पीएनजी से जेपीजी'
+  ],
+  'jpg-to-webp': [
+    'jpg to webp', 'jpeg to webp', 'convert jpg to webp', 'optimize webp', 'जेपीजी से वेबपी'
+  ],
+  'jpg-to-webp-img': [
+    'jpg to webp', 'jpeg to webp', 'convert jpg to webp', 'optimize webp', 'जेपीजी से वेबपी'
+  ],
+  'convert-jpg-webp': [
+    'jpg to webp', 'jpeg to webp', 'convert jpg to webp', 'optimize webp', 'जेपीजी से वेबपी'
+  ],
+  'avif-to-jpg': [
+    'avif to jpg', 'convert avif to jpg', 'av1 to jpg', 'avif convert', 'एविफ से जेपीजी'
+  ],
+  'avif-to-jpg-img': [
+    'avif to jpg', 'convert avif to jpg', 'av1 to jpg', 'avif convert', 'एविफ से जेपीजी'
+  ],
+  'convert-avif-jpg': [
+    'avif to jpg', 'convert avif to jpg', 'av1 to jpg', 'avif convert', 'एविफ से जेपीजी'
+  ],
+  'svg-to-png': [
+    'svg to png', 'convert svg to png', 'vector to png', 'rasterize svg', 'एसवीजी से पीएनजी'
+  ],
+  'svg-to-png-img': [
+    'svg to png', 'convert svg to png', 'vector to png', 'rasterize svg', 'एसवीजी से पीएनजी'
+  ],
+  'convert-svg-png': [
+    'svg to png', 'convert svg to png', 'vector to png', 'rasterize svg', 'एसवीजी से पीएनजी'
+  ],
+  'convert-pdf-jpg': [
+    'pdf to jpg', 'pdf to photo', 'convert pdf to jpg', 'pdf to image', 'पीडीएफ से जेपीजी'
+  ],
+  'convert-img-pdf': [
+    'image to pdf', 'photo to pdf', 'jpg to pdf', 'png to pdf', 'convert image to pdf', 'फोटो से पीडीएफ'
+  ],
+};
+
+/**
+ * Pure deterministic search helper that ranks matches by relevance:
+ * 1. Exact name match (Score 100)
+ * 2. Name starts with query (Score 85)
+ * 3. Name contains query (Score 70)
+ * 4. Exact alias match (Score 65)
+ * 5. Query word intersection (Score 60, e.g. "pdf merge" <-> "Merge PDF")
+ * 6. Partial alias match (Score 40, e.g. "pan card photo resize" <-> "pan card")
+ * 7. Target keyword or badge contains query (Score 30)
+ * 8. Description contains query (Score 20)
+ */
+export function searchTools(
+  tools: ToolItem[],
+  query: string,
+  category: ToolCategory = 'all',
+  customAliases: Record<string, string[]> = TOOL_SEARCH_ALIASES
+): ToolItem[] {
+  let list = tools;
+  if (category !== 'all') {
+    list = list.filter((t) => t.category === category);
+  }
+
+  const cleanQ = query.trim().toLowerCase();
+  if (!cleanQ) {
+    return list;
+  }
+
+  const queryWords = cleanQ.split(/\s+/).filter(Boolean);
+
+  interface ScoredTool {
+    tool: ToolItem;
+    score: number;
+    originalIndex: number;
+  }
+
+  const scored: ScoredTool[] = [];
+
+  list.forEach((tool, index) => {
+    const nameLower = tool.name.toLowerCase();
+    const descLower = tool.description.toLowerCase();
+    const keywordLower = tool.targetKeyword.toLowerCase();
+    const badgeLower = (tool.badge || '').toLowerCase();
+    const toolAliases = [
+      ...(tool.searchAliases || []),
+      ...(customAliases[tool.id] || []),
+      ...(customAliases[tool.subToolId] || []),
+    ].map((a) => a.toLowerCase());
+
+    let score = 0;
+
+    // 1. Exact name match
+    if (nameLower === cleanQ) {
+      score = Math.max(score, 100);
+    }
+    // 2. Name starts with query
+    else if (nameLower.startsWith(cleanQ)) {
+      score = Math.max(score, 85);
+    }
+    // 3. Name contains query as a substring
+    else if (nameLower.includes(cleanQ)) {
+      score = Math.max(score, 70);
+    }
+
+    // 4. Exact alias match
+    if (toolAliases.some((a) => a === cleanQ)) {
+      score = Math.max(score, 65);
+    }
+
+    // 5. Query word intersection
+    const searchBlob = `${nameLower} ${toolAliases.join(' ')}`;
+    if (queryWords.length > 1 && queryWords.every((w) => searchBlob.includes(w))) {
+      score = Math.max(score, 60);
+    }
+
+    // 6. Partial alias match
+    const partialAliasMatch = toolAliases.some(
+      (a) => a.includes(cleanQ) || (a.length >= 3 && cleanQ.includes(a))
+    );
+    if (partialAliasMatch) {
+      score = Math.max(score, 40);
+    }
+
+    // 7. Target keyword or badge match
+    if (keywordLower.includes(cleanQ) || (badgeLower && badgeLower.includes(cleanQ))) {
+      score = Math.max(score, 30);
+    }
+
+    // 8. Description match
+    if (descLower.includes(cleanQ)) {
+      score = Math.max(score, 20);
+    }
+
+    if (score > 0) {
+      scored.push({ tool, score, originalIndex: index });
+    }
+  });
+
+  // Sort descending by score; preserve original catalog index on ties
+  scored.sort((a, b) => {
+    if (b.score !== a.score) {
+      return b.score - a.score;
+    }
+    return a.originalIndex - b.originalIndex;
+  });
+
+  return scored.map((s) => s.tool);
+}

@@ -6,10 +6,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
-    "build": "vite build && node -e \"require('fs').copyFileSync('dist/index.html', 'dist/404.html')\"",
+    "build": "vite build && vite build --ssr src/entry-server.tsx --outDir dist-ssr && node scripts/prerender.mjs && node -e \"require('fs').copyFileSync('dist/index.html', 'dist/404.html')\"",
     "preview": "vite preview",
     "clean": "node -e \"const fs=require('fs'); fs.rmSync('dist', {recursive:true, force:true}); if(fs.existsSync('server.js')) fs.unlinkSync('server.js');\"",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "verify:seo": "tsx scripts/verify-all-routes.ts"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",

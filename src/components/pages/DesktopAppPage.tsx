@@ -433,28 +433,31 @@ export const DesktopAppPage: React.FC<DesktopAppPageProps> = ({ onBackHome }) =>
           {desktopFaqs.map((faq, idx) => {
             const isOpen = openFaqIndex === idx;
             return (
-              <div
+              <details
                 key={idx}
-                className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden"
+                open={isOpen}
+                onToggle={(e) => {
+                  const isNowOpen = e.currentTarget.open;
+                  if (isNowOpen) {
+                    setOpenFaqIndex(idx);
+                  } else if (openFaqIndex === idx) {
+                    setOpenFaqIndex(null);
+                  }
+                }}
+                className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden group"
               >
-                <button
-                  type="button"
-                  onClick={() => setOpenFaqIndex(isOpen ? null : idx)}
-                  className="w-full p-4 text-left text-xs sm:text-sm font-semibold text-zinc-950 dark:text-zinc-100 flex items-center justify-between gap-4 cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-850/50 transition-colors"
-                >
+                <summary className="w-full p-4 text-left text-xs sm:text-sm font-semibold text-zinc-950 dark:text-zinc-100 flex items-center justify-between gap-4 cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-850/50 transition-colors list-none [&::-webkit-details-marker]:hidden select-none">
                   <span>{faq.q}</span>
                   <ChevronDown
                     className={`w-4 h-4 text-zinc-500 shrink-0 transition-transform duration-150 ${
                       isOpen ? 'rotate-180 text-zinc-950 dark:text-zinc-100' : ''
                     }`}
                   />
-                </button>
-                {isOpen && (
-                  <div className="px-4 pb-4 pt-0 text-xs sm:text-sm leading-relaxed text-zinc-600 dark:text-zinc-400 border-t border-zinc-100 dark:border-zinc-800 pt-3">
-                    {faq.a}
-                  </div>
-                )}
-              </div>
+                </summary>
+                <div className="px-4 pb-4 pt-0 text-xs sm:text-sm leading-relaxed text-zinc-600 dark:text-zinc-400 border-t border-zinc-100 dark:border-zinc-800 pt-3">
+                  {faq.a}
+                </div>
+              </details>
             );
           })}
         </div>

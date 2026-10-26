@@ -29,6 +29,7 @@ import {
   Maximize2,
   Copy,
   Share2,
+  Keyboard,
 } from 'lucide-react';
 import { Dropzone } from '../ui/Dropzone';
 import { Button } from '../ui/Button';
@@ -51,6 +52,7 @@ import {
   shareFileOrBlob,
   isShareSupported,
 } from '../../utils/clipboardAndShare';
+import { GovToolGuideSection } from './gov/GovToolGuideSection';
 
 export type SignaturePortalPreset = 'protean-354x157' | 'utiitsl-400x200' | 'custom';
 
@@ -82,15 +84,15 @@ const SIGNATURE_PRESETS: Record<SignaturePortalPreset, SignaturePresetConfig> = 
   },
   'utiitsl-400x200': {
     id: 'utiitsl-400x200',
-    name: 'UTIITSL Portal Standard',
+    name: 'UTIITSL Standard',
     portal: 'UTIITSL Government Portal',
     width: 400,
     height: 200,
-    minKb: 8,
-    maxKb: 30,
-    dpi: 200,
+    minKb: 10,
+    maxKb: 60,
+    dpi: 600,
     aspectRatio: 400 / 200, // 2:1
-    description: '400 × 200 px · Strictly < 30 KB · 200 DPI JPEG',
+    description: '400 × 200 px · Strictly < 60 KB · 600 DPI JPEG (Dark ink on white)',
   },
   custom: {
     id: 'custom',
@@ -186,6 +188,7 @@ export const SignatureResizer: React.FC<SignatureResizerProps> = ({ onNotify }) 
     initialPanY: 0,
   });
   const viewportRef = useRef<HTMLDivElement>(null);
+  const canvasContainerRef = useRef<HTMLDivElement>(null);
 
   // Results
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
@@ -207,7 +210,7 @@ export const SignatureResizer: React.FC<SignatureResizerProps> = ({ onNotify }) 
   }, [resultUrl]);
 
   // Load File
-  const handleFileSelected = (files: File[]) => {
+  const handleFileSelected = useCallback((files: File[]) => {
     const file = files[0];
     if (!file) return;
 
@@ -248,46 +251,47 @@ export const SignatureResizer: React.FC<SignatureResizerProps> = ({ onNotify }) 
       onNotify('Error Reading File', 'Could not read signature file.', 'error');
     };
     reader.readAsDataURL(file);
-  };
+  }, [resultUrl, onNotify]);
 
-  const handleResetViewport = () => {
+  // Global Clipboard Paste Support (Ctrl+V / Cmd+V)
+  useEffect(() => {
+    const handlePaste = (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.startsWith('image/')) {
+          const file = items[i].getAsFile();
+          if (file) {
+            handleFileSelected([file]);
+            break;
+          }
+        }
+      }
+    };
+    window.addEventListener('paste', handlePaste);
+    return () => window.removeEventListener('paste', handlePaste);
+  }, [handleFileSelected]);
+
+  const handleResetViewport = useCallback(() => {
     setZoom(1);
     setPan({ x: 0, y: 0 });
     setRotation(0);
     setFlipH(false);
     setPaperWhitening(120);
     setInkDarkness(150);
-  };
+  }, []);
 
-  const handleCenter = () => {
+  const handleCenter = useCallback(() => {
     setPan({ x: 0, y: 0 });
-  };
+  }, []);
 
-  const nudge = (dx: number, dy: number) => {
+  const nudge = useCallback((dx: number, dy: number) => {
     setPan((p) => ({ x: p.x + dx, y: p.y + dy }));
-  };
+  }, []);
 
-  const rotateCCW = () => setRotation((prev) => (prev - 90 + 360) % 360);
-  const rotateCW = () => setRotation((prev) => (prev + 90) % 360);
-  const toggleFlipH = () => setFlipH((prev) => !prev);
-
-  // Keyboard micro-nudge for pixel-level alignment
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    const step = e.shiftKey ? 10 : 2;
-    if (e.key === 'ArrowLeft') {
-      e.preventDefault();
-      nudge(-step, 0);
-    } else if (e.key === 'ArrowRight') {
-      e.preventDefault();
-      nudge(step, 0);
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      nudge(0, -step);
-    } else if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      nudge(0, step);
-    }
-  };
+  const rotateCCW = useCallback(() => setRotation((prev) => (prev - 90 + 360) % 360), []);
+  const rotateCW = useCallback(() => setRotation((prev) => (prev + 90) % 360), []);
+  const toggleFlipH = useCallback(() => setFlipH((prev) => !prev), []);
 
   // Ultra-Smooth Pointer Capture Drag Handlers
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -319,11 +323,23 @@ export const SignatureResizer: React.FC<SignatureResizerProps> = ({ onNotify }) 
     setIsDragging(false);
   };
 
-  const handleWheel = (e: React.WheelEvent) => {
-    e.preventDefault();
-    const zoomDelta = e.deltaY < 0 ? 0.08 : -0.08;
-    setZoom((prev) => Math.min(4, Math.max(0.6, parseFloat((prev + zoomDelta).toFixed(2)))));
-  };
+  // Native non-passive wheel listener: strictly prevents page scrolling while zooming on canvas
+  useEffect(() => {
+    const el = canvasContainerRef.current;
+    if (!el) return;
+
+    const handleNativeWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const zoomDelta = e.deltaY < 0 ? 0.08 : -0.08;
+      setZoom((prev) => Math.min(4, Math.max(0.6, parseFloat((prev + zoomDelta).toFixed(2)))));
+    };
+
+    el.addEventListener('wheel', handleNativeWheel, { passive: false });
+    return () => {
+      el.removeEventListener('wheel', handleNativeWheel);
+    };
+  }, [imageSrc, imageElement]);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     if (e.touches.length === 1) {
@@ -496,7 +512,7 @@ export const SignatureResizer: React.FC<SignatureResizerProps> = ({ onNotify }) 
     selectedPreset,
   ]);
 
-  const handleDownload = () => {
+  const handleDownload = useCallback(() => {
     if (!resultBlob) return;
     const cleanName = sourceFile
       ? sourceFile.name.replace(/\.[^/.]+$/, '')
@@ -504,9 +520,9 @@ export const SignatureResizer: React.FC<SignatureResizerProps> = ({ onNotify }) 
     const filename = `${cleanName}-${targetWidth}x${targetHeight}-${targetDpi}dpi.jpg`;
     triggerFileDownload(resultBlob, filename);
     onNotify('Download Started', `Saved ${filename}`, 'success');
-  };
+  }, [resultBlob, sourceFile, targetWidth, targetHeight, targetDpi, onNotify]);
 
-  const handleCopySignature = async () => {
+  const handleCopySignature = useCallback(async () => {
     if (!resultBlob) return;
     const res = await copyImageToClipboard(resultBlob, { width: targetWidth, height: targetHeight });
     if (res.success) {
@@ -514,9 +530,9 @@ export const SignatureResizer: React.FC<SignatureResizerProps> = ({ onNotify }) 
     } else {
       onNotify('Copy Failed', res.error || 'Clipboard copy not supported in this browser', 'error');
     }
-  };
+  }, [resultBlob, targetWidth, targetHeight, onNotify]);
 
-  const handleShareSignature = async () => {
+  const handleShareSignature = useCallback(async () => {
     if (!resultBlob) return;
     const cleanName = sourceFile
       ? sourceFile.name.replace(/\.[^/.]+$/, '')
@@ -528,7 +544,7 @@ export const SignatureResizer: React.FC<SignatureResizerProps> = ({ onNotify }) 
       title: 'PAN Signature',
       text: `PAN Signature (${targetWidth}×${targetHeight}px, ${formatBytes(resultSizeBytes)}) via FileWala`,
     });
-  };
+  }, [resultBlob, sourceFile, targetWidth, targetHeight, resultSizeBytes]);
 
   const isCompliant =
     resultBlob &&
@@ -537,106 +553,200 @@ export const SignatureResizer: React.FC<SignatureResizerProps> = ({ onNotify }) 
 
   const currentStep = !imageElement ? 1 : !resultBlob ? 2 : 3;
 
-  const handleResetFile = () => {
+  const handleResetFile = useCallback(() => {
     if (resultUrl) revokeSafeObjectURL(resultUrl);
     setResultUrl(null);
     setResultBlob(null);
     setImageElement(null);
     setImageSrc(null);
     setSourceFile(null);
-  };
+  }, [resultUrl]);
 
-  const handleReAdjust = () => {
+  const handleReAdjust = useCallback(() => {
     if (resultUrl) revokeSafeObjectURL(resultUrl);
     setResultUrl(null);
     setResultBlob(null);
-  };
+  }, [resultUrl]);
 
-  return (
-    <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-200">
-      {/* Header Banner */}
-      <div className="text-center space-y-3 max-w-2xl mx-auto">
-        <div
-          className={`inline-flex items-center gap-2 px-2.5 py-0.5 rounded border text-[11px] font-mono font-medium ${
-            isDark
-              ? 'bg-zinc-900 border-zinc-800 text-zinc-300'
-              : 'bg-zinc-50 border-zinc-200 text-zinc-700'
-          }`}
-        >
-          <PenTool className="w-3.5 h-3.5 text-zinc-500" />
-          <span>
+  // Global Zero-Latency Keyboard Engine
+  useEffect(() => {
+    const onWindowKeyDown = (e: KeyboardEvent) => {
+      // Don't intercept when user is typing in form inputs
+      const targetTag = (e.target as HTMLElement)?.tagName?.toLowerCase();
+      if (targetTag === 'input' || targetTag === 'textarea' || targetTag === 'select') return;
+
+      // Presets 1, 2, 3
+      if (e.key === '1') {
+        e.preventDefault();
+        setSelectedPreset('protean-354x157');
+        onNotify('Preset: Protean (NSDL)', '354×157 px · <50 KB · 200 DPI', 'info');
+        return;
+      }
+      if (e.key === '2') {
+        e.preventDefault();
+        setSelectedPreset('utiitsl-400x200');
+        onNotify('Preset: UTIITSL', '400×200 px · <30 KB · 200 DPI', 'info');
+        return;
+      }
+      if (e.key === '3') {
+        e.preventDefault();
+        setSelectedPreset('custom');
+        onNotify('Preset: Custom Dimensions', 'Configure custom dimensions', 'info');
+        return;
+      }
+
+      if (!imageElement) return;
+
+      // Download: D or Ctrl+S / Cmd+S
+      if (e.key === 'd' || e.key === 'D' || ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S'))) {
+        e.preventDefault();
+        if (resultBlob) {
+          handleDownload();
+        } else {
+          handleProcessSignature();
+        }
+        return;
+      }
+
+      // Copy: C or Ctrl+C / Cmd+C (without selection)
+      if ((e.key === 'c' || e.key === 'C') && !e.ctrlKey && !e.metaKey) {
+        if (resultBlob) {
+          e.preventDefault();
+          handleCopySignature();
+          return;
+        }
+      }
+
+      // Process / Format: Enter or Space
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        handleProcessSignature();
+        return;
+      }
+
+      // Reset / New: N or Esc
+      if (e.key === 'n' || e.key === 'N' || e.key === 'Escape') {
+        e.preventDefault();
+        handleResetFile();
+        onNotify('Reset', 'Cleared signature and reset viewport.', 'info');
+        return;
+      }
+
+      // Toggle White Paper wash: W
+      if (e.key === 'w' || e.key === 'W') {
+        e.preventDefault();
+        setAutoCleanPaper((prev) => !prev);
+        onNotify('Paper Whitening', !autoCleanPaper ? 'White wash enabled' : 'Raw paper mode', 'info');
+        return;
+      }
+
+      // Rotate: T
+      if (e.key === 't' || e.key === 'T') {
+        e.preventDefault();
+        rotateCW();
+        return;
+      }
+
+      // Flip: H
+      if (e.key === 'h' || e.key === 'H') {
+        e.preventDefault();
+        toggleFlipH();
+        return;
+      }
+
+      // Biometric guides toggle: G
+      if (e.key === 'g' || e.key === 'G') {
+        e.preventDefault();
+        setShowGuides((prev) => !prev);
+        return;
+      }
+
+      // Pan & Zoom
+      const step = e.shiftKey ? 10 : 2;
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        nudge(-step, 0);
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        nudge(step, 0);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        nudge(0, -step);
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        nudge(0, step);
+      } else if (e.key === '+' || e.key === '=') {
+        e.preventDefault();
+        setZoom((prev) => Math.min(4, parseFloat((prev + 0.05).toFixed(2))));
+      } else if (e.key === '-' || e.key === '_') {
+        e.preventDefault();
+        setZoom((prev) => Math.max(0.6, parseFloat((prev - 0.05).toFixed(2))));
+      }
+    };
+
+    window.addEventListener('keydown', onWindowKeyDown);
+    return () => window.removeEventListener('keydown', onWindowKeyDown);
+  }, [
+    imageElement,
+    resultBlob,
+    handleDownload,
+    handleCopySignature,
+    handleProcessSignature,
+    handleResetFile,
+    rotateCW,
+    toggleFlipH,
+    nudge,
+    autoCleanPaper,
+    onNotify,
+  ]);
+
+  /* -------------------------------------------------------------
+     RENDER: EMPTY STATE (CLEAN, DIRECT DROPZONE, NO BOX-IN-BOX)
+  ------------------------------------------------------------- */
+  if (!imageElement) {
+    return (
+      <div className="w-full max-w-7xl mx-auto space-y-8 animate-in fade-in duration-300">
+        {/* Single Authoritative Minimal Header Section */}
+        <div className="text-center space-y-3 max-w-2xl mx-auto">
+          <div
+            className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold ${
+              isDark ? 'bg-zinc-800/80 text-zinc-300' : 'bg-zinc-100 text-zinc-700'
+            }`}
+          >
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+            <span>
+              {language === 'hi'
+                ? 'प्रोटियन (NSDL) और UTIITSL हस्ताक्षर विनिर्देश'
+                : 'Protean (NSDL) & UTIITSL Signature Specifications'}
+            </span>
+          </div>
+
+          <h1
+            className={`text-3xl sm:text-4xl font-extrabold tracking-tight ${
+              isDark ? 'text-zinc-100' : 'text-zinc-950'
+            }`}
+          >
             {language === 'hi'
-              ? 'प्रोटियन (NSDL) और UTIITSL हस्ताक्षर विनिर्देश'
-              : 'Protean (NSDL) & UTIITSL Signature Specifications'}
-          </span>
+              ? 'PAN कार्ड हस्ताक्षर रिसाइज़र & DPI फॉर्मेटर'
+              : 'PAN Signature Resizer & DPI Formatter'}
+          </h1>
+          <p className={`text-sm sm:text-base leading-relaxed ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>
+            {language === 'hi'
+              ? 'हस्ताक्षर क्रॉप करें, बैकग्राउंड सफेद करें और NSDL/UTIITSL के लिए 200 DPI JPEG तैयार करें।'
+              : 'Crop signature, whiten background, and format strictly for NSDL & UTIITSL portals.'}
+          </p>
         </div>
 
-        <h1
-          className={`text-2xl sm:text-3xl font-bold tracking-tight ${
-            isDark ? 'text-white' : 'text-zinc-900'
-          }`}
-        >
-          {language === 'hi'
-            ? 'PAN कार्ड हस्ताक्षर रिसाइज़र & DPI फॉर्मेटर'
-            : 'PAN Signature Resizer & DPI Formatter'}
-        </h1>
-
-        <p
-          className={`text-xs sm:text-sm leading-relaxed ${
-            isDark ? 'text-zinc-400' : 'text-zinc-600'
-          }`}
-        >
-          {language === 'hi' ? (
-            <>
-              हस्ताक्षर को अलग करें, बैकग्राउंड सफेद करें और पैन व ज़ूम के साथ क्रॉप करें। सख्त{' '}
-              <strong className={isDark ? 'text-white' : 'text-zinc-900'}>
-                354 × 157 px
-              </strong>
-              , <strong className={isDark ? 'text-white' : 'text-zinc-900'}>50 KB से कम</strong>, और{' '}
-              <strong className={isDark ? 'text-white' : 'text-zinc-900'}>200 DPI</strong> हेडर तुरंत बनाएं।
-            </>
-          ) : (
-            <>
-              Isolate, whiten, and crop your physical signature with smooth pan &amp; zoom. Generates strict{' '}
-              <strong className={isDark ? 'text-white' : 'text-zinc-900'}>
-                354 × 157 px
-              </strong>
-              , <strong className={isDark ? 'text-white' : 'text-zinc-900'}>Under 50 KB</strong>, and embeds{' '}
-              <strong className={isDark ? 'text-white' : 'text-zinc-900'}>200 DPI</strong> headers for guaranteed portal acceptance.
-            </>
-          )}
-        </p>
-      </div>
-
-      {/* 3-Step Compliance Progress Bar */}
-      <ComplianceProgressBar
-        currentStep={currentStep}
-        toolName="PAN Signature Compliance (354×157)"
-        step1Label="Upload Signature"
-        step2Label="Isolate & Whiten Background"
-        step3Label="Download 200 DPI"
-        step1Desc="Select signature photo"
-        step2Desc="Remove shadow & fit box"
-        step3Desc="Strictly < 50 KB & 200 DPI"
-        onReset={handleResetFile}
-        onReAdjust={handleReAdjust}
-      />
-
-      {/* Preset Selector Bar */}
-      <div className="flex justify-center">
-        <div
-          className={`inline-flex flex-wrap p-1 rounded-md text-xs gap-1 border max-w-full ${
-            isDark
-              ? 'bg-zinc-900 border-zinc-800'
-              : 'bg-zinc-100 border-zinc-200'
-          }`}
-        >
-          {(Object.keys(SIGNATURE_PRESETS) as SignaturePortalPreset[]).map((key) => {
+        {/* Preset Target Tabs (Clean Pill Bar) */}
+        <div className="flex flex-wrap justify-center gap-2">
+          {(Object.keys(SIGNATURE_PRESETS) as SignaturePortalPreset[]).map((key, index) => {
             const preset = SIGNATURE_PRESETS[key];
             const isSelected = selectedPreset === key;
+            const shortcutNum = index + 1;
             return (
               <button
                 key={key}
+                type="button"
                 onClick={() => {
                   setSelectedPreset(key);
                   if (resultUrl) {
@@ -645,158 +755,139 @@ export const SignatureResizer: React.FC<SignatureResizerProps> = ({ onNotify }) 
                     setResultBlob(null);
                   }
                 }}
-                className={`px-3 py-1.5 rounded text-xs font-medium transition-colors flex items-center gap-2 cursor-pointer ${
+                className={`px-3 py-1.5 rounded-md text-xs font-medium border transition-colors cursor-pointer flex items-center gap-1.5 ${
                   isSelected
-                    ? isDark
-                      ? 'bg-zinc-800 text-white'
-                      : 'bg-white text-zinc-950 border border-zinc-200 shadow-xs'
+                    ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 border-zinc-900 dark:border-zinc-100'
                     : isDark
-                      ? 'text-zinc-400 hover:text-white hover:bg-zinc-800/50'
-                      : 'text-zinc-600 hover:text-zinc-950 hover:bg-zinc-200/50'
+                      ? 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
+                      : 'bg-white border-zinc-200 text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50'
                 }`}
               >
-                <span>{preset.name}</span>
-                <span
-                  className={`text-[10px] font-mono px-1 py-0.2 rounded border ${
+                <kbd
+                  className={`px-1.5 py-0.2 rounded text-[10px] font-mono border ${
                     isSelected
-                      ? isDark
-                        ? 'bg-zinc-900 text-zinc-300 border-zinc-700'
-                        : 'bg-zinc-100 text-zinc-700 border-zinc-200'
-                      : isDark
-                        ? 'bg-zinc-800 text-zinc-400 border-zinc-700'
-                        : 'bg-white text-zinc-500 border-zinc-200'
+                      ? 'bg-zinc-800 text-white dark:bg-zinc-200 dark:text-zinc-900 border-zinc-700 dark:border-zinc-300'
+                      : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 border-zinc-200 dark:border-zinc-700'
                   }`}
                 >
-                  {preset.width}×{preset.height} px
-                </span>
+                  {shortcutNum}
+                </kbd>
+                <span>{preset.name}</span>
+                <span className="text-[10px] opacity-70">({preset.width}×{preset.height} px)</span>
               </button>
             );
           })}
         </div>
-      </div>
 
-      {/* Main Workspace Card */}
+        {/* Direct Dropzone (Centered, Max-w-3xl, Clean & Focused) */}
+        <div className="max-w-3xl mx-auto">
+          <Dropzone
+            accept="image/jpeg,image/png,image/webp,image/jpg"
+            onFilesSelected={handleFileSelected}
+            title="Upload Signature Image"
+            description="Drag & drop or click to browse. Auto-formats to official portal specs."
+          />
+        </div>
+
+        {/* Authoritative Verified Guide, Official Specifications & FAQs */}
+        <GovToolGuideSection toolId="signature-resize" />
+      </div>
+    );
+  }
+
+  /* -------------------------------------------------------------
+     RENDER: ACTIVE WORKSPACE (SIGNATURE LOADED & READY)
+  ------------------------------------------------------------- */
+  return (
+    <div className="w-full max-w-7xl mx-auto space-y-6 animate-in fade-in duration-200">
+      {/* Top Toolbar / Pro Workspace Header */}
       <div
-        className={`p-5 sm:p-6 rounded-lg border ${
-          isDark
-            ? 'bg-zinc-900/50 border-zinc-800'
-            : 'bg-white border-zinc-200'
+        className={`p-3.5 sm:p-4 rounded-xl border flex flex-wrap items-center justify-between gap-3 ${
+          isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-zinc-50 border-zinc-200'
         }`}
       >
-        {!imageElement ? (
-          <div className="space-y-6">
-            <Dropzone
-              accept="image/jpeg,image/png,image/webp,image/jpg"
-              onFilesSelected={handleFileSelected}
-              title="Drag & drop signature photo or scan here"
-              description="Converts to compliant 354×157 px (4.5×2.0 cm), strictly under 50 KB, 200 DPI JPEG."
-            />
-
-            {/* Quick specifications glance card */}
-            <div
-              className={`p-4 rounded-xl border grid grid-cols-1 sm:grid-cols-3 gap-4 text-center ${
-                isDark ? 'bg-slate-950/40 border-slate-800/60' : 'bg-slate-50 border-slate-200'
-              }`}
-            >
-              <div className="space-y-1">
-                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-                  Target Dimensions
-                </span>
-                <p className={`text-base font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                  {targetWidth} × {targetHeight} px
-                </p>
-                <p className="text-xs text-slate-400">Strict landscape ratio</p>
-              </div>
-
-              <div className="space-y-1 sm:border-x border-slate-800/40">
-                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-                  File Size Cap
-                </span>
-                <p className="text-base font-bold text-indigo-400">
-                  Strictly &lt; {targetMaxKb} KB
-                </p>
-                <p className="text-xs text-slate-400">Protean &amp; UTI standard</p>
-              </div>
-
-              <div className="space-y-1">
-                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-                  DPI Header
-                </span>
-                <p className="text-base font-bold text-blue-400">
-                  {targetDpi} DPI Embedded
-                </p>
-                <p className="text-xs text-slate-400">High-resolution print clarity</p>
-              </div>
-            </div>
-
-            {/* Portal Ink Rule Notice */}
-            <div
-              className={`p-3.5 rounded-xl border flex items-center gap-3 text-xs ${
-                isDark
-                  ? 'bg-blue-500/5 border-blue-500/20 text-blue-300'
-                  : 'bg-blue-50 border-blue-200 text-blue-800'
-              }`}
-            >
-              <Info className="w-4 h-4 shrink-0 text-blue-400" />
-              <span>
-                <strong>Portal Recommendation:</strong> Sign with a black or dark-blue ballpoint pen on plain white paper. Ensure no shadows or lined paper grids appear inside the crop frame.
-              </span>
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-8">
-            {/* Top Toolbar */}
-            <div
-              className={`p-4 rounded-lg border flex flex-wrap items-center justify-between gap-4 ${
-                isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-zinc-50 border-zinc-200'
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex items-center justify-center text-zinc-600 dark:text-zinc-400">
-                  <PenTool className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className={`text-xs font-semibold truncate max-w-xs ${isDark ? 'text-white' : 'text-zinc-900'}`}>
+              <div className="flex items-center gap-3 min-w-0">
+                {imageSrc && (
+                  <img
+                    src={imageSrc}
+                    alt="Thumbnail"
+                    className="w-10 h-10 rounded-lg object-cover border border-zinc-200 dark:border-zinc-700 shrink-0"
+                  />
+                )}
+                <div className="min-w-0">
+                  <h3 className={`text-sm font-bold truncate max-w-[180px] sm:max-w-xs ${isDark ? 'text-white' : 'text-zinc-900'}`}>
                     {sourceFile?.name}
                   </h3>
-                  <div className="flex items-center gap-2 text-[11px] text-zinc-500 font-mono">
-                    <span>Original: {formatBytes(sourceFile?.size || 0)}</span>
+                  <div className="flex items-center gap-2 text-xs text-zinc-500 font-mono">
+                    <span>{formatBytes(sourceFile?.size || 0)}</span>
                     <span>•</span>
                     <span>{imageNaturalSize.width} × {imageNaturalSize.height} px</span>
                   </div>
                 </div>
               </div>
 
+              {/* Center Live Compliance Pill */}
+              <div className="hidden md:flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-medium border bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>
+                  {resultBlob
+                    ? `✓ 100% Compliant: ${formatBytes(resultSizeBytes)} · ${verifiedDpi || targetDpi} DPI`
+                    : `${targetWidth}×${targetHeight} px · Strictly < ${targetMaxKb} KB · ${targetDpi} DPI`}
+                </span>
+              </div>
+
               <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => {
-                    setImageElement(null);
-                    setSourceFile(null);
-                    if (resultUrl) revokeSafeObjectURL(resultUrl);
-                    setResultUrl(null);
-                    setResultBlob(null);
-                  }}
+                  onClick={handleResetFile}
                   leftIcon={<RefreshCw className="w-3.5 h-3.5" />}
                 >
-                  Change Image
+                  <span>New</span>
+                  <kbd className="ml-1.5 px-1.5 py-0.5 rounded text-[10px] font-mono bg-zinc-200/80 dark:bg-zinc-750 text-zinc-700 dark:text-zinc-300">
+                    N
+                  </kbd>
                 </Button>
+
+                {resultBlob && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCopySignature}
+                    leftIcon={<Copy className="w-3.5 h-3.5" />}
+                  >
+                    <span>Copy</span>
+                    <kbd className="ml-1.5 px-1.5 py-0.5 rounded text-[10px] font-mono bg-zinc-200/80 dark:bg-zinc-750 text-zinc-700 dark:text-zinc-300">
+                      C
+                    </kbd>
+                  </Button>
+                )}
 
                 <Button
                   variant="primary"
                   size="sm"
-                  onClick={() => handleProcessSignature()}
+                  onClick={() => (resultBlob ? handleDownload() : handleProcessSignature())}
                   disabled={isProcessing}
                   leftIcon={
                     isProcessing ? (
-                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    ) : resultBlob ? (
+                      <Download className="w-3.5 h-3.5" />
                     ) : (
-                      <Sparkles className="w-4 h-4" />
+                      <Sparkles className="w-3.5 h-3.5" />
                     )
                   }
                 >
-                  {isProcessing ? 'Processing...' : 'Crop & Format (200 DPI)'}
+                  <span>
+                    {isProcessing
+                      ? 'Processing...'
+                      : resultBlob
+                        ? `Download (${formatBytes(resultSizeBytes)})`
+                        : 'Crop & Format'}
+                  </span>
+                  <kbd className="ml-1.5 px-1.5 py-0.5 rounded text-[10px] font-mono bg-white/20 dark:bg-black/30 text-white">
+                    {resultBlob ? 'D' : '↵'}
+                  </kbd>
                 </Button>
               </div>
             </div>
@@ -861,25 +952,30 @@ export const SignatureResizer: React.FC<SignatureResizerProps> = ({ onNotify }) 
 
                 {/* Interactive Crop Frame Viewport */}
                 <div
+                  ref={canvasContainerRef}
                   tabIndex={0}
-                  onKeyDown={handleKeyDown}
-                  className={`relative overflow-hidden rounded-md border flex items-center justify-center select-none bg-zinc-100 dark:bg-zinc-950 cursor-grab active:cursor-grabbing focus:outline-hidden focus:ring-1 focus:ring-zinc-400 transition-colors ${
+                  className={`relative overflow-hidden rounded-xl border flex items-center justify-center select-none bg-zinc-50/80 dark:bg-zinc-950/80 cursor-grab active:cursor-grabbing focus:outline-none transition-colors ${
                     isDark ? 'border-zinc-800' : 'border-zinc-200'
                   }`}
-                  style={{ height: '380px' }}
+                  style={{
+                    height: '380px',
+                    backgroundImage: isDark
+                      ? 'radial-gradient(#27272a 1.2px, transparent 1.2px)'
+                      : 'radial-gradient(#d4d4d8 1.2px, transparent 1.2px)',
+                    backgroundSize: '16px 16px',
+                  }}
                   onPointerDown={handlePointerDown}
                   onPointerMove={handlePointerMove}
                   onPointerUp={handlePointerUp}
                   onPointerCancel={handlePointerUp}
-                  onWheel={handleWheel}
                   onTouchStart={handleTouchStart}
                   onTouchMove={handleTouchMove}
                   onTouchEnd={handleTouchEnd}
                 >
-                  {/* Fixed Aspect Ratio Frame with Clean Matte Scrim */}
+                  {/* Fixed Aspect Ratio Frame */}
                   <div
                     ref={viewportRef}
-                    className="relative overflow-hidden shadow-[0_0_0_9999px_rgba(24,24,27,0.60)] border-2 border-white rounded-xs pointer-events-none transition-all"
+                    className="relative overflow-hidden border-2 border-zinc-900/90 dark:border-white rounded-xs shadow-xl bg-white pointer-events-none ring-4 ring-zinc-950/5 dark:ring-white/10 transition-all"
                     style={{
                       width: `${boxW}px`,
                       height: `${boxH}px`,
@@ -908,16 +1004,16 @@ export const SignatureResizer: React.FC<SignatureResizerProps> = ({ onNotify }) 
                     </div>
 
                     {/* Corner L-Brackets */}
-                    <div className="absolute -top-0.5 -left-0.5 w-3 h-3 border-t-2 border-l-2 border-white pointer-events-none z-10" />
-                    <div className="absolute -top-0.5 -right-0.5 w-3 h-3 border-t-2 border-r-2 border-white pointer-events-none z-10" />
-                    <div className="absolute -bottom-0.5 -left-0.5 w-3 h-3 border-b-2 border-l-2 border-white pointer-events-none z-10" />
-                    <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 border-b-2 border-r-2 border-white pointer-events-none z-10" />
+                    <div className="absolute -top-0.5 -left-0.5 w-3 h-3 border-t-2 border-l-2 border-zinc-900 dark:border-white pointer-events-none z-10" />
+                    <div className="absolute -top-0.5 -right-0.5 w-3 h-3 border-t-2 border-r-2 border-zinc-900 dark:border-white pointer-events-none z-10" />
+                    <div className="absolute -bottom-0.5 -left-0.5 w-3 h-3 border-b-2 border-l-2 border-zinc-900 dark:border-white pointer-events-none z-10" />
+                    <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 border-b-2 border-r-2 border-zinc-900 dark:border-white pointer-events-none z-10" />
 
                     {/* Signature Alignment Guides */}
                     {showGuides && (
-                      <div className="absolute inset-0 pointer-events-none border border-white/40">
-                        <div className="absolute top-1/2 left-0 right-0 border-t border-dashed border-white/40" />
-                        <div className="absolute left-1/2 top-0 bottom-0 border-l border-dashed border-white/40" />
+                      <div className="absolute inset-0 pointer-events-none border border-zinc-400/40 dark:border-white/30">
+                        <div className="absolute top-1/2 left-0 right-0 border-t border-dashed border-zinc-500/40 dark:border-white/30" />
+                        <div className="absolute left-1/2 top-0 bottom-0 border-l border-dashed border-zinc-500/40 dark:border-white/30" />
                         <div className="absolute bottom-1 inset-x-0 text-center">
                           <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-zinc-900/80 text-zinc-300">
                             Center Signature Inside Frame
@@ -927,138 +1023,25 @@ export const SignatureResizer: React.FC<SignatureResizerProps> = ({ onNotify }) 
                     )}
                   </div>
 
-                  {/* Top-Left Live Metadata Pill Badges */}
+                  {/* Clean Non-Intrusive Top-Left Live Metadata Pill */}
                   <div className="absolute top-3 left-3 flex items-center gap-1.5 pointer-events-none z-10">
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded border border-zinc-200 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 text-zinc-700 dark:text-zinc-300 flex items-center gap-1.5 shadow-xs">
-                      <Maximize2 className="w-3 h-3 text-zinc-500" />
-                      {targetWidth} × {targetHeight} px
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-900/80 text-white border border-zinc-700/50 backdrop-blur-xs flex items-center gap-1.5">
+                      <Maximize2 className="w-3 h-3 text-zinc-300" />
+                      {targetWidth} × {targetHeight} px · {targetDpi} DPI
                     </span>
-                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded border border-zinc-200 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 text-zinc-700 dark:text-zinc-300 shadow-xs">
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-900/80 text-zinc-200 border border-zinc-700/50 backdrop-blur-xs">
                       {Math.round(zoom * 100)}%
                     </span>
                     {rotation !== 0 && (
-                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded border border-zinc-200 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 text-zinc-700 dark:text-zinc-300 shadow-xs">
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-900/80 text-zinc-200 border border-zinc-700/50 backdrop-blur-xs">
                         {rotation}°
                       </span>
                     )}
                     {flipH && (
-                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded border border-zinc-200 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 text-zinc-700 dark:text-zinc-300 shadow-xs">
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-900/80 text-zinc-200 border border-zinc-700/50 backdrop-blur-xs">
                         Flipped
                       </span>
                     )}
-                  </div>
-
-                  {/* Top-Right Floating Quick HUD Controls */}
-                  <div className="absolute top-3 right-3 flex items-center gap-1 z-20 bg-white dark:bg-zinc-900 p-1 rounded-md border border-zinc-200 dark:border-zinc-800 shadow-xs">
-                    <button
-                      onClick={() => setZoom((prev) => Math.max(0.6, parseFloat((prev - 0.1).toFixed(2))))}
-                      title="Zoom Out"
-                      className="p-1 rounded text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-                    >
-                      <ZoomOut className="w-3.5 h-3.5" />
-                    </button>
-                    <span className="text-[10px] font-mono text-zinc-700 dark:text-zinc-300 px-1">
-                      {Math.round(zoom * 100)}%
-                    </span>
-                    <button
-                      onClick={() => setZoom((prev) => Math.min(3.5, parseFloat((prev + 0.1).toFixed(2))))}
-                      title="Zoom In"
-                      className="p-1 rounded text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-                    >
-                      <ZoomIn className="w-3.5 h-3.5" />
-                    </button>
-                    <div className="w-px h-3.5 bg-zinc-200 dark:bg-zinc-800 mx-0.5" />
-                    <button
-                      onClick={rotateCCW}
-                      title="Rotate 90° Left"
-                      className="p-1 rounded text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-                    >
-                      <RotateCcw className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={rotateCW}
-                      title="Rotate 90° Right"
-                      className="p-1 rounded text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-                    >
-                      <RotateCw className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={toggleFlipH}
-                      title={flipH ? 'Unflip' : 'Flip Horizontally'}
-                      className={`p-1 rounded transition-colors cursor-pointer ${
-                        flipH
-                          ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-950'
-                          : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800'
-                      }`}
-                    >
-                      <FlipHorizontal className="w-3.5 h-3.5" />
-                    </button>
-                    <div className="w-px h-3.5 bg-zinc-200 dark:bg-zinc-800 mx-0.5" />
-                    <button
-                      onClick={handleCenter}
-                      title="Center Signature"
-                      className="p-1 rounded text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-                    >
-                      <Move className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={handleResetViewport}
-                      title="Reset Viewport"
-                      className="p-1 rounded text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-                    >
-                      <RefreshCw className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-
-                  {/* Bottom-Right Precision D-Pad Nudge Controls */}
-                  <div className="absolute bottom-3 right-3 flex flex-col items-center z-20 bg-white dark:bg-zinc-900 p-1 rounded-md border border-zinc-200 dark:border-zinc-800 shadow-xs">
-                    <button
-                      onClick={() => nudge(0, -3)}
-                      title="Nudge Up (3px)"
-                      className="p-1 rounded text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-                    >
-                      <ArrowUp className="w-3 h-3" />
-                    </button>
-                    <div className="flex items-center gap-1 my-0.5">
-                      <button
-                        onClick={() => nudge(-3, 0)}
-                        title="Nudge Left (3px)"
-                        className="p-1 rounded text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-                      >
-                        <ArrowLeft className="w-3 h-3" />
-                      </button>
-                      <button
-                        onClick={handleCenter}
-                        title="Re-Center"
-                        className="p-1 rounded text-zinc-900 dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer text-[9px] font-bold"
-                      >
-                        ●
-                      </button>
-                      <button
-                        onClick={() => nudge(3, 0)}
-                        title="Nudge Right (3px)"
-                        className="p-1 rounded text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-                      >
-                        <ArrowRight className="w-3 h-3" />
-                      </button>
-                    </div>
-                    <button
-                      onClick={() => nudge(0, 3)}
-                      title="Nudge Down (3px)"
-                      className="p-1 rounded text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-                    >
-                      <ArrowDown className="w-3 h-3" />
-                    </button>
-                  </div>
-
-                  {/* Bottom Navigation Hint & Offset Bar */}
-                  <div className="absolute bottom-3 left-3 flex items-center gap-2 pointer-events-none z-10 text-[10px] font-mono text-zinc-400">
-                    <span className="px-2 py-0.5 rounded border border-zinc-200 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 text-zinc-700 dark:text-zinc-300 shadow-xs">
-                      Offset: X {pan.x >= 0 ? `+${pan.x}` : pan.x}px · Y {pan.y >= 0 ? `+${pan.y}` : pan.y}px
-                    </span>
-                    <span className="hidden sm:inline px-2 py-0.5 rounded border border-zinc-200 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 text-zinc-500 shadow-xs">
-                      Drag to pan · Scroll/pinch to zoom
-                    </span>
                   </div>
                 </div>
 
@@ -1353,196 +1336,61 @@ export const SignatureResizer: React.FC<SignatureResizerProps> = ({ onNotify }) 
                 </div>
               </div>
             </div>
-          </div>
-        )}
-      </div>
 
-      {/* Educational & How It Works Guidance Section */}
-      <div
-        className={`p-6 sm:p-7 rounded-lg border space-y-6 ${
-          isDark
-            ? 'bg-zinc-900/40 border-zinc-800'
-            : 'bg-zinc-50/60 border-zinc-200'
-        }`}
-      >
-        <div className="text-center space-y-1.5 max-w-xl mx-auto">
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-[11px] font-medium text-zinc-600 dark:text-zinc-300 font-mono">
-            <HelpCircle className="w-3.5 h-3.5 text-zinc-500" />
-            <span>Govt Signature Guidance</span>
-          </div>
-          <h2 className={`text-lg sm:text-xl font-bold tracking-tight ${isDark ? 'text-white' : 'text-zinc-900'}`}>
-            How to Format Your PAN Card Signature
-          </h2>
-          <p className={`text-xs sm:text-sm ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
-            Ensure your signature upload is approved on Protean (NSDL) and UTIITSL without manual rejection.
-          </p>
-        </div>
-
-        {/* 3 Step Process Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div
-            className={`p-4 rounded-lg border space-y-2.5 ${
-              isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'
-            }`}
-          >
-            <div className="w-7 h-7 rounded border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 flex items-center justify-center font-semibold text-xs text-zinc-900 dark:text-white font-mono">
-              1
-            </div>
-            <h4 className={`text-xs font-semibold ${isDark ? 'text-white' : 'text-zinc-900'}`}>
-              Sign on Blank White Paper
-            </h4>
-            <p className={`text-xs leading-relaxed ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
-              Use a black or dark-blue pen on unruled white paper. Avoid textured surfaces, shadows, or notebook margins.
-            </p>
-          </div>
-
-          <div
-            className={`p-4 rounded-lg border space-y-2.5 ${
-              isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'
-            }`}
-          >
-            <div className="w-7 h-7 rounded border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 flex items-center justify-center font-semibold text-xs text-zinc-900 dark:text-white font-mono">
-              2
-            </div>
-            <h4 className={`text-xs font-semibold ${isDark ? 'text-white' : 'text-zinc-900'}`}>
-              Isolate &amp; Whiten Background
-            </h4>
-            <p className={`text-xs leading-relaxed ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
-              Zoom and drag to frame the signature tightly. Use Paper Whitening and Contrast sliders to clear any shadows.
-            </p>
-          </div>
-
-          <div
-            className={`p-4 rounded-lg border space-y-2.5 ${
-              isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'
-            }`}
-          >
-            <div className="w-7 h-7 rounded border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 flex items-center justify-center font-semibold text-xs text-zinc-900 dark:text-white font-mono">
-              3
-            </div>
-            <h4 className={`text-xs font-semibold ${isDark ? 'text-white' : 'text-zinc-900'}`}>
-              Export Under 50 KB (200 DPI)
-            </h4>
-            <p className={`text-xs leading-relaxed ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
-              Click &ldquo;Crop &amp; Format&rdquo;. FileWala embeds 200 DPI metadata and compresses the JPEG strictly below 50 KB.
-            </p>
-          </div>
-        </div>
-
-        {/* Portal Specification Table */}
-        <div
-          className={`p-4 sm:p-5 rounded-lg border overflow-x-auto ${
-            isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'
-          }`}
-        >
-          <h4 className={`text-xs font-semibold uppercase tracking-wider mb-3 ${isDark ? 'text-zinc-300' : 'text-zinc-700'}`}>
-            Protean (NSDL) vs UTIITSL Signature Specifications
-          </h4>
-          <table className="w-full text-left text-xs border-collapse">
-            <thead>
-              <tr className={`border-b ${isDark ? 'border-zinc-800 text-zinc-400' : 'border-zinc-200 text-zinc-500'}`}>
-                <th className="py-2 px-3 font-medium">Portal Name</th>
-                <th className="py-2 px-3 font-medium">Exact Dimensions</th>
-                <th className="py-2 px-3 font-medium">Max File Size</th>
-                <th className="py-2 px-3 font-medium">DPI Requirement</th>
-                <th className="py-2 px-3 font-medium">Format</th>
-              </tr>
-            </thead>
-            <tbody className={`divide-y ${isDark ? 'divide-zinc-800 text-zinc-300' : 'divide-zinc-100 text-zinc-700'}`}>
-              <tr>
-                <td className="py-2.5 px-3 font-medium text-zinc-900 dark:text-zinc-100">Protean (NSDL)</td>
-                <td className="py-2.5 px-3 font-mono">354 × 157 pixels (4.5×2.0cm)</td>
-                <td className="py-2.5 px-3 font-mono">&lt; 50 KB (10–50 KB)</td>
-                <td className="py-2.5 px-3 font-mono">200 DPI</td>
-                <td className="py-2.5 px-3">JPEG / JPG</td>
-              </tr>
-              <tr>
-                <td className="py-2.5 px-3 font-medium text-zinc-900 dark:text-zinc-100">UTIITSL Portal</td>
-                <td className="py-2.5 px-3 font-mono">400 × 200 pixels (or 2:1)</td>
-                <td className="py-2.5 px-3 font-mono">&lt; 30 KB</td>
-                <td className="py-2.5 px-3 font-mono">200 DPI</td>
-                <td className="py-2.5 px-3">JPEG / JPG</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        {/* Expandable FAQs Accordion */}
-        <div className="space-y-2">
-          <h4 className={`text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-white' : 'text-zinc-900'}`}>
-            Frequently Asked Questions
-          </h4>
-
-          {[
-            {
-              q: 'Can I use a signature cropped from a mobile camera photo?',
-              a: 'Absolutely. Use the zoom slider to enlarge your signature, position it inside the crop box, and increase the Paper Whitening slider to eliminate background grayness or table shadows.',
-            },
-            {
-              q: 'What pen color is accepted by government portals?',
-              a: 'Protean (NSDL) and UTIITSL accept black or dark-blue ink signatures. Red, green, or pencil markings will be rejected by verification officers.',
-            },
-            {
-              q: 'Why does government portal upload error on "Signature DPI"?',
-              a: 'Government scanners look for a 200 DPI JFIF APP0 header inside the JPEG binary. FileWala embeds this exact header so the portal verification script validates it automatically.',
-            },
-          ].map((item, idx) => {
-            const isOpen = openFaq === idx;
-            return (
-              <div
-                key={idx}
-                className={`rounded-lg border transition-colors ${
-                  isDark
-                    ? 'bg-zinc-900 border-zinc-800'
-                    : 'bg-white border-zinc-200'
-                }`}
-              >
-                <button
-                  onClick={() => setOpenFaq(isOpen ? null : idx)}
-                  className="w-full p-3.5 flex items-center justify-between text-left text-xs font-medium cursor-pointer"
-                >
-                  <span className={isDark ? 'text-zinc-200' : 'text-zinc-800'}>{item.q}</span>
-                  <ChevronDown
-                    className={`w-4 h-4 text-zinc-400 transition-transform ${
-                      isOpen ? 'rotate-180 text-zinc-900 dark:text-white' : ''
-                    }`}
-                  />
-                </button>
-                {isOpen && (
-                  <div
-                    className={`px-3.5 pb-3.5 text-xs leading-relaxed border-t ${
-                      isDark
-                        ? 'text-zinc-400 border-zinc-800'
-                        : 'text-zinc-600 border-zinc-100'
-                    }`}
-                  >
-                    {item.a}
-                  </div>
-                )}
+            {/* Bottom Keyboard Hotkey Helper Strip */}
+            <div className="flex flex-wrap items-center justify-between gap-2 px-3.5 py-2.5 rounded-lg border text-xs bg-zinc-50 dark:bg-zinc-850/60 border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 font-mono select-none">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                  <Keyboard className="w-3.5 h-3.5 text-zinc-500" />
+                  Hotkeys:
+                </span>
+                <span className="inline-flex items-center gap-1">
+                  <kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-750 text-zinc-800 dark:text-zinc-200 font-semibold text-[10px]">Ctrl+V</kbd> Paste
+                </span>
+                <span className="opacity-40">·</span>
+                <span className="inline-flex items-center gap-1">
+                  <kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-750 text-zinc-800 dark:text-zinc-200 font-semibold text-[10px]">1</kbd>
+                  <kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-750 text-zinc-800 dark:text-zinc-200 font-semibold text-[10px]">2</kbd>
+                  <kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-750 text-zinc-800 dark:text-zinc-200 font-semibold text-[10px]">3</kbd> Presets
+                </span>
+                <span className="opacity-40">·</span>
+                <span className="inline-flex items-center gap-1">
+                  <kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-750 text-zinc-800 dark:text-zinc-200 font-semibold text-[10px]">↑↓←→</kbd> Pan
+                </span>
+                <span className="opacity-40">·</span>
+                <span className="inline-flex items-center gap-1">
+                  <kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-750 text-zinc-800 dark:text-zinc-200 font-semibold text-[10px]">+/-</kbd> Zoom
+                </span>
+                <span className="opacity-40">·</span>
+                <span className="inline-flex items-center gap-1">
+                  <kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-750 text-zinc-800 dark:text-zinc-200 font-semibold text-[10px]">T</kbd> Rotate
+                </span>
+                <span className="opacity-40">·</span>
+                <span className="inline-flex items-center gap-1">
+                  <kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-750 text-zinc-800 dark:text-zinc-200 font-semibold text-[10px]">W</kbd> Whiten
+                </span>
+                <span className="opacity-40">·</span>
+                <span className="inline-flex items-center gap-1">
+                  <kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-750 text-zinc-800 dark:text-zinc-200 font-semibold text-[10px]">G</kbd> Guides
+                </span>
+                <span className="opacity-40">·</span>
+                <span className="inline-flex items-center gap-1">
+                  <kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-750 text-zinc-800 dark:text-zinc-200 font-semibold text-[10px]">↵ Enter</kbd> Format
+                </span>
+                <span className="opacity-40">·</span>
+                <span className="inline-flex items-center gap-1">
+                  <kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-750 text-zinc-800 dark:text-zinc-200 font-semibold text-[10px]">D</kbd> Download
+                </span>
+                <span className="opacity-40">·</span>
+                <span className="inline-flex items-center gap-1">
+                  <kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-750 text-zinc-800 dark:text-zinc-200 font-semibold text-[10px]">C</kbd> Copy
+                </span>
               </div>
-            );
-          })}
-        </div>
+              <span className="text-[11px] text-zinc-500 font-medium">Zero Mouse Latency</span>
+            </div>
 
-        {/* Privacy Notice Banner */}
-        <div
-          className={`p-3.5 rounded-lg border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs ${
-            isDark
-              ? 'bg-zinc-900 border-zinc-800 text-zinc-400'
-              : 'bg-white border-zinc-200 text-zinc-600'
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            <ShieldCheck className="w-4 h-4 text-zinc-500 shrink-0" />
-            <span>
-              <strong>Zero-Knowledge Privacy:</strong> Signatures are personal biometric records. All processing happens 100% in your local browser memory; no files are ever sent to any remote server.
-            </span>
-          </div>
-          <span className="text-[10px] font-mono px-2 py-0.5 rounded border border-zinc-200 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 shrink-0">
-            Client-Side Verified
-          </span>
-        </div>
-      </div>
+      {/* Authoritative Verified Guide, Official Specifications & FAQs */}
+      <GovToolGuideSection toolId="signature-resize" />
     </div>
   );
 };

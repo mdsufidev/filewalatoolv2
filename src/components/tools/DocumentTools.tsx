@@ -8,7 +8,6 @@ import { PassportSignatureResizer } from './PassportSignatureResizer';
 import { UpscPhotoMaker } from './UpscPhotoMaker';
 import { SscResizer } from './SscResizer';
 import { GovCompressor } from './GovCompressor';
-import { GovtToolsSeoGuide } from '../seo/GovtToolsSeoGuide';
 import { useLanguage } from '../../core/languageContext';
 
 export type GovDocumentToolId =
@@ -127,32 +126,6 @@ export const DocumentTools: React.FC<DocumentToolsProps> = ({
 
   return (
     <div className="w-full max-w-7xl mx-auto space-y-10 select-none animate-in fade-in duration-150">
-      {/* Top 2D Sub-Tool Switcher Bar */}
-      <div className="w-full overflow-x-auto no-scrollbar pb-1">
-        <div className="inline-flex items-center gap-1.5 p-1 rounded-lg bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 min-w-max">
-          {GOV_DOCUMENT_TOOLS.map((tool) => {
-            const isActive = activeTool === tool.id;
-            return (
-              <button
-                key={tool.id}
-                type="button"
-                onClick={() => setActiveTool(tool.id)}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs transition-colors duration-150 cursor-pointer whitespace-nowrap ${
-                  isActive
-                    ? 'bg-white text-zinc-950 font-semibold dark:bg-zinc-800 dark:text-white border border-zinc-200 dark:border-zinc-700'
-                    : 'text-zinc-600 dark:text-zinc-400 font-medium hover:text-zinc-950 dark:hover:text-zinc-100 hover:bg-zinc-200/50 dark:hover:bg-zinc-800/50 border border-transparent'
-                }`}
-              >
-                <span>{tool.name}</span>
-                <span className="text-[10px] font-mono opacity-60">
-                  {tool.badge}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
       {/* Render Selected Standalone Tool Page */}
       <div className="w-full">
         {activeTool === 'pan-photo-resize' && (
@@ -179,14 +152,6 @@ export const DocumentTools: React.FC<DocumentToolsProps> = ({
             onNotify={onNotify}
           />
         )}
-      </div>
-
-      {/* Authoritative SEO Portal Guidelines, Specification Matrix & Sarkari Exam FAQs */}
-      <div className="pt-8 border-t border-zinc-200/80 dark:border-zinc-800/80">
-        <GovtToolsSeoGuide
-          activeSubToolId={activeTool}
-          onSelectTool={(_, toolId) => setActiveTool(toolId as GovDocumentToolId)}
-        />
       </div>
     </div>
   );
