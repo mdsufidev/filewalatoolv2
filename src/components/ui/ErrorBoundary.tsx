@@ -58,9 +58,20 @@ export class AppErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundar
               {this.props.fallbackTitle || 'Workspace Error Encountered'}
             </h3>
 
-            <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 mb-6 leading-relaxed">
+            <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 mb-4 leading-relaxed">
               An unexpected issue occurred while rendering this tool. Your browser memory remains secure and no files were uploaded.
             </p>
+
+            {this.state.error?.message && (
+              <details className="mb-6 text-left p-3 rounded-lg bg-red-100/70 dark:bg-red-950/40 border border-red-200 dark:border-red-900/60 text-xs font-mono text-red-800 dark:text-red-300 max-h-36 overflow-y-auto">
+                <summary className="cursor-pointer font-semibold mb-1 select-none text-[11px] uppercase tracking-wider text-red-700 dark:text-red-400">
+                  Diagnostic Details
+                </summary>
+                <div className="whitespace-pre-wrap break-words mt-1 text-[11px] leading-relaxed">
+                  {this.state.error.message}
+                </div>
+              </details>
+            )}
 
             <div className="flex flex-wrap items-center justify-center gap-3">
               <button

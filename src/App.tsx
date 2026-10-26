@@ -97,6 +97,11 @@ const lazyWithRetry = <T extends React.ComponentType<any>>(
         return await factory();
       } catch (retryErr) {
         console.error('Fatal chunk load failure after retry:', retryErr);
+        // If a new deployment invalidated chunk hashes on CDN/server, reload once from network
+        if (typeof window !== 'undefined' && !sessionStorage.getItem('chunk_reload_retry')) {
+          sessionStorage.setItem('chunk_reload_retry', 'true');
+          window.location.reload();
+        }
         throw retryErr;
       }
     }
@@ -864,12 +869,12 @@ function MainApp({ initialPath, toolComponents }: { initialPath?: string; toolCo
                 </div>
               </nav>
 
-              {/* Active Tool Suite Component with Fault Isolation */}
-              <AppErrorBoundary
-                fallbackTitle="Tool Engine Error"
-                onReset={() => handleLaunchTool(activeTool.section, activeTool.subToolId)}
-              >
-                <Suspense fallback={<PageSuspenseFallback />}>
+              {/* Active Tool Suite Component with Fault Isolation & Lazy Boundary */}
+              <Suspense fallback={<PageSuspenseFallback />}>
+                <AppErrorBoundary
+                  fallbackTitle="Tool Engine Error"
+                  onReset={() => handleLaunchTool(activeTool.section, activeTool.subToolId)}
+                >
                   <div className="w-full">
                     {activeTool.section === 'image-tools' && (
                       <ResolvedImageToolsWrapper
@@ -907,8 +912,8 @@ function MainApp({ initialPath, toolComponents }: { initialPath?: string; toolCo
                       />
                     )}
                   </div>
-                </Suspense>
-              </AppErrorBoundary>
+                </AppErrorBoundary>
+              </Suspense>
             </div>
           )}
         </AppErrorBoundary>
