@@ -1256,7 +1256,7 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
           <span>100% Client-Side Engine · Zero Uploads</span>
         </div>
         <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-zinc-950 dark:text-zinc-50">
-          Background Remover Studio
+          Instant Background Remover
         </h1>
         <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 max-w-md mx-auto leading-relaxed">
           Desktop-grade cutout studio with WebGPU AI, tactile Zoom & Pan, undo history, and 8-bit soft alpha.

@@ -28,6 +28,7 @@ import {
 import { useTheme } from '../../core/themeContext';
 import { useLanguage } from '../../core/languageContext';
 import { ToolCategoryFilter } from '../tools/ToolCategoryFilter';
+import { RedditIcon } from '../ui/RedditIcon';
 import { ToolGrid } from '../tools/ToolGrid';
 import { TrustCertificationSection } from './TrustCertificationSection';
 import { GovtToolsSeoGuide } from '../seo/GovtToolsSeoGuide';
@@ -715,6 +716,16 @@ export const HomePage: React.FC<HomePageProps> = ({
           </div>
 
           <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+            <a
+              href="https://www.reddit.com/r/filewalatool/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="p-2.5 rounded-lg bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-850 dark:hover:bg-zinc-800 text-zinc-600 hover:text-orange-500 dark:text-zinc-400 dark:hover:text-orange-400 transition-colors"
+              title="Reddit Community (r/filewalatool)"
+              aria-label="Reddit Community (r/filewalatool)"
+            >
+              <RedditIcon className="w-4 h-4" />
+            </a>
             <a
               href="https://linkedin.com/in/mdsufidev"
               target="_blank"

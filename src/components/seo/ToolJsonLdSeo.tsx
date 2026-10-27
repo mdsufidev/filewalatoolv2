@@ -555,6 +555,12 @@ export function computeSeoMetadata(
           url: BASE_URL,
           description,
           inLanguage: ['en-IN', 'hi-IN', 'en'],
+          sameAs: [
+            'https://www.reddit.com/r/filewalatool/',
+            'https://github.com/mdsufidev',
+            'https://linkedin.com/in/mdsufidev',
+            'https://instagram.com/mdsufidev',
+          ],
           potentialAction: {
             '@type': 'SearchAction',
             target: `${BASE_URL}/?search={search_term_string}`,

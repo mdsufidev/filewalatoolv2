@@ -19,6 +19,7 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { useLanguage } from '../../core/languageContext';
+import { RedditIcon } from '../ui/RedditIcon';
 
 interface AboutUsProps {
   onBackHome: () => void;
@@ -142,6 +143,16 @@ export const AboutUs: React.FC<AboutUsProps> = ({ onBackHome, onNavigate }) => {
               >
                 <Github className="w-3.5 h-3.5" />
                 <span>GitHub</span>
+              </a>
+
+              <a
+                href="https://www.reddit.com/r/filewalatool/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-orange-600 dark:text-orange-400 hover:border-orange-500/60 hover:text-orange-500 transition-colors duration-150"
+              >
+                <RedditIcon className="w-3.5 h-3.5 text-orange-500" />
+                <span>Reddit (r/filewalatool)</span>
               </a>
 
               <a

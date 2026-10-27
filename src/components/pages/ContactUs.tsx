@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { saveContactMessage } from '../../core/firebase';
 import { useLanguage } from '../../core/languageContext';
+import { RedditIcon } from '../ui/RedditIcon';
 
 interface ContactUsProps {
   onBackHome: () => void;
@@ -253,6 +254,16 @@ export const ContactUs: React.FC<ContactUsProps> = ({
                 >
                   <Instagram className="w-3.5 h-3.5" />
                   <span>Instagram</span>
+                </a>
+                <a
+                  href="https://www.reddit.com/r/filewalatool/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-orange-600 dark:text-orange-400 hover:border-orange-500/60 transition-colors"
+                  aria-label="Reddit Community"
+                >
+                  <RedditIcon className="w-3.5 h-3.5 text-orange-500" />
+                  <span>Reddit</span>
                 </a>
               </div>
             </div>

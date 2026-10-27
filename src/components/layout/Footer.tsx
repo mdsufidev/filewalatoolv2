@@ -1,5 +1,6 @@
 import React from 'react';
 import { ArrowUpRight, ShieldCheck, Keyboard, Linkedin, Instagram, Github } from 'lucide-react';
+import { RedditIcon } from '../ui/RedditIcon';
 import { MainNavSection } from './Navbar';
 
 export interface FooterProps {
@@ -63,9 +64,22 @@ export const Footer: React.FC<FooterProps> = ({
               Private, fast, and 100% in-browser file utilities. Your sensitive documents and photos are processed locally and never touch any server.
             </p>
 
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-zinc-800 bg-zinc-900/60 text-[11px] font-mono text-zinc-400">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-              <span>100% Client-Side Private Engine</span>
+            <div className="flex flex-wrap items-center gap-2.5">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-zinc-800 bg-zinc-900/60 text-[11px] font-mono text-zinc-400">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                <span>100% Client-Side Private Engine</span>
+              </div>
+
+              <a
+                href="https://www.reddit.com/r/filewalatool/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-orange-500/30 bg-orange-500/10 text-[11px] font-mono text-orange-400 hover:bg-orange-500/15 hover:border-orange-500/60 transition-colors"
+                title="Join our Reddit community: r/filewalatool"
+              >
+                <RedditIcon className="w-3.5 h-3.5 text-orange-500 shrink-0" />
+                <span>r/filewalatool</span>
+              </a>
             </div>
           </div>
 
@@ -189,6 +203,21 @@ export const Footer: React.FC<FooterProps> = ({
                   <ArrowUpRight className="w-3.5 h-3.5 text-zinc-600 group-hover:text-zinc-300 transition-colors" />
                 </a>
               </li>
+              <li>
+                <a
+                  href="https://www.reddit.com/r/filewalatool/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="transition-colors duration-150 cursor-pointer flex items-center justify-between group text-zinc-400 hover:text-orange-400"
+                  title="Official Reddit Community: r/filewalatool"
+                >
+                  <span className="group-hover:translate-x-0.5 transition-transform duration-150 flex items-center gap-1.5">
+                    <RedditIcon className="w-3.5 h-3.5 text-orange-500 shrink-0" />
+                    <span>Reddit Community</span>
+                  </span>
+                  <ArrowUpRight className="w-3.5 h-3.5 text-zinc-600 group-hover:text-orange-400 transition-colors" />
+                </a>
+              </li>
             </ul>
           </div>
 
@@ -272,6 +301,17 @@ export const Footer: React.FC<FooterProps> = ({
               aria-label="GitHub profile"
             >
               <Github className="w-3.5 h-3.5" />
+            </a>
+
+            <a
+              href="https://www.reddit.com/r/filewalatool/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-8 h-8 rounded-lg border border-zinc-800 bg-zinc-900 text-zinc-400 hover:text-orange-400 hover:border-orange-500/40 flex items-center justify-center transition-colors cursor-pointer"
+              title="Reddit Community (r/filewalatool)"
+              aria-label="Reddit Community (r/filewalatool)"
+            >
+              <RedditIcon className="w-3.5 h-3.5" />
             </a>
           </div>
         </div>
