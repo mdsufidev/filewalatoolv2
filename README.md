@@ -45,7 +45,7 @@ FileWala also provides a native Windows 64-bit desktop application for heavy off
 * **4x Ultra HD Upscaling**: Facial skin pore, eye pupil, and texture restoration.
 * **U2Net Offline BG Remover**: GPU-accelerated background cutout.
 * **Hardware Acceleration**: Automatic NVIDIA CUDA / Tensor & multi-core CPU detection.
-* **Direct Download**: [Download Setup .EXE](https://filewalatool.com/download/v1.0.0/FileWala-TOOL-Setup-1.0.0.exe) (80.4 MB)
+* **Direct Download**: [Download Setup .EXE](https://www.filewalatool.com/download/v1.0.0/FileWala-TOOL-Setup-1.0.0.exe) (80.4 MB)
 
 ---
 

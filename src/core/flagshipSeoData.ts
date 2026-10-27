@@ -22,6 +22,44 @@ export interface FlagshipSeoConfig {
   };
 }
 
+const CONVERT_HUB_CONFIG: FlagshipSeoConfig = {
+  id: 'convert',
+  toolName: 'Fast Client-Side Format Converters Hub',
+  slug: '/convert-tools',
+  title: 'Fast Client-Side Format Converters — HEIC, WebP, PNG & JPG | FileWala',
+  description: 'Convert between HEIC/iPhone, WebP, JPG, PNG, and AVIF formats instantly in your browser without uploading to any server. 100% client-side by mdsufidev.',
+  canonicalUrl: 'https://www.filewalatool.com/convert-tools',
+  intro: 'In-browser media codec transcoder. Convert iPhone HEIC photos to JPG, PNG to lightweight WebP with transparency, WebP to universal JPEG, and rasterize SVG vectors in milliseconds.',
+  category: 'convert',
+  matchingSubToolIds: ['convert', 'convert-tools'],
+  faqs: CATEGORY_HUBS_CONTENT['convert'].faqs,
+  schema: {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'WebApplication',
+        '@id': 'https://www.filewalatool.com/convert-tools#app',
+        name: 'FileWala Client-Side Format Converter Suite',
+        url: 'https://www.filewalatool.com/convert-tools',
+        applicationCategory: 'MultimediaApplication',
+        operatingSystem: 'All (Modern Web Browser)',
+        offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+        author: { '@type': 'Person', name: 'mdsufidev', url: 'https://www.filewalatool.com/about' },
+        description: 'High-speed in-browser image format converter powered by client-side WebAssembly codecs with zero server uploads.'
+      },
+      {
+        '@type': 'FAQPage',
+        '@id': 'https://www.filewalatool.com/convert-tools#faq',
+        mainEntity: CATEGORY_HUBS_CONTENT['convert'].faqs.map((f) => ({
+          '@type': 'Question',
+          name: f.question,
+          acceptedAnswer: { '@type': 'Answer', text: f.answer }
+        }))
+      }
+    ]
+  }
+};
+
 export const FLAGSHIP_SEO_TOOLS: Record<string, FlagshipSeoConfig> = {
   'compress-image': {
     id: 'compress-image',
@@ -1038,10 +1076,10 @@ export const FLAGSHIP_SEO_TOOLS: Record<string, FlagshipSeoConfig> = {
   'govt-photo-signature-resizer': {
     id: 'govt-photo-signature-resizer',
     toolName: 'Govt Photo & Signature Resizer Suite',
-    slug: '/govt-photo-signature-resizer',
+    slug: '/pan-photo-resize',
     title: 'Govt Photo & Signature Resizer - PAN, UPSC, SSC | FileWala',
     description: 'Resize photos & signatures for PAN 200x230px, Passport 35x45mm, SSC, UPSC with name & date stamps. Strict KB compliance & 100% client-side.',
-    canonicalUrl: 'https://www.filewalatool.com/govt-photo-signature-resizer',
+    canonicalUrl: 'https://www.filewalatool.com/pan-photo-resize',
     intro: 'Format your application photos and signatures to match the exact specifications required by Indian government recruitment and identity portals. FileWala Govt Resizer Suite guarantees 100% compliance for PAN Card (200x230px, 200 DPI), Passport Seva (35x45mm), UPSC (with Name and Date stamp), and SSC exams. Protect your confidential biometrics with 100% in-browser processing and zero cloud exposure.',
     category: 'document-tools',
     matchingSubToolIds: ['govt-photo-signature-resizer'],
@@ -1064,9 +1102,9 @@ export const FLAGSHIP_SEO_TOOLS: Record<string, FlagshipSeoConfig> = {
       '@graph': [
         {
           '@type': 'WebApplication',
-          '@id': 'https://www.filewalatool.com/govt-photo-signature-resizer#app',
+          '@id': 'https://www.filewalatool.com/pan-photo-resize#app',
           name: 'FileWala Govt Photo & Signature Resizer Suite',
-          url: 'https://www.filewalatool.com/govt-photo-signature-resizer',
+          url: 'https://www.filewalatool.com/pan-photo-resize',
           applicationCategory: 'UtilitiesApplication',
           operatingSystem: 'All (Modern Web Browser)',
           offers: {
@@ -1240,81 +1278,8 @@ export const FLAGSHIP_SEO_TOOLS: Record<string, FlagshipSeoConfig> = {
     }
   },
 
-  'convert': {
-    id: 'convert',
-    toolName: 'Fast Client-Side Format Converters Hub',
-    slug: '/convert-tools',
-    title: 'Fast Client-Side Format Converters — HEIC, WebP, PNG & JPG | FileWala',
-    description: 'Convert between HEIC/iPhone, WebP, JPG, PNG, and AVIF formats instantly in your browser without uploading to any server. 100% client-side by mdsufidev.',
-    canonicalUrl: 'https://www.filewalatool.com/convert-tools',
-    intro: 'In-browser media codec transcoder. Convert iPhone HEIC photos to JPG, PNG to lightweight WebP with transparency, WebP to universal JPEG, and rasterize SVG vectors in milliseconds.',
-    category: 'convert',
-    matchingSubToolIds: ['convert', 'convert-tools'],
-    faqs: CATEGORY_HUBS_CONTENT['convert'].faqs,
-    schema: {
-      '@context': 'https://schema.org',
-      '@graph': [
-        {
-          '@type': 'WebApplication',
-          '@id': 'https://www.filewalatool.com/convert-tools#app',
-          name: 'FileWala Client-Side Format Converter Suite',
-          url: 'https://www.filewalatool.com/convert-tools',
-          applicationCategory: 'MultimediaApplication',
-          operatingSystem: 'All (Modern Web Browser)',
-          offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
-          author: { '@type': 'Person', name: 'mdsufidev', url: 'https://www.filewalatool.com/about' },
-          description: 'High-speed in-browser image format converter powered by client-side WebAssembly codecs with zero server uploads.'
-        },
-        {
-          '@type': 'FAQPage',
-          '@id': 'https://www.filewalatool.com/convert-tools#faq',
-          mainEntity: CATEGORY_HUBS_CONTENT['convert'].faqs.map((f) => ({
-            '@type': 'Question',
-            name: f.question,
-            acceptedAnswer: { '@type': 'Answer', text: f.answer }
-          }))
-        }
-      ]
-    }
-  },
-
-  'convert-tools': {
-    id: 'convert-tools',
-    toolName: 'Fast Client-Side Format Converters Hub',
-    slug: '/convert-tools',
-    title: 'Fast Client-Side Format Converters — HEIC, WebP, PNG & JPG | FileWala',
-    description: 'Convert between HEIC/iPhone, WebP, JPG, PNG, and AVIF formats instantly in your browser without uploading to any server. 100% client-side by mdsufidev.',
-    canonicalUrl: 'https://www.filewalatool.com/convert-tools',
-    intro: 'In-browser media codec transcoder. Convert iPhone HEIC photos to JPG, PNG to lightweight WebP with transparency, WebP to universal JPEG, and rasterize SVG vectors in milliseconds.',
-    category: 'convert',
-    matchingSubToolIds: ['convert', 'convert-tools'],
-    faqs: CATEGORY_HUBS_CONTENT['convert'].faqs,
-    schema: {
-      '@context': 'https://schema.org',
-      '@graph': [
-        {
-          '@type': 'WebApplication',
-          '@id': 'https://www.filewalatool.com/convert-tools#app',
-          name: 'FileWala Client-Side Format Converter Suite',
-          url: 'https://www.filewalatool.com/convert-tools',
-          applicationCategory: 'MultimediaApplication',
-          operatingSystem: 'All (Modern Web Browser)',
-          offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
-          author: { '@type': 'Person', name: 'mdsufidev', url: 'https://www.filewalatool.com/about' },
-          description: 'High-speed in-browser image format converter powered by client-side WebAssembly codecs with zero server uploads.'
-        },
-        {
-          '@type': 'FAQPage',
-          '@id': 'https://www.filewalatool.com/convert-tools#faq',
-          mainEntity: CATEGORY_HUBS_CONTENT['convert'].faqs.map((f) => ({
-            '@type': 'Question',
-            name: f.question,
-            acceptedAnswer: { '@type': 'Answer', text: f.answer }
-          }))
-        }
-      ]
-    }
-  },
+  'convert': CONVERT_HUB_CONFIG,
+  'convert-tools': CONVERT_HUB_CONFIG,
 };
 
 /**

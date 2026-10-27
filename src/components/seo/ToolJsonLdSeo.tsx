@@ -549,10 +549,29 @@ export function computeSeoMetadata(
     } else {
       jsonLdGraph = [
         {
+          '@type': 'Organization',
+          '@id': `${BASE_URL}/#organization`,
+          name: 'FileWala Tool',
+          url: `${BASE_URL}/`,
+          logo: `${BASE_URL}/logo.png`,
+          founder: {
+            '@type': 'Person',
+            name: 'Mohammad Sufiyan',
+            alternateName: 'mdsufidev',
+            url: `${BASE_URL}/about`,
+          },
+          sameAs: [
+            'https://www.reddit.com/r/filewalatool/',
+            'https://github.com/mdsufidev',
+            'https://linkedin.com/in/mdsufidev',
+            'https://instagram.com/mdsufidev',
+          ],
+        },
+        {
           '@type': 'WebSite',
           '@id': `${BASE_URL}/#website`,
           name: 'FileWala Tool',
-          url: BASE_URL,
+          url: `${BASE_URL}/`,
           description,
           inLanguage: ['en-IN', 'hi-IN', 'en'],
           sameAs: [
@@ -619,6 +638,7 @@ export const ToolJsonLdSeo: React.FC<ToolJsonLdSeoProps> = ({
     setMetaTag('name', 'twitter:card', 'summary_large_image');
     setMetaTag('name', 'twitter:title', title);
     setMetaTag('name', 'twitter:description', description);
+    setMetaTag('name', 'twitter:url', canonical);
 
     // GEO / Geotargeting & Regional Authority Metadata
     setMetaTag('name', 'geo.region', 'IN-DL');
@@ -626,7 +646,7 @@ export const ToolJsonLdSeo: React.FC<ToolJsonLdSeoProps> = ({
     setMetaTag('name', 'geo.position', '20.5937;78.9629');
     setMetaTag('name', 'ICBM', '20.5937, 78.9629');
 
-    // 4. Synchronize Canonical Link Tag
+    // 4. Synchronize Canonical & Hreflang Link Tags
     let linkCanonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
     if (!linkCanonical) {
       linkCanonical = document.createElement('link');
@@ -634,6 +654,17 @@ export const ToolJsonLdSeo: React.FC<ToolJsonLdSeoProps> = ({
       document.head.appendChild(linkCanonical);
     }
     linkCanonical.setAttribute('href', canonical);
+
+    const updateHreflang = (lang: string, href: string) => {
+      const link = document.querySelector(`link[rel="alternate"][hreflang="${lang}"]`) as HTMLLinkElement | null;
+      if (link) {
+        link.setAttribute('href', href);
+      }
+    };
+    updateHreflang('en-IN', canonical);
+    updateHreflang('en', canonical);
+    updateHreflang('x-default', canonical);
+    updateHreflang('hi-IN', canonical.includes('?') ? `${canonical}&lang=hi` : `${canonical}?lang=hi`);
 
     // 5. Update or Inject Dynamic JSON-LD Structured Data Script
     const scriptId = 'filewala-dynamic-seo-jsonld';

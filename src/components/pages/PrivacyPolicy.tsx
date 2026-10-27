@@ -202,7 +202,7 @@ export const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({ onBackHome, onNavi
               When a document or photo is loaded into FileWala:
             </p>
             <ol className="list-decimal pl-5 space-y-1.5 text-zinc-700 dark:text-zinc-300">
-              <li>The file is represented as an ephemeral object URL (<code className="font-mono text-xs">blob:https://filewalatool.com/...</code>) in your browser’s volatile RAM.</li>
+              <li>The file is represented as an ephemeral object URL (<code className="font-mono text-xs">blob:https://www.filewalatool.com/...</code>) in your browser’s volatile RAM.</li>
               <li>When you switch tools, click the &ldquo;Clear&rdquo; button, or close the browser tab, <code className="font-mono text-xs">URL.revokeObjectURL()</code> is invoked immediately.</li>
               <li>The browser&apos;s native garbage collector immediately reclaims the RAM allocated for the image or PDF buffers. No traces remain in your browser cache or system temporary files.</li>
             </ol>

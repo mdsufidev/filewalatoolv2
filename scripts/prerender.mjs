@@ -154,10 +154,31 @@ export async function runPrerender(routesToPrerender = ALL_46_ROUTES) {
       `<meta name="description" content="${escapeHtml(description)}" />`
     );
 
-    // 4. Synchronize Canonical URL
+    // 4. Synchronize Canonical URL & Hreflang Tags
     routeHtml = routeHtml.replace(
       /<link\s+rel=["']canonical["']\s+href=["'].*?["']\s*\/?>/i,
       `<link rel="canonical" href="${canonical}" />`
+    );
+
+    const baseUrl = 'https://www.filewalatool.com';
+    const pageUrl = route === '/' ? `${baseUrl}/` : `${baseUrl}${route}`;
+    const pageHiUrl = route === '/' ? `${baseUrl}/?lang=hi` : `${baseUrl}${route}?lang=hi`;
+
+    routeHtml = routeHtml.replace(
+      /<link\s+rel=["']alternate["']\s+hreflang=["']en-IN["']\s+href=["'].*?["']\s*\/?>/i,
+      `<link rel="alternate" hreflang="en-IN" href="${pageUrl}" />`
+    );
+    routeHtml = routeHtml.replace(
+      /<link\s+rel=["']alternate["']\s+hreflang=["']hi-IN["']\s+href=["'].*?["']\s*\/?>/i,
+      `<link rel="alternate" hreflang="hi-IN" href="${pageHiUrl}" />`
+    );
+    routeHtml = routeHtml.replace(
+      /<link\s+rel=["']alternate["']\s+hreflang=["']en["']\s+href=["'].*?["']\s*\/?>/i,
+      `<link rel="alternate" hreflang="en" href="${pageUrl}" />`
+    );
+    routeHtml = routeHtml.replace(
+      /<link\s+rel=["']alternate["']\s+hreflang=["']x-default["']\s+href=["'].*?["']\s*\/?>/i,
+      `<link rel="alternate" hreflang="x-default" href="${pageUrl}" />`
     );
 
     // 5. Synchronize OpenGraph Tags
@@ -183,8 +204,28 @@ export async function runPrerender(routesToPrerender = ALL_46_ROUTES) {
       /<meta\s+name=["']twitter:description["']\s+content=["'].*?["']\s*\/?>/i,
       `<meta name="twitter:description" content="${escapeHtml(description)}" />`
     );
+    if (routeHtml.includes('name="twitter:url"')) {
+      routeHtml = routeHtml.replace(
+        /<meta\s+name=["']twitter:url["']\s+content=["'].*?["']\s*\/?>/i,
+        `<meta name="twitter:url" content="${canonical}" />`
+      );
+    } else {
+      routeHtml = routeHtml.replace(
+        /<meta\s+name=["']twitter:card["'].*?>/i,
+        `$&\n    <meta name="twitter:url" content="${canonical}" />`
+      );
+    }
 
-    // 7. Synchronize JSON-LD Structured Data
+    // 7. Synchronize Keywords per Route
+    if (route !== '/') {
+      const toolKeywords = `${title.replace(/[|–—]/g, ',')}, FileWala Tool, online free file tool, browser-based, client-side, zero server upload`;
+      routeHtml = routeHtml.replace(
+        /<meta\s+name=["']keywords["']\s+content=["'].*?["']\s*\/?>/i,
+        `<meta name="keywords" content="${escapeHtml(toolKeywords)}" />`
+      );
+    }
+
+    // 8. Synchronize JSON-LD Structured Data
     if (jsonLd) {
       const jsonLdString = JSON.stringify(jsonLd, null, 2);
       const jsonLdTag = `<script type="application/ld+json" id="filewala-dynamic-seo-jsonld">\n${jsonLdString}\n    </script>`;
@@ -229,6 +270,40 @@ export async function runPrerender(routesToPrerender = ALL_46_ROUTES) {
 
     console.log(`✓ Generated ${path.relative(rootDir, targetFile)} (${(Buffer.byteLength(routeHtml, 'utf8') / 1024).toFixed(1)} KB, body: ${html.length} chars)`);
   }
+
+  // 9. Generate Dedicated SEO-Safe 404 Page (Prevents Soft 404 Penalties)
+  let notFoundHtml = pristineTemplate;
+  notFoundHtml = notFoundHtml.replace(/<title>.*?<\/title>/, `<title>Page Not Found (404) | FileWala Tool</title>`);
+  notFoundHtml = notFoundHtml.replace(
+    /<meta\s+name=["']description["']\s+content=["'].*?["']\s*\/?>/i,
+    `<meta name="description" content="The requested tool or page could not be found on FileWala Tool. Browse our complete suite of free in-browser file utilities." />`
+  );
+  notFoundHtml = notFoundHtml.replace(
+    /<meta\s+name=["']robots["']\s+content=["'].*?["']\s*\/?>/i,
+    `<meta name="robots" content="noindex, follow" />`
+  );
+  // Remove canonical tag on 404 page so search engines do not treat broken links as copies of the homepage
+  notFoundHtml = notFoundHtml.replace(/<link\s+rel=["']canonical["']\s+href=["'].*?["']\s*\/?>/i, '');
+  // Remove hreflangs on 404
+  notFoundHtml = notFoundHtml.replace(/<link\s+rel=["']alternate["']\s+hreflang=.*?\/?>/gi, '');
+  // Remove structured data on 404
+  notFoundHtml = notFoundHtml.replace(/<script\s+type=["']application\/ld\+json["'][\s\S]*?<\/script>/gi, '');
+
+  const notFoundBody = `
+    <main class="min-h-screen flex flex-col items-center justify-center p-6 text-center bg-white text-zinc-900 font-sans">
+      <div class="max-w-md space-y-4">
+        <span class="inline-block px-3 py-1 rounded-full text-xs font-mono font-bold bg-rose-50 text-rose-600 border border-rose-200">Error 404</span>
+        <h1 class="text-3xl font-extrabold tracking-tight">Tool or Page Not Found</h1>
+        <p class="text-sm text-zinc-600 leading-relaxed">The page you are looking for does not exist or may have been relocated.</p>
+        <div class="pt-2">
+          <a href="/" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-zinc-900 text-white font-medium text-xs hover:bg-zinc-800 transition-colors">Return to Homepage</a>
+        </div>
+      </div>
+    </main>
+  `;
+  notFoundHtml = notFoundHtml.replace('<div id="root"></div>', `<div id="root">${notFoundBody}</div>`);
+  fs.writeFileSync(path.resolve(distDir, '404.html'), notFoundHtml, 'utf8');
+  console.log('✓ Generated dedicated SEO-safe dist/404.html (noindex, follow)');
 
   // Clean up temporary SSR bundle directory
   const ssrDir = path.resolve(rootDir, 'dist-ssr');
