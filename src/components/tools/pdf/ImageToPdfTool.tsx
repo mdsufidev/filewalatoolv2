@@ -28,6 +28,8 @@ import { PdfPreviewModal } from './PdfPreviewModal';
 import { PdfToolGuideSection } from './PdfToolGuideSection';
 import { formatBytes, triggerFileDownload, createSafeObjectURL, revokeSafeObjectURL } from '../../../utils/memory';
 import { useTheme } from '../../../core/themeContext';
+import { CanvasEngine } from '../../../core/engine/CanvasEngine';
+import { readExifOrientation } from '../../../utils/exifHelper';
 
 export type PageSizeOption = 'a4' | 'letter' | 'fit';
 export type OrientationOption = 'portrait' | 'landscape' | 'auto';
@@ -40,6 +42,7 @@ interface ImageItem {
   width: number;
   height: number;
   rotation: number; // 0, 90, 180, 270
+  hasExifOrientation?: boolean;
 }
 
 interface ImageToPdfToolProps {
@@ -84,23 +87,31 @@ export const ImageToPdfTool: React.FC<ImageToPdfToolProps> = ({ onNotify }) => {
       const newItems: ImageItem[] = [];
 
       for (const file of validImages) {
-        const previewUrl = createSafeObjectURL(file);
-        // Compute natural width & height
-        const dimensions = await new Promise<{ width: number; height: number }>((resolve) => {
-          const img = new Image();
-          img.onload = () => resolve({ width: img.naturalWidth || 800, height: img.naturalHeight || 600 });
-          img.onerror = () => resolve({ width: 800, height: 600 });
-          img.src = previewUrl;
-        });
+        try {
+          const img = await CanvasEngine.loadImage(file);
+          const previewUrl = img.src.startsWith('blob:') ? img.src : createSafeObjectURL(file);
+          const orientation = await readExifOrientation(file);
 
-        newItems.push({
-          id: `${file.name}-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
-          file,
-          previewUrl,
-          width: dimensions.width,
-          height: dimensions.height,
-          rotation: 0,
-        });
+          newItems.push({
+            id: `${file.name}-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
+            file,
+            previewUrl,
+            width: img.naturalWidth || 800,
+            height: img.naturalHeight || 600,
+            rotation: 0,
+            hasExifOrientation: orientation > 1,
+          });
+        } catch {
+          const fallbackUrl = createSafeObjectURL(file);
+          newItems.push({
+            id: `${file.name}-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
+            file,
+            previewUrl: fallbackUrl,
+            width: 800,
+            height: 600,
+            rotation: 0,
+          });
+        }
       }
 
       setImages((prev) => [...prev, ...newItems]);
@@ -146,12 +157,12 @@ export const ImageToPdfTool: React.FC<ImageToPdfToolProps> = ({ onNotify }) => {
   };
 
   // Convert an ImageItem to an ArrayBuffer of standard PNG/JPEG
-  // Handles canvas rotation and WebP conversion to standard PNG if needed
+  // Handles canvas rotation, EXIF orientation, and WebP conversion to standard format
   const prepareImageBytes = async (
     item: ImageItem
   ): Promise<{ bytes: Uint8Array; type: 'jpeg' | 'png'; width: number; height: number }> => {
-    // If it has rotation or is webp, draw to canvas and export to PNG
-    const needsCanvas = item.rotation !== 0 || item.file.type === 'image/webp' || /\.webp$/i.test(item.file.name);
+    // If it has user rotation, EXIF orientation, or is webp, draw to canvas and export to standard image
+    const needsCanvas = item.rotation !== 0 || item.hasExifOrientation || item.file.type === 'image/webp' || /\.webp$/i.test(item.file.name);
 
     if (!needsCanvas && (item.file.type === 'image/jpeg' || /\.jpe?g$/i.test(item.file.name))) {
       const buffer = await item.file.arrayBuffer();
@@ -163,7 +174,7 @@ export const ImageToPdfTool: React.FC<ImageToPdfToolProps> = ({ onNotify }) => {
       return { bytes: new Uint8Array(buffer), type: 'png', width: item.width, height: item.height };
     }
 
-    // Render rotated onto canvas
+    // Render rotated and upright onto canvas
     return new Promise((resolve, reject) => {
       const img = new Image();
       img.onload = () => {
@@ -180,6 +191,10 @@ export const ImageToPdfTool: React.FC<ImageToPdfToolProps> = ({ onNotify }) => {
           return;
         }
 
+        // Fill solid white background so transparent areas don't turn black in PDF
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, drawWidth, drawHeight);
+
         ctx.translate(drawWidth / 2, drawHeight / 2);
         ctx.rotate((item.rotation * Math.PI) / 180);
         ctx.drawImage(img, -img.naturalWidth / 2, -img.naturalHeight / 2);
@@ -192,12 +207,12 @@ export const ImageToPdfTool: React.FC<ImageToPdfToolProps> = ({ onNotify }) => {
           blob.arrayBuffer().then((buf) => {
             resolve({
               bytes: new Uint8Array(buf),
-              type: 'png',
+              type: 'jpeg',
               width: drawWidth,
               height: drawHeight,
             });
           });
-        }, 'image/png');
+        }, 'image/jpeg', 0.92);
       };
       img.onerror = () => reject(new Error('Failed to load image element'));
       img.src = item.previewUrl;

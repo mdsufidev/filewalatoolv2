@@ -34,11 +34,11 @@ export function useImageUpload() {
 
     try {
       const img = await CanvasEngine.loadImage(file);
-      const url = createSafeObjectURL(file);
+      const url = img.src && img.src.startsWith('blob:') ? img.src : createSafeObjectURL(file);
 
       // Clean up previous image URL if replacing
       setCurrentImage((prev) => {
-        if (prev?.previewUrl) {
+        if (prev?.previewUrl && prev.previewUrl !== url) {
           revokeSafeObjectURL(prev.previewUrl);
         }
         return {

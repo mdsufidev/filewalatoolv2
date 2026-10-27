@@ -1,6 +1,7 @@
 /**
  * Universal Clipboard Copy & Native Web Share Utilities for FileWala
  */
+import { loadOrientedImage } from './exifHelper';
 
 export function isShareSupported(): boolean {
   return typeof navigator !== 'undefined' && typeof navigator.share === 'function';
@@ -27,23 +28,14 @@ export async function copyImageToClipboard(
       return { success: true };
     }
 
-    // Otherwise, paint to canvas and export as PNG blob
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-
-    const objectUrl =
-      imageSource instanceof Blob ? URL.createObjectURL(imageSource) : imageSource;
-
+    // Otherwise, load oriented image, paint to canvas and export as PNG blob
     try {
-      await new Promise<void>((resolve, reject) => {
-        img.onload = () => resolve();
-        img.onerror = () => reject(new Error('Failed to load image for clipboard copy'));
-        img.src = objectUrl;
-      });
+      const oriented = await loadOrientedImage(imageSource);
+      const img = oriented.img;
 
       const canvas = document.createElement('canvas');
-      canvas.width = options?.width || img.naturalWidth || img.width;
-      canvas.height = options?.height || img.naturalHeight || img.height;
+      canvas.width = options?.width || oriented.width;
+      canvas.height = options?.height || oriented.height;
       const ctx = canvas.getContext('2d');
       if (!ctx) {
         return { success: false, error: 'Canvas 2D context unavailable' };
@@ -68,9 +60,7 @@ export async function copyImageToClipboard(
 
       return { success: true };
     } finally {
-      if (imageSource instanceof Blob) {
-        URL.revokeObjectURL(objectUrl);
-      }
+      // Clean up object url if created
     }
   } catch (err: any) {
     return { success: false, error: err?.message || 'Failed to copy to clipboard' };

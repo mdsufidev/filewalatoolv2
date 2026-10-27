@@ -123,6 +123,12 @@ export const BatchTool: React.FC<{
           ? 'webp'
           : targetFormat === 'image/jpeg'
           ? 'jpg'
+          : targetFormat === 'image/avif'
+          ? 'avif'
+          : targetFormat === 'image/bmp'
+          ? 'bmp'
+          : targetFormat === 'image/x-icon'
+          ? 'ico'
           : 'png';
 
       processedItems.forEach((item, index) => {

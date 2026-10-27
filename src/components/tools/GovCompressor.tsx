@@ -486,6 +486,47 @@ export const GovCompressor: React.FC<GovCompressorProps> = ({ initialFile, onNot
             });
           }
 
+          // Adaptive dimension downscaling for multi-page PDF pages if quota exceeded even at quality floor
+          let currentCanvas = canvas;
+          let downscaleLoops = 0;
+          while (
+            bestPageBlob &&
+            bestPageBlob.size > targetPerPageBytes &&
+            downscaleLoops < 4 &&
+            currentCanvas.width > 280 &&
+            currentCanvas.height > 280
+          ) {
+            downscaleLoops++;
+            const shrinkRatio = Math.sqrt(targetPerPageBytes / bestPageBlob.size) * 0.94;
+            const newW = Math.max(220, Math.round(currentCanvas.width * shrinkRatio));
+            const newH = Math.max(220, Math.round(currentCanvas.height * shrinkRatio));
+
+            const scaledCanvas = document.createElement('canvas');
+            scaledCanvas.width = newW;
+            scaledCanvas.height = newH;
+            const scaledCtx = scaledCanvas.getContext('2d');
+            if (!scaledCtx) break;
+
+            scaledCtx.fillStyle = '#FFFFFF';
+            scaledCtx.fillRect(0, 0, newW, newH);
+            scaledCtx.drawImage(currentCanvas, 0, 0, newW, newH);
+
+            if (currentCanvas !== canvas) {
+              currentCanvas.width = 0;
+              currentCanvas.height = 0;
+            }
+            currentCanvas = scaledCanvas;
+
+            bestPageBlob = await new Promise((resolve) => {
+              currentCanvas.toBlob((b) => resolve(b || new Blob()), 'image/jpeg', 0.65);
+            });
+          }
+
+          if (currentCanvas !== canvas) {
+            currentCanvas.width = 0;
+            currentCanvas.height = 0;
+          }
+
           if (pageNum === 1) {
             firstPageThumbBlob = bestPageBlob;
           }

@@ -39,6 +39,10 @@ export const MemeGeneratorTool: React.FC<{
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
 
+      // Fill white background for JPEG so transparent PNG areas don't turn black
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
       // Draw base photo
       ctx.drawImage(img, 0, 0);
 

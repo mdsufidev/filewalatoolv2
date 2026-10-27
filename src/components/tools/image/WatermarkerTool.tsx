@@ -7,6 +7,7 @@ import { Slider } from '../../ui/Slider';
 import { useImageUpload } from '../../../hooks/useImageUpload';
 import { triggerFileDownload, formatBytes } from '../../../utils/memory';
 import { useTheme } from '../../../core/themeContext';
+import { CanvasEngine } from '../../../core/engine/CanvasEngine';
 import {
   copyImageToClipboard,
   shareFileOrBlob,
@@ -36,20 +37,15 @@ export const WatermarkerTool: React.FC<{
   const [resultBlob, setResultBlob] = useState<Blob | null>(null);
   const [resultUrl, setResultUrl] = useState<string | null>(null);
 
-  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const img = new Image();
-    const url = URL.createObjectURL(file);
-    img.onload = () => {
+    try {
+      const img = await CanvasEngine.loadImage(file);
       setLogoImg(img);
-      URL.revokeObjectURL(url);
-    };
-    img.onerror = () => {
-      URL.revokeObjectURL(url);
+    } catch {
       onNotify('Invalid Logo Image', 'Could not load selected logo file', 'error');
-    };
-    img.src = url;
+    }
   };
 
   useEffect(() => {
@@ -68,6 +64,10 @@ export const WatermarkerTool: React.FC<{
       canvas.height = img.naturalHeight;
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
+
+      // Fill white background for JPEG so transparent PNG areas don't turn black
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       // Draw base image
       ctx.drawImage(img, 0, 0);

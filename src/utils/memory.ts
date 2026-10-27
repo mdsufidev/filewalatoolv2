@@ -21,14 +21,14 @@ export function createSafeObjectURL(blob: Blob | MediaSource): string {
  */
 export function revokeSafeObjectURL(url: string | null | undefined): void {
   if (!url) return;
-  if (activeObjectUrls.has(url)) {
-    try {
+  try {
+    if (typeof URL !== 'undefined' && URL.revokeObjectURL && url.startsWith('blob:')) {
       URL.revokeObjectURL(url);
-    } catch {
-      // Ignore already revoked URLs
     }
-    activeObjectUrls.delete(url);
+  } catch {
+    // Ignore already revoked URLs
   }
+  activeObjectUrls.delete(url);
 }
 
 /**

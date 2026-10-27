@@ -118,26 +118,37 @@ export async function padJpegToMinBytes(blob: Blob, minBytes: number): Promise<B
   const arrayBuffer = await blob.arrayBuffer();
   const bytes = new Uint8Array(arrayBuffer);
 
-  const neededPadding = minBytes - bytes.length;
+  let neededPadding = minBytes - bytes.length;
   // COM segment overhead: 2 bytes marker (0xFF, 0xFE) + 2 bytes length = 4 bytes
   if (neededPadding <= 4) return blob;
 
-  const commentLength = Math.min(65535, neededPadding);
-  const commentPayloadLength = commentLength - 2; // length field counts itself
+  // Build array of COM segments if padding exceeds max 16-bit segment limit (65535 bytes)
+  const segments: Uint8Array[] = [];
+  const maxSegmentSize = 65530;
 
-  const comSegment = new Uint8Array(commentLength + 2);
-  comSegment[0] = 0xFF;
-  comSegment[1] = 0xFE; // COM marker
-  comSegment[2] = (commentLength >> 8) & 0xFF;
-  comSegment[3] = commentLength & 0xFF;
+  while (neededPadding > 4) {
+    const segmentLength = Math.min(maxSegmentSize, neededPadding);
+    const payloadLength = segmentLength - 2;
 
-  const prefix = 'PAN_PORTAL_SAFE_PAD:';
-  for (let i = 0; i < prefix.length && i < commentPayloadLength; i++) {
-    comSegment[4 + i] = prefix.charCodeAt(i);
+    const seg = new Uint8Array(segmentLength + 2);
+    seg[0] = 0xFF;
+    seg[1] = 0xFE; // COM marker
+    seg[2] = (segmentLength >> 8) & 0xFF;
+    seg[3] = segmentLength & 0xFF;
+
+    const prefix = 'PAN_PORTAL_SAFE_PAD:';
+    for (let i = 0; i < prefix.length && i < payloadLength; i++) {
+      seg[4 + i] = prefix.charCodeAt(i);
+    }
+    for (let i = prefix.length; i < payloadLength; i++) {
+      seg[4 + i] = 0x20; // fill with spaces
+    }
+
+    segments.push(seg);
+    neededPadding -= (segmentLength + 2);
   }
-  for (let i = prefix.length; i < commentPayloadLength; i++) {
-    comSegment[4 + i] = 0x20; // fill with spaces
-  }
+
+  const totalSegmentsLength = segments.reduce((acc, s) => acc + s.length, 0);
 
   let insertPos = 2;
   // If bytes[2] and bytes[3] are APP0 (0xFF, 0xE0), insert COM after APP0 so JFIF strictly stays directly after SOI
@@ -146,11 +157,17 @@ export async function padJpegToMinBytes(blob: Blob, minBytes: number): Promise<B
     insertPos = 4 + app0Length;
   }
 
-  // Insert COM segment right after APP0 (or SOI if no APP0)
-  const output = new Uint8Array(bytes.length + comSegment.length);
+  // Insert all COM segments right after APP0 (or SOI if no APP0)
+  const output = new Uint8Array(bytes.length + totalSegmentsLength);
   output.set(bytes.subarray(0, insertPos), 0);
-  output.set(comSegment, insertPos);
-  output.set(bytes.subarray(insertPos), insertPos + comSegment.length);
+
+  let currentOffset = insertPos;
+  for (const seg of segments) {
+    output.set(seg, currentOffset);
+    currentOffset += seg.length;
+  }
+
+  output.set(bytes.subarray(insertPos), currentOffset);
 
   return new Blob([output], { type: 'image/jpeg' });
 }

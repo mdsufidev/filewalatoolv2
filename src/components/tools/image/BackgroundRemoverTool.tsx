@@ -38,6 +38,7 @@ import {
   isShareSupported,
 } from '../../../utils/clipboardAndShare';
 import { useTheme } from '../../../core/themeContext';
+import { CanvasEngine } from '../../../core/engine/CanvasEngine';
 
 interface BackgroundRemoverToolProps {
   onNotify: (title: string, desc?: string, type?: 'success' | 'error' | 'info') => void;
@@ -1100,21 +1101,18 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
   /* -------------------------------------------------------------
      CUSTOM BACKDROP IMAGE UPLOAD
   ------------------------------------------------------------- */
-  const handleCustomBackdropSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCustomBackdropSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      const img = new Image();
-      img.onload = () => {
-        setCustomBackdropImg(img);
-        setBgMode('custom-image');
-        onNotify('Backdrop Loaded', `Applied "${file.name}" as backdrop.`, 'success');
-      };
-      img.src = reader.result as string;
-    };
-    reader.readAsDataURL(file);
+    try {
+      const img = await CanvasEngine.loadImage(file);
+      setCustomBackdropImg(img);
+      setBgMode('custom-image');
+      onNotify('Backdrop Loaded', `Applied "${file.name}" as backdrop.`, 'success');
+    } catch {
+      onNotify('Backdrop Error', 'Could not load custom backdrop image.', 'error');
+    }
   };
 
   /* -------------------------------------------------------------

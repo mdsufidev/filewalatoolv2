@@ -104,6 +104,22 @@ export class CanvasEngine {
   }
 
   /**
+   * Clamps canvas dimensions to prevent mobile browser (iOS Safari) canvas memory allocation crashes (>16 Megapixels).
+   */
+  public static clampDimensions(w: number, h: number, maxPixels: number = 16000000): { width: number; height: number } {
+    const safeW = Math.max(1, Math.round(w));
+    const safeH = Math.max(1, Math.round(h));
+    if (safeW * safeH <= maxPixels) {
+      return { width: safeW, height: safeH };
+    }
+    const ratio = Math.sqrt(maxPixels / (safeW * safeH));
+    return {
+      width: Math.max(1, Math.round(safeW * ratio)),
+      height: Math.max(1, Math.round(safeH * ratio)),
+    };
+  }
+
+  /**
    * Resizes an image based on specified options.
    */
   public static async resize(
@@ -198,6 +214,10 @@ export class CanvasEngine {
       targetW = Math.round(targetW * ratio);
     }
 
+    const clamped = this.clampDimensions(targetW, targetH);
+    targetW = clamped.width;
+    targetH = clamped.height;
+
     const canvas = document.createElement('canvas');
     canvas.width = targetW;
     canvas.height = targetH;
@@ -225,19 +245,26 @@ export class CanvasEngine {
     targetFormat: ImageFormat,
     quality: number = 0.92
   ): Promise<Blob> {
+    const rawW = img.naturalWidth || img.width;
+    const rawH = img.naturalHeight || img.height;
+    const { width: targetW, height: targetH } = this.clampDimensions(rawW, rawH);
+
     const canvas = document.createElement('canvas');
-    canvas.width = img.naturalWidth;
-    canvas.height = img.naturalHeight;
+    canvas.width = targetW;
+    canvas.height = targetH;
 
     const ctx = canvas.getContext('2d');
     if (!ctx) throw new Error('Canvas context unavailable');
+
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
 
     if (isJpegFormat(targetFormat)) {
       ctx.fillStyle = '#FFFFFF';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
 
-    ctx.drawImage(img, 0, 0);
+    ctx.drawImage(img, 0, 0, targetW, targetH);
     return this.canvasToBlob(canvas, targetFormat, quality);
   }
 
@@ -250,19 +277,20 @@ export class CanvasEngine {
     format: ImageFormat = 'image/png',
     quality: number = 0.95
   ): Promise<Blob> {
-    const canvas = document.createElement('canvas');
     const { x, y, width, height } = cropRect;
+    const { width: safeW, height: safeH } = this.clampDimensions(width, height);
 
-    const safeW = Math.max(1, Math.round(width));
-    const safeH = Math.max(1, Math.round(height));
-
+    const canvas = document.createElement('canvas');
     canvas.width = safeW;
     canvas.height = safeH;
 
     const ctx = canvas.getContext('2d');
     if (!ctx) throw new Error('Canvas context unavailable');
 
-    if (format === 'image/jpeg') {
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+
+    if (isJpegFormat(format)) {
       ctx.fillStyle = '#FFFFFF';
       ctx.fillRect(0, 0, safeW, safeH);
     }
@@ -288,8 +316,12 @@ export class CanvasEngine {
     const rads = (angle * Math.PI) / 180;
     const isQuarterTurn = angle % 180 !== 0;
 
-    canvas.width = isQuarterTurn ? img.naturalHeight : img.naturalWidth;
-    canvas.height = isQuarterTurn ? img.naturalWidth : img.naturalHeight;
+    const rawW = isQuarterTurn ? (img.naturalHeight || img.height) : (img.naturalWidth || img.width);
+    const rawH = isQuarterTurn ? (img.naturalWidth || img.width) : (img.naturalHeight || img.height);
+    const { width: targetW, height: targetH } = this.clampDimensions(rawW, rawH);
+
+    canvas.width = targetW;
+    canvas.height = targetH;
 
     if (isJpegFormat(format)) {
       ctx.fillStyle = '#FFFFFF';
@@ -300,13 +332,9 @@ export class CanvasEngine {
     ctx.rotate(rads);
     ctx.scale(flipHorizontal ? -1 : 1, flipVertical ? -1 : 1);
 
-    ctx.drawImage(
-      img,
-      -img.naturalWidth / 2,
-      -img.naturalHeight / 2,
-      img.naturalWidth,
-      img.naturalHeight
-    );
+    const drawW = isQuarterTurn ? targetH : targetW;
+    const drawH = isQuarterTurn ? targetW : targetH;
+    ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
 
     return this.canvasToBlob(canvas, format, quality);
   }
@@ -320,9 +348,10 @@ export class CanvasEngine {
     format: ImageFormat = 'image/png',
     quality: number = 0.92
   ): Promise<Blob> {
+    const { width: targetW, height: targetH } = this.clampDimensions(img.naturalWidth || img.width, img.naturalHeight || img.height);
     const canvas = document.createElement('canvas');
-    canvas.width = img.naturalWidth;
-    canvas.height = img.naturalHeight;
+    canvas.width = targetW;
+    canvas.height = targetH;
 
     const ctx = canvas.getContext('2d');
     if (!ctx) throw new Error('Canvas context unavailable');
@@ -344,7 +373,7 @@ export class CanvasEngine {
       ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
 
-    ctx.drawImage(img, 0, 0);
+    ctx.drawImage(img, 0, 0, targetW, targetH);
 
     // Optional unsharp mask / convolution filter
     if (filters.sharpen) {
@@ -363,9 +392,10 @@ export class CanvasEngine {
     format: ImageFormat = 'image/png',
     quality: number = 0.95
   ): Promise<Blob> {
+    const { width: targetW, height: targetH } = this.clampDimensions(img.naturalWidth || img.width, img.naturalHeight || img.height);
     const canvas = document.createElement('canvas');
-    canvas.width = img.naturalWidth;
-    canvas.height = img.naturalHeight;
+    canvas.width = targetW;
+    canvas.height = targetH;
 
     const ctx = canvas.getContext('2d');
     if (!ctx) throw new Error('Canvas context unavailable');
@@ -375,7 +405,7 @@ export class CanvasEngine {
       ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
 
-    ctx.drawImage(img, 0, 0);
+    ctx.drawImage(img, 0, 0, targetW, targetH);
 
     const {
       text,
@@ -460,8 +490,9 @@ export class CanvasEngine {
     } = options;
 
     const targetBytes = targetKb * 1024;
-    let targetW = img.naturalWidth || img.width;
-    let targetH = img.naturalHeight || img.height;
+    const clamped = this.clampDimensions(img.naturalWidth || img.width, img.naturalHeight || img.height);
+    let targetW = clamped.width;
+    let targetH = clamped.height;
 
     // Helper to render and export to blob
     const render = async (w: number, h: number, q: number): Promise<Blob> => {
