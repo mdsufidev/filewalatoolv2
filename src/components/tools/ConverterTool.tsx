@@ -292,6 +292,36 @@ export const ConverterTool: React.FC<{
               )}
             </div>
 
+            {/* Side-by-Side Size Display UI */}
+            <div className="grid grid-cols-2 gap-2.5">
+              <div className="p-3 rounded-lg bg-zinc-50 border border-zinc-200/80">
+                <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-500 block">
+                  Original Size
+                </span>
+                <span className="text-sm font-bold text-zinc-900 block mt-0.5">
+                  {formatBytes(currentImage.sizeBytes)}
+                </span>
+                <span className="text-[10px] text-zinc-500 font-mono block">
+                  {currentImage.width} × {currentImage.height} px
+                </span>
+              </div>
+              <div className="p-3 rounded-lg bg-emerald-50/60 border border-emerald-200">
+                <span className="text-[10px] font-mono uppercase tracking-wider text-emerald-600 block">
+                  Final Output Size
+                </span>
+                <span className="text-sm font-bold text-emerald-600 block mt-0.5">
+                  {result ? formatBytes(result.sizeBytes) : 'Pending conversion'}
+                </span>
+                <span className="text-[10px] text-emerald-700 font-mono block">
+                  {result ? (
+                    result.savedPercentage && result.savedPercentage > 0
+                      ? `-${result.savedPercentage}% Smaller`
+                      : `${result.width} × ${result.height} px`
+                  ) : `Target: ${currentFormatMeta.name}`}
+                </span>
+              </div>
+            </div>
+
             <div className="rounded-md border border-zinc-200 bg-zinc-50 p-4 flex items-center justify-center min-h-[300px]">
               <img
                 src={result ? result.url : currentImage.previewUrl}

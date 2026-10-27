@@ -311,6 +311,12 @@ export const CropRotateTool: React.FC<CropRotateToolProps> = ({ onNotify, initia
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
 
+    // Fill white background for JPEG so transparent PNG areas don't turn black
+    if (outputFormat === 'image/jpeg') {
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, cropW, cropH);
+    }
+
     ctx.drawImage(
       transformedCanvas,
       cropX,

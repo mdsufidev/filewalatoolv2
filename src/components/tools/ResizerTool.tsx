@@ -223,7 +223,7 @@ export const ResizerTool: React.FC<ResizerToolProps> = ({ onNotify, initialFile 
         revokeAllTrackedUrls();
 
         const img = await CanvasEngine.loadImage(file);
-        const previewUrl = registerObjectUrl(createSafeObjectURL(file));
+        const previewUrl = img.src.startsWith('blob:') ? img.src : registerObjectUrl(createSafeObjectURL(file));
 
         const originalWidth = img.naturalWidth || img.width || 800;
         const originalHeight = img.naturalHeight || img.height || 600;

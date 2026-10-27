@@ -35,6 +35,7 @@ import { Dropzone } from '../ui/Dropzone';
 import { Button } from '../ui/Button';
 import { Slider } from '../ui/Slider';
 import { useTheme } from '../../core/themeContext';
+import { CanvasEngine } from '../../core/engine/CanvasEngine';
 import { ComplianceProgressBar } from './ComplianceProgressBar';
 import {
   createSafeObjectURL,
@@ -155,32 +156,20 @@ export const PassportSignatureResizer: React.FC<PassportSignatureResizerProps> =
       setResultBlob(null);
     }
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const dataUrl = e.target?.result as string;
-      if (!dataUrl) return;
-      const img = new Image();
-      img.onload = () => {
-        setImageElement(img);
-        setImageSrc(dataUrl);
-        setImageNaturalSize({ width: img.naturalWidth, height: img.naturalHeight });
-        setSourceFile(file);
-        setZoom(1);
-        setPan({ x: 0, y: 0 });
-        setRotation(0);
-        setBrightness(105);
-        setContrast(120);
-        onNotify('Signature Loaded', `${file.name} ready for Passport Seva formatting.`, 'info');
-      };
-      img.onerror = () => {
-        onNotify('Error Loading Image', 'Could not load the signature file.', 'error');
-      };
-      img.src = dataUrl;
-    };
-    reader.onerror = () => {
-      onNotify('Error Reading File', 'Could not read signature file.', 'error');
-    };
-    reader.readAsDataURL(file);
+    CanvasEngine.loadImage(file).then((img) => {
+      setImageElement(img);
+      setImageSrc(img.src);
+      setImageNaturalSize({ width: img.naturalWidth, height: img.naturalHeight });
+      setSourceFile(file);
+      setZoom(1);
+      setPan({ x: 0, y: 0 });
+      setRotation(0);
+      setBrightness(105);
+      setContrast(120);
+      onNotify('Signature Loaded', `${file.name} ready for Passport Seva formatting.`, 'info');
+    }).catch(() => {
+      onNotify('Error Loading Image', 'Could not load the signature file.', 'error');
+    });
   }, [resultUrl, onNotify]);
 
   // Global Clipboard Paste Support (Ctrl+V / Cmd+V)

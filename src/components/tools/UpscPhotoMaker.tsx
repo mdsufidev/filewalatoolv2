@@ -36,6 +36,7 @@ import { Button } from '../ui/Button';
 import { Slider } from '../ui/Slider';
 import { useTheme } from '../../core/themeContext';
 import { useLanguage } from '../../core/languageContext';
+import { CanvasEngine } from '../../core/engine/CanvasEngine';
 import { ComplianceProgressBar } from './ComplianceProgressBar';
 import {
   createSafeObjectURL,
@@ -164,32 +165,20 @@ export const UpscPhotoMaker: React.FC<UpscPhotoMakerProps> = ({ onNotify }) => {
       setResultBlob(null);
     }
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const dataUrl = e.target?.result as string;
-      if (!dataUrl) return;
-      const img = new Image();
-      img.onload = () => {
-        setImageElement(img);
-        setImageSrc(dataUrl);
-        setImageNaturalSize({ width: img.naturalWidth, height: img.naturalHeight });
-        setSourceFile(file);
-        setZoom(1);
-        setPan({ x: 0, y: 0 });
-        setRotation(0);
-        setBrightness(100);
-        setContrast(100);
-        onNotify('Photo Loaded', `${file.name} ready for UPSC Name & Date stamp.`, 'info');
-      };
-      img.onerror = () => {
-        onNotify('Error Loading Image', 'Could not parse the selected file.', 'error');
-      };
-      img.src = dataUrl;
-    };
-    reader.onerror = () => {
-      onNotify('Error Reading File', 'Could not read image file.', 'error');
-    };
-    reader.readAsDataURL(file);
+    CanvasEngine.loadImage(file).then((img) => {
+      setImageElement(img);
+      setImageSrc(img.src);
+      setImageNaturalSize({ width: img.naturalWidth, height: img.naturalHeight });
+      setSourceFile(file);
+      setZoom(1);
+      setPan({ x: 0, y: 0 });
+      setRotation(0);
+      setBrightness(100);
+      setContrast(100);
+      onNotify('Photo Loaded', `${file.name} ready for UPSC Name & Date stamp.`, 'info');
+    }).catch(() => {
+      onNotify('Error Loading Image', 'Could not parse the selected file.', 'error');
+    });
   }, [resultUrl, onNotify]);
 
   // Global Clipboard Paste Support (Ctrl+V / Cmd+V)

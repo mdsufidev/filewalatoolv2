@@ -3,7 +3,18 @@
  * 100% Client-side, framework-agnostic, zero-server footprint.
  */
 
+import { loadOrientedImage } from '../../utils/exifHelper';
+
 export type ImageFormat = 'image/jpeg' | 'image/png' | 'image/webp' | 'image/avif' | 'image/bmp' | 'image/x-icon';
+
+/**
+ * Checks if the given MIME type represents JPEG / JPG.
+ */
+export function isJpegFormat(format?: string): boolean {
+  if (!format) return false;
+  const f = format.toLowerCase().trim();
+  return f === 'image/jpeg' || f === 'image/jpg' || f.endsWith('/jpeg') || f.endsWith('/jpg') || f.endsWith('jpeg') || f.endsWith('jpg');
+}
 
 export interface ResizeOptions {
   width: number;
@@ -20,6 +31,22 @@ export interface CompressOptions {
   format?: ImageFormat;
   maxWidth?: number;
   maxHeight?: number;
+}
+
+export interface CompressToTargetSizeOptions {
+  targetKb: number;
+  format?: ImageFormat;
+  minQuality?: number;
+  maxQuality?: number;
+  allowDownscaling?: boolean;
+}
+
+export interface TargetCompressResult {
+  blob: Blob;
+  width: number;
+  height: number;
+  quality: number;
+  wasDownscaled: boolean;
 }
 
 export interface CropRect {
@@ -58,30 +85,21 @@ export interface RotateFlipOptions {
 
 export class CanvasEngine {
   /**
-   * Safely loads an image from a File, Blob, or URL into an HTMLImageElement.
+   * Safely loads an image from a File, Blob, or URL into an HTMLImageElement,
+   * automatically applying EXIF orientation correction so phone camera photos never appear sideways.
    */
   public static async loadImage(source: File | Blob | string): Promise<HTMLImageElement> {
+    if (typeof source !== 'string') {
+      const oriented = await loadOrientedImage(source);
+      return oriented.img;
+    }
+
     return new Promise((resolve, reject) => {
       const img = new Image();
-      let objectUrl: string | null = null;
-
-      img.onload = () => {
-        if (objectUrl) URL.revokeObjectURL(objectUrl);
-        resolve(img);
-      };
-
-      img.onerror = (err) => {
-        if (objectUrl) URL.revokeObjectURL(objectUrl);
-        reject(new Error('Failed to load image. File may be corrupted or unsupported format.'));
-      };
-
-      if (typeof source === 'string') {
-        img.crossOrigin = 'anonymous';
-        img.src = source;
-      } else {
-        objectUrl = URL.createObjectURL(source);
-        img.src = objectUrl;
-      }
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error('Failed to load image. File may be corrupted or unsupported format.'));
+      img.crossOrigin = 'anonymous';
+      img.src = source;
     });
   }
 
@@ -126,8 +144,8 @@ export class CanvasEngine {
     ctx.imageSmoothingQuality = 'high';
 
     // Background filling for non-transparent formats
-    if (backgroundColor && (format === 'image/jpeg' || backgroundColor !== 'transparent')) {
-      ctx.fillStyle = backgroundColor === 'transparent' ? '#FFFFFF' : backgroundColor;
+    if (isJpegFormat(format) || (backgroundColor && backgroundColor !== 'transparent')) {
+      ctx.fillStyle = (!backgroundColor || backgroundColor === 'transparent') ? '#FFFFFF' : backgroundColor;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
 
@@ -190,7 +208,7 @@ export class CanvasEngine {
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
 
-    if (format === 'image/jpeg') {
+    if (isJpegFormat(format)) {
       ctx.fillStyle = '#FFFFFF';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
@@ -214,7 +232,7 @@ export class CanvasEngine {
     const ctx = canvas.getContext('2d');
     if (!ctx) throw new Error('Canvas context unavailable');
 
-    if (targetFormat === 'image/jpeg') {
+    if (isJpegFormat(targetFormat)) {
       ctx.fillStyle = '#FFFFFF';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
@@ -273,7 +291,7 @@ export class CanvasEngine {
     canvas.width = isQuarterTurn ? img.naturalHeight : img.naturalWidth;
     canvas.height = isQuarterTurn ? img.naturalWidth : img.naturalHeight;
 
-    if (format === 'image/jpeg') {
+    if (isJpegFormat(format)) {
       ctx.fillStyle = '#FFFFFF';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
@@ -321,7 +339,7 @@ export class CanvasEngine {
 
     ctx.filter = filterString;
 
-    if (format === 'image/jpeg') {
+    if (isJpegFormat(format)) {
       ctx.fillStyle = '#FFFFFF';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
@@ -352,7 +370,7 @@ export class CanvasEngine {
     const ctx = canvas.getContext('2d');
     if (!ctx) throw new Error('Canvas context unavailable');
 
-    if (format === 'image/jpeg') {
+    if (isJpegFormat(format)) {
       ctx.fillStyle = '#FFFFFF';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
@@ -422,6 +440,123 @@ export class CanvasEngine {
     ctx.restore();
 
     return this.canvasToBlob(canvas, format, quality);
+  }
+
+  /**
+   * Compresses an image to fit strictly under a target KB limit.
+   * Uses binary quality search, and if minimum quality floor is reached,
+   * automatically scales down dimensions so the target limit is strictly met.
+   */
+  public static async compressToTargetSize(
+    img: HTMLImageElement,
+    options: CompressToTargetSizeOptions
+  ): Promise<TargetCompressResult> {
+    const {
+      targetKb,
+      format = 'image/jpeg',
+      minQuality = 0.05,
+      maxQuality = 0.98,
+      allowDownscaling = true,
+    } = options;
+
+    const targetBytes = targetKb * 1024;
+    let targetW = img.naturalWidth || img.width;
+    let targetH = img.naturalHeight || img.height;
+
+    // Helper to render and export to blob
+    const render = async (w: number, h: number, q: number): Promise<Blob> => {
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('Canvas 2D context unavailable');
+
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+
+      if (isJpegFormat(format)) {
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, w, h);
+      }
+
+      ctx.drawImage(img, 0, 0, w, h);
+      return this.canvasToBlob(canvas, format, q);
+    };
+
+    let bestCompliantBlob: Blob | null = null;
+    let bestQuality = 0.75;
+    let smallestCandidateBlob: Blob | null = null;
+
+    // Binary search quality
+    let low = minQuality;
+    let high = maxQuality;
+
+    for (let i = 0; i < 7; i++) {
+      const mid = (low + high) / 2;
+      const candidate = await render(targetW, targetH, mid);
+
+      if (!smallestCandidateBlob || candidate.size < smallestCandidateBlob.size) {
+        smallestCandidateBlob = candidate;
+      }
+
+      if (candidate.size <= targetBytes) {
+        bestCompliantBlob = candidate;
+        bestQuality = mid;
+        low = mid; // Can afford higher quality for sharper visual fidelity
+      } else {
+        high = mid; // File too large, decrease quality
+      }
+
+      // Early exit if within 3% of target limit
+      if (candidate.size <= targetBytes && (targetBytes - candidate.size) / targetBytes < 0.03) {
+        break;
+      }
+    }
+
+    if (bestCompliantBlob) {
+      return {
+        blob: bestCompliantBlob,
+        width: targetW,
+        height: targetH,
+        quality: Math.round(bestQuality * 100),
+        wasDownscaled: false,
+      };
+    }
+
+    // If still exceeds target and downscaling is allowed
+    if (allowDownscaling) {
+      let curW = targetW;
+      let curH = targetH;
+      let currentBlob = smallestCandidateBlob || (await render(curW, curH, minQuality));
+      let iterations = 0;
+      let wasDownscaled = false;
+
+      while (currentBlob.size > targetBytes && iterations < 6 && curW > 40 && curH > 40) {
+        iterations++;
+        wasDownscaled = true;
+        const scaleRatio = Math.sqrt(targetBytes / currentBlob.size) * 0.94;
+        curW = Math.max(30, Math.round(curW * scaleRatio));
+        curH = Math.max(30, Math.round(curH * scaleRatio));
+        // Use crisp quality 0.65 for downscaled image so text remains legible
+        currentBlob = await render(curW, curH, 0.65);
+      }
+
+      return {
+        blob: currentBlob,
+        width: curW,
+        height: curH,
+        quality: 65,
+        wasDownscaled,
+      };
+    }
+
+    return {
+      blob: smallestCandidateBlob || (await render(targetW, targetH, minQuality)),
+      width: targetW,
+      height: targetH,
+      quality: Math.round(minQuality * 100),
+      wasDownscaled: false,
+    };
   }
 
   /**

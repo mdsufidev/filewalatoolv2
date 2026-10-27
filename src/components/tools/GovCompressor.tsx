@@ -36,6 +36,7 @@ import {
   triggerFileDownload,
 } from '../../utils/memory';
 import { compressCanvasToPortalSpecs } from '../../utils/jpegDpi';
+import { CanvasEngine } from '../../core/engine/CanvasEngine';
 import {
   copyImageToClipboard,
   shareFileOrBlob,
@@ -317,17 +318,7 @@ export const GovCompressor: React.FC<GovCompressorProps> = ({ initialFile, onNot
       if (fileType === 'image') {
         setProgressPercent(30);
         setProgressStage('Loading and analyzing image pixels...');
-        const img = new Image();
-        const imgUrl = URL.createObjectURL(sourceFile);
-        try {
-          await new Promise((resolve, reject) => {
-            img.onload = resolve;
-            img.onerror = reject;
-            img.src = imgUrl;
-          });
-        } finally {
-          URL.revokeObjectURL(imgUrl);
-        }
+        const img = await CanvasEngine.loadImage(sourceFile);
 
         let targetW = img.naturalWidth;
         let targetH = img.naturalHeight;

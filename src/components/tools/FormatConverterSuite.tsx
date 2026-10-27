@@ -10,6 +10,7 @@ import {
   Layers,
   Zap,
   ShieldCheck,
+  Target,
 } from 'lucide-react';
 import { Dropzone } from '../ui/Dropzone';
 import { Button } from '../ui/Button';
@@ -160,12 +161,18 @@ export const FormatConverterSuite: React.FC<FormatConverterSuiteProps> = ({
   const [sourcePreviewUrl, setSourcePreviewUrl] = useState<string | null>(null);
   const [convertedBlob, setConvertedBlob] = useState<Blob | null>(null);
   const [convertedPreviewUrl, setConvertedPreviewUrl] = useState<string | null>(null);
+  const [mode, setMode] = useState<'target-size' | 'quality'>('target-size');
   const [quality, setQuality] = useState<number>(85);
+  const [targetKb, setTargetKb] = useState<number>(100);
+  const [targetKbInput, setTargetKbInput] = useState<string>('100');
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [imgDimensions, setImgDimensions] = useState<{ width: number; height: number } | null>(null);
+  const [outputDimensions, setOutputDimensions] = useState<{ width: number; height: number } | null>(null);
+  const [wasDownscaled, setWasDownscaled] = useState<boolean>(false);
 
+  const imageElementRef = useRef<HTMLImageElement | null>(null);
   const executionIdRef = useRef<number>(0);
-  const qualityDebounceTimerRef = useRef<any>(null);
+  const debounceTimerRef = useRef<any>(null);
 
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -187,6 +194,9 @@ export const FormatConverterSuite: React.FC<FormatConverterSuiteProps> = ({
     setSourcePreviewUrl(null);
     setConvertedPreviewUrl(null);
     setImgDimensions(null);
+    setOutputDimensions(null);
+    setWasDownscaled(false);
+    imageElementRef.current = null;
     try {
       window.history.pushState(null, '', `/${newToolId}`);
     } catch {
@@ -197,29 +207,58 @@ export const FormatConverterSuite: React.FC<FormatConverterSuiteProps> = ({
   const runConversion = async (
     img: HTMLImageElement,
     currentQuality: number,
+    currentTargetKb: number,
+    currentMode: 'target-size' | 'quality',
     notifyOnSuccess: boolean = true
   ) => {
     const currentTaskId = ++executionIdRef.current;
     setIsProcessing(true);
+    setWasDownscaled(false);
     try {
-      const q = activeMeta.targetFormat === 'image/png' ? 1.0 : currentQuality / 100;
-      const blob = await CanvasEngine.compress(img, {
-        format: activeMeta.targetFormat,
-        quality: q,
-      });
+      let blob: Blob;
+      let outW = img.naturalWidth || img.width;
+      let outH = img.naturalHeight || img.height;
+      let didDownscale = false;
+
+      if (currentMode === 'target-size') {
+        const res = await CanvasEngine.compressToTargetSize(img, {
+          targetKb: currentTargetKb,
+          format: activeMeta.targetFormat,
+          allowDownscaling: true,
+        });
+        blob = res.blob;
+        outW = res.width;
+        outH = res.height;
+        didDownscale = res.wasDownscaled;
+      } else {
+        const q = activeMeta.targetFormat === 'image/png' ? 1.0 : currentQuality / 100;
+        blob = await CanvasEngine.compress(img, {
+          format: activeMeta.targetFormat,
+          quality: q,
+        });
+      }
 
       // Discard stale responses if a newer conversion was triggered in the meantime
       if (currentTaskId !== executionIdRef.current) return;
 
       setConvertedBlob(blob);
+      setWasDownscaled(didDownscale);
+      setOutputDimensions({ width: outW, height: outH });
+
       if (convertedPreviewUrl && convertedPreviewUrl !== sourcePreviewUrl) {
         revokeSafeObjectURL(convertedPreviewUrl);
       }
       const resUrl = createSafeObjectURL(blob);
       setConvertedPreviewUrl(resUrl);
 
-      if (notifyOnSuccess) {
-        onNotify('Converted Successfully', `Target: ${activeMeta.to} format`, 'success');
+      if (didDownscale) {
+        onNotify(
+          'Dimensions Auto-Adjusted',
+          `Resolution reduced to ${outW}×${outH}px to strictly meet the ${currentTargetKb} KB limit.`,
+          'info'
+        );
+      } else if (notifyOnSuccess) {
+        onNotify('Converted Successfully', `Target: ${activeMeta.to} format (${formatBytes(blob.size)})`, 'success');
       }
     } catch (e: any) {
       if (currentTaskId !== executionIdRef.current) return;
@@ -229,6 +268,19 @@ export const FormatConverterSuite: React.FC<FormatConverterSuiteProps> = ({
         setIsProcessing(false);
       }
     }
+  };
+
+  const triggerConversionDebounced = (
+    newQuality: number,
+    newTargetKb: number,
+    newMode: 'target-size' | 'quality'
+  ) => {
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+    debounceTimerRef.current = setTimeout(() => {
+      if (imageElementRef.current) {
+        runConversion(imageElementRef.current, newQuality, newTargetKb, newMode, false);
+      }
+    }, 70);
   };
 
   const handleFileLoaded = async (files: File[]) => {
@@ -241,50 +293,39 @@ export const FormatConverterSuite: React.FC<FormatConverterSuiteProps> = ({
       revokeSafeObjectURL(convertedPreviewUrl);
     }
     setConvertedPreviewUrl(null);
+    setIsProcessing(true);
 
-    if (activeToolId === 'heic-to-jpg') {
-      try {
-        setIsProcessing(true);
+    try {
+      let img: HTMLImageElement;
+      let preview: string;
+
+      if (activeToolId === 'heic-to-jpg') {
         const jpegBlob = await convertHeicToJpeg(file);
-        const preview = createSafeObjectURL(jpegBlob);
-        setSourcePreviewUrl(preview);
-        setConvertedBlob(jpegBlob);
-        setConvertedPreviewUrl(preview);
-
-        // Load image to compute dimensions
-        const img = new Image();
-        img.onload = () => {
-          setImgDimensions({
-            width: img.naturalWidth || img.width || 800,
-            height: img.naturalHeight || img.height || 600,
-          });
-        };
-        img.src = preview;
-
-        onNotify('HEIC Decoded Successfully', 'Converted to JPEG in browser.', 'success');
-      } catch (err: any) {
-        onNotify('Conversion Failed', err?.message || 'Failed to convert HEIC.', 'error');
-      } finally {
-        setIsProcessing(false);
+        img = await CanvasEngine.loadImage(jpegBlob);
+        preview = createSafeObjectURL(jpegBlob);
+      } else {
+        // Automatically extracts and corrects EXIF rotation for iPhone/Android photos
+        img = await CanvasEngine.loadImage(file);
+        preview = img.src.startsWith('blob:') ? img.src : createSafeObjectURL(file);
       }
-      return;
-    }
 
-    const preview = createSafeObjectURL(file);
-    setSourcePreviewUrl(preview);
-
-    const img = new Image();
-    img.onload = () => {
+      imageElementRef.current = img;
+      setSourcePreviewUrl(preview);
       const w = img.naturalWidth || img.width || 800;
       const h = img.naturalHeight || img.height || 600;
       setImgDimensions({ width: w, height: h });
-      runConversion(img, quality, true);
-    };
-    img.onerror = () => {
-      onNotify('File Error', 'Could not decode image. The file might be corrupted or unsupported.', 'error');
+      setOutputDimensions({ width: w, height: h });
+
+      // Intelligently choose initial target KB (~35% of original size, clamped between 30 and 4000 KB)
+      const initialTarget = Math.min(4000, Math.max(30, Math.round((file.size / 1024) * 0.35)));
+      setTargetKb(initialTarget);
+      setTargetKbInput(String(initialTarget));
+
+      await runConversion(img, quality, initialTarget, mode, true);
+    } catch (err: any) {
       setIsProcessing(false);
-    };
-    img.src = preview;
+      onNotify('File Error', err?.message || 'Could not decode image.', 'error');
+    }
   };
 
   // Load initial files if passed from global drop zone
@@ -311,13 +352,16 @@ export const FormatConverterSuite: React.FC<FormatConverterSuiteProps> = ({
     setSourcePreviewUrl(null);
     setConvertedPreviewUrl(null);
     setImgDimensions(null);
+    setOutputDimensions(null);
+    setWasDownscaled(false);
+    imageElementRef.current = null;
   }, [sourcePreviewUrl, convertedPreviewUrl]);
 
   // Cleanup object URLs on unmount
   useEffect(() => {
     return () => {
-      if (qualityDebounceTimerRef.current) {
-        clearTimeout(qualityDebounceTimerRef.current);
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
       }
       if (sourcePreviewUrl) revokeSafeObjectURL(sourcePreviewUrl);
       if (convertedPreviewUrl && convertedPreviewUrl !== sourcePreviewUrl) revokeSafeObjectURL(convertedPreviewUrl);
@@ -509,47 +553,222 @@ export const FormatConverterSuite: React.FC<FormatConverterSuiteProps> = ({
             </div>
           </div>
 
-          {/* Quality Control Card if format supports lossy quantization */}
-          {activeMeta.targetFormat !== 'image/png' && (
-            <div
-              className={`p-4 sm:p-5 rounded-xl border max-w-xl mx-auto space-y-3 ${
-                isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'
-              }`}
-            >
-              <div className="flex items-center justify-between text-xs">
-                <label className={`font-medium ${isDark ? 'text-zinc-300' : 'text-zinc-700'}`}>
-                  Encoding Quality
-                </label>
-                <span className={`font-mono text-xs font-bold px-2 py-0.5 rounded ${isDark ? 'text-zinc-200 bg-zinc-800' : 'text-zinc-800 bg-zinc-100'}`}>
-                  {quality}%
+          {/* Target Size vs Final Output Size Side-by-Side Verification Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {/* Card 1: Original Size */}
+            <div className={`p-4 rounded-xl border ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'}`}>
+              <span className={`text-[10px] font-mono uppercase tracking-wider block ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                Original Size
+              </span>
+              <span className={`text-base sm:text-lg font-bold mt-1 block ${isDark ? 'text-white' : 'text-zinc-900'}`}>
+                {formatBytes(sourceFile.size)}
+              </span>
+              <span className="text-[11px] text-zinc-500 font-mono mt-0.5 block truncate">
+                {imgDimensions ? `${imgDimensions.width} × ${imgDimensions.height} px` : sourceFile.type}
+              </span>
+            </div>
+
+            {/* Card 2: Target Size / Limit */}
+            <div className={`p-4 rounded-xl border ${isDark ? 'bg-zinc-900 border-blue-500/30' : 'bg-blue-50/50 border-blue-200'}`}>
+              <div className="flex items-center justify-between">
+                <span className={`text-[10px] font-mono uppercase tracking-wider block ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>
+                  Target Size Limit
+                </span>
+                <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${isDark ? 'bg-blue-500/10 text-blue-400' : 'bg-blue-100 text-blue-700'}`}>
+                  {mode === 'target-size' ? 'Strict Ceiling' : 'Quality Mode'}
                 </span>
               </div>
-              <input
-                type="range"
-                min={10}
-                max={100}
-                value={quality}
-                onChange={(e) => {
-                  const val = parseInt(e.target.value, 10);
-                  setQuality(val);
-                  if (sourcePreviewUrl) {
-                    if (qualityDebounceTimerRef.current) {
-                      clearTimeout(qualityDebounceTimerRef.current);
-                    }
-                    qualityDebounceTimerRef.current = setTimeout(() => {
-                      const img = new Image();
-                      img.onload = () => runConversion(img, val, false);
-                      img.src = sourcePreviewUrl;
-                    }, 60);
-                  }
-                }}
-                className="w-full h-1.5 rounded-lg appearance-none cursor-pointer accent-blue-500 focus:outline-none"
-              />
-              <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                Adjust compression ratio vs visual sharpness. Default 85% is ideal for web graphics.
-              </p>
+              <span className={`text-base sm:text-lg font-bold mt-1 block ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>
+                {mode === 'target-size' ? `${targetKb} KB` : `${quality}%`}
+              </span>
+              <span className="text-[11px] text-zinc-500 font-mono mt-0.5 block truncate">
+                {mode === 'target-size' ? 'Portal & Upload Safe' : 'Standard Web Quality'}
+              </span>
+            </div>
+
+            {/* Card 3: Final Output Size */}
+            <div className={`p-4 rounded-xl border ${convertedBlob ? (isDark ? 'bg-zinc-900 border-emerald-500/30' : 'bg-emerald-50/50 border-emerald-200') : (isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200')}`}>
+              <div className="flex items-center justify-between">
+                <span className={`text-[10px] font-mono uppercase tracking-wider block ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>
+                  Final Output Size
+                </span>
+                {convertedBlob && mode === 'target-size' && convertedBlob.size <= targetKb * 1024 && (
+                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-500 font-semibold">
+                    ✓ Compliant
+                  </span>
+                )}
+              </div>
+              <span className="text-base sm:text-lg font-bold mt-1 block text-emerald-500">
+                {isProcessing ? 'Optimizing...' : convertedBlob ? formatBytes(convertedBlob.size) : 'Calculating...'}
+              </span>
+              <span className="text-[11px] text-emerald-500/80 font-mono mt-0.5 block truncate">
+                {convertedBlob ? (
+                  mode === 'target-size' && convertedBlob.size <= targetKb * 1024
+                    ? `✓ Under ${targetKb} KB Target Limit`
+                    : sourceFile.size > convertedBlob.size
+                      ? `${Math.round(((sourceFile.size - convertedBlob.size) / sourceFile.size) * 100)}% smaller`
+                      : `${outputDimensions ? `${outputDimensions.width}×${outputDimensions.height}px` : ''}`
+                ) : '...'}
+              </span>
+            </div>
+          </div>
+
+          {/* Downscaled Warning badge if solver automatically resized dimensions for quota */}
+          {wasDownscaled && outputDimensions && (
+            <div className="p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-500 dark:text-indigo-400 text-xs flex items-center gap-2">
+              <Zap className="w-4 h-4 shrink-0 text-indigo-500" />
+              <span>
+                <strong>Dimensions Auto-Adjusted:</strong> Scaled down to {outputDimensions.width}×{outputDimensions.height} px to strictly comply with your {targetKb} KB limit.
+              </span>
             </div>
           )}
+
+          {/* Size & Quality Control Panel */}
+          <div
+            className={`p-4 sm:p-5 rounded-xl border space-y-4 ${
+              isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'
+            }`}
+          >
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <div className="flex items-center gap-2">
+                <Sliders className="w-4 h-4 text-blue-500" />
+                <span className={`text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-zinc-300' : 'text-zinc-700'}`}>
+                  Output Size & Encoding Controls
+                </span>
+              </div>
+
+              {/* Mode Toggle: Target KB vs Quality */}
+              <div className={`flex items-center p-0.5 rounded-lg ${isDark ? 'bg-zinc-800' : 'bg-zinc-100'}`}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode('target-size');
+                    triggerConversionDebounced(quality, targetKb, 'target-size');
+                  }}
+                  className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer ${
+                    mode === 'target-size'
+                      ? isDark
+                        ? 'bg-zinc-700 text-white shadow-xs font-semibold'
+                        : 'bg-white text-zinc-900 shadow-xs font-semibold'
+                      : isDark
+                        ? 'text-zinc-400 hover:text-white'
+                        : 'text-zinc-600 hover:text-zinc-900'
+                  }`}
+                >
+                  Target KB Quota
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode('quality');
+                    triggerConversionDebounced(quality, targetKb, 'quality');
+                  }}
+                  className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer ${
+                    mode === 'quality'
+                      ? isDark
+                        ? 'bg-zinc-700 text-white shadow-xs font-semibold'
+                        : 'bg-white text-zinc-900 shadow-xs font-semibold'
+                      : isDark
+                        ? 'text-zinc-400 hover:text-white'
+                        : 'text-zinc-600 hover:text-zinc-900'
+                  }`}
+                >
+                  Quality %
+                </button>
+              </div>
+            </div>
+
+            {mode === 'target-size' ? (
+              <div className="space-y-3">
+                {/* Target KB Presets */}
+                <div className="flex items-center flex-wrap gap-2">
+                  <span className={`text-xs font-medium ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>
+                    Quick Presets:
+                  </span>
+                  {[20, 50, 100, 200, 500].map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => {
+                        setTargetKb(preset);
+                        setTargetKbInput(String(preset));
+                        triggerConversionDebounced(quality, preset, 'target-size');
+                      }}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-mono transition-all cursor-pointer ${
+                        targetKb === preset
+                          ? 'bg-blue-600 text-white font-bold'
+                          : isDark
+                            ? 'bg-zinc-800 text-zinc-300 hover:bg-zinc-750'
+                            : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200'
+                      }`}
+                    >
+                      {preset} KB
+                    </button>
+                  ))}
+                </div>
+
+                {/* Target KB Input Field */}
+                <div className="flex items-center gap-3">
+                  <label className={`text-xs font-medium shrink-0 ${isDark ? 'text-zinc-300' : 'text-zinc-700'}`}>
+                    Custom Limit:
+                  </label>
+                  <div className="relative max-w-[140px]">
+                    <input
+                      type="number"
+                      min={10}
+                      max={50000}
+                      value={targetKbInput}
+                      onChange={(e) => {
+                        const valStr = e.target.value;
+                        setTargetKbInput(valStr);
+                        const num = parseInt(valStr, 10);
+                        if (!isNaN(num) && num >= 5) {
+                          setTargetKb(num);
+                          triggerConversionDebounced(quality, num, 'target-size');
+                        }
+                      }}
+                      className={`w-full px-3 py-1.5 rounded-lg border text-xs font-mono font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                        isDark ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-white border-zinc-300 text-zinc-900'
+                      }`}
+                      placeholder="e.g. 50"
+                    />
+                    <span className="absolute right-3 top-1.5 text-xs text-zinc-400 pointer-events-none font-mono">
+                      KB
+                    </span>
+                  </div>
+                  <span className="text-[11px] text-zinc-500">
+                    Strict size limit. Automatically scales dimensions if needed.
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between text-xs">
+                  <label className={`font-medium ${isDark ? 'text-zinc-300' : 'text-zinc-700'}`}>
+                    Encoding Quality
+                  </label>
+                  <span className={`font-mono text-xs font-bold px-2 py-0.5 rounded ${isDark ? 'text-zinc-200 bg-zinc-800' : 'text-zinc-800 bg-zinc-100'}`}>
+                    {quality}%
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min={10}
+                  max={100}
+                  value={quality}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value, 10);
+                    setQuality(val);
+                    triggerConversionDebounced(val, targetKb, 'quality');
+                  }}
+                  className="w-full h-1.5 rounded-lg appearance-none cursor-pointer accent-blue-500 focus:outline-none"
+                />
+                <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                  Adjust compression ratio vs visual sharpness. Default 85% is ideal for web graphics.
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       )}
 

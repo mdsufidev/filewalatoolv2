@@ -49,6 +49,7 @@ import { ImageToolGuideSection } from './image/ImageToolGuideSection';
 import { triggerFileDownload } from '../../utils/memory';
 import { convertHeicToJpeg } from '../../utils/heicHelper';
 import { embedJpegDpi } from '../../utils/jpegDpi';
+import { CanvasEngine } from '../../core/engine/CanvasEngine';
 
 interface CompressorToolProps {
   onNotify?: (title: string, desc?: string, type?: 'success' | 'error' | 'info') => void;
@@ -223,14 +224,16 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
       return;
     }
 
-    // 4. Load Image safely
+    // 4. Load Image safely with EXIF orientation correction
     setIsProcessing(true);
-    const objectUrl = registerObjectUrl(URL.createObjectURL(file));
-    const img = new Image();
+    try {
+      const img = await CanvasEngine.loadImage(file);
+      const objectUrl = img.src.startsWith('blob:') ? img.src : registerObjectUrl(URL.createObjectURL(file));
 
-    img.onload = () => {
       // Clean up previous image & result using refs to avoid dependency cycles
-      if (currentSourceUrlRef.current) revokeTrackedUrl(currentSourceUrlRef.current);
+      if (currentSourceUrlRef.current && currentSourceUrlRef.current !== objectUrl) {
+        revokeTrackedUrl(currentSourceUrlRef.current);
+      }
       if (lastCompressedUrlRef.current) revokeTrackedUrl(lastCompressedUrlRef.current);
       currentSourceUrlRef.current = objectUrl;
       lastCompressedUrlRef.current = null;
@@ -263,17 +266,12 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
 
       setIsProcessing(false);
       onNotify?.('Image Loaded', `${file.name} (${formatFileSize(file.size)}) ready to compress.`, 'info');
-    };
-
-    img.onerror = () => {
-      revokeTrackedUrl(objectUrl);
+    } catch (err: any) {
       setIsProcessing(false);
-      const err = 'Failed to decode image data. The file might be corrupted.';
-      setErrorMessage(err);
-      onNotify?.('Decode Error', err, 'error');
-    };
-
-    img.src = objectUrl;
+      const msg = err?.message || 'Failed to decode image data. The file might be corrupted.';
+      setErrorMessage(msg);
+      onNotify?.('Decode Error', msg, 'error');
+    }
   }, [registerObjectUrl, revokeTrackedUrl, onNotify]);
 
   // Load initial file if passed from global drop zone or parent
@@ -531,6 +529,14 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
 
       setCompressedResult(resultObj);
       setIsProcessing(false);
+
+      if (wasDownscaled) {
+        onNotify?.(
+          'Dimensions Auto-Adjusted',
+          `Resolution reduced to ${targetW}×${targetH}px to strictly meet the ${targetKb} KB limit.`,
+          'info'
+        );
+      }
     } catch (err: unknown) {
       if (currentTaskId !== executionIdRef.current) return;
       setIsProcessing(false);
@@ -1242,8 +1248,8 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
               </span>
             </div>
 
-            {/* Comparison Metrics Grid (Unboxed Soft Tiles) */}
-            <div className="grid grid-cols-2 gap-2.5">
+            {/* Comparison Metrics Grid: Target Size & Final Output Size side-by-side */}
+            <div className={`grid ${mode === 'target-size' ? 'grid-cols-3' : 'grid-cols-2'} gap-2.5`}>
               <div className={`p-3 rounded-lg ${isDark ? 'bg-zinc-850' : 'bg-zinc-100'}`}>
                 <span className={`text-[10px] font-mono block ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
                   ORIGINAL
@@ -1256,18 +1262,34 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
                 </span>
               </div>
 
-              <div className={`p-3 rounded-lg ${isDark ? 'bg-zinc-850' : 'bg-zinc-100'}`}>
+              {mode === 'target-size' && (
+                <div className={`p-3 rounded-lg border ${isDark ? 'bg-zinc-850/80 border-blue-500/30' : 'bg-blue-50/60 border-blue-200'}`}>
+                  <span className={`text-[10px] font-mono block ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>
+                    TARGET SIZE
+                  </span>
+                  <span className={`text-sm font-bold mt-0.5 block ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>
+                    {targetKb} KB
+                  </span>
+                  <span className="text-[10px] text-blue-500/80 block truncate font-mono">
+                    Max Limit
+                  </span>
+                </div>
+              )}
+
+              <div className={`p-3 rounded-lg border ${compressedResult && mode === 'target-size' && compressedResult.size <= targetKb * 1024 ? (isDark ? 'bg-emerald-950/20 border-emerald-500/30' : 'bg-emerald-50/60 border-emerald-200') : (isDark ? 'bg-zinc-850 border-transparent' : 'bg-zinc-100 border-transparent')}`}>
                 <span className={`text-[10px] font-mono block ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
-                  COMPRESSED
+                  FINAL OUTPUT
                 </span>
                 <span className="text-sm font-bold text-emerald-500 mt-0.5 block">
                   {compressedResult ? formatFileSize(compressedResult.size) : 'Calculating...'}
                 </span>
                 <span className="text-[10px] text-emerald-500/80 block truncate font-mono">
                   {compressedResult ? (
-                    isReduced
-                      ? `Saved ${formatFileSize(compressedResult.savedBytes)}`
-                      : 'No size reduction'
+                    mode === 'target-size' && compressedResult.size <= targetKb * 1024
+                      ? '✓ Meets Limit'
+                      : isReduced
+                        ? `Saved ${formatFileSize(compressedResult.savedBytes)}`
+                        : 'No size reduction'
                   ) : '...'}
                 </span>
               </div>

@@ -36,6 +36,7 @@ import { Button } from '../ui/Button';
 import { Slider } from '../ui/Slider';
 import { useTheme } from '../../core/themeContext';
 import { useLanguage } from '../../core/languageContext';
+import { CanvasEngine } from '../../core/engine/CanvasEngine';
 import { ComplianceProgressBar } from './ComplianceProgressBar';
 import {
   createSafeObjectURL,
@@ -225,32 +226,20 @@ export const SignatureResizer: React.FC<SignatureResizerProps> = ({ onNotify }) 
       setResultBlob(null);
     }
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const dataUrl = e.target?.result as string;
-      if (!dataUrl) return;
-      const img = new Image();
-      img.onload = () => {
-        setImageNaturalSize({ width: img.naturalWidth, height: img.naturalHeight });
-        setImageElement(img);
-        setImageSrc(dataUrl);
-        setSourceFile(file);
-        setZoom(1);
-        setPan({ x: 0, y: 0 });
-        setRotation(0);
-        setPaperWhitening(120);
-        setInkDarkness(150);
-        onNotify('Signature Loaded', `${file.name} ready for isolation.`, 'info');
-      };
-      img.onerror = () => {
-        onNotify('Error Loading Image', 'Could not parse the signature image file.', 'error');
-      };
-      img.src = dataUrl;
-    };
-    reader.onerror = () => {
-      onNotify('Error Reading File', 'Could not read signature file.', 'error');
-    };
-    reader.readAsDataURL(file);
+    CanvasEngine.loadImage(file).then((img) => {
+      setImageNaturalSize({ width: img.naturalWidth, height: img.naturalHeight });
+      setImageElement(img);
+      setImageSrc(img.src);
+      setSourceFile(file);
+      setZoom(1);
+      setPan({ x: 0, y: 0 });
+      setRotation(0);
+      setPaperWhitening(120);
+      setInkDarkness(150);
+      onNotify('Signature Loaded', `${file.name} ready for isolation.`, 'info');
+    }).catch(() => {
+      onNotify('Error Loading Image', 'Could not parse the signature image file.', 'error');
+    });
   }, [resultUrl, onNotify]);
 
   // Global Clipboard Paste Support (Ctrl+V / Cmd+V)
