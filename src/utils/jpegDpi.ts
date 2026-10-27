@@ -15,27 +15,39 @@ export async function embedJpegDpi(blob: Blob, dpi: number = 200): Promise<Blob>
     return blob; // Not a standard JPEG
   }
 
-  // Check if first marker is APP0 (0xFF, 0xE0)
-  if (bytes[2] === 0xFF && bytes[3] === 0xE0) {
-    // Check for "JFIF\0" identifier at offset 6..10
-    if (
-      bytes[6] === 0x4A && // J
-      bytes[7] === 0x46 && // F
-      bytes[8] === 0x49 && // I
-      bytes[9] === 0x46 && // F
-      bytes[10] === 0x00  // \0
-    ) {
-      // Modify in place
-      bytes[13] = 1; // Units: 1 = dots per inch (DPI)
-      bytes[14] = (dpi >> 8) & 0xFF; // Xdensity high
-      bytes[15] = dpi & 0xFF;        // Xdensity low
-      bytes[16] = (dpi >> 8) & 0xFF; // Ydensity high
-      bytes[17] = dpi & 0xFF;        // Ydensity low
-      return new Blob([bytes], { type: 'image/jpeg' });
+  // Scan for existing APP0 JFIF marker anywhere in the header stream
+  let offset = 2;
+  while (offset < bytes.length - 4) {
+    if (bytes[offset] !== 0xFF) break;
+    const marker = bytes[offset + 1];
+
+    if (marker === 0xE0) {
+      if (
+        bytes[offset + 4] === 0x4A && // J
+        bytes[offset + 5] === 0x46 && // F
+        bytes[offset + 6] === 0x49 && // I
+        bytes[offset + 7] === 0x46 && // F
+        bytes[offset + 8] === 0x00    // \0
+      ) {
+        bytes[offset + 11] = 1; // Units: 1 = dots per inch (DPI)
+        bytes[offset + 12] = (dpi >> 8) & 0xFF; // Xdensity high
+        bytes[offset + 13] = dpi & 0xFF;        // Xdensity low
+        bytes[offset + 14] = (dpi >> 8) & 0xFF; // Ydensity high
+        bytes[offset + 15] = dpi & 0xFF;        // Ydensity low
+        return new Blob([bytes], { type: 'image/jpeg' });
+      }
+      const len = (bytes[offset + 2] << 8) | bytes[offset + 3];
+      offset += 2 + len;
+    } else if (marker === 0xDA || marker === 0xD9) {
+      break;
+    } else {
+      const len = (bytes[offset + 2] << 8) | bytes[offset + 3];
+      if (len < 2) break;
+      offset += 2 + len;
     }
   }
 
-  // If no APP0 JFIF found right after SOI, construct and insert a 18-byte JFIF segment
+  // If no APP0 JFIF found, construct and insert a 18-byte JFIF segment right after SOI
   const jfifSegment = new Uint8Array([
     0xFF, 0xE0, // APP0 marker
     0x00, 0x10, // Length = 16 bytes (excluding marker)
@@ -122,19 +134,20 @@ export async function padJpegToMinBytes(blob: Blob, minBytes: number): Promise<B
   // COM segment overhead: 2 bytes marker (0xFF, 0xFE) + 2 bytes length = 4 bytes
   if (neededPadding <= 4) return blob;
 
-  // Build array of COM segments if padding exceeds max 16-bit segment limit (65535 bytes)
+  // Build array of COM segments if padding exceeds max 16-bit segment limit (65534 bytes)
   const segments: Uint8Array[] = [];
-  const maxSegmentSize = 65530;
+  const maxSegmentBytes = 65534;
 
-  while (neededPadding > 4) {
-    const segmentLength = Math.min(maxSegmentSize, neededPadding);
-    const payloadLength = segmentLength - 2;
+  while (neededPadding >= 4) {
+    const segTotalBytes = Math.min(maxSegmentBytes, neededPadding);
+    const segmentLengthField = segTotalBytes - 2;
+    const payloadLength = segTotalBytes - 4;
 
-    const seg = new Uint8Array(segmentLength + 2);
+    const seg = new Uint8Array(segTotalBytes);
     seg[0] = 0xFF;
     seg[1] = 0xFE; // COM marker
-    seg[2] = (segmentLength >> 8) & 0xFF;
-    seg[3] = segmentLength & 0xFF;
+    seg[2] = (segmentLengthField >> 8) & 0xFF;
+    seg[3] = segmentLengthField & 0xFF;
 
     const prefix = 'PAN_PORTAL_SAFE_PAD:';
     for (let i = 0; i < prefix.length && i < payloadLength; i++) {
@@ -145,7 +158,7 @@ export async function padJpegToMinBytes(blob: Blob, minBytes: number): Promise<B
     }
 
     segments.push(seg);
-    neededPadding -= (segmentLength + 2);
+    neededPadding -= segTotalBytes;
   }
 
   const totalSegmentsLength = segments.reduce((acc, s) => acc + s.length, 0);

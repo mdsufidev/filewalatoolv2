@@ -1,9 +1,7 @@
-import * as pdfjsLib from 'pdfjs-dist';
+import { pdfjsLib, ensurePdfWorkerInitialized } from '../core/pdfWorker';
 
-// Configure worker using official CDN fallback matching version
-if (typeof window !== 'undefined' && pdfjsLib.GlobalWorkerOptions) {
-  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version || '4.10.38'}/pdf.worker.min.mjs`;
-}
+// Ensure unified local PDF.js worker matching pdfjs-dist version (6.4.299)
+ensurePdfWorkerInitialized();
 
 /**
  * Extracts raw text from a PDF file client-side.

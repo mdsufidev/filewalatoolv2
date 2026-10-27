@@ -62,6 +62,7 @@ export function formatBytes(bytes: number, decimals = 1): string {
  * Validates whether a file is an accepted image format.
  */
 export function isValidImageFile(file: File): boolean {
+  if (!file || file.size <= 0) return false;
   const acceptedTypes = [
     'image/jpeg',
     'image/jpg',

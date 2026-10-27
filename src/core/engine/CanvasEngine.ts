@@ -4,6 +4,7 @@
  */
 
 import { loadOrientedImage } from '../../utils/exifHelper';
+import { convertHeicToJpeg } from '../../utils/heicHelper';
 
 export type ImageFormat = 'image/jpeg' | 'image/png' | 'image/webp' | 'image/avif' | 'image/bmp' | 'image/x-icon';
 
@@ -90,7 +91,21 @@ export class CanvasEngine {
    */
   public static async loadImage(source: File | Blob | string): Promise<HTMLImageElement> {
     if (typeof source !== 'string') {
-      const oriented = await loadOrientedImage(source);
+      let processableSource: File | Blob = source;
+      const isHeic =
+        source.type.toLowerCase().includes('heic') ||
+        source.type.toLowerCase().includes('heif') ||
+        ('name' in source && typeof (source as File).name === 'string' && /\.(heic|heif)$/i.test((source as File).name));
+
+      if (isHeic) {
+        try {
+          processableSource = await convertHeicToJpeg(source);
+        } catch (e) {
+          console.warn('HEIC auto-transcode failed, attempting direct load', e);
+        }
+      }
+
+      const oriented = await loadOrientedImage(processableSource);
       return oriented.img;
     }
 

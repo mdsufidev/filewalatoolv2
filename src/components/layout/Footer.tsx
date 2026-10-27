@@ -54,9 +54,9 @@ export const Footer: React.FC<FooterProps> = ({
                 }}
               />
 
-              {/* Typography: ileWala TOOL */}
+              {/* Typography: FileWala TOOL */}
               <span className="font-bold text-xl sm:text-2xl tracking-tight text-white leading-none">
-                ileWala <span className="font-bold">TOOL</span>
+                FileWala <span className="font-bold">TOOL</span>
               </span>
             </a>
 

@@ -178,9 +178,9 @@ export const Navbar: React.FC<NavbarProps> = ({
             }}
           />
 
-          {/* Typography: ileWala TOOL */}
+          {/* Typography: FileWala TOOL */}
           <span className="font-bold text-lg sm:text-xl tracking-tight text-zinc-950 dark:text-white leading-none">
-            ileWala <span className="font-bold">TOOL</span>
+            FileWala <span className="font-bold">TOOL</span>
           </span>
         </a>
 
@@ -286,8 +286,8 @@ export const Navbar: React.FC<NavbarProps> = ({
 
                   {/* Actions List */}
                   <div className="space-y-0.5">
-                    {/* Admin Panel Link */}
-                    {onOpenAdmin && (
+                    {/* Admin Panel Link (Strictly restricted to Admin role) */}
+                    {isAdmin && onOpenAdmin && (
                       <button
                         type="button"
                         onClick={() => {

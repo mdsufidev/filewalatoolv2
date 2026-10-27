@@ -309,7 +309,9 @@ export async function addRecentFile(
   filename: string,
   toolMeta?: Partial<RecentFileRecord>
 ): Promise<RecentFileRecord> {
-  const dataUrl = await blobToDataUrl(blob);
+  // Avoid saving giant base64 payloads (>1.5 MB) in localStorage to prevent QuotaExceededError
+  const shouldSaveDataUrl = blob.size <= 1.5 * 1024 * 1024;
+  const dataUrl = shouldSaveDataUrl ? await blobToDataUrl(blob) : '';
   const inferred = inferToolMeta(filename);
 
   const thumbnail = await generateThumbnail(blob);
@@ -324,7 +326,7 @@ export async function addRecentFile(
     toolId: toolMeta?.toolId || inferred.toolId,
     toolName: toolMeta?.toolName || inferred.toolName,
     dataUrl,
-    previewUrl: thumbnail || (blob.type.startsWith('image/') ? dataUrl : undefined),
+    previewUrl: thumbnail || (dataUrl && blob.type.startsWith('image/') ? dataUrl : undefined),
   };
 
   const current = getRecentFiles();

@@ -45,6 +45,7 @@ export const Dropzone: React.FC<DropzoneProps> = ({
       const incoming = Array.from(fileList);
       const allowsPdf = accept.toLowerCase().includes('pdf');
       const validFiles = incoming.filter((f) => {
+        if (!f || f.size <= 0) return false;
         if (allowsPdf && (f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'))) {
           return true;
         }
