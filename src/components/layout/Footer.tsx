@@ -7,7 +7,7 @@ export interface FooterProps {
   onSelectSection: (section: MainNavSection, subToolId?: string) => void;
   onGoHome?: () => void;
   onOpenShortcutsHelp?: () => void;
-  onNavigatePage?: (page: 'about' | 'disclaimer' | 'terms' | 'contact' | 'desktop' | 'privacy') => void;
+  onNavigatePage?: (page: 'about' | 'disclaimer' | 'terms' | 'contact' | 'privacy') => void;
 }
 
 export const Footer: React.FC<FooterProps> = ({
@@ -138,21 +138,6 @@ export const Footer: React.FC<FooterProps> = ({
               Important Pages
             </h4>
             <ul className="space-y-4 text-xs">
-              <li>
-                <a
-                  href="/desktop"
-                  onClick={(e) => handleLinkClick(e, () => onNavigatePage?.('desktop'))}
-                  className="transition-colors duration-150 cursor-pointer flex items-center justify-between group text-zinc-400 hover:text-white"
-                >
-                  <span className="group-hover:translate-x-0.5 transition-transform duration-150 flex items-center gap-1.5">
-                    <span>Desktop App</span>
-                    <span className="text-[9px] font-mono px-1.5 py-0.5 rounded border border-zinc-700 bg-zinc-800 text-zinc-300">
-                      .EXE
-                    </span>
-                  </span>
-                  <ArrowUpRight className="w-3.5 h-3.5 text-zinc-600 group-hover:text-zinc-300 transition-colors" />
-                </a>
-              </li>
               <li>
                 <a
                   href="/about"

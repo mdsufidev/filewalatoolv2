@@ -61,9 +61,6 @@ const TermsAndConditions = lazy(() =>
   import('./components/pages/TermsAndConditions').then((m) => ({ default: m.TermsAndConditions }))
 );
 const ContactUs = lazy(() => import('./components/pages/ContactUs').then((m) => ({ default: m.ContactUs })));
-const DesktopAppPage = lazy(() =>
-  import('./components/pages/DesktopAppPage').then((m) => ({ default: m.DesktopAppPage }))
-);
 const PrivacyPolicy = lazy(() =>
   import('./components/pages/PrivacyPolicy').then((m) => ({ default: m.PrivacyPolicy }))
 );
@@ -131,7 +128,6 @@ export interface AppComponentsOverride {
   Disclaimer?: React.ComponentType<any>;
   TermsAndConditions?: React.ComponentType<any>;
   ContactUs?: React.ComponentType<any>;
-  DesktopAppPage?: React.ComponentType<any>;
   PrivacyPolicy?: React.ComponentType<any>;
   PrivacyModal?: React.ComponentType<any>;
 }
@@ -157,7 +153,6 @@ function MainApp({ initialPath, toolComponents }: { initialPath?: string; toolCo
   const ResolvedDisclaimer = toolComponents?.Disclaimer || Disclaimer;
   const ResolvedTermsAndConditions = toolComponents?.TermsAndConditions || TermsAndConditions;
   const ResolvedContactUs = toolComponents?.ContactUs || ContactUs;
-  const ResolvedDesktopAppPage = toolComponents?.DesktopAppPage || DesktopAppPage;
   const ResolvedPrivacyPolicy = toolComponents?.PrivacyPolicy || PrivacyPolicy;
   const ResolvedPrivacyModal = toolComponents?.PrivacyModal || PrivacyModal;
 
@@ -277,9 +272,9 @@ function MainApp({ initialPath, toolComponents }: { initialPath?: string; toolCo
     [safeScrollToTop]
   );
 
-  // Navigate to Informational Pages (About Us, Disclaimer, Terms, Contact, Admin, Desktop, Privacy)
+  // Navigate to Informational Pages (About Us, Disclaimer, Terms, Contact, Admin, Privacy)
   const handleNavigatePage = useCallback(
-    (page: 'about' | 'disclaimer' | 'terms' | 'contact' | 'admin' | 'desktop' | 'privacy') => {
+    (page: 'about' | 'disclaimer' | 'terms' | 'contact' | 'admin' | 'privacy') => {
       setActivePage(page);
       setActiveTool(null);
       setPendingDroppedFiles(null);
@@ -287,8 +282,6 @@ function MainApp({ initialPath, toolComponents }: { initialPath?: string; toolCo
       try {
         if (page === 'admin') {
           window.history.pushState(null, '', '/admin');
-        } else if (page === 'desktop') {
-          window.history.pushState(null, '', '/desktop');
         } else {
           const targetUrl = getPageRouteUrl(page);
           window.history.pushState(null, '', targetUrl);
@@ -475,18 +468,6 @@ function MainApp({ initialPath, toolComponents }: { initialPath?: string; toolCo
   // Deep linking via URL route/hash on navigation & popstate
   useEffect(() => {
     const handleUrlRoute = () => {
-      // Direct .EXE custom URL download trigger
-      const rawPath = window.location.pathname.replace(/^\//, '').replace(/\/$/, '').toLowerCase();
-      if (
-        rawPath === 'download/v1.0.0/filewala-tool-setup-1.0.0.exe' ||
-        rawPath === 'download/latest' ||
-        rawPath === 'download/windows'
-      ) {
-        window.location.href =
-          'https://github.com/mdsufidev/pixcutbgremover/releases/download/v1.0.0/FileWala-TOOL-Setup-1.0.0.exe';
-        return;
-      }
-
       const resolved = resolveRouteFromUrl(window.location.pathname, window.location.hash);
       setActivePage(resolved.activePage);
       setActiveTool(resolved.activeTool);
@@ -713,12 +694,6 @@ function MainApp({ initialPath, toolComponents }: { initialPath?: string; toolCo
               <div className="w-full">
                 {activePage === 'about' && (
                   <ResolvedAboutUs
-                    onBackHome={() => handleGoHome('all')}
-                    onNavigate={handleNavigatePage}
-                  />
-                )}
-                {activePage === 'desktop' && (
-                  <ResolvedDesktopAppPage
                     onBackHome={() => handleGoHome('all')}
                     onNavigate={handleNavigatePage}
                   />

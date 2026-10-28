@@ -23,7 +23,7 @@ import { RedditIcon } from '../ui/RedditIcon';
 
 interface AboutUsProps {
   onBackHome: () => void;
-  onNavigate?: (page: 'about' | 'disclaimer' | 'terms' | 'contact' | 'privacy' | 'desktop') => void;
+  onNavigate?: (page: 'about' | 'disclaimer' | 'terms' | 'contact' | 'privacy') => void;
 }
 
 export const AboutUs: React.FC<AboutUsProps> = ({ onBackHome, onNavigate }) => {

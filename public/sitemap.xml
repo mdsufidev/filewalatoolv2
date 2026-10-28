@@ -257,14 +257,6 @@
     <priority>0.7</priority>
   </url>
 
-  <!-- Desktop Application & Standalone Pages -->
-  <url>
-    <loc>https://www.filewalatool.com/desktop</loc>
-    <lastmod>2026-10-24</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-  </url>
-
   <!-- Informational & Legal Pages -->
   <url>
     <loc>https://www.filewalatool.com/about</loc>

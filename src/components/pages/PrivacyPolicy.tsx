@@ -20,7 +20,7 @@ import { useLanguage } from '../../core/languageContext';
 
 interface PrivacyPolicyProps {
   onBackHome: () => void;
-  onNavigate?: (page: 'about' | 'disclaimer' | 'terms' | 'contact' | 'desktop') => void;
+  onNavigate?: (page: 'about' | 'disclaimer' | 'terms' | 'contact') => void;
 }
 
 export const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({ onBackHome, onNavigate }) => {

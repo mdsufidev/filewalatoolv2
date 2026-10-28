@@ -15,7 +15,7 @@ import { useLanguage } from '../../core/languageContext';
 
 interface TermsAndConditionsProps {
   onBackHome: () => void;
-  onNavigate?: (page: 'about' | 'disclaimer' | 'terms' | 'contact' | 'privacy' | 'desktop') => void;
+  onNavigate?: (page: 'about' | 'disclaimer' | 'terms' | 'contact' | 'privacy') => void;
 }
 
 export const TermsAndConditions: React.FC<TermsAndConditionsProps> = ({
@@ -68,7 +68,7 @@ export const TermsAndConditions: React.FC<TermsAndConditionsProps> = ({
           <span>•</span>
           <span>Jurisdiction: Uttar Pradesh, India</span>
           <span>•</span>
-          <span>Applies to Web &amp; Desktop Editions</span>
+          <span>Applies to Web Edition</span>
         </div>
       </div>
 

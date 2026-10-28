@@ -17,7 +17,7 @@ import { useLanguage } from '../../core/languageContext';
 
 interface DisclaimerProps {
   onBackHome: () => void;
-  onNavigate?: (page: 'about' | 'disclaimer' | 'terms' | 'contact' | 'privacy' | 'desktop') => void;
+  onNavigate?: (page: 'about' | 'disclaimer' | 'terms' | 'contact' | 'privacy') => void;
 }
 
 export const Disclaimer: React.FC<DisclaimerProps> = ({ onBackHome, onNavigate }) => {

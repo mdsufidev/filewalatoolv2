@@ -13,11 +13,7 @@ import {
   CheckCircle2,
   Clock,
   Download,
-  Monitor,
-  Github,
-  Cpu,
   Sparkles,
-  Layers,
 } from 'lucide-react';
 import {
   ALL_TOOLS,
@@ -43,7 +39,7 @@ interface HomePageProps {
   ) => void;
   onOpenPrivacyModal?: () => void;
   onOpenCommandPalette?: () => void;
-  onNavigatePage?: (page: 'about' | 'disclaimer' | 'terms' | 'contact' | 'desktop') => void;
+  onNavigatePage?: (page: 'about' | 'disclaimer' | 'terms' | 'contact') => void;
   currentPath?: string;
 }
 
@@ -448,161 +444,6 @@ export const HomePage: React.FC<HomePageProps> = ({
             />
           </div>
         )}
-      </section>
-
-      {/* =========================================================
-          FILEWALA DESKTOP FOR WINDOWS (OFFLINE AI & BATCH SUITE)
-      ========================================================= */}
-      <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 sm:py-16 select-none">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
-          {/* Left Column: Information & Direct CTA */}
-          <div className="lg:col-span-6 space-y-5">
-            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md text-[11px] font-mono font-medium uppercase tracking-wider text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-850 border border-zinc-200 dark:border-zinc-750">
-              <Monitor className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-400" />
-              <span>Windows Desktop App • v1.0.0</span>
-            </div>
-
-            <div className="space-y-2">
-              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-zinc-950 dark:text-zinc-50 tracking-tight leading-[1.2]">
-                {language === 'hi'
-                  ? 'FileWala Desktop: 100% ऑफलाइन AI फोटो एन्हांसर'
-                  : 'FileWala Desktop: 100% Offline AI Picture Enhancer'}
-              </h2>
-              <p className="text-sm sm:text-base text-zinc-600 dark:text-zinc-400 leading-relaxed font-normal">
-                {language === 'hi'
-                  ? 'बिना इंटरनेट के अपने कंप्यूटर पर चलाएं! 4x अल्ट्रा एचडी अपस्केलिंग, फेशियल पोर्स और पुपिल्स रेस्टोरेशन और U2Net बैकग्राउंड रिमूवर — सब कुछ आपके लोकल GPU/CPU हार्डवेयर पर सीधे चलता है।'
-                  : 'Run heavy neural AI models locally without internet connectivity. Enjoy 4x Ultra HD upscaling, facial pore & pupil reconstruction, and U2Net background removal powered directly by your NVIDIA GPU or multi-core CPU.'}
-              </p>
-            </div>
-
-            {/* Feature Highlights Grid */}
-            <div className="grid grid-cols-2 gap-3 pt-1">
-              <div className="flex items-start gap-2.5 p-2.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50/70 dark:bg-zinc-900/50">
-                <Sparkles className="w-4 h-4 text-zinc-700 dark:text-zinc-300 shrink-0 mt-0.5" />
-                <div className="text-xs">
-                  <div className="font-semibold text-zinc-900 dark:text-zinc-100">AI Picture Enhancer</div>
-                  <div className="text-zinc-500 text-[11px]">Ultra-Fast Preview V3</div>
-                </div>
-              </div>
-              <div className="flex items-start gap-2.5 p-2.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50/70 dark:bg-zinc-900/50">
-                <Layers className="w-4 h-4 text-zinc-700 dark:text-zinc-300 shrink-0 mt-0.5" />
-                <div className="text-xs">
-                  <div className="font-semibold text-zinc-900 dark:text-zinc-100">4x Ultra HD</div>
-                  <div className="text-zinc-500 text-[11px]">Face Pore & Pupil Detail</div>
-                </div>
-              </div>
-              <div className="flex items-start gap-2.5 p-2.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50/70 dark:bg-zinc-900/50">
-                <Cpu className="w-4 h-4 text-zinc-700 dark:text-zinc-300 shrink-0 mt-0.5" />
-                <div className="text-xs">
-                  <div className="font-semibold text-zinc-900 dark:text-zinc-100">GPU Accelerated</div>
-                  <div className="text-zinc-500 text-[11px]">NVIDIA CUDA & 8-Core CPU</div>
-                </div>
-              </div>
-              <div className="flex items-start gap-2.5 p-2.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50/70 dark:bg-zinc-900/50">
-                <ShieldCheck className="w-4 h-4 text-zinc-700 dark:text-zinc-300 shrink-0 mt-0.5" />
-                <div className="text-xs">
-                  <div className="font-semibold text-zinc-900 dark:text-zinc-100">100% Offline & Free</div>
-                  <div className="text-zinc-500 text-[11px]">Zero Cloud Telemetry</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Action Buttons: Direct Download + Learn More + GitHub */}
-            <div className="pt-2 flex flex-wrap items-center gap-3">
-              {/* Direct Download .EXE Link (Branded domain download) */}
-              <a
-                href="https://github.com/mdsufidev/pixcutbgremover/releases/download/v1.0.0/FileWala-TOOL-Setup-1.0.0.exe"
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-md text-xs font-semibold bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-colors duration-150 cursor-pointer shadow-none no-underline"
-                title="Direct Download FileWala Setup for Windows (80.4 MB)"
-              >
-                <Download className="w-3.5 h-3.5 stroke-[2.2]" />
-                <span>Download for Windows (.exe)</span>
-                <span className="text-[10px] font-mono opacity-80 pl-1 border-l border-white/20 dark:border-black/20">
-                  80.4 MB
-                </span>
-              </a>
-
-              {/* View Full Desktop Page Link */}
-              <a
-                href="/desktop"
-                onClick={(e) => {
-                  if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) {
-                    return;
-                  }
-                  e.preventDefault();
-                  onNavigatePage?.('desktop');
-                }}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-md text-xs font-medium border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-200 hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors duration-150 cursor-pointer no-underline"
-              >
-                <span>Full Specs & Guide</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </a>
-
-              {/* GitHub Link */}
-              <a
-                href="https://github.com/mdsufidev/pixcutbgremover/releases/tag/v1.0.0"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-md text-xs font-medium border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white transition-colors duration-150 cursor-pointer"
-                title="View GitHub Release v1.0.0"
-              >
-                <Github className="w-3.5 h-3.5" />
-                <span>GitHub</span>
-                <ArrowUpRight className="w-3 h-3 text-zinc-400" />
-              </a>
-            </div>
-          </div>
-
-          {/* Right Column: SEO Screenshot Showcase in Flat 2D Frame */}
-          <div className="lg:col-span-6">
-            <figure className="relative rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900">
-              <div className="flex items-center justify-between px-3.5 py-2 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-850 text-xs font-mono text-zinc-500">
-                <div className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-zinc-300 dark:bg-zinc-700 inline-block"></span>
-                  <span className="w-2.5 h-2.5 rounded-full bg-zinc-300 dark:bg-zinc-700 inline-block"></span>
-                  <span className="w-2.5 h-2.5 rounded-full bg-zinc-300 dark:bg-zinc-700 inline-block"></span>
-                  <span className="ml-2 text-[11px] text-zinc-600 dark:text-zinc-400 font-sans font-medium">
-                    FileWala TOOL v1.0.0 | AI Picture Enhancer [Hybrid Pro]
-                  </span>
-                </div>
-                <span className="text-[10px] text-zinc-400">Windows 64-bit</span>
-              </div>
-
-              <picture>
-                <source srcSet="/filewala-desktop-app.webp" type="image/webp" />
-                <img
-                  src="/filewala-desktop-app.png"
-                  alt="FileWala TOOL v1.0.0 Desktop Application showing AI Picture Enhancer Hybrid Pro with 4x Ultra HD upscaling and U2Net background remover on Windows"
-                  title="FileWala Desktop App Interface - Offline AI Picture Enhancer & BG Remover"
-                  width={1024}
-                  height={667}
-                  loading="lazy"
-                  decoding="async"
-                  className="w-full h-auto object-cover block cursor-pointer transition-transform duration-150 hover:scale-[1.01]"
-                  onClick={() => onNavigatePage?.('desktop')}
-                />
-              </picture>
-
-              <figcaption className="p-3 bg-white dark:bg-zinc-950 text-[11px] text-zinc-500 flex items-center justify-between">
-                <span>Direct Split-Slider preview with face pore restoration and NVIDIA CUDA acceleration.</span>
-                <a
-                  href="/desktop"
-                  onClick={(e) => {
-                    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) {
-                      return;
-                    }
-                    e.preventDefault();
-                    onNavigatePage?.('desktop');
-                  }}
-                  className="text-zinc-800 dark:text-zinc-200 font-medium hover:underline flex items-center gap-1 cursor-pointer no-underline"
-                >
-                  <span>Explore UI</span>
-                  <ArrowRight className="w-3 h-3" />
-                </a>
-              </figcaption>
-            </figure>
-          </div>
-        </div>
       </section>
 
       {/* =========================================================

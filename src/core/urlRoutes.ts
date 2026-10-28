@@ -1,6 +1,6 @@
 import { ToolCategory, ALL_TOOLS, CATEGORIES_CONFIG } from './toolsData';
 
-export type ActivePageType = 'about' | 'disclaimer' | 'terms' | 'contact' | 'admin' | 'desktop' | 'privacy' | null;
+export type ActivePageType = 'about' | 'disclaimer' | 'terms' | 'contact' | 'admin' | 'privacy' | null;
 
 export interface ActiveToolState {
   section: 'image-tools' | 'pdf-tools' | 'convert' | 'document-tools';
@@ -193,15 +193,6 @@ export function resolveRouteFromUrl(pathname: string = '', hash: string = ''): R
   if (query === 'about' || query === 'about-us') {
     return { activePage: 'about', activeTool: null, selectedCategory: 'all', currentPath };
   }
-  if (
-    query === 'desktop' ||
-    query === 'download' ||
-    query === 'windows' ||
-    query === 'desktop-app' ||
-    query === 'filewala-desktop'
-  ) {
-    return { activePage: 'desktop', activeTool: null, selectedCategory: 'all', currentPath };
-  }
   if (query === 'disclaimer') {
     return { activePage: 'disclaimer', activeTool: null, selectedCategory: 'all', currentPath };
   }
@@ -366,9 +357,6 @@ export function getPageRouteUrl(page: string): string {
   switch (page) {
     case 'about':
       return '/about';
-    case 'desktop':
-    case 'download':
-      return '/desktop';
     case 'contact':
       return '/contact';
     case 'privacy':

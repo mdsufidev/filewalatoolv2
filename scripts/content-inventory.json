@@ -440,17 +440,6 @@
     "hasFaqText": false
   },
   {
-    "num": 41,
-    "route": "/desktop",
-    "title": "FileWala Desktop for Windows - Offline AI Picture Enhancer &amp; BG Remover (.exe)",
-    "desc": "Download FileWala Desktop v1.0.0 for Windows (64-bit). 100% offline AI photo enhancer, facial pore &amp; pupil restoration, 4x Ultra HD upscaling, and U2Net background remover with GPU acceleration. Free and open source on GitHub by @mdsufidev.",
-    "descLen": 244,
-    "h1": "FileWala Desktop for Windows: Offline AI Picture Enhancer & BG Remover",
-    "words": 693,
-    "hasFaqSchema": false,
-    "hasFaqText": true
-  },
-  {
     "num": 42,
     "route": "/about",
     "title": "About FileWala &amp; Mohammad Sufiyan (@mdsufidev) | Privacy-First File Tools",

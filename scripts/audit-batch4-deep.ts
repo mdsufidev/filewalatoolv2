@@ -39,7 +39,6 @@ const BATCH4_ROUTES = [
   { slug: '/pdf-tools', name: 'PDF Tools Hub' },
   { slug: '/convert-tools', name: 'Convert Tools Hub' },
   { slug: '/document-tools', name: 'Document Tools Hub' },
-  { slug: '/desktop', name: 'Desktop Software' },
   { slug: '/about', name: 'About Page' },
   { slug: '/contact', name: 'Contact Page' },
   { slug: '/privacy', name: 'Privacy Policy' },

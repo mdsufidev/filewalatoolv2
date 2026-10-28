@@ -56,7 +56,6 @@ export const EXPECTED_ROUTE_H1: Record<string, string[]> = {
   '/image-to-base64': ['Image to Base64 Converter'],
   '/batch-image-cropper': ['Batch Image Processor'],
   '/filter-adjust': ['Filters & Watermark'],
-  '/desktop': ['FileWala Desktop for Windows'],
   '/about': ['Private, in-browser file utilities'],
   '/contact': ['Get in Touch with Us'],
   '/privacy': ['Privacy Policy & Zero-Upload Guarantee'],

@@ -11,7 +11,6 @@ import { AboutUs } from './components/pages/AboutUs';
 import { Disclaimer } from './components/pages/Disclaimer';
 import { TermsAndConditions } from './components/pages/TermsAndConditions';
 import { ContactUs } from './components/pages/ContactUs';
-import { DesktopAppPage } from './components/pages/DesktopAppPage';
 import { PrivacyPolicy } from './components/pages/PrivacyPolicy';
 import { PrivacyModal } from './components/layout/PrivacyModal';
 
@@ -51,7 +50,6 @@ export function render(url: string): RenderResult {
         Disclaimer,
         TermsAndConditions,
         ContactUs,
-        DesktopAppPage,
         PrivacyPolicy,
         PrivacyModal,
       }}

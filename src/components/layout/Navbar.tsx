@@ -35,7 +35,7 @@ export interface NavbarProps {
   onOpenCommandPalette?: () => void;
   onOpenShortcutsHelp?: () => void;
   onOpenRecentFiles?: () => void;
-  onNavigatePage?: (page: 'about' | 'disclaimer' | 'terms' | 'contact' | 'admin' | 'desktop') => void;
+  onNavigatePage?: (page: 'about' | 'disclaimer' | 'terms' | 'contact' | 'admin') => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({

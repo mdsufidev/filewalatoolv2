@@ -24,7 +24,7 @@ import { RedditIcon } from '../ui/RedditIcon';
 
 interface ContactUsProps {
   onBackHome: () => void;
-  onNavigate?: (page: 'about' | 'disclaimer' | 'terms' | 'contact' | 'privacy' | 'desktop') => void;
+  onNavigate?: (page: 'about' | 'disclaimer' | 'terms' | 'contact' | 'privacy') => void;
   onNotify?: (title: string, desc?: string, type?: 'success' | 'error' | 'info') => void;
 }
 

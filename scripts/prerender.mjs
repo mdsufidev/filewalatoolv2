@@ -75,7 +75,6 @@ export const BATCH_1_ROUTES = [
   '/merge-pdf',
   '/pdf-to-word',
   '/heic-to-jpg',
-  '/desktop',
   '/about',
 ];
 

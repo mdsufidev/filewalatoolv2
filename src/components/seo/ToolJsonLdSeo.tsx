@@ -214,116 +214,24 @@ export function computeSeoMetadata(
       title = 'Privacy Policy & Zero-Upload Security Architecture | FileWala Tool';
       description =
         'FileWala operates 100% in your local browser RAM with zero server uploads, no cloud data storage, and complete client-side document security.';
-    } else if (activePage === 'desktop' || activePage === 'download') {
-      title = 'FileWala Desktop for Windows - Offline AI Picture Enhancer & BG Remover (.exe)';
-      description =
-        'Download FileWala Desktop v1.0.0 for Windows (64-bit). 100% offline AI photo enhancer, facial pore & pupil restoration, 4x Ultra HD upscaling, and U2Net background remover with GPU acceleration. Free and open source on GitHub by @mdsufidev.';
     }
 
-    if (activePage === 'desktop' || activePage === 'download') {
-      jsonLdGraph = [
-        {
-          '@type': 'SoftwareApplication',
-          '@id': `${canonical}#software`,
-          name: 'FileWala TOOL Desktop for Windows',
-          operatingSystem: 'Windows 10, Windows 11 (64-bit)',
-          applicationCategory: 'MultimediaApplication',
-          softwareVersion: '1.0.0',
-          fileSize: '80.4MB',
-          downloadUrl:
-            'https://www.filewalatool.com/download/v1.0.0/FileWala-TOOL-Setup-1.0.0.exe',
-          offers: {
-            '@type': 'Offer',
-            price: '0',
-            priceCurrency: 'USD',
-          },
-          author: {
-            '@type': 'Person',
-            name: 'Mohammad Sufiyan (@mdsufidev)',
-            url: 'https://github.com/mdsufidev',
-          },
-          description:
-            'Native Windows desktop application for 100% offline AI picture enhancement, facial reconstruction, and U2Net background removal with CUDA GPU acceleration.',
+    jsonLdGraph = [
+      {
+        '@type': 'WebPage',
+        '@id': `${canonical}#webpage`,
+        url: canonical,
+        name: title,
+        description,
+        inLanguage: ['en-IN', 'hi-IN', 'en'],
+        isPartOf: {
+          '@type': 'WebSite',
+          '@id': `${BASE_URL}/#website`,
+          name: 'FileWala Tool',
+          url: BASE_URL,
         },
-        {
-          '@type': 'WebPage',
-          '@id': `${canonical}#webpage`,
-          url: canonical,
-          name: title,
-          description,
-          inLanguage: ['en-IN', 'hi-IN', 'en'],
-          isPartOf: {
-            '@type': 'WebSite',
-            '@id': `${BASE_URL}/#website`,
-            name: 'FileWala Tool',
-            url: BASE_URL,
-          },
-        },
-        {
-          '@type': 'FAQPage',
-          '@id': `${canonical}#faq`,
-          mainEntity: [
-            {
-              '@type': 'Question',
-              name: 'Does FileWala Desktop work 100% offline without an active internet connection?',
-              acceptedAnswer: {
-                '@type': 'Answer',
-                text: 'Yes, absolutely. FileWala Desktop operates via an internal local daemon on your PC. Both the Ultra-Fast Preview V3 neural model and the U2Net background segmentation engine execute directly on your local hardware. Once installed, zero internet bandwidth or cloud telemetry is required.',
-              },
-            },
-            {
-              '@type': 'Question',
-              name: 'Do I need a dedicated NVIDIA GeForce GPU to run FileWala Desktop?',
-              acceptedAnswer: {
-                '@type': 'Answer',
-                text: 'No, a dedicated GPU is optional. If you have an NVIDIA GeForce GTX or RTX card, the engine automatically leverages CUDA/Tensor acceleration for near-instant 3-5 second rendering. If no dedicated GPU is detected, the software seamlessly falls back to multi-threaded CPU execution across all available processor cores.',
-              },
-            },
-            {
-              '@type': 'Question',
-              name: 'What is the main difference between FileWala Web and the Desktop App?',
-              acceptedAnswer: {
-                '@type': 'Answer',
-                text: 'While the web edition operates within browser sandbox constraints, the desktop application directly taps into your native PC hardware. It unlocks 4x Ultra HD neural upscaling, advanced facial pupil and skin pore texture reconstruction, and unlimited batch processing without browser tab memory ceilings.',
-              },
-            },
-            {
-              '@type': 'Question',
-              name: 'Is the Windows installer (.exe) verified and safe to run?',
-              acceptedAnswer: {
-                '@type': 'Answer',
-                text: 'Yes, 100% safe, clean, and open-source. The binary is officially published on GitHub by Mohammad Sufiyan (@mdsufidev). You can independently inspect the release checksums and repository. It contains zero adware, zero background trackers, and zero telemetry.',
-              },
-            },
-            {
-              '@type': 'Question',
-              name: 'What is the difference between the Direct Download and GitHub links?',
-              acceptedAnswer: {
-                '@type': 'Answer',
-                text: 'The Direct Download button initiates the official 80.4 MB installer download immediately without interstitial redirect chains. The GitHub link provides developers and users access to the open-source repository, full release notes, and commit history.',
-              },
-            },
-          ],
-        },
-      ];
-    } else {
-      jsonLdGraph = [
-        {
-          '@type': 'WebPage',
-          '@id': `${canonical}#webpage`,
-          url: canonical,
-          name: title,
-          description,
-          inLanguage: ['en-IN', 'hi-IN', 'en'],
-          isPartOf: {
-            '@type': 'WebSite',
-            '@id': `${BASE_URL}/#website`,
-            name: 'FileWala Tool',
-            url: BASE_URL,
-          },
-        },
-      ];
-    }
+      },
+    ];
   } else if (!activeTool && isPrivacyRoute) {
     canonical = buildAbsoluteUrl('/privacy');
     title = 'Privacy Policy & Zero-Upload Security Architecture | FileWala Tool';
