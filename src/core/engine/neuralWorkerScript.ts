@@ -281,7 +281,7 @@ self.onmessage = async function(e) {
       }
     }
 
-    sendProgress(96, 'Finalizing Remini-grade restored face...');
+    sendProgress(96, 'Finalizing Studio-grade restored face...');
 
     self.postMessage(
       {

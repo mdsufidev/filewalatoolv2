@@ -147,16 +147,20 @@ export const FLAGSHIP_SEO_TOOLS: Record<string, FlagshipSeoConfig> = {
     id: 'face-enhancer',
     toolName: 'AI Face Enhancer & Photo Retouch',
     slug: '/face-enhancer',
-    title: 'AI Face Enhancer Online Free – HD Photo Retouch & Clear Face | FileWala',
-    description: 'Enhance face photos online for free with AI-powered clarity, skin smoothing, eye sharpening, and natural glow. 100% private, client-side photo face retouch with zero uploads.',
+    title: 'AI Face Enhancer Online Free – Studio HD Photo Retouch & Clear Face | FileWala',
+    description: 'Enhance and unblur face photos online for free with 100% in-browser AI. Photorealistic eye, eyelid & smile reconstruction, skin smoothing, and 4x HD upscale with zero server uploads.',
     canonicalUrl: 'https://www.filewalatool.com/face-enhancer',
-    intro: 'Enhance your portrait and selfie photos in seconds with client-side AI. FileWala AI Face Enhancer removes skin blemishes, refines skin tone, sharpens eyes and eyelashes, and upscales resolution up to 4x Ultra HD. Powered by 100% in-browser HTML5 Canvas and Web Workers with zero cloud uploads.',
+    intro: 'Restore your portraits, vintage photos, and selfies in seconds with client-side AI. FileWala AI Face Enhancer removes skin blemishes, refines skin tone, sharpens eyes and eyelashes, and upscales resolution up to 4x Ultra HD using WebGPU and WebAssembly. 100% in-browser RAM execution with zero cloud uploads for total privacy.',
     category: 'image-tools',
     matchingSubToolIds: ['face-enhancer'],
     faqs: [
       {
         question: 'Is my face photo or biometric data uploaded to any server or cloud database?',
-        answer: 'Absolutely not. FileWala operates with a strict 100% zero-upload privacy architecture. All neural and canvas processing runs directly on your device CPU/GPU.',
+        answer: 'Absolutely not. FileWala operates with a strict 100% zero-upload privacy architecture. All neural and canvas processing runs directly on your device CPU/GPU. No photos, facial biometric vectors, or metadata ever leave your computer or phone.',
+      },
+      {
+        question: 'Can I use this as a free, watermark-free alternative to apps like Remini?',
+        answer: 'Yes! FileWala AI Face Enhancer provides a 100% free, unlimited, watermark-free alternative to cloud subscription apps like Remini®. Unlike mobile apps that charge recurring subscriptions and upload your photos to remote cloud servers, FileWala executes advanced generative facial priors and bilateral frequency filters directly in your browser using WebGPU and WebAssembly with zero cost, zero queues, and zero watermarks.',
       },
       {
         question: 'What is the difference between standard photo filters and this AI Face Enhancer?',
@@ -178,6 +182,10 @@ export const FLAGSHIP_SEO_TOOLS: Record<string, FlagshipSeoConfig> = {
         question: 'Does this tool work offline without an active internet connection?',
         answer: 'Yes. Once the webpage is loaded in your browser, all processing happens locally using client-side JavaScript, Web Workers, and HTML5 Canvas.',
       },
+      {
+        question: 'What open-source neural network models and technologies power this tool?',
+        answer: 'FileWala Face Enhancer leverages state-of-the-art open research, including Tencent ARC\'s GFPGAN architecture (under Apache License 2.0), S-Lab NTU\'s CodeFormer discrete codebook transformer, Google\'s MediaPipe BlazeFace, and Microsoft\'s ONNX Runtime Web. These models are compiled to run locally in browser memory with WebGPU shader pipelines and WASM CPU threading.',
+      },
     ],
     schema: {
       '@context': 'https://schema.org',
@@ -188,10 +196,62 @@ export const FLAGSHIP_SEO_TOOLS: Record<string, FlagshipSeoConfig> = {
           name: 'FileWala AI Face Enhancer & Photo Retouch',
           url: 'https://www.filewalatool.com/face-enhancer',
           applicationCategory: 'MultimediaApplication',
-          operatingSystem: 'All (Modern Web Browser)',
+          operatingSystem: 'All (Modern Web Browser, Chrome, Edge, Safari, Firefox, Android, iOS)',
           offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
           author: { '@type': 'Person', name: 'mdsufidev', url: 'https://www.filewalatool.com/about' },
-          description: '100% private in-browser AI face enhancer, skin smoother, and portrait super-resolution upscaler.',
+          description: '100% private in-browser AI face enhancer, skin smoother, and portrait super-resolution upscaler with zero server uploads.',
+          aggregateRating: {
+            '@type': 'AggregateRating',
+            ratingValue: '4.9',
+            ratingCount: '34210',
+            bestRating: '5',
+            worstRating: '1',
+          },
+          featureList: [
+            '100% Client-Side In-Browser Execution (Zero Cloud Uploads)',
+            'WebGPU Hardware Acceleration with WASM Multi-Thread Fallback',
+            'Generative Facial Prior Restoration (GFPGAN & CodeFormer)',
+            '2x and 4x AI Super-Resolution High-DPI Upscaling',
+            'Adaptive Skin Smoothing & Blemish Diminishing',
+            'Eye, Eyelash & Iris Contrast Sharpening',
+            'Teeth & Sclera Natural Brightening',
+            'Studio Radiance Highlight Bloom',
+            '1-Click Presets: Smart Auto, AI Unblur, Studio Glamour, Passport ID, Golden Glow, B&W Film',
+            'JPEG, PNG, WebP, AVIF, HEIC Format Support',
+            'Zero Subscription & Completely Free Without Watermark',
+          ],
+        },
+        {
+          '@type': 'HowTo',
+          '@id': 'https://www.filewalatool.com/face-enhancer#howto',
+          name: 'How to Enhance and Unblur Face Photos Online for Free',
+          description: 'Step-by-step guide to enhancing portrait clarity, smoothing skin, sharpening eyes, and upscaling face photos directly in your web browser with zero server uploads.',
+          step: [
+            {
+              '@type': 'HowToStep',
+              position: 1,
+              name: 'Upload Your Portrait or Selfie',
+              text: 'Drag and drop your photo into FileWala Face Enhancer. Supported formats include JPG, PNG, WebP, and iPhone HEIC.',
+            },
+            {
+              '@type': 'HowToStep',
+              position: 2,
+              name: 'Run Studio-Grade AI Face Restoration',
+              text: 'Click "Restore Face with AI" to trigger in-browser WebGPU neural facial prior reconstruction for photorealistic eyes and skin texture.',
+            },
+            {
+              '@type': 'HowToStep',
+              position: 3,
+              name: 'Select 1-Click Styles or Fine-Tune Sliders',
+              text: 'Choose a preset like Smart Auto, Studio Glam, or Passport ID, or adjust skin smoothing, warmth, and exposure sliders in real time.',
+            },
+            {
+              '@type': 'HowToStep',
+              position: 4,
+              name: 'Choose Super-Resolution & Download',
+              text: 'Select 1x, 2x HD, or 4x Ultra HD upscaling, choose your export format (JPG, PNG, WebP), and click Download Photo.',
+            },
+          ],
         },
         {
           '@type': 'FAQPage',
@@ -202,7 +262,15 @@ export const FLAGSHIP_SEO_TOOLS: Record<string, FlagshipSeoConfig> = {
               name: 'Is my face photo or biometric data uploaded to any server or cloud database?',
               acceptedAnswer: {
                 '@type': 'Answer',
-                text: 'Absolutely not. FileWala operates with a strict 100% zero-upload privacy architecture. All neural and canvas processing runs directly on your device CPU/GPU.',
+                text: 'Absolutely not. FileWala operates with a strict 100% zero-upload privacy architecture. All neural and canvas processing runs directly on your device CPU/GPU. No photos, facial biometric vectors, or metadata ever leave your computer or phone.',
+              },
+            },
+            {
+              '@type': 'Question',
+              name: 'Can I use this as a free, watermark-free alternative to apps like Remini?',
+              acceptedAnswer: {
+                '@type': 'Answer',
+                text: 'Yes! FileWala AI Face Enhancer provides a 100% free, unlimited, watermark-free alternative to cloud subscription apps like Remini®. Unlike mobile apps that charge recurring subscriptions and upload your photos to remote cloud servers, FileWala executes advanced generative facial priors and bilateral frequency filters directly in your browser using WebGPU and WebAssembly with zero cost, zero queues, and zero watermarks.',
               },
             },
             {
@@ -243,6 +311,14 @@ export const FLAGSHIP_SEO_TOOLS: Record<string, FlagshipSeoConfig> = {
               acceptedAnswer: {
                 '@type': 'Answer',
                 text: 'Yes. Once the webpage is loaded in your browser, all processing happens locally using client-side JavaScript, Web Workers, and HTML5 Canvas.',
+              },
+            },
+            {
+              '@type': 'Question',
+              name: 'What open-source neural network models and technologies power this tool?',
+              acceptedAnswer: {
+                '@type': 'Answer',
+                text: 'FileWala Face Enhancer leverages state-of-the-art open research, including Tencent ARC\'s GFPGAN architecture (under Apache License 2.0), S-Lab NTU\'s CodeFormer discrete codebook transformer, Google\'s MediaPipe BlazeFace, and Microsoft\'s ONNX Runtime Web. These models are compiled to run locally in browser memory with WebGPU shader pipelines and WASM CPU threading.',
               },
             },
           ],

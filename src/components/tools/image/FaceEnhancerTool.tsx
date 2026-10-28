@@ -298,13 +298,13 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
     [currentImage, exportFormat, exportQuality, onNotify]
   );
 
-  // Remini-Grade Deep Neural Face Restoration
+  // Studio-Grade Deep Neural Face Restoration
   const runNeuralRestoration = useCallback(async () => {
     if (!currentImage) return;
 
     setIsProcessing(true);
     setProgressPercent(5);
-    setProgressStage('Initializing Remini-grade AI Engine...');
+    setProgressStage('Initializing Studio-grade AI Engine...');
 
     try {
       const img = currentImage.imageElement;
@@ -355,7 +355,7 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
             setProcessedBlob(blob);
           }
           setIsProcessing(false);
-          onNotify('Face Restored!', 'Remini-grade Ultra Clear facial features generated and locked as working base', 'success');
+          onNotify('Face Restored!', 'Studio-grade Ultra Clear facial features generated and locked as working base', 'success');
         },
         exportFormat,
         exportQuality / 100
@@ -613,7 +613,7 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
                   onClick={runNeuralRestoration}
                   disabled={isProcessing}
                   className="inline-flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-bold bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white shadow-sm cursor-pointer disabled:opacity-50"
-                  title="Run Remini-Grade Neural Face Restoration"
+                  title="Run Studio-Grade Neural Face Restoration"
                 >
                   <Sparkles className="w-3 h-3" />
                   <span>Restore with AI</span>
@@ -953,7 +953,7 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
 
           {/* Controls & Export Panel: Right Side (Flat 2D, 100% OPEN) */}
           <div className="md:col-span-5 lg:col-span-4 flex flex-col gap-4">
-            {/* Card 1: AI Face Restoration Models (Remini-Grade) */}
+            {/* Card 1: AI Face Restoration Models (Studio-Grade) */}
             <div className={`p-4 rounded-xl border space-y-3.5 ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'}`}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -961,7 +961,7 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
                   <span className="text-sm font-bold text-zinc-900 dark:text-white">AI Face Restoration</span>
                 </div>
                 <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
-                  Remini-Grade
+                  Studio-Grade
                 </span>
               </div>
 
@@ -1078,7 +1078,7 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
                 ) : (
                   <>
                     <Wand2 className="w-4 h-4" />
-                    <span>Restore Face with AI (Remini-Grade)</span>
+                    <span>Restore Face with AI (Studio-Grade)</span>
                   </>
                 )}
               </Button>

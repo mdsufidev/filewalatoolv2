@@ -1,6 +1,6 @@
 /**
  * NeuralFaceEnhancer.ts
- * 100% Client-Side Remini-Grade Generative Face Restoration Engine.
+ * 100% Client-Side Studio-Grade Generative Face Restoration Engine.
  *
  * Architecture Highlights:
  * 1. MediaPipe Face Extraction + Smart Canvas Fallback:
@@ -783,7 +783,7 @@ export class NeuralFaceEnhancer {
     octx.drawImage(featherCanvas, 0, 0);
     octx.restore();
 
-    if (onProgress) onProgress(100, 'Remini-Grade Face Restoration Complete!');
+    if (onProgress) onProgress(100, 'Studio-Grade Face Restoration Complete!');
 
     return outputCanvas;
   }
