@@ -453,12 +453,12 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
         </div>
       ) : (
         /* Active Enhancement Workspace */
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          {/* Main Visual Comparison Area (8 Columns) */}
-          <div className="lg:col-span-8 space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 lg:gap-8 items-start">
+          {/* Main Visual Comparison Area (8 Columns on desktop, 7 on tablet) */}
+          <div className="md:col-span-7 lg:col-span-8 space-y-4">
             {/* Top Workspace Toolbar */}
             <div className={`flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl border ${isDark ? 'bg-zinc-900/80 border-zinc-800' : 'bg-white border-zinc-200'}`}>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
                 <span className="text-xs font-semibold px-2.5 py-1 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300">
                   {currentImage.file.name}
                 </span>
@@ -467,7 +467,49 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
                 </span>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                {/* AI Model Quick Switcher */}
+                <div className="flex items-center rounded-lg border border-zinc-200 dark:border-zinc-800 p-0.5 bg-zinc-100/60 dark:bg-zinc-950/40">
+                  <button
+                    type="button"
+                    onClick={() => setNeuralModelKey('gfpgan-v14')}
+                    className={`px-2.5 py-1 rounded text-xs font-semibold cursor-pointer transition flex items-center gap-1 ${
+                      neuralModelKey === 'gfpgan-v14'
+                        ? 'bg-rose-500 text-white shadow-sm'
+                        : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'
+                    }`}
+                    title="GFPGAN v1.4: Photorealistic clean face prior"
+                  >
+                    <Sparkles className="w-3 h-3" />
+                    <span>GFPGAN</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setNeuralModelKey('codeformer')}
+                    className={`px-2.5 py-1 rounded text-xs font-semibold cursor-pointer transition flex items-center gap-1 ${
+                      neuralModelKey === 'codeformer'
+                        ? 'bg-rose-500 text-white shadow-sm'
+                        : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'
+                    }`}
+                    title="CodeFormer: Discrete codebook transformer for heavy blur"
+                  >
+                    <Wand2 className="w-3 h-3" />
+                    <span>CodeFormer</span>
+                  </button>
+                </div>
+
+                {/* 1-Click AI Restore Button in Toolbar */}
+                <button
+                  type="button"
+                  onClick={runNeuralRestoration}
+                  disabled={isProcessing}
+                  className="inline-flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-bold bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white shadow-sm cursor-pointer disabled:opacity-50"
+                  title="Run Remini-Grade Neural Face Restoration"
+                >
+                  <Sparkles className="w-3 h-3" />
+                  <span>Restore with AI</span>
+                </button>
+
                 {/* Hold to Compare Button */}
                 <button
                   type="button"
@@ -599,145 +641,121 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
             </div>
           </div>
 
-          {/* Controls & Export Panel (4 Columns) */}
-          <div className="lg:col-span-4 space-y-6">
-            {/* Engine Mode Toggle */}
-            <div className={`p-1.5 rounded-2xl border flex items-center gap-1 ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-zinc-100 border-zinc-200'}`}>
-              <button
-                type="button"
-                onClick={() => setActiveEngineMode('neural')}
-                className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
-                  activeEngineMode === 'neural'
-                    ? 'bg-rose-500 text-white shadow-md'
-                    : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'
-                }`}
-              >
-                <Wand2 className="w-3.5 h-3.5" />
-                <span>AI Neural (Remini-Grade)</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveEngineMode('sliders')}
-                className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
-                  activeEngineMode === 'sliders'
-                    ? 'bg-rose-500 text-white shadow-md'
-                    : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'
-                }`}
-              >
-                <Sliders className="w-3.5 h-3.5" />
-                <span>Manual Pro Sliders</span>
-              </button>
-            </div>
+          {/* Controls & Export Panel (4 Columns on desktop, 5 on tablet) */}
+          <div className="md:col-span-5 lg:col-span-4 space-y-5">
+            {/* Generative AI Face Model Card (Remini-Grade) - PERMANENTLY VISIBLE */}
+            <div className={`p-5 rounded-2xl border space-y-4 shadow-sm ${isDark ? 'bg-zinc-900/80 border-zinc-800' : 'bg-white border-zinc-200'}`}>
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-bold text-zinc-900 dark:text-white flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-rose-500" />
+                  <span>AI Face Restoration Models</span>
+                </h3>
+                <span className="text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                  Remini-Grade
+                </span>
+              </div>
 
-            {/* Neural Mode Card */}
-            {activeEngineMode === 'neural' ? (
-              <div className={`p-5 rounded-2xl border space-y-4 ${isDark ? 'bg-zinc-900/80 border-zinc-800' : 'bg-white border-zinc-200'}`}>
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-bold text-zinc-900 dark:text-white flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-rose-500" />
-                    <span>Neural Face Restoration</span>
-                  </h3>
-                  <span className="text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
-                    Remini-Grade
-                  </span>
-                </div>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                100% in-browser WebGPU/WASM generative facial reconstruction. Reconstructs photorealistic human eyes, eyelids, smile, and natural skin pores.
+              </p>
 
-                <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                  MediaPipe detects & crops the facial region (512×512) for RAM-safe processing. GFPGAN / CodeFormer reconstructs photorealistic human eyes, lips, and skin texture in a background worker via WebGPU / WASM, seamlessly blended back with zero seams.
-                </p>
-
-                {/* Model Selector */}
-                <div className="space-y-2">
-                  <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
-                    Select Generative AI Face Model
-                  </label>
-                  <div className="grid grid-cols-1 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setNeuralModelKey('gfpgan-v14')}
-                      className={`p-2.5 rounded-xl text-left border transition cursor-pointer flex items-center justify-between ${
-                        neuralModelKey === 'gfpgan-v14'
-                          ? 'border-rose-500 bg-rose-500/10 text-rose-600 dark:text-rose-400'
-                          : isDark
-                          ? 'border-zinc-800 bg-zinc-950/40 text-zinc-400'
-                          : 'border-zinc-200 bg-zinc-50 text-zinc-600'
-                      }`}
-                    >
-                      <div>
-                        <div className="text-xs font-bold">GFPGAN v1.4 (Clean Face Prior GAN)</div>
-                        <div className="text-[10px] text-zinc-500">Quantized w16 · Natural skin texture, clear eyes & smile</div>
+              {/* Model Selector Cards */}
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                  Select AI Face Model
+                </label>
+                <div className="grid grid-cols-1 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setNeuralModelKey('gfpgan-v14')}
+                    className={`p-3 rounded-xl text-left border transition cursor-pointer flex items-center justify-between ${
+                      neuralModelKey === 'gfpgan-v14'
+                        ? 'border-rose-500 bg-rose-500/10 text-rose-600 dark:text-rose-400 ring-1 ring-rose-500'
+                        : isDark
+                        ? 'border-zinc-800 hover:border-zinc-700 bg-zinc-950/40 text-zinc-400'
+                        : 'border-zinc-200 hover:border-zinc-300 bg-zinc-50 text-zinc-600'
+                    }`}
+                  >
+                    <div>
+                      <div className="text-xs font-bold flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5 text-rose-500" />
+                        <span>GFPGAN v1.4 (Clean Face Prior)</span>
                       </div>
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500 text-white font-bold shrink-0 ml-2">
-                        RECOMMENDED
-                      </span>
-                    </button>
+                      <div className="text-[10px] text-zinc-500 mt-0.5">Quantized w16 · Natural skin texture, clear eyes & smile</div>
+                    </div>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500 text-white font-bold shrink-0 ml-2">
+                      RECOMMENDED
+                    </span>
+                  </button>
 
-                    <button
-                      type="button"
-                      onClick={() => setNeuralModelKey('codeformer')}
-                      className={`p-2.5 rounded-xl text-left border transition cursor-pointer flex items-center justify-between ${
-                        neuralModelKey === 'codeformer'
-                          ? 'border-rose-500 bg-rose-500/10 text-rose-600 dark:text-rose-400'
-                          : isDark
-                          ? 'border-zinc-800 bg-zinc-950/40 text-zinc-400'
-                          : 'border-zinc-200 bg-zinc-50 text-zinc-600'
-                      }`}
-                    >
-                      <div>
-                        <div className="text-xs font-bold">CodeFormer (Discrete Codebook Transformer)</div>
-                        <div className="text-[10px] text-zinc-500">FaceFusion CodeFormer · Heavy blur, vintage photos & deep restoration</div>
+                  <button
+                    type="button"
+                    onClick={() => setNeuralModelKey('codeformer')}
+                    className={`p-3 rounded-xl text-left border transition cursor-pointer flex items-center justify-between ${
+                      neuralModelKey === 'codeformer'
+                        ? 'border-rose-500 bg-rose-500/10 text-rose-600 dark:text-rose-400 ring-1 ring-rose-500'
+                        : isDark
+                        ? 'border-zinc-800 hover:border-zinc-700 bg-zinc-950/40 text-zinc-400'
+                        : 'border-zinc-200 hover:border-zinc-300 bg-zinc-50 text-zinc-600'
+                    }`}
+                  >
+                    <div>
+                      <div className="text-xs font-bold flex items-center gap-1.5">
+                        <Wand2 className="w-3.5 h-3.5 text-blue-500" />
+                        <span>CodeFormer (Codebook Transformer)</span>
                       </div>
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500 text-white font-bold shrink-0 ml-2">
-                        ULTRA RESTORE
-                      </span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Blend Strength Slider */}
-                <Slider
-                  label="AI Face Blend Strength"
-                  unit="%"
-                  min={50}
-                  max={100}
-                  value={neuralBlendStrength}
-                  onChange={(val) => setNeuralBlendStrength(val)}
-                />
-
-                {/* Hardware Engine Status */}
-                <div className="flex items-center justify-between text-[11px] text-zinc-500 px-1 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-800/50">
-                  <span className="font-semibold text-zinc-600 dark:text-zinc-400">AI Accelerator:</span>
-                  <span className="font-medium text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5">
-                    {hasWebGPU ? (
-                      <>
-                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                        <span>WebGPU (with CPU WASM Fallback)</span>
-                      </>
-                    ) : (
-                      <>
-                        <span className="w-2 h-2 rounded-full bg-blue-500" />
-                        <span>WASM CPU Engine</span>
-                      </>
-                    )}
-                  </span>
-                </div>
-
-                {/* Main Action Button */}
-                <Button
-                  onClick={runNeuralRestoration}
-                  disabled={isProcessing}
-                  className="w-full bg-gradient-to-r from-rose-500 via-pink-500 to-rose-600 hover:from-rose-600 hover:to-pink-600 text-white font-bold py-3 rounded-xl shadow-lg shadow-rose-500/25 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-                >
-                  <Wand2 className="w-4 h-4" />
-                  <span>Restore Face with AI (Remini-Grade)</span>
-                </Button>
-
-                <div className="flex items-center gap-2 text-[11px] text-zinc-400">
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                  <span>100% In-Browser RAM Execution · Zero Server Uploads · Saved to IndexedDB</span>
+                      <div className="text-[10px] text-zinc-500 mt-0.5">FaceFusion CodeFormer · Heavy blur, vintage photos & deep restoration</div>
+                    </div>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500 text-white font-bold shrink-0 ml-2">
+                      ULTRA RESTORE
+                    </span>
+                  </button>
                 </div>
               </div>
-            ) : (
+
+              {/* Blend Strength Slider */}
+              <Slider
+                label="AI Face Blend Strength"
+                unit="%"
+                min={50}
+                max={100}
+                value={neuralBlendStrength}
+                onChange={(val) => setNeuralBlendStrength(val)}
+              />
+
+              {/* Hardware Engine Status */}
+              <div className="flex items-center justify-between text-[11px] text-zinc-500 px-2.5 py-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800/50">
+                <span className="font-semibold text-zinc-600 dark:text-zinc-400">AI Accelerator:</span>
+                <span className="font-medium text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5">
+                  {hasWebGPU ? (
+                    <>
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                      <span>WebGPU (Hardware Accelerated)</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="w-2 h-2 rounded-full bg-blue-500" />
+                      <span>WASM CPU Multi-Thread</span>
+                    </>
+                  )}
+                </span>
+              </div>
+
+              {/* Main Action Button */}
+              <Button
+                onClick={runNeuralRestoration}
+                disabled={isProcessing}
+                className="w-full bg-gradient-to-r from-rose-500 via-pink-500 to-rose-600 hover:from-rose-600 hover:to-pink-600 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-rose-500/25 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 text-sm"
+              >
+                <Wand2 className="w-4 h-4" />
+                <span>Restore Face with AI (Remini-Grade)</span>
+              </Button>
+
+              <div className="flex items-center gap-2 text-[11px] text-zinc-400">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                <span>100% In-Browser RAM Execution · Zero Server Uploads · Saved to IndexedDB</span>
+              </div>
+            </div>
               /* Sliders & Presets Mode */
               <>
                 {/* Presets Selector */}
