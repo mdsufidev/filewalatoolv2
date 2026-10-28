@@ -142,6 +142,7 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
   const splitDragRef = useRef<boolean>(false);
   const blobDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isHoveringDivider, setIsHoveringDivider] = useState<boolean>(false);
+  const srcDataCacheRef = useRef<Uint8ClampedArray | null>(null);
 
   // Detect WebGPU hardware availability on mount
   useEffect(() => {
@@ -724,6 +725,8 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
     if (!currentImage) {
       maskCanvasRef.current = null;
       setResultBlob(null);
+      setCustomBackdropImg(null);
+      srcDataCacheRef.current = null;
       historyRef.current = [];
       historyIndexRef.current = -1;
       setCanUndo(false);
@@ -827,15 +830,22 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
     const w = img.naturalWidth;
     const h = img.naturalHeight;
 
-    const tempCanvas = document.createElement('canvas');
-    tempCanvas.width = w;
-    tempCanvas.height = h;
-    const ctx = tempCanvas.getContext('2d');
     const mctx = maskCanvasRef.current.getContext('2d');
-    if (!ctx || !mctx) return;
+    if (!mctx) return;
 
-    ctx.drawImage(img, 0, 0, w, h);
-    const srcData = ctx.getImageData(0, 0, w, h).data;
+    // Cache source pixel buffer to avoid redundant 48MB canvas re-draws on every wand click
+    let srcData = srcDataCacheRef.current;
+    if (!srcData || srcData.length !== w * h * 4) {
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = w;
+      tempCanvas.height = h;
+      const ctx = tempCanvas.getContext('2d');
+      if (!ctx) return;
+      ctx.drawImage(img, 0, 0, w, h);
+      srcData = ctx.getImageData(0, 0, w, h).data;
+      srcDataCacheRef.current = srcData;
+    }
+
     const maskImgData = mctx.getImageData(0, 0, w, h);
     const maskData = maskImgData.data;
 
@@ -844,6 +854,7 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
     const targetG = srcData[startIdx + 1];
     const targetB = srcData[startIdx + 2];
     const maxDist = (tolerance / 100) * 441.67;
+    const maxDistSq = maxDist * maxDist;
 
     const visited = new Uint8Array(w * h);
     const queueX: number[] = [clickX];
@@ -851,7 +862,7 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
     visited[clickY * w + clickX] = 1;
 
     let head = 0;
-    while (head < queueX.length && head < 500000) {
+    while (head < queueX.length && head < 400000) {
       const x = queueX[head];
       const y = queueY[head];
       head++;
@@ -877,9 +888,9 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
             const dr = srcData[nIdx] - targetR;
             const dg = srcData[nIdx + 1] - targetG;
             const db = srcData[nIdx + 2] - targetB;
-            const dist = Math.hypot(dr, dg, db);
+            const distSq = dr * dr + dg * dg + db * db;
 
-            if (dist <= maxDist) {
+            if (distSq <= maxDistSq) {
               queueX.push(nx);
               queueY.push(ny);
             }
@@ -1227,8 +1238,9 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
   ------------------------------------------------------------- */
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
-      const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
-      if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+      const target = e.target as HTMLElement;
+      const tag = target?.tagName?.toLowerCase();
+      if (tag === 'input' || tag === 'textarea' || tag === 'select' || target?.isContentEditable) return;
 
       // Undo: Ctrl+Z / Cmd+Z
       if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z') && !e.shiftKey) {
@@ -1247,8 +1259,9 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
         return;
       }
 
-      // Spacebar temporary hand pan mode
+      // Spacebar temporary hand pan mode (prevent page scroll down!)
       if (e.code === 'Space' && !isSpacePressedRef.current) {
+        e.preventDefault();
         isSpacePressedRef.current = true;
         setPrevToolBeforeHand(activeToolMode);
         setActiveToolMode('hand');

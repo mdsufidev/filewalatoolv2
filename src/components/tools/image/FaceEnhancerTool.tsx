@@ -119,6 +119,9 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
     workerClientRef.current = new FaceEnhanceWorkerClient();
     NeuralFaceEnhancer.preload();
     return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
       if (workerClientRef.current) {
         workerClientRef.current.terminate();
         workerClientRef.current = null;
@@ -144,6 +147,8 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
       setOriginalSrc(null);
       setProcessedBlob(null);
       setEnhancedDimensions(null);
+      neuralRestoredCanvasRef.current = null;
+      setHasNeuralRestoration(false);
       return;
     }
 
@@ -475,7 +480,8 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
   // Download enhanced image
   const handleDownload = () => {
     if (!processedBlob || !currentImage) return;
-    const baseName = currentImage.file.name.replace(/\.[^/.]+$/, '');
+    const rawName = currentImage.file?.name || currentImage.name || 'enhanced_portrait';
+    const baseName = rawName.replace(/\.[^/.]+$/, '');
     const ext = exportFormat === 'image/jpeg' ? 'jpg' : exportFormat === 'image/png' ? 'png' : 'webp';
     const upscaleSuffix = upscaleFactor > 1 ? `_${upscaleFactor}x_HD` : '_enhanced';
     triggerFileDownload(processedBlob, `${baseName}${upscaleSuffix}.${ext}`);
