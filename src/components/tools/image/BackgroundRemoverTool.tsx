@@ -521,15 +521,18 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
     const maskImgData = mctx.getImageData(0, 0, w, h);
     const maskData = maskImgData.data;
 
+    const clampX = (val: number) => Math.max(0, Math.min(w - 1, val));
+    const clampY = (val: number) => Math.max(0, Math.min(h - 1, val));
+
     const seedPoints = [
-      [2, 2],
-      [w - 3, 2],
-      [2, h - 3],
-      [w - 3, h - 3],
-      [Math.floor(w / 2), 2],
-      [Math.floor(w / 2), h - 3],
-      [2, Math.floor(h / 2)],
-      [w - 3, Math.floor(h / 2)],
+      [clampX(2), clampY(2)],
+      [clampX(w - 3), clampY(2)],
+      [clampX(2), clampY(h - 3)],
+      [clampX(w - 3), clampY(h - 3)],
+      [clampX(Math.floor(w / 2)), clampY(2)],
+      [clampX(Math.floor(w / 2)), clampY(h - 3)],
+      [clampX(2), clampY(Math.floor(h / 2))],
+      [clampX(w - 3), clampY(Math.floor(h / 2))],
     ];
 
     const visited = new Uint8Array(w * h);
@@ -742,18 +745,10 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
     }
     maskCanvasRef.current = mask;
 
-    // Reset Zoom & Pan to Fit Viewport
-    if (viewportRef.current) {
-      const vRect = viewportRef.current.getBoundingClientRect();
-      const scaleX = (vRect.width - 32) / w;
-      const scaleY = (vRect.height - 32) / h;
-      const fitZoom = Math.min(1.0, Math.max(0.2, Math.min(scaleX, scaleY)));
-      setZoom(+fitZoom.toFixed(2));
-      setPan({
-        x: Math.round((vRect.width - w * fitZoom) / 2),
-        y: Math.round((vRect.height - h * fitZoom) / 2),
-      });
-    }
+    // Reset Zoom & Pan to Fit Viewport (deferred so viewport DOM has laid out)
+    requestAnimationFrame(() => {
+      handleFitToScreen();
+    });
 
     if (engineMode === 'fast') {
       runFastPerimeterClean(img, mask, tolerance);

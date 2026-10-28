@@ -84,7 +84,7 @@ export const ComparisonSlider: React.FC<ComparisonSliderProps> = ({
           src={originalSrc}
           alt={originalLabel}
           draggable={false}
-          className="absolute inset-0 w-full h-full object-fill pointer-events-none select-none"
+          className="absolute inset-0 w-full h-full object-contain pointer-events-none select-none mx-auto"
           style={{
             clipPath: `inset(0 ${100 - position}% 0 0)`,
             WebkitClipPath: `inset(0 ${100 - position}% 0 0)`,

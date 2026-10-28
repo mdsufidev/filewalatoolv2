@@ -348,6 +348,7 @@ export class NeuralFaceEnhancer {
     }
 
     let session: any = null;
+    const wasmBackupBuffer = modelBuffer.slice(0);
 
     if (hasWebGPU) {
       try {
@@ -361,7 +362,7 @@ export class NeuralFaceEnhancer {
     }
 
     if (!session) {
-      session = await ort.InferenceSession.create(modelBuffer, {
+      session = await ort.InferenceSession.create(wasmBackupBuffer, {
         executionProviders: ['wasm'],
         graphOptimizationLevel: 'basic',
       });

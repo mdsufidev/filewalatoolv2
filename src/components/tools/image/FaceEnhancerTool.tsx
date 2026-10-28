@@ -151,16 +151,8 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
     const w = img.naturalWidth || img.width;
     const h = img.naturalHeight || img.height;
 
-    // Create original preview URL
-    const tempCanvas = document.createElement('canvas');
-    tempCanvas.width = w;
-    tempCanvas.height = h;
-    const ctx = tempCanvas.getContext('2d');
-    if (ctx) {
-      ctx.drawImage(img, 0, 0);
-      const origDataUrl = tempCanvas.toDataURL('image/jpeg', 0.9);
-      setOriginalSrc(origDataUrl);
-    }
+    // Use instant blob preview URL (zero memory churn, zero main-thread block)
+    setOriginalSrc(currentImage.previewUrl);
 
     // Apply default preset
     applyPreset('smart-auto');
