@@ -1,17 +1,21 @@
 /**
  * NeuralFaceEnhancer.ts
- * 100% Client-Side Remini-Grade Face Restoration & Super-Resolution Engine.
+ * 100% Client-Side Remini-Grade Generative Face Restoration Engine.
  *
  * Architecture Highlights:
- * 1. Face Extraction & Patch Processing:
- *    Crops facial patch (e.g. 384x384) instead of full 4K image to keep RAM usage
- *    under 100MB, preventing mobile browser OOM tab crashes.
- * 2. Smart Hardware Acceleration:
- *    Executes on WebGPU with automatic try-catch fallback to multi-threaded CPU WebAssembly (WASM).
- * 3. CacheStorage / IndexedDB Model Persistence:
- *    Downloads the 4.86MB Real-ESRGAN ONNX weights once from CDN, caches permanently locally.
- * 4. Seamless Feathered Stitching:
- *    Smoothly composites the 4x super-resolved facial patch back onto the canvas with zero visible seams.
+ * 1. MediaPipe Face Extraction + Smart Canvas Fallback:
+ *    Detects facial landmark bounding boxes via MediaPipe BlazeFace (229KB) with
+ *    automatic fallback to Canvas skin-tone centroid analysis.
+ * 2. Generative Facial Prior Models (GFPGAN v1.4 & CodeFormer):
+ *    Uses quantized ONNX models (GFPGAN Clean Face Prior & CodeFormer Discrete Codebook Transformer)
+ *    to photorealistically reconstruct human eyes, iris, eyelashes, lips, teeth, and natural skin pores.
+ * 3. Offloaded Background Web Worker:
+ *    Executes ONNX Runtime Web in a background worker with WebGPU acceleration and CPU WASM fallback,
+ *    keeping the main UI thread 100% responsive without browser tab freezes.
+ * 4. CacheStorage / IndexedDB Model Persistence:
+ *    Downloads the quantized weights once from CDN, caches permanently locally for zero-bandwidth repeats.
+ * 5. Seamless Feathered Stitching:
+ *    Smoothly composites the restored 512x512 facial patch back into the portrait with zero visible seams.
  */
 
 import { NeuralWorkerClient } from './NeuralWorkerClient';
@@ -19,22 +23,33 @@ import { NeuralWorkerClient } from './NeuralWorkerClient';
 export const ORT_CDN_URL = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/ort.all.min.js';
 export const ORT_WASM_PATH = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/';
 
-export const AI_MODEL_CONFIGS = {
-  'realesr-fast': {
-    id: 'realesr-fast',
-    name: 'Real-ESRGAN Compact (4.8 MB)',
-    tagline: 'Ultra-fast, light on RAM, 4x super-resolution with strong denoising',
-    url: 'https://huggingface.co/openpixels-app/browser-models/resolve/main/realesr_general_x4v3.onnx',
-    sizeBytes: 4866422,
-    scale: 4,
+export type NeuralModelKey = 'gfpgan-v14' | 'codeformer';
+
+export interface AIModelConfig {
+  id: NeuralModelKey;
+  name: string;
+  tagline: string;
+  url: string;
+  sizeBytes: number;
+  inputDim: number;
+}
+
+export const AI_MODEL_CONFIGS: Record<NeuralModelKey, AIModelConfig> = {
+  'gfpgan-v14': {
+    id: 'gfpgan-v14',
+    name: 'GFPGAN v1.4 (Clean Face Prior GAN)',
+    tagline: 'Quantized w16, photorealistic skin pores, natural eyes, teeth & smile',
+    url: 'https://huggingface.co/opiumuseless/gfpgan-v1.4-w16/resolve/main/GFPGANv1.4-w16.onnx',
+    sizeBytes: 170289207,
+    inputDim: 512,
   },
-  'realesr-hd': {
-    id: 'realesr-hd',
-    name: 'Real-ESRGAN Plus (33.7 MB)',
-    tagline: 'Maximum photographic detail & facial reconstruction',
-    url: 'https://huggingface.co/openpixels-app/browser-models/resolve/main/realesrgan_x4plus_w16.onnx',
-    sizeBytes: 33724311,
-    scale: 4,
+  'codeformer': {
+    id: 'codeformer',
+    name: 'CodeFormer (Discrete Codebook Transformer)',
+    tagline: 'Quantized FP16, transformer codebook prior for heavily blurry & vintage faces',
+    url: 'https://huggingface.co/OwlMaster/AllFilesRope/resolve/main/codeformer_fp16.onnx',
+    sizeBytes: 188577164,
+    inputDim: 512,
   },
 };
 
@@ -51,6 +66,7 @@ export class NeuralFaceEnhancer {
   private static ortInstance: any = null;
   private static sessions: Map<string, any> = new Map();
   private static workerClient: NeuralWorkerClient | null = null;
+  private static mediaPipeDetector: any = null;
 
   public static getWorkerClient(): NeuralWorkerClient | null {
     if (typeof window === 'undefined') return null;
@@ -65,6 +81,80 @@ export class NeuralFaceEnhancer {
       this.workerClient.terminate();
       this.workerClient = null;
     }
+  }
+
+  /**
+   * Initializes MediaPipe BlazeFace short range detector via dynamic CDN import
+   */
+  private static async getMediaPipeDetector(): Promise<any> {
+    if (this.mediaPipeDetector) return this.mediaPipeDetector;
+    if (typeof window === 'undefined') return null;
+
+    try {
+      const dynamicImport = new Function('url', 'return import(url)');
+      const visionModule = await dynamicImport(
+        'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs'
+      );
+      const { FilesetResolver, FaceDetector } = visionModule;
+      const vision = await FilesetResolver.forVisionTasks(
+        'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm'
+      );
+      this.mediaPipeDetector = await FaceDetector.createFromOptions(vision, {
+        baseOptions: {
+          modelAssetPath:
+            'https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite',
+          delegate: 'GPU',
+        },
+        runningMode: 'IMAGE',
+      });
+      return this.mediaPipeDetector;
+    } catch (e) {
+      console.warn('[NeuralFaceEnhancer] MediaPipe loader skipped, using smart Canvas fallback:', e);
+      return null;
+    }
+  }
+
+  /**
+   * Detects facial bounding box with MediaPipe BlazeFace, falling back to Canvas analysis
+   */
+  public static async detectFaceBox(
+    source: HTMLImageElement | HTMLCanvasElement
+  ): Promise<FacePatchBox> {
+    const w = 'naturalWidth' in source ? source.naturalWidth || source.width : source.width;
+    const h = 'naturalHeight' in source ? source.naturalHeight || source.height : source.height;
+
+    try {
+      const detector = await this.getMediaPipeDetector();
+      if (detector) {
+        const detections = detector.detect(source);
+        if (detections && detections.detections && detections.detections.length > 0) {
+          const primary = detections.detections[0];
+          const bb = primary.boundingBox;
+          if (bb && bb.width > 20 && bb.height > 20) {
+            // Expand by 35% margin for hair, forehead, ears, and chin
+            const centerX = bb.originX + bb.width / 2;
+            const centerY = bb.originY + bb.height * 0.55;
+            const faceSize = Math.min(Math.min(w, h), Math.max(bb.width, bb.height) * 1.6);
+            const halfSize = faceSize / 2;
+
+            const x = Math.max(0, Math.min(w - faceSize, Math.round(centerX - halfSize)));
+            const y = Math.max(0, Math.min(h - faceSize, Math.round(centerY - halfSize)));
+
+            return {
+              x: Math.round(x),
+              y: Math.round(y),
+              width: Math.round(faceSize),
+              height: Math.round(faceSize),
+            };
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('[NeuralFaceEnhancer] MediaPipe detection skipped:', err);
+    }
+
+    // Fallback: Smart Canvas skin-tone and gradient density crop
+    return this.estimateFaceBoundingBox(source);
   }
 
   /**
@@ -128,11 +218,11 @@ export class NeuralFaceEnhancer {
         const cache = await caches.open(MODEL_CACHE_NAME);
         const cachedRes = await cache.match(modelUrl);
         if (cachedRes) {
-          if (onProgress) onProgress(100, 'Loaded AI weights from local cache');
+          if (onProgress) onProgress(30, 'Loaded AI weights from local cache');
           return await cachedRes.arrayBuffer();
         }
 
-        if (onProgress) onProgress(10, 'Downloading AI model from CDN (~4.8MB)...');
+        if (onProgress) onProgress(10, 'Downloading quantized model from CDN...');
         const response = await fetch(modelUrl);
         if (!response.ok) throw new Error(`HTTP ${response.status} fetching model`);
 
@@ -154,11 +244,11 @@ export class NeuralFaceEnhancer {
           if (done) break;
           chunks.push(value);
           received += value.length;
-          const pct = Math.min(95, Math.round((received / total) * 100));
+          const pct = Math.min(55, 10 + Math.round((received / total) * 45));
           if (onProgress) {
             const mb = (received / (1024 * 1024)).toFixed(1);
             const totalMb = (total / (1024 * 1024)).toFixed(1);
-            onProgress(pct, `Downloading Neural Model (${mb} / ${totalMb} MB)...`);
+            onProgress(pct, `Downloading Face Model (${mb} / ${totalMb} MB)...`);
           }
         }
 
@@ -171,7 +261,7 @@ export class NeuralFaceEnhancer {
 
         const arrayBuffer = combined.buffer;
         await cache.put(modelUrl, new Response(arrayBuffer));
-        if (onProgress) onProgress(100, 'Model cached locally');
+        if (onProgress) onProgress(60, 'Model cached locally');
         return arrayBuffer;
       } catch (err) {
         console.warn('CacheStorage read failed, falling back to direct network fetch:', err);
@@ -186,7 +276,7 @@ export class NeuralFaceEnhancer {
    * Initializes or reuses ONNX InferenceSession with WebGPU -> WASM fallback
    */
   public static async getSession(
-    modelKey: 'realesr-fast' | 'realesr-hd',
+    modelKey: NeuralModelKey,
     hasWebGPU: boolean,
     onProgress?: (percent: number, status: string) => void
   ): Promise<any> {
@@ -201,7 +291,7 @@ export class NeuralFaceEnhancer {
     const modelBuffer = await this.getModelBuffer(config.url, onProgress);
 
     if (onProgress) {
-      onProgress(80, hasWebGPU ? 'Compiling WebGPU AI Shaders...' : 'Initializing WASM Threads...');
+      onProgress(65, hasWebGPU ? 'Compiling WebGPU AI Shaders...' : 'Initializing WASM Threads...');
     }
 
     let session: any = null;
@@ -229,8 +319,7 @@ export class NeuralFaceEnhancer {
   }
 
   /**
-   * Detects the dominant facial region in an image
-   * Uses skin tone centroid and gradient density to place a smart square crop.
+   * Canvas-based skin tone centroid and gradient density facial crop (Zero-network fallback)
    */
   public static estimateFaceBoundingBox(
     img: HTMLImageElement | HTMLCanvasElement
@@ -238,7 +327,6 @@ export class NeuralFaceEnhancer {
     const w = 'naturalWidth' in img ? img.naturalWidth || img.width : img.width;
     const h = 'naturalHeight' in img ? img.naturalHeight || img.height : img.height;
 
-    // Use a small analysis canvas
     const sampleW = Math.min(256, w);
     const sampleH = Math.round((h * sampleW) / w);
     const canvas = document.createElement('canvas');
@@ -246,7 +334,6 @@ export class NeuralFaceEnhancer {
     canvas.height = sampleH;
     const ctx = canvas.getContext('2d');
     if (!ctx) {
-      // Default: Center-top crop
       const size = Math.round(Math.min(w, h) * 0.75);
       return {
         x: Math.round((w - size) / 2),
@@ -271,7 +358,6 @@ export class NeuralFaceEnhancer {
         const g = data[idx + 1];
         const b = data[idx + 2];
 
-        // Skin & facial feature weighting
         const cb = 128 - 0.168736 * r - 0.331264 * g + 0.5 * b;
         const cr = 128 + 0.5 * r - 0.418688 * g - 0.081312 * b;
 
@@ -291,7 +377,6 @@ export class NeuralFaceEnhancer {
       centerY = (sumY / totalWeight) * (h / sampleH);
     }
 
-    // Size: Cover face with hair and chin (approx 65% of smaller dimension)
     const size = Math.min(w, h, Math.round(Math.min(w, h) * 0.75));
     const halfSize = size / 2;
 
@@ -302,15 +387,15 @@ export class NeuralFaceEnhancer {
   }
 
   /**
-   * Executes Patch-Based Neural Face Restoration:
-   * 1. Extracts facial patch (e.g. 384x384) to keep memory footprint under 60MB.
-   * 2. Runs Real-ESRGAN ONNX inference.
-   * 3. Seamlessly blends 4x restored patch back into full canvas with feathered alpha.
+   * Executes 100% Client-Side Generative Face Prior Restoration (GFPGAN / CodeFormer)
+   * 1. MediaPipe Face Extraction crops the 512x512 face patch (keeps RAM < 100MB).
+   * 2. Offloads to background Web Worker using WebGPU / WASM.
+   * 3. Seamlessly blends 512x512 photorealistic face back into the portrait.
    */
   public static async restoreFacePatch(
     source: HTMLImageElement | HTMLCanvasElement,
     options: {
-      modelKey?: 'realesr-fast' | 'realesr-hd';
+      modelKey?: NeuralModelKey;
       hasWebGPU?: boolean;
       blendStrength?: number; // 0 to 1
       faceBox?: FacePatchBox;
@@ -318,7 +403,7 @@ export class NeuralFaceEnhancer {
     } = {}
   ): Promise<HTMLCanvasElement> {
     const {
-      modelKey = 'realesr-fast',
+      modelKey = 'gfpgan-v14',
       hasWebGPU = false,
       blendStrength = 1.0,
       onProgress,
@@ -327,16 +412,15 @@ export class NeuralFaceEnhancer {
     const w = 'naturalWidth' in source ? source.naturalWidth || source.width : source.width;
     const h = 'naturalHeight' in source ? source.naturalHeight || source.height : source.height;
 
-    // 1. Determine facial bounding box
-    const box = options.faceBox || this.estimateFaceBoundingBox(source);
+    // 1. Detect face bounding box via MediaPipe (with Canvas fallback)
+    if (onProgress) onProgress(5, 'Detecting facial features via MediaPipe...');
+    const box = options.faceBox || (await this.detectFaceBox(source));
     const config = AI_MODEL_CONFIGS[modelKey];
 
-    if (onProgress) onProgress(5, 'Cropping facial patch for RAM-safe processing...');
+    if (onProgress) onProgress(8, 'Cropping 512×512 facial patch for RAM-safe processing...');
 
-    // Adaptive patch dimensions:
-    // - Real-ESRGAN Plus (33.7MB): 128x128 patch (reduces 30 billion operations down to ~13B, runs 2.25x faster, outputs 512x512 HD face details, prevents tab hang)
-    // - Real-ESRGAN Compact (4.8MB): 192x192 patch (outputs 768x768 HD face)
-    const patchInputDim = modelKey === 'realesr-hd' ? 128 : 192;
+    // Native resolution for GFPGAN and CodeFormer is 512x512
+    const patchInputDim = 512;
     const patchCanvas = document.createElement('canvas');
     patchCanvas.width = patchInputDim;
     patchCanvas.height = patchInputDim;
@@ -359,10 +443,10 @@ export class NeuralFaceEnhancer {
 
     const patchData = pctx.getImageData(0, 0, patchInputDim, patchInputDim).data;
     let restoredPatchCanvas: HTMLCanvasElement | null = null;
-    let outPatchW = patchInputDim * 4;
-    let outPatchH = patchInputDim * 4;
+    let outPatchW = patchInputDim;
+    let outPatchH = patchInputDim;
 
-    // 2. Offload to dedicated Web Worker to keep main UI thread 100% fluid & prevent "Page Not Responding"
+    // 2. Offload to dedicated Web Worker to keep main UI thread 100% responsive
     const worker = this.getWorkerClient();
 
     if (worker) {
@@ -398,16 +482,16 @@ export class NeuralFaceEnhancer {
       }
     }
 
-    // 3. Fallback to in-thread inference only if Worker is unavailable or failed
+    // 3. In-thread fallback if Worker is unavailable or failed
     if (!restoredPatchCanvas) {
       const planeSize = patchInputDim * patchInputDim;
       const float32Data = new Float32Array(3 * planeSize);
 
       for (let i = 0; i < planeSize; i++) {
         const idx = i * 4;
-        float32Data[i] = patchData[idx] / 255.0;                      // R
-        float32Data[planeSize + i] = patchData[idx + 1] / 255.0;      // G
-        float32Data[planeSize * 2 + i] = patchData[idx + 2] / 255.0;  // B
+        float32Data[i] = (patchData[idx] / 127.5) - 1.0;
+        float32Data[planeSize + i] = (patchData[idx + 1] / 127.5) - 1.0;
+        float32Data[planeSize * 2 + i] = (patchData[idx + 2] / 127.5) - 1.0;
       }
 
       const session = await this.getSession(modelKey, hasWebGPU, onProgress);
@@ -415,36 +499,36 @@ export class NeuralFaceEnhancer {
       const inputTensor = new ort.Tensor('float32', float32Data, [1, 3, patchInputDim, patchInputDim]);
 
       if (onProgress) {
-        onProgress(80, hasWebGPU ? 'Restoring facial features via WebGPU...' : 'Restoring facial features via WASM CPU...');
+        onProgress(75, hasWebGPU ? 'Reconstructing facial prior via WebGPU...' : 'Reconstructing facial prior via WASM CPU...');
       }
 
       const inputName = session.inputNames[0];
       const outputName = session.outputNames[0];
-      const feeds = { [inputName]: inputTensor };
+      const feeds: Record<string, any> = { [inputName]: inputTensor };
 
-      const startTime = performance.now();
+      if (session.inputNames.length > 1) {
+        for (let k = 1; k < session.inputNames.length; k++) {
+          feeds[session.inputNames[k]] = new ort.Tensor('float32', new Float32Array([0.7]), [1]);
+        }
+      }
+
       let results: any = null;
-
       try {
         results = await session.run(feeds);
       } catch (gpuErr: any) {
-        console.warn('[NeuralFaceEnhancer] WebGPU run failed, automatically falling back to WASM CPU:', gpuErr);
+        console.warn('[NeuralFaceEnhancer] WebGPU run failed, falling back to WASM CPU:', gpuErr);
         if (onProgress) {
-          onProgress(82, 'WebGPU limit reached, switching to CPU WebAssembly fallback...');
+          onProgress(78, 'WebGPU limit reached, switching to CPU WebAssembly fallback...');
         }
         const wasmSession = await this.getSession(modelKey, false, onProgress);
         results = await wasmSession.run(feeds);
       }
-
-      const elapsed = Math.round(performance.now() - startTime);
-      console.log(`[NeuralFaceEnhancer] In-thread inference completed in ${elapsed} ms`);
 
       const outputTensor = results[outputName];
       const outData = outputTensor.data as Float32Array;
       const dims = (outputTensor.dims || []) as number[];
 
       let isNHWC = false;
-
       if (dims && dims.length === 4) {
         if (dims[3] === 3) {
           isNHWC = true;
@@ -457,12 +541,29 @@ export class NeuralFaceEnhancer {
         }
       }
 
-      let maxVal = 0;
-      const sampleCount = Math.min(200, outData.length);
-      for (let k = 0; k < sampleCount; k++) {
-        if (outData[k] > maxVal) maxVal = outData[k];
+      let minVal = 999999;
+      let maxVal = -999999;
+      const testCount = Math.min(500, outData.length);
+      for (let m = 0; m < testCount; m++) {
+        const val = outData[m];
+        if (val < minVal) minVal = val;
+        if (val > maxVal) maxVal = val;
       }
-      const scaleFactor = maxVal > 1.5 ? 1 : 255;
+
+      const isMinusOne = minVal < -0.1;
+      const isZeroOne = !isMinusOne && maxVal <= 1.5;
+
+      const toU8 = (v: number): number => {
+        let px: number;
+        if (isMinusOne) {
+          px = Math.round((v + 1.0) * 127.5);
+        } else if (isZeroOne) {
+          px = Math.round(v * 255.0);
+        } else {
+          px = Math.round(v);
+        }
+        return px < 0 ? 0 : px > 255 ? 255 : px;
+      };
 
       restoredPatchCanvas = document.createElement('canvas');
       restoredPatchCanvas.width = outPatchW;
@@ -478,18 +579,18 @@ export class NeuralFaceEnhancer {
         for (let i = 0; i < totalPixels; i++) {
           const s = i * 3;
           const d = i * 4;
-          rPixels[d]     = Math.min(255, Math.max(0, Math.round(outData[s] * scaleFactor)));
-          rPixels[d + 1] = Math.min(255, Math.max(0, Math.round(outData[s + 1] * scaleFactor)));
-          rPixels[d + 2] = Math.min(255, Math.max(0, Math.round(outData[s + 2] * scaleFactor)));
+          rPixels[d]     = toU8(outData[s]);
+          rPixels[d + 1] = toU8(outData[s + 1]);
+          rPixels[d + 2] = toU8(outData[s + 2]);
           rPixels[d + 3] = 255;
         }
       } else {
         const planeSize = outPatchW * outPatchH;
         for (let i = 0; i < planeSize; i++) {
           const d = i * 4;
-          rPixels[d]     = Math.min(255, Math.max(0, Math.round(outData[i] * scaleFactor)));
-          rPixels[d + 1] = Math.min(255, Math.max(0, Math.round(outData[planeSize + i] * scaleFactor)));
-          rPixels[d + 2] = Math.min(255, Math.max(0, Math.round(outData[planeSize * 2 + i] * scaleFactor)));
+          rPixels[d]     = toU8(outData[i]);
+          rPixels[d + 1] = toU8(outData[planeSize + i]);
+          rPixels[d + 2] = toU8(outData[planeSize * 2 + i]);
           rPixels[d + 3] = 255;
         }
       }
@@ -497,11 +598,11 @@ export class NeuralFaceEnhancer {
       rctx.putImageData(restoredImgData, 0, 0);
     }
 
-    if (onProgress) onProgress(95, 'Blending crystal-clear face onto full portrait...');
+    if (onProgress) onProgress(95, 'Blending photorealistic face onto portrait...');
 
-    // 4. Construct Final Output Canvas (Capped at 4096px to avoid mobile browser canvas limit crashes)
+    // 4. Construct Final Output Canvas
     const maxAllowedDim = 4096;
-    const naturalTargetScale = 4;
+    const naturalTargetScale = 2; // High-definition 2x clarity upscale
     const targetScale = (Math.max(w, h) * naturalTargetScale > maxAllowedDim)
       ? Math.max(1, maxAllowedDim / Math.max(w, h))
       : naturalTargetScale;
@@ -514,12 +615,12 @@ export class NeuralFaceEnhancer {
     const octx = outputCanvas.getContext('2d');
     if (!octx) throw new Error('Failed to create final output context');
 
-    // First paint base image upscaled
+    // First paint base image with high-quality smoothing
     octx.imageSmoothingEnabled = true;
     octx.imageSmoothingQuality = 'high';
     octx.drawImage(source, 0, 0, finalW, finalH);
 
-    // Prepare feathered alpha mask for the face patch to eliminate any boundary lines
+    // Prepare feathered alpha mask for the face patch to eliminate boundary lines
     const featherCanvas = document.createElement('canvas');
     featherCanvas.width = outPatchW;
     featherCanvas.height = outPatchH;
@@ -537,7 +638,7 @@ export class NeuralFaceEnhancer {
         const grad = mctx.createRadialGradient(
           radius,
           radius,
-          radius * 0.7,
+          radius * 0.72,
           radius,
           radius,
           radius
@@ -553,7 +654,7 @@ export class NeuralFaceEnhancer {
       }
     }
 
-    // Blend restored patch onto the corresponding location in the canvas
+    // Blend restored patch onto the exact face location in the canvas
     const targetX = Math.round(box.x * targetScale);
     const targetY = Math.round(box.y * targetScale);
     const targetW = Math.round(box.width * targetScale);
@@ -563,7 +664,7 @@ export class NeuralFaceEnhancer {
     octx.drawImage(featherCanvas, targetX, targetY, targetW, targetH);
     octx.globalAlpha = 1.0;
 
-    if (onProgress) onProgress(100, 'Ultra Clear Face Restoration Complete!');
+    if (onProgress) onProgress(100, 'Remini-Grade Face Restoration Complete!');
 
     return outputCanvas;
   }

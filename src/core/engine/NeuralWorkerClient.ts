@@ -1,9 +1,8 @@
 /**
  * NeuralWorkerClient.ts
  * Manages background Web Worker for ONNX Runtime Web.
- * Keeps heavy 33.7MB Real-ESRGAN Plus and 4.8MB Real-ESRGAN Compact
- * processing off the main UI thread to eliminate browser freezes and
- * "Page Not Responding" alerts.
+ * Keeps heavy GFPGAN v1.4 and CodeFormer quantized model processing
+ * off the main UI thread to eliminate browser freezes and "Page Not Responding" alerts.
  */
 
 import { NEURAL_WORKER_CODE } from './neuralWorkerScript';

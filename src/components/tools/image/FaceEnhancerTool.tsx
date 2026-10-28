@@ -44,7 +44,7 @@ import {
   FacePreset,
 } from '../../../core/engine/FaceEnhancerEngine';
 import { FaceEnhanceWorkerClient } from '../../../core/engine/FaceEnhanceWorkerClient';
-import { NeuralFaceEnhancer, AI_MODEL_CONFIGS } from '../../../core/engine/NeuralFaceEnhancer';
+import { NeuralFaceEnhancer, AI_MODEL_CONFIGS, NeuralModelKey } from '../../../core/engine/NeuralFaceEnhancer';
 
 interface FaceEnhancerToolProps {
   onNotify: (title: string, desc?: string, type?: 'success' | 'error' | 'info') => void;
@@ -64,7 +64,7 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
 
   // Engine Mode
   const [activeEngineMode, setActiveEngineMode] = useState<'neural' | 'sliders'>('neural');
-  const [neuralModelKey, setNeuralModelKey] = useState<'realesr-fast' | 'realesr-hd'>('realesr-fast');
+  const [neuralModelKey, setNeuralModelKey] = useState<NeuralModelKey>('gfpgan-v14');
   const [neuralBlendStrength, setNeuralBlendStrength] = useState<number>(100);
 
   // Settings & Presets
@@ -641,20 +641,20 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
                 </div>
 
                 <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                  Crops facial patch (RAM-safe adaptive patch) and processes via background Web Worker on WebGPU / WASM so your browser UI stays 100% fluid without freezing.
+                  MediaPipe detects & crops the facial region (512×512) for RAM-safe processing. GFPGAN / CodeFormer reconstructs photorealistic human eyes, lips, and skin texture in a background worker via WebGPU / WASM, seamlessly blended back with zero seams.
                 </p>
 
                 {/* Model Selector */}
                 <div className="space-y-2">
                   <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
-                    Select Neural AI Model
+                    Select Generative AI Face Model
                   </label>
                   <div className="grid grid-cols-1 gap-2">
                     <button
                       type="button"
-                      onClick={() => setNeuralModelKey('realesr-fast')}
+                      onClick={() => setNeuralModelKey('gfpgan-v14')}
                       className={`p-2.5 rounded-xl text-left border transition cursor-pointer flex items-center justify-between ${
-                        neuralModelKey === 'realesr-fast'
+                        neuralModelKey === 'gfpgan-v14'
                           ? 'border-rose-500 bg-rose-500/10 text-rose-600 dark:text-rose-400'
                           : isDark
                           ? 'border-zinc-800 bg-zinc-950/40 text-zinc-400'
@@ -662,19 +662,19 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
                       }`}
                     >
                       <div>
-                        <div className="text-xs font-bold">Real-ESRGAN Compact (4.8 MB)</div>
-                        <div className="text-[10px] text-zinc-500">Fast, low RAM, 4x HD face unblur</div>
+                        <div className="text-xs font-bold">GFPGAN v1.4 (Clean Face Prior GAN)</div>
+                        <div className="text-[10px] text-zinc-500">Quantized w16 · Natural skin texture, clear eyes & smile</div>
                       </div>
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500 text-white font-bold">
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500 text-white font-bold shrink-0 ml-2">
                         RECOMMENDED
                       </span>
                     </button>
 
                     <button
                       type="button"
-                      onClick={() => setNeuralModelKey('realesr-hd')}
+                      onClick={() => setNeuralModelKey('codeformer')}
                       className={`p-2.5 rounded-xl text-left border transition cursor-pointer flex items-center justify-between ${
-                        neuralModelKey === 'realesr-hd'
+                        neuralModelKey === 'codeformer'
                           ? 'border-rose-500 bg-rose-500/10 text-rose-600 dark:text-rose-400'
                           : isDark
                           ? 'border-zinc-800 bg-zinc-950/40 text-zinc-400'
@@ -682,11 +682,11 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
                       }`}
                     >
                       <div>
-                        <div className="text-xs font-bold">Real-ESRGAN Plus (33.7 MB)</div>
-                        <div className="text-[10px] text-zinc-500">Deep photographic facial reconstruction</div>
+                        <div className="text-xs font-bold">CodeFormer (Discrete Codebook Transformer)</div>
+                        <div className="text-[10px] text-zinc-500">Quantized FP16 · Heavy blur, vintage photos & deep restoration</div>
                       </div>
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500 text-white font-bold">
-                        ULTRA HD
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500 text-white font-bold shrink-0 ml-2">
+                        ULTRA RESTORE
                       </span>
                     </button>
                   </div>
@@ -727,7 +727,7 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
                   className="w-full bg-gradient-to-r from-rose-500 via-pink-500 to-rose-600 hover:from-rose-600 hover:to-pink-600 text-white font-bold py-3 rounded-xl shadow-lg shadow-rose-500/25 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                 >
                   <Wand2 className="w-4 h-4" />
-                  <span>Restore Face with AI (4x Ultra Clear)</span>
+                  <span>Restore Face with AI (Remini-Grade)</span>
                 </Button>
 
                 <div className="flex items-center gap-2 text-[11px] text-zinc-400">

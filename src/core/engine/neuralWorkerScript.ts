@@ -1,9 +1,8 @@
 /**
  * neuralWorkerScript.ts
- * Background Web Worker script for non-blocking neural face restoration.
- * Runs ONNX Runtime Web (Real-ESRGAN Compact & Real-ESRGAN Plus) in an isolated
- * worker thread so the main UI thread never freezes and the browser never shows
- * "Page Not Responding" warnings.
+ * Background Web Worker script for 100% client-side GFPGAN & CodeFormer face restoration.
+ * Offloads heavy generative neural networks to an isolated worker thread using WebGPU / WASM,
+ * ensuring the main UI thread never freezes.
  */
 
 export const NEURAL_WORKER_CODE = `
@@ -40,7 +39,7 @@ async function getModelBufferInWorker(url, onProgress) {
         onProgress(30, 'Loaded AI weights from local cache');
         return await matched.arrayBuffer();
       }
-      onProgress(10, 'Downloading AI weights from CDN...');
+      onProgress(10, 'Downloading quantized model from CDN...');
       var response = await fetch(url);
       if (!response.ok) throw new Error('HTTP ' + response.status + ' fetching model');
 
@@ -62,7 +61,7 @@ async function getModelBufferInWorker(url, onProgress) {
         var pct = Math.min(55, 10 + Math.round((received / total) * 45));
         var mb = (received / (1024 * 1024)).toFixed(1);
         var totalMb = (total / (1024 * 1024)).toFixed(1);
-        onProgress(pct, 'Downloading AI Model (' + mb + ' / ' + totalMb + ' MB)...');
+        onProgress(pct, 'Downloading Face Model (' + mb + ' / ' + totalMb + ' MB)...');
       }
       var combined = new Uint8Array(received);
       var offset = 0;
@@ -88,7 +87,7 @@ async function getSessionInWorker(modelKey, modelUrl, hasWebGPU, onProgress) {
   var ort = await loadOrtInWorker();
   var buffer = await getModelBufferInWorker(modelUrl, onProgress);
 
-  onProgress(60, hasWebGPU ? 'Compiling WebGPU AI Shaders...' : 'Initializing AI WASM Engine...');
+  onProgress(60, hasWebGPU ? 'Compiling WebGPU AI Shaders...' : 'Initializing WASM CPU Engine...');
 
   var session = null;
   if (hasWebGPU && typeof self.navigator !== 'undefined' && self.navigator.gpu) {
@@ -119,7 +118,7 @@ self.onmessage = async function(e) {
 
   var id = msg.id;
   var patchBuffer = msg.patchBuffer;
-  var patchDim = msg.patchDim;
+  var patchDim = msg.patchDim || 512;
   var modelKey = msg.modelKey;
   var modelUrl = msg.modelUrl;
   var hasWebGPU = !!msg.hasWebGPU;
@@ -129,29 +128,38 @@ self.onmessage = async function(e) {
   }
 
   try {
-    sendProgress(12, 'Preparing neural tensor in background thread...');
+    sendProgress(12, 'Preparing facial patch tensor in background...');
 
     var patchData = new Uint8ClampedArray(patchBuffer);
     var planeSize = patchDim * patchDim;
     var float32Data = new Float32Array(3 * planeSize);
 
+    // GFPGAN & CodeFormer expect [-1.0, 1.0] range
     for (var i = 0; i < planeSize; i++) {
       var idx = i * 4;
-      float32Data[i] = patchData[idx] / 255.0;
-      float32Data[planeSize + i] = patchData[idx + 1] / 255.0;
-      float32Data[planeSize * 2 + i] = patchData[idx + 2] / 255.0;
+      float32Data[i] = (patchData[idx] / 127.5) - 1.0;
+      float32Data[planeSize + i] = (patchData[idx + 1] / 127.5) - 1.0;
+      float32Data[planeSize * 2 + i] = (patchData[idx + 2] / 127.5) - 1.0;
     }
 
     var session = await getSessionInWorker(modelKey, modelUrl, hasWebGPU, sendProgress);
     var ort = ortInstance;
     var inputTensor = new ort.Tensor('float32', float32Data, [1, 3, patchDim, patchDim]);
 
-    sendProgress(70, 'Running Remini-grade AI feature restoration...');
+    sendProgress(70, 'Running Generative Face Prior reconstruction...');
 
     var inputName = session.inputNames[0];
     var outputName = session.outputNames[0];
     var feeds = {};
     feeds[inputName] = inputTensor;
+
+    // Handle extra inputs (e.g. CodeFormer fidelity weight w)
+    if (session.inputNames.length > 1) {
+      for (var k = 1; k < session.inputNames.length; k++) {
+        var extraName = session.inputNames[k];
+        feeds[extraName] = new ort.Tensor('float32', new Float32Array([0.7]), [1]);
+      }
+    }
 
     var results = null;
     try {
@@ -163,14 +171,14 @@ self.onmessage = async function(e) {
       results = await wasmSession.run(feeds);
     }
 
-    sendProgress(90, 'Unpacking super-resolved facial pixels...');
+    sendProgress(90, 'Unpacking photorealistic facial features...');
 
     var outputTensor = results[outputName];
     var outData = outputTensor.data;
     var dims = outputTensor.dims || [];
 
-    var outPatchW = patchDim * 4;
-    var outPatchH = patchDim * 4;
+    var outPatchW = patchDim;
+    var outPatchH = patchDim;
     var isNHWC = false;
 
     if (dims && dims.length === 4) {
@@ -185,12 +193,30 @@ self.onmessage = async function(e) {
       }
     }
 
-    var maxVal = 0;
-    var testCount = Math.min(200, outData.length);
-    for (var k = 0; k < testCount; k++) {
-      if (outData[k] > maxVal) maxVal = outData[k];
+    // Dynamic output range detection (handles [-1, 1], [0, 1] and [0, 255])
+    var minVal = 999999;
+    var maxVal = -999999;
+    var testCount = Math.min(500, outData.length);
+    for (var m = 0; m < testCount; m++) {
+      var val = outData[m];
+      if (val < minVal) minVal = val;
+      if (val > maxVal) maxVal = val;
     }
-    var scale = maxVal > 1.5 ? 1 : 255;
+
+    var isMinusOne = minVal < -0.1;
+    var isZeroOne = !isMinusOne && maxVal <= 1.5;
+
+    function toU8(v) {
+      var px;
+      if (isMinusOne) {
+        px = Math.round((v + 1.0) * 127.5);
+      } else if (isZeroOne) {
+        px = Math.round(v * 255.0);
+      } else {
+        px = Math.round(v);
+      }
+      return px < 0 ? 0 : px > 255 ? 255 : px;
+    }
 
     var totalPixels = outPatchW * outPatchH;
     var outRgba = new Uint8ClampedArray(totalPixels * 4);
@@ -199,29 +225,23 @@ self.onmessage = async function(e) {
       for (var p = 0; p < totalPixels; p++) {
         var s = p * 3;
         var d = p * 4;
-        var r = Math.round(outData[s] * scale);
-        var g = Math.round(outData[s + 1] * scale);
-        var b = Math.round(outData[s + 2] * scale);
-        outRgba[d] = r < 0 ? 0 : r > 255 ? 255 : r;
-        outRgba[d + 1] = g < 0 ? 0 : g > 255 ? 255 : g;
-        outRgba[d + 2] = b < 0 ? 0 : b > 255 ? 255 : b;
+        outRgba[d] = toU8(outData[s]);
+        outRgba[d + 1] = toU8(outData[s + 1]);
+        outRgba[d + 2] = toU8(outData[s + 2]);
         outRgba[d + 3] = 255;
       }
     } else {
       var pSize = totalPixels;
       for (var p = 0; p < pSize; p++) {
         var d = p * 4;
-        var r = Math.round(outData[p] * scale);
-        var g = Math.round(outData[pSize + p] * scale);
-        var b = Math.round(outData[pSize * 2 + p] * scale);
-        outRgba[d] = r < 0 ? 0 : r > 255 ? 255 : r;
-        outRgba[d + 1] = g < 0 ? 0 : g > 255 ? 255 : g;
-        outRgba[d + 2] = b < 0 ? 0 : b > 255 ? 255 : b;
+        outRgba[d] = toU8(outData[p]);
+        outRgba[d + 1] = toU8(outData[pSize + p]);
+        outRgba[d + 2] = toU8(outData[pSize * 2 + p]);
         outRgba[d + 3] = 255;
       }
     }
 
-    sendProgress(96, 'Finalizing enhanced facial features...');
+    sendProgress(96, 'Finalizing Remini-grade restored face...');
 
     self.postMessage(
       {
