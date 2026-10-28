@@ -756,9 +756,8 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
                 <span>100% In-Browser RAM Execution · Zero Server Uploads · Saved to IndexedDB</span>
               </div>
             </div>
-              /* Sliders & Presets Mode */
-              <>
-                {/* Presets Selector */}
+
+            {/* Presets Selector */}
                 <div className={`p-5 rounded-2xl border space-y-3.5 ${isDark ? 'bg-zinc-900/80 border-zinc-800' : 'bg-white border-zinc-200'}`}>
                   <div className="flex items-center justify-between">
                     <h3 className="text-sm font-bold text-zinc-900 dark:text-white flex items-center gap-2">
@@ -952,8 +951,6 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
                 />
               </div>
             </div>
-          </>
-        )}
 
             {/* Export & Download Card */}
             <div className={`p-5 rounded-2xl border space-y-4 ${isDark ? 'bg-zinc-900/80 border-zinc-800' : 'bg-white border-zinc-200'}`}>
