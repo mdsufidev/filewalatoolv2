@@ -218,10 +218,12 @@ export const CompressPdfTool: React.FC<CompressPdfToolProps> = ({ onNotify, init
       setFile(uploadedFile);
       setIsValidating(true);
 
+      let inspectDoc: any = null;
       try {
         const arrayBuffer = await uploadedFile.arrayBuffer();
         const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
         const pdfDoc = await loadingTask.promise;
+        inspectDoc = pdfDoc;
         const pages = pdfDoc.numPages;
         setPageCount(pages);
 
@@ -258,6 +260,13 @@ export const CompressPdfTool: React.FC<CompressPdfToolProps> = ({ onNotify, init
         );
         onNotify?.('PDF Inspection Failed', 'Could not parse document structure.', 'error');
       } finally {
+        if (inspectDoc) {
+          try {
+            inspectDoc.destroy();
+          } catch {
+            // ignore
+          }
+        }
         setIsValidating(false);
       }
     },

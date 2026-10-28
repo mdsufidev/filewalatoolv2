@@ -56,6 +56,7 @@ export class FaceEnhanceWorkerClient {
         } else if (msg.type === 'complete') {
           if (this.worker) {
             this.worker.removeEventListener('message', handleMessage);
+            this.worker.removeEventListener('error', handleError);
           }
           this.activeReject = null;
           const outData = new ImageData(
@@ -67,14 +68,25 @@ export class FaceEnhanceWorkerClient {
         } else if (msg.type === 'error') {
           if (this.worker) {
             this.worker.removeEventListener('message', handleMessage);
+            this.worker.removeEventListener('error', handleError);
           }
           this.activeReject = null;
           reject(new Error(msg.error || 'Worker enhancement failed'));
         }
       };
 
+      const handleError = (e: ErrorEvent) => {
+        if (this.worker) {
+          this.worker.removeEventListener('message', handleMessage);
+          this.worker.removeEventListener('error', handleError);
+        }
+        this.activeReject = null;
+        reject(new Error(e.message || 'Worker thread encountered an unexpected error'));
+      };
+
       if (this.worker) {
         this.worker.addEventListener('message', handleMessage);
+        this.worker.addEventListener('error', handleError);
 
         // Clone buffer to transfer without mutating source
         const bufferCopy = imageData.data.buffer.slice(0);

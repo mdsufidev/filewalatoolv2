@@ -69,9 +69,11 @@ export const RotatePdfTool: React.FC<RotatePdfToolProps> = ({ onNotify }) => {
     setIsLoadingPages(true);
     setLoadingProgress(5);
 
+    let inspectPdf: any = null;
     try {
       const buffer = await uploadedFile.arrayBuffer();
       const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+      inspectPdf = pdf;
       const count = pdf.numPages;
       setTotalPages(count);
 
@@ -126,6 +128,13 @@ export const RotatePdfTool: React.FC<RotatePdfToolProps> = ({ onNotify }) => {
       console.error('Rotate PDF load error:', err);
       onNotify('Error Loading PDF', err?.message || 'Could not parse PDF.', 'error');
     } finally {
+      if (inspectPdf) {
+        try {
+          inspectPdf.destroy();
+        } catch {
+          // ignore
+        }
+      }
       setIsLoadingPages(false);
       setLoadingProgress(100);
     }

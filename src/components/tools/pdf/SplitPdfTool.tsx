@@ -117,9 +117,11 @@ export const SplitPdfTool: React.FC<SplitPdfToolProps> = ({ onNotify }) => {
     setIsLoadingThumbnails(true);
     setLoadingProgress(5);
 
+    let inspectPdf: any = null;
     try {
       const buffer = await uploadedFile.arrayBuffer();
       const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+      inspectPdf = pdf;
       const count = pdf.numPages;
       setTotalPages(count);
       setRangeInput(count === 1 ? '1' : `1-${Math.min(3, count)}`);
@@ -172,6 +174,13 @@ export const SplitPdfTool: React.FC<SplitPdfToolProps> = ({ onNotify }) => {
       console.error('Split PDF load error:', err);
       onNotify('Load Error', err?.message || 'Could not parse PDF.', 'error');
     } finally {
+      if (inspectPdf) {
+        try {
+          inspectPdf.destroy();
+        } catch {
+          // ignore
+        }
+      }
       setIsLoadingThumbnails(false);
       setLoadingProgress(100);
     }

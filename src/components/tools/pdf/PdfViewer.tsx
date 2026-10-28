@@ -89,6 +89,15 @@ export const PdfViewer: React.FC<PdfViewerProps> = ({
 
   // Load PDF Document via native pdfjsLib
   const loadDocument = useCallback(async () => {
+    if (pdfDocRef.current) {
+      try {
+        pdfDocRef.current.destroy();
+      } catch {
+        // ignore
+      }
+      pdfDocRef.current = null;
+    }
+
     if (!file) {
       setIsLoading(false);
       setNumPages(null);
@@ -137,6 +146,26 @@ export const PdfViewer: React.FC<PdfViewerProps> = ({
   useEffect(() => {
     loadDocument();
   }, [loadDocument]);
+
+  useEffect(() => {
+    return () => {
+      if (renderTaskRef.current) {
+        try {
+          renderTaskRef.current.cancel();
+        } catch {
+          // ignore
+        }
+      }
+      if (pdfDocRef.current) {
+        try {
+          pdfDocRef.current.destroy();
+        } catch {
+          // ignore
+        }
+        pdfDocRef.current = null;
+      }
+    };
+  }, []);
 
   // Render current page to Canvas
   const renderPage = useCallback(async () => {

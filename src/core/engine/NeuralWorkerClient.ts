@@ -74,6 +74,7 @@ export class NeuralWorkerClient {
         } else if (msg.type === 'complete') {
           if (this.worker) {
             this.worker.removeEventListener('message', handleMessage);
+            this.worker.removeEventListener('error', handleError);
           }
           this.activeReject = null;
           resolve({
@@ -84,14 +85,25 @@ export class NeuralWorkerClient {
         } else if (msg.type === 'error') {
           if (this.worker) {
             this.worker.removeEventListener('message', handleMessage);
+            this.worker.removeEventListener('error', handleError);
           }
           this.activeReject = null;
           reject(new Error(msg.error || 'Neural worker enhancement failed'));
         }
       };
 
+      const handleError = (e: ErrorEvent) => {
+        if (this.worker) {
+          this.worker.removeEventListener('message', handleMessage);
+          this.worker.removeEventListener('error', handleError);
+        }
+        this.activeReject = null;
+        reject(new Error(e.message || 'Neural worker thread encountered an unexpected error'));
+      };
+
       if (this.worker) {
         this.worker.addEventListener('message', handleMessage);
+        this.worker.addEventListener('error', handleError);
 
         this.worker.postMessage(
           {

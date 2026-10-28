@@ -46,7 +46,7 @@ export function useImageUpload() {
           previewUrl: url,
           width: img.naturalWidth,
           height: img.naturalHeight,
-          aspectRatio: img.naturalWidth / img.naturalHeight,
+          aspectRatio: img.naturalHeight > 0 ? img.naturalWidth / img.naturalHeight : 1,
           sizeBytes: file.size,
           format: file.type || 'image/jpeg',
           name: file.name,

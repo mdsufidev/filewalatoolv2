@@ -220,10 +220,12 @@ export const PdfOcrTool: React.FC<PdfOcrToolProps> = ({ onNotify }) => {
       setFile(uploadedFile);
       setIsValidating(true);
 
+      let inspectDoc: any = null;
       try {
         const arrayBuffer = await uploadedFile.arrayBuffer();
         const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
         const pdfDoc = await loadingTask.promise;
+        inspectDoc = pdfDoc;
         const total = pdfDoc.numPages;
         setPageCount(total);
         setCustomRangeText(`1-${Math.min(total, 5)}`);
@@ -273,6 +275,13 @@ export const PdfOcrTool: React.FC<PdfOcrToolProps> = ({ onNotify }) => {
         );
         onNotify?.('PDF Inspection Failed', 'Could not parse document structure.', 'error');
       } finally {
+        if (inspectDoc) {
+          try {
+            inspectDoc.destroy();
+          } catch {
+            // ignore
+          }
+        }
         setIsValidating(false);
       }
     },
