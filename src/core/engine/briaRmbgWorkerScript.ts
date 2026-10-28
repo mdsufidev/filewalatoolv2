@@ -35,45 +35,57 @@ async function loadOrtInWorker() {
   return ortInstance;
 }
 
-async function fetchWithProgress(url, cache, onProgress) {
-  var response = await fetch(url);
-  if (!response.ok) throw new Error('HTTP ' + response.status + ' fetching ' + url);
-
-  var total = parseInt(response.headers.get('content-length') || '44403226', 10);
-  if (!response.body) {
-    var buf = await response.arrayBuffer();
-    try { await cache.put(url, new Response(buf.slice(0))); } catch (e) {}
-    return buf;
+async function fetchWithProgress(url, cache, onProgress, timeoutMs) {
+  var controller = null;
+  var timer = null;
+  if (timeoutMs && typeof AbortController !== 'undefined') {
+    controller = new AbortController();
+    timer = setTimeout(function() { controller.abort(); }, timeoutMs);
   }
 
-  var reader = response.body.getReader();
-  var received = 0;
-  var chunks = [];
-
-  while (true) {
-    var res = await reader.read();
-    if (res.done) break;
-    chunks.push(res.value);
-    received += res.value.length;
-    var pct = Math.min(65, 5 + Math.round((received / total) * 60));
-    var mb = (received / (1024 * 1024)).toFixed(1);
-    var totalMb = (total / (1024 * 1024)).toFixed(1);
-    onProgress(pct, 'Downloading BRIA RMBG-1.4 AI (' + mb + ' / ' + totalMb + ' MB)...');
-  }
-
-  var combined = new Uint8Array(received);
-  var offset = 0;
-  for (var i = 0; i < chunks.length; i++) {
-    combined.set(chunks[i], offset);
-    offset += chunks[i].length;
-  }
-  var finalBuf = combined.buffer;
   try {
-    await cache.put(url, new Response(finalBuf.slice(0)));
-  } catch (e) {
-    console.warn('Failed to cache model buffer:', e);
+    var response = await fetch(url, controller ? { signal: controller.signal } : {});
+    if (timer) clearTimeout(timer);
+    if (!response.ok) throw new Error('HTTP ' + response.status + ' fetching ' + url);
+
+    var total = parseInt(response.headers.get('content-length') || '44403226', 10);
+    if (!response.body) {
+      var buf = await response.arrayBuffer();
+      try { await cache.put(url, new Response(buf.slice(0))); } catch (e) {}
+      return buf;
+    }
+
+    var reader = response.body.getReader();
+    var received = 0;
+    var chunks = [];
+
+    while (true) {
+      var res = await reader.read();
+      if (res.done) break;
+      chunks.push(res.value);
+      received += res.value.length;
+      var pct = Math.min(65, 5 + Math.round((received / total) * 60));
+      var mb = (received / (1024 * 1024)).toFixed(1);
+      var totalMb = (total / (1024 * 1024)).toFixed(1);
+      onProgress(pct, 'Downloading BRIA RMBG-1.4 AI (' + mb + ' / ' + totalMb + ' MB)...');
+    }
+
+    var combined = new Uint8Array(received);
+    var offset = 0;
+    for (var i = 0; i < chunks.length; i++) {
+      combined.set(chunks[i], offset);
+      offset += chunks[i].length;
+    }
+    var finalBuf = combined.buffer;
+    try {
+      await cache.put(url, new Response(finalBuf.slice(0)));
+    } catch (e) {
+      console.warn('Failed to cache model buffer:', e);
+    }
+    return finalBuf;
+  } finally {
+    if (timer) clearTimeout(timer);
   }
-  return finalBuf;
 }
 
 async function getRmbgModelBuffer(onProgress) {
@@ -88,12 +100,13 @@ async function getRmbgModelBuffer(onProgress) {
       }
 
       try {
-        onProgress(5, 'Downloading BRIA RMBG-1.4 Neural Model (44.4 MB)...');
-        return await fetchWithProgress(PRIMARY_MODEL_URL, cache, onProgress);
+        onProgress(5, 'Connecting to BRIA RMBG-1.4 Neural Model (44.4 MB)...');
+        // Fast 8-second connection timeout for Hugging Face primary, fallback to mirror if throttled
+        return await fetchWithProgress(PRIMARY_MODEL_URL, cache, onProgress, 8000);
       } catch (errPrimary) {
         console.warn('Primary Hugging Face download failed, trying mirror:', errPrimary);
-        onProgress(10, 'Connecting to backup AI model mirror...');
-        return await fetchWithProgress(MIRROR_MODEL_URL, cache, onProgress);
+        onProgress(10, 'Connecting to high-speed backup AI mirror...');
+        return await fetchWithProgress(MIRROR_MODEL_URL, cache, onProgress, 30000);
       }
     } catch (e) {
       console.warn('Cache error in worker, falling back to direct fetch', e);
@@ -115,6 +128,9 @@ async function getRmbgSession(hasWebGPU, onProgress) {
   onProgress(70, hasWebGPU ? 'Compiling WebGPU Neural Shaders...' : 'Initializing WASM CPU Pipeline...');
 
   var session = null;
+  // Preserve an un-detached buffer copy in case WebGPU session creation neuters the original buffer
+  var wasmBackupBuffer = buffer.slice(0);
+
   if (hasWebGPU && typeof self.navigator !== 'undefined' && self.navigator.gpu) {
     try {
       session = await ort.InferenceSession.create(buffer, {
@@ -127,7 +143,7 @@ async function getRmbgSession(hasWebGPU, onProgress) {
   }
 
   if (!session) {
-    session = await ort.InferenceSession.create(buffer, {
+    session = await ort.InferenceSession.create(wasmBackupBuffer, {
       executionProviders: ['wasm'],
       graphOptimizationLevel: 'basic'
     });
@@ -207,7 +223,7 @@ self.onmessage = async function(e) {
       var wasmBuffer = await getRmbgModelBuffer(sendProgress);
       var wasmSession = await ortWasm.InferenceSession.create(wasmBuffer, {
         executionProviders: ['wasm'],
-        graphOptimizationLevel: 'all'
+        graphOptimizationLevel: 'basic'
       });
       rmbgSession = wasmSession;
       results = await wasmSession.run(feeds);
@@ -236,13 +252,23 @@ self.onmessage = async function(e) {
       if (v > maxVal) maxVal = v;
     }
 
-    var range = (maxVal - minVal) > 0.00001 ? (maxVal - minVal) : 1.0;
-    var invRange = 255.0 / range;
     var alpha8 = new Uint8Array(INPUT_SIZE * INPUT_SIZE);
+    // Official BRIA RMBG-1.4 outputs already sigmoided [0, 1] probability map
+    var isSigmoid = minVal >= -0.05 && maxVal <= 1.05;
 
-    for (var i = 0; i < maskFloat.length; i++) {
-      var norm = (maskFloat[i] - minVal) * invRange;
-      alpha8[i] = norm <= 0 ? 0 : norm >= 255 ? 255 : (norm + 0.5) | 0;
+    if (isSigmoid) {
+      for (var i = 0; i < maskFloat.length; i++) {
+        var val = maskFloat[i];
+        // Clean cut below 0.02 threshold to prevent floating point background noise
+        alpha8[i] = val <= 0.02 ? 0 : val >= 0.98 ? 255 : (val * 255 + 0.5) | 0;
+      }
+    } else {
+      var range = (maxVal - minVal) > 0.00001 ? (maxVal - minVal) : 1.0;
+      var invRange = 255.0 / range;
+      for (var i = 0; i < maskFloat.length; i++) {
+        var norm = (maskFloat[i] - minVal) * invRange;
+        alpha8[i] = norm <= 0 ? 0 : norm >= 255 ? 255 : (norm + 0.5) | 0;
+      }
     }
 
     sendProgress(100, 'Complete');

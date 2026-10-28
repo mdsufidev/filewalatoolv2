@@ -140,6 +140,8 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
   const isSpacePressedRef = useRef<boolean>(false);
   const backdropInputRef = useRef<HTMLInputElement>(null);
   const splitDragRef = useRef<boolean>(false);
+  const blobDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [isHoveringDivider, setIsHoveringDivider] = useState<boolean>(false);
 
   // Detect WebGPU hardware availability on mount
   useEffect(() => {
@@ -178,7 +180,7 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
   }, [initialFiles, loadFile, currentImage]);
 
   /* -------------------------------------------------------------
-     HISTORY STACK MANAGER (20-Step Undo / Redo)
+     HISTORY STACK MANAGER (8-Step Memory-Optimized Undo / Redo)
   ------------------------------------------------------------- */
   const pushHistorySnapshot = useCallback(() => {
     if (!maskCanvasRef.current) return;
@@ -190,7 +192,8 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
 
     const newHistory = historyRef.current.slice(0, historyIndexRef.current + 1);
     newHistory.push(snapshot);
-    if (newHistory.length > 20) {
+    // Clamped to 8 snapshots to prevent 1GB RAM memory exhaustion on mobile/laptops
+    if (newHistory.length > 8) {
       newHistory.shift();
     }
     historyRef.current = newHistory;
@@ -198,6 +201,87 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
     setCanUndo(historyIndexRef.current > 0);
     setCanRedo(false);
   }, []);
+
+  /* -------------------------------------------------------------
+     PURE CLEAN EXPORT BLOB GENERATOR (NEVER CONTAMINATED WITH SPLIT VIEW)
+  ------------------------------------------------------------- */
+  const generateCleanExportBlob = useCallback(() => {
+    if (!currentImage || !maskCanvasRef.current) return;
+    const img = currentImage.imageElement;
+    const w = img.naturalWidth;
+    const h = img.naturalHeight;
+
+    const exportCanvas = document.createElement('canvas');
+    exportCanvas.width = w;
+    exportCanvas.height = h;
+    const ectx = exportCanvas.getContext('2d');
+    if (!ectx) return;
+
+    let activeMask: HTMLCanvasElement = maskCanvasRef.current;
+    if (feather > 0 || shiftEdge !== 0) {
+      const refinedCanvas = document.createElement('canvas');
+      refinedCanvas.width = w;
+      refinedCanvas.height = h;
+      const rctx = refinedCanvas.getContext('2d');
+      if (rctx) {
+        if (feather > 0) rctx.filter = `blur(${feather}px)`;
+        rctx.drawImage(maskCanvasRef.current, 0, 0);
+        rctx.filter = 'none';
+
+        if (shiftEdge !== 0) {
+          const imgData = rctx.getImageData(0, 0, w, h);
+          const { data } = imgData;
+          const shiftDelta = shiftEdge * 22;
+          for (let i = 3; i < data.length; i += 4) {
+            if (data[i] > 0) {
+              data[i] = Math.min(255, Math.max(0, data[i] + shiftDelta));
+            }
+          }
+          rctx.putImageData(imgData, 0, 0);
+        }
+        activeMask = refinedCanvas;
+      }
+    }
+
+    const fgCanvas = document.createElement('canvas');
+    fgCanvas.width = w;
+    fgCanvas.height = h;
+    const fgCtx = fgCanvas.getContext('2d');
+    if (!fgCtx) return;
+
+    fgCtx.drawImage(img, 0, 0, w, h);
+    fgCtx.globalCompositeOperation = 'destination-in';
+    fgCtx.drawImage(activeMask, 0, 0, w, h);
+    fgCtx.globalCompositeOperation = 'source-over';
+
+    // Clear and draw clean chosen backdrop (transparent, solid, or image)
+    drawBackgroundToContext(ectx, w, h, img, bgMode, customBgColor, customBackdropImg);
+
+    if (dropShadow && bgMode !== 'transparent') {
+      ectx.save();
+      ectx.shadowColor = `rgba(0, 0, 0, ${shadowOpacity / 100})`;
+      ectx.shadowBlur = shadowBlur;
+      ectx.shadowOffsetY = shadowOffsetY;
+      ectx.drawImage(fgCanvas, 0, 0);
+      ectx.restore();
+    }
+    ectx.drawImage(fgCanvas, 0, 0);
+
+    exportCanvas.toBlob((blob) => {
+      if (blob) setResultBlob(blob);
+    }, 'image/png');
+  }, [
+    currentImage,
+    feather,
+    shiftEdge,
+    bgMode,
+    customBgColor,
+    customBackdropImg,
+    dropShadow,
+    shadowBlur,
+    shadowOpacity,
+    shadowOffsetY,
+  ]);
 
   /* -------------------------------------------------------------
      COMPOSITING RENDER PIPELINE (Hardware 8-bit Alpha Destination-In)
@@ -316,10 +400,13 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
       ctx.drawImage(fgCanvas, 0, 0);
     }
 
-    // 5. Generate high-res Blob
-    canvas.toBlob((blob) => {
-      setResultBlob(blob);
-    }, 'image/png');
+    // 5. Debounced High-Res Clean Export Blob Generation (200ms debounce prevents CPU thrashing)
+    if (blobDebounceRef.current) {
+      clearTimeout(blobDebounceRef.current);
+    }
+    blobDebounceRef.current = setTimeout(() => {
+      generateCleanExportBlob();
+    }, 200);
   }, [
     currentImage,
     bgMode,
@@ -333,6 +420,7 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
     shadowOffsetY,
     isSplitView,
     splitPos,
+    generateCleanExportBlob,
   ]);
 
   // Helper: Draw Background onto 2D Context
@@ -814,10 +902,20 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
   /* -------------------------------------------------------------
      CANVAS & VIEWPORT MOUSE INTERACTION HANDLERS
   ------------------------------------------------------------- */
-  const getImageCoordinates = (e: React.MouseEvent): { x: number; y: number } | null => {
+  const getImageCoordinates = (e: { clientX: number; clientY: number }): { x: number; y: number } | null => {
     const canvas = canvasRef.current;
     if (!canvas || !currentImage) return null;
     const rect = canvas.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return null;
+    // Prevent accidental dot stamping at (0, 0) when clicking outside canvas bounds
+    if (
+      e.clientX < rect.left ||
+      e.clientX > rect.right ||
+      e.clientY < rect.top ||
+      e.clientY > rect.bottom
+    ) {
+      return null;
+    }
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
     const x = Math.min(canvas.width - 1, Math.max(0, Math.floor((e.clientX - rect.left) * scaleX)));
@@ -890,6 +988,17 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
       });
     }
 
+    // Split slider hover detection for tactile cursor style
+    let isOver = false;
+    if (isSplitView && canvasRef.current) {
+      const cRect = canvasRef.current.getBoundingClientRect();
+      const currentSplitX = cRect.left + (splitPos / 100) * cRect.width;
+      if (Math.abs(e.clientX - currentSplitX) <= 14) {
+        isOver = true;
+      }
+    }
+    setIsHoveringDivider(isOver);
+
     // Pan execution
     if (isPanning) {
       setPan({
@@ -944,6 +1053,7 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
 
   const handleViewportMouseLeave = () => {
     setCursorPos((prev) => ({ ...prev, visible: false }));
+    setIsHoveringDivider(false);
     if (isPanning) setIsPanning(false);
     if (splitDragRef.current) splitDragRef.current = false;
     if (isDrawingRef.current) {
@@ -952,6 +1062,75 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
       pushHistorySnapshot();
       renderCompositedResult();
     }
+  };
+
+  // Touch event handlers for mobile and tablet support
+  const handleViewportTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 1) {
+      const touch = e.touches[0];
+      if (isSplitView && viewportRef.current && canvasRef.current) {
+        const cRect = canvasRef.current.getBoundingClientRect();
+        const currentSplitX = cRect.left + (splitPos / 100) * cRect.width;
+        if (Math.abs(touch.clientX - currentSplitX) < 24) {
+          splitDragRef.current = true;
+          return;
+        }
+      }
+
+      if (activeToolMode === 'hand') {
+        setIsPanning(true);
+        panStartRef.current = { x: touch.clientX - pan.x, y: touch.clientY - pan.y };
+        return;
+      }
+
+      const coords = getImageCoordinates(touch);
+      if (!coords) return;
+      if (activeToolMode === 'erase' || activeToolMode === 'restore') {
+        isDrawingRef.current = true;
+        lastDrawPosRef.current = coords;
+        stampBrushAt(coords.x, coords.y, brushSize, brushHardness, activeToolMode === 'erase');
+        renderCompositedResult();
+      }
+    }
+  };
+
+  const handleViewportTouchMove = (e: React.TouchEvent) => {
+    if (e.touches.length === 1) {
+      const touch = e.touches[0];
+      if (isPanning) {
+        setPan({
+          x: touch.clientX - panStartRef.current.x,
+          y: touch.clientY - panStartRef.current.y,
+        });
+        return;
+      }
+      if (splitDragRef.current && canvasRef.current) {
+        const cRect = canvasRef.current.getBoundingClientRect();
+        const relX = Math.min(cRect.width, Math.max(0, touch.clientX - cRect.left));
+        const newPos = Math.round((relX / cRect.width) * 100);
+        setSplitPos(newPos);
+        return;
+      }
+      if (isDrawingRef.current && lastDrawPosRef.current) {
+        const coords = getImageCoordinates(touch);
+        if (!coords) return;
+        paintInterpolatedStroke(
+          lastDrawPosRef.current.x,
+          lastDrawPosRef.current.y,
+          coords.x,
+          coords.y,
+          brushSize,
+          brushHardness,
+          activeToolMode === 'erase'
+        );
+        lastDrawPosRef.current = coords;
+        renderCompositedResult();
+      }
+    }
+  };
+
+  const handleViewportTouchEnd = () => {
+    handleViewportMouseUp();
   };
 
   /* -------------------------------------------------------------
@@ -1546,16 +1725,23 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
                   onMouseMove={handleViewportMouseMove}
                   onMouseUp={handleViewportMouseUp}
                   onMouseLeave={handleViewportMouseLeave}
-                  className={`relative rounded-xl border border-zinc-200 dark:border-zinc-800 overflow-hidden min-h-[380px] max-h-[580px] sm:min-h-[460px] h-[520px] select-none ${
-                    activeToolMode === 'hand' || isPanning
-                      ? isPanning
-                        ? 'cursor-grabbing'
-                        : 'cursor-grab'
-                      : activeToolMode === 'wand'
-                      ? 'cursor-crosshair'
-                      : 'cursor-none'
-                  }`}
+                  onTouchStart={handleViewportTouchStart}
+                  onTouchMove={handleViewportTouchMove}
+                  onTouchEnd={handleViewportTouchEnd}
+                  onTouchCancel={handleViewportTouchEnd}
+                  className="relative rounded-xl border border-zinc-200 dark:border-zinc-800 overflow-hidden min-h-[380px] max-h-[580px] sm:min-h-[460px] h-[520px] select-none touch-none"
                   style={{
+                    cursor: isPanning
+                      ? 'grabbing'
+                      : isHoveringDivider
+                      ? 'col-resize'
+                      : activeToolMode === 'hand'
+                      ? 'grab'
+                      : activeToolMode === 'wand'
+                      ? 'crosshair'
+                      : activeToolMode === 'erase' || activeToolMode === 'restore'
+                      ? 'none'
+                      : 'default',
                     backgroundColor: isDark ? '#09090b' : '#f8fafc',
                     backgroundImage: isDark
                       ? 'radial-gradient(circle, rgba(255,255,255,0.05) 1px, transparent 1px)'
