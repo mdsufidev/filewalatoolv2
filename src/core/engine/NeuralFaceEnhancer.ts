@@ -89,6 +89,19 @@ export class NeuralFaceEnhancer {
   }
 
   /**
+   * Preloads MediaPipe BlazeFace & ONNX Runtime in background idle time
+   */
+  public static preload(): void {
+    if (typeof window === 'undefined') return;
+    try {
+      this.getMediaPipeDetector().catch(() => {});
+      this.loadOrt().catch(() => {});
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  /**
    * Initializes MediaPipe BlazeFace short range detector via dynamic CDN import
    */
   private static async getMediaPipeDetector(): Promise<any> {

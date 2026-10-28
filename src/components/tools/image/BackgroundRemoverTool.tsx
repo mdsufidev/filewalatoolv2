@@ -158,14 +158,17 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
     checkWebGPU();
   }, []);
 
-  // Initialize isolated background worker
+  // Initialize isolated background worker with proactive pre-warming
   useEffect(() => {
     briaWorkerRef.current = new BriaRmbgWorkerClient();
+    if (hasWebGPU !== null) {
+      briaWorkerRef.current.warmup(!!hasWebGPU);
+    }
     return () => {
       briaWorkerRef.current?.terminate();
       briaWorkerRef.current = null;
     };
-  }, []);
+  }, [hasWebGPU]);
 
   // Load initial file if provided
   useEffect(() => {
@@ -641,6 +644,9 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
     if (engineMode === 'fast') {
       runFastPerimeterClean(img, mask, tolerance);
     } else {
+      // 1. Instant 15ms speculative cutout so the background is visibly removed immediately!
+      runFastPerimeterClean(img, mask, tolerance);
+      // 2. Studio-grade 8-bit soft alpha neural refinement on pre-warmed worker
       runAiInference();
     }
   }, [currentImage, engineMode]);

@@ -114,9 +114,10 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
     checkWebGPU();
   }, []);
 
-  // Initialize Worker client on mount
+  // Initialize Worker client on mount with idle pre-loading
   useEffect(() => {
     workerClientRef.current = new FaceEnhanceWorkerClient();
+    NeuralFaceEnhancer.preload();
     return () => {
       if (workerClientRef.current) {
         workerClientRef.current.terminate();

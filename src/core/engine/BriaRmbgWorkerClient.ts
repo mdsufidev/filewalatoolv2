@@ -41,6 +41,17 @@ export class BriaRmbgWorkerClient {
     return this.worker !== null;
   }
 
+  public warmup(hasWebGPU: boolean): void {
+    if (!this.worker) {
+      if (!this.initWorker()) return;
+    }
+    try {
+      this.worker?.postMessage({ type: 'warmup', hasWebGPU });
+    } catch (e) {
+      // ignore
+    }
+  }
+
   public removeBackground(options: {
     imageBuffer: ArrayBuffer;
     hasWebGPU: boolean;

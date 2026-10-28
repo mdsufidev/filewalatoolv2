@@ -27,6 +27,7 @@ async function loadOrtInWorker() {
   var ort = self.ort;
   if (!ort) throw new Error('Failed to bind self.ort in Worker');
   ort.env.wasm.wasmPaths = WASM_PATH;
+  ort.env.wasm.simd = true;
   var isIsolated = typeof crossOriginIsolated !== 'undefined' && crossOriginIsolated;
   ort.env.wasm.numThreads = isIsolated ? Math.min(4, (self.navigator && self.navigator.hardwareConcurrency) || 2) : 1;
   ort.env.wasm.proxy = false;
@@ -118,7 +119,7 @@ async function getRmbgSession(hasWebGPU, onProgress) {
     try {
       session = await ort.InferenceSession.create(buffer, {
         executionProviders: ['webgpu', 'wasm'],
-        graphOptimizationLevel: 'all'
+        graphOptimizationLevel: 'basic'
       });
     } catch (err) {
       console.warn('Worker WebGPU session init failed, falling back to WASM:', err);
@@ -128,7 +129,7 @@ async function getRmbgSession(hasWebGPU, onProgress) {
   if (!session) {
     session = await ort.InferenceSession.create(buffer, {
       executionProviders: ['wasm'],
-      graphOptimizationLevel: 'all'
+      graphOptimizationLevel: 'basic'
     });
   }
 
@@ -136,9 +137,27 @@ async function getRmbgSession(hasWebGPU, onProgress) {
   return session;
 }
 
+async function warmupRmbg(hasWebGPU) {
+  try {
+    await getRmbgSession(hasWebGPU, function() {});
+    return true;
+  } catch (err) {
+    return false;
+  }
+}
+
 self.onmessage = async function(e) {
   var msg = e.data;
-  if (!msg || msg.type !== 'remove_background') return;
+  if (!msg) return;
+
+  if (msg.type === 'warmup') {
+    warmupRmbg(!!msg.hasWebGPU).then(function(ready) {
+      self.postMessage({ type: 'warmed_up', ready: ready });
+    });
+    return;
+  }
+
+  if (msg.type !== 'remove_background') return;
 
   var id = msg.id;
   var imageBuffer = msg.imageBuffer; // 1024x1024 RGBA Uint8ClampedArray buffer
