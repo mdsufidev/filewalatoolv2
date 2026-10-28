@@ -749,46 +749,48 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
               <span className="hidden sm:inline">100% Client-Side In-Browser Processing</span>
             </div>
 
-            {/* UNDER CANVAS: 1-Click AI Presets (Flat 2D) */}
-            <div className={`p-4 rounded-xl border ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'}`}>
-              <div className="flex items-center justify-between mb-2.5">
+            {/* UNDER CANVAS: 1-Click AI Presets (Compact Flat 2D - Fits inside Box) */}
+            <div className={`p-3.5 sm:p-4 rounded-xl border ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'}`}>
+              <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <Wand2 className="w-4 h-4 text-rose-500" />
                   <span className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-white">1-Click AI Presets</span>
                 </div>
                 {activePresetId !== 'custom' && (
                   <span className="text-[10px] font-semibold text-rose-500 bg-rose-500/10 px-2 py-0.5 rounded-full border border-rose-500/20">
-                    Active: {FACE_ENHANCER_PRESETS.find(p => p.id === activePresetId)?.name || 'Custom'}
+                    Active: {activePresetId === 'ai-restored' ? 'AI Restored' : (FACE_ENHANCER_PRESETS.find(p => p.id === activePresetId)?.name || 'Custom')}
                   </span>
                 )}
               </div>
 
-              {/* Horizontal Scrollable Presets Chips */}
-              <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-zinc-700/30">
+              {/* Compact 6-Column Grid: 100% Fits inside Box with NO horizontal scrollbar! */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1.5">
                 {FACE_ENHANCER_PRESETS.map((p) => {
                   const isActive = activePresetId === p.id;
+                  const shortName =
+                    p.id === 'unblur-focus' ? 'AI Unblur' :
+                    p.id === 'smart-auto' ? 'Smart Auto' :
+                    p.id === 'studio-glamour' ? 'Studio Glam' :
+                    p.id === 'passport-id' ? 'Passport ID' :
+                    p.id === 'golden-hour' ? 'Warm Glow' :
+                    p.id === 'dramatic-bw' ? 'B&W Film' : p.name;
+
                   return (
                     <button
                       key={p.id}
                       type="button"
                       onClick={() => applyPreset(p.id)}
-                      className={`px-3.5 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition flex items-center gap-2 shrink-0 cursor-pointer border ${
+                      title={p.tagline}
+                      className={`px-2 py-2 rounded-lg text-xs font-semibold transition flex items-center justify-center gap-1.5 cursor-pointer border text-center ${
                         isActive
-                          ? 'border-rose-500 bg-rose-500 text-white'
+                          ? 'border-rose-500 bg-rose-500 text-white shadow-sm'
                           : isDark
                           ? 'border-zinc-800 hover:border-zinc-700 bg-zinc-950 text-zinc-300'
                           : 'border-zinc-200 hover:border-zinc-300 bg-zinc-50 text-zinc-700'
                       }`}
                     >
-                      <Sparkles className={`w-3.5 h-3.5 ${isActive ? 'text-white' : 'text-rose-500'}`} />
-                      <span>{p.name}</span>
-                      {p.badge && (
-                        <span className={`text-[9px] px-1.5 py-0.2 rounded font-bold uppercase ${
-                          isActive ? 'bg-white/20 text-white' : 'bg-rose-500/10 text-rose-500 border border-rose-500/20'
-                        }`}>
-                          {p.badge}
-                        </span>
-                      )}
+                      <Sparkles className={`w-3 h-3 shrink-0 ${isActive ? 'text-white' : 'text-rose-500'}`} />
+                      <span className="truncate">{shortName}</span>
                     </button>
                   );
                 })}
@@ -826,6 +828,125 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
                     </button>
                   );
                 })}
+              </div>
+            </div>
+
+            {/* UNDER CANVAS: Export & Download (Wide horizontal / Lambe me) */}
+            <div className={`p-4 rounded-xl border space-y-3 ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'}`}>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-zinc-100 dark:border-zinc-800/80">
+                <div className="flex items-center gap-2">
+                  <Download className="w-4 h-4 text-emerald-500" />
+                  <span className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-white">
+                    Export & Download Photo
+                  </span>
+                </div>
+                {processedBlob && (
+                  <div className="flex items-center gap-2 text-xs font-semibold text-zinc-500">
+                    {enhancedDimensions && (
+                      <span className="px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300">
+                        {enhancedDimensions.width} × {enhancedDimensions.height} px
+                      </span>
+                    )}
+                    <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                      {formatBytes(processedBlob.size)}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Wide Horizontal Controls Row */}
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
+                {/* Format Selection */}
+                <div className="md:col-span-4 flex items-center gap-2">
+                  <span className="text-xs font-semibold text-zinc-400 shrink-0">Format:</span>
+                  <div className="grid grid-cols-3 gap-1.5 w-full">
+                    {(['image/jpeg', 'image/png', 'image/webp'] as OutputFormat[]).map((fmt) => {
+                      const label = fmt === 'image/jpeg' ? 'JPG' : fmt === 'image/png' ? 'PNG' : 'WebP';
+                      const isSelected = exportFormat === fmt;
+                      return (
+                        <button
+                          key={fmt}
+                          type="button"
+                          onClick={() => {
+                            setExportFormat(fmt);
+                            runEnhancement(settings, upscaleFactor);
+                          }}
+                          className={`py-1.5 rounded-lg text-xs font-semibold border transition cursor-pointer text-center ${
+                            isSelected
+                              ? 'border-rose-500 bg-rose-500 text-white'
+                              : isDark
+                              ? 'border-zinc-800 hover:border-zinc-700 bg-zinc-950 text-zinc-400'
+                              : 'border-zinc-200 hover:border-zinc-300 bg-zinc-50 text-zinc-600'
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Quality Slider (when JPG/WebP) */}
+                <div className="md:col-span-3">
+                  {exportFormat !== 'image/png' ? (
+                    <Slider
+                      label="Quality"
+                      unit="%"
+                      min={70}
+                      max={100}
+                      value={exportQuality}
+                      onChange={(val) => {
+                        setExportQuality(val);
+                        runEnhancement(settings, upscaleFactor);
+                      }}
+                    />
+                  ) : (
+                    <div className="flex items-center text-xs text-zinc-400 italic py-2">
+                      Lossless PNG Format
+                    </div>
+                  )}
+                </div>
+
+                {/* Download Button + Copy/Share Actions */}
+                <div className="md:col-span-5 flex items-center gap-2">
+                  <Button
+                    onClick={handleDownload}
+                    disabled={!processedBlob || isProcessing}
+                    className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl border border-emerald-700 shadow-sm flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 text-xs sm:text-sm"
+                  >
+                    <Download className="w-4 h-4" />
+                    <span>Download Photo</span>
+                  </Button>
+
+                  <button
+                    type="button"
+                    onClick={handleCopy}
+                    disabled={!processedBlob || isProcessing}
+                    title="Copy Image to Clipboard"
+                    className="p-2.5 rounded-xl border text-zinc-400 hover:text-zinc-200 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-40 transition cursor-pointer shrink-0"
+                  >
+                    <Copy className="w-4 h-4" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleShare}
+                    disabled={!processedBlob || isProcessing}
+                    title="Share Photo"
+                    className="p-2.5 rounded-xl border text-zinc-400 hover:text-zinc-200 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-40 transition cursor-pointer shrink-0"
+                  >
+                    <Share2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Bottom Privacy Notice */}
+              <div className="flex items-center justify-between pt-1 border-t border-zinc-100 dark:border-zinc-800/60 text-[11px] text-zinc-400">
+                <span className="flex items-center gap-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                  <span>100% In-Browser RAM Execution · Zero Server Uploads · No Privacy Leak</span>
+                </span>
+                <span className="hidden sm:inline">Instant High-DPI Output</span>
               </div>
             </div>
           </div>
@@ -1054,103 +1175,7 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
               </div>
             </div>
 
-            {/* Card 3: Export & Download Format (100% OPEN & VISIBLE) */}
-            <div className={`p-4 rounded-xl border space-y-3.5 ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'}`}>
-              <div className="flex items-center justify-between pb-1 border-b border-zinc-100 dark:border-zinc-800/80">
-                <div className="flex items-center gap-2">
-                  <Download className="w-4 h-4 text-zinc-400" />
-                  <span className="text-sm font-bold text-zinc-900 dark:text-white">Export & Download</span>
-                </div>
-                {processedBlob && (
-                  <span className="text-xs text-zinc-400 font-semibold">
-                    {formatBytes(processedBlob.size)}
-                  </span>
-                )}
-              </div>
-
-              {/* Format Selection */}
-              <div className="grid grid-cols-3 gap-2">
-                {(['image/jpeg', 'image/png', 'image/webp'] as OutputFormat[]).map((fmt) => {
-                  const label = fmt === 'image/jpeg' ? 'JPG' : fmt === 'image/png' ? 'PNG' : 'WebP';
-                  const isSelected = exportFormat === fmt;
-                  return (
-                    <button
-                      key={fmt}
-                      type="button"
-                      onClick={() => {
-                        setExportFormat(fmt);
-                        runEnhancement(settings, upscaleFactor);
-                      }}
-                      className={`py-1.5 px-3 rounded-lg text-xs font-semibold border transition cursor-pointer text-center ${
-                        isSelected
-                          ? 'border-rose-500 bg-rose-500 text-white'
-                          : isDark
-                          ? 'border-zinc-800 hover:border-zinc-700 bg-zinc-950 text-zinc-400'
-                          : 'border-zinc-200 hover:border-zinc-300 bg-zinc-50 text-zinc-600'
-                      }`}
-                    >
-                      {label}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Compression Slider */}
-              {exportFormat !== 'image/png' && (
-                <Slider
-                  label="Compression Quality"
-                  unit="%"
-                  min={70}
-                  max={100}
-                  value={exportQuality}
-                  onChange={(val) => {
-                    setExportQuality(val);
-                    runEnhancement(settings, upscaleFactor);
-                  }}
-                />
-              )}
-
-              {/* Download button */}
-              <Button
-                onClick={handleDownload}
-                disabled={!processedBlob || isProcessing}
-                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl border border-emerald-700 shadow-sm flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 text-sm"
-              >
-                <Download className="w-4 h-4" />
-                <span>Download Enhanced Photo {processedBlob ? `(${formatBytes(processedBlob.size)})` : ''}</span>
-              </Button>
-
-              {/* Quick Actions (Copy / Share / Privacy) */}
-              <div className="flex items-center justify-between pt-1 border-t border-zinc-100 dark:border-zinc-800/80">
-                <div className="flex items-center gap-1.5 text-[10px] text-zinc-400">
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                  <span>100% In-Browser RAM · Zero Server Uploads</span>
-                </div>
-
-                <div className="flex items-center gap-1.5">
-                  <button
-                    type="button"
-                    onClick={handleCopy}
-                    disabled={!processedBlob || isProcessing}
-                    title="Copy to Clipboard"
-                    className="p-1.5 rounded-lg border text-zinc-400 hover:text-zinc-200 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-40 transition cursor-pointer"
-                  >
-                    <Copy className="w-3.5 h-3.5" />
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={handleShare}
-                    disabled={!processedBlob || isProcessing}
-                    title="Share Image"
-                    className="p-1.5 rounded-lg border text-zinc-400 hover:text-zinc-200 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-40 transition cursor-pointer"
-                  >
-                    <Share2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
+                      </div>
         </div>
       )}
 
