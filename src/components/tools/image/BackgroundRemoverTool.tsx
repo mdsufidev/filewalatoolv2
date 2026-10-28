@@ -39,6 +39,7 @@ import {
 } from '../../../utils/clipboardAndShare';
 import { useTheme } from '../../../core/themeContext';
 import { CanvasEngine } from '../../../core/engine/CanvasEngine';
+import { BriaRmbgWorkerClient } from '../../../core/engine/BriaRmbgWorkerClient';
 
 interface BackgroundRemoverToolProps {
   onNotify: (title: string, desc?: string, type?: 'success' | 'error' | 'info') => void;
@@ -60,13 +61,6 @@ export type BgReplacement =
   | 'gradient-cool'
   | 'custom-image'
   | 'blur';
-
-// Dynamic CDN configurations for Zero-Vercel-Bundle-Bloat
-const ORT_CDN_URL = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/ort.all.min.js';
-const ORT_WASM_PATH = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/';
-const AI_MODEL_URL = 'https://huggingface.co/briaai/RMBG-1.4/resolve/main/onnx/model.onnx';
-const MODEL_CACHE_NAME = 'filewala-ai-model-cache-v1';
-const AI_INPUT_SIZE = 1024;
 
 export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
   onNotify,
@@ -141,7 +135,7 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
   const maskCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const isDrawingRef = useRef<boolean>(false);
   const lastDrawPosRef = useRef<{ x: number; y: number } | null>(null);
-  const aiSessionRef = useRef<any>(null);
+  const briaWorkerRef = useRef<BriaRmbgWorkerClient | null>(null);
   const isSpacePressedRef = useRef<boolean>(false);
   const backdropInputRef = useRef<HTMLInputElement>(null);
   const splitDragRef = useRef<boolean>(false);
@@ -163,71 +157,21 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
     checkWebGPU();
   }, []);
 
+  // Initialize isolated background worker
+  useEffect(() => {
+    briaWorkerRef.current = new BriaRmbgWorkerClient();
+    return () => {
+      briaWorkerRef.current?.terminate();
+      briaWorkerRef.current = null;
+    };
+  }, []);
+
   // Load initial file if provided
   useEffect(() => {
     if (initialFiles && initialFiles.length > 0 && !currentImage) {
       loadFile(initialFiles[0]);
     }
   }, [initialFiles, loadFile, currentImage]);
-
-  /* -------------------------------------------------------------
-     DYNAMIC ONNX RUNTIME CDN LOADER & CACHESTORAGE MANAGER
-  ------------------------------------------------------------- */
-  const loadOrtFromCDN = useCallback(async (): Promise<any> => {
-    if (typeof window === 'undefined') return null;
-    if ((window as any).ort) return (window as any).ort;
-
-    return new Promise((resolve, reject) => {
-      const existingScript = document.querySelector(`script[src="${ORT_CDN_URL}"]`);
-      if (existingScript) {
-        const checkInterval = setInterval(() => {
-          if ((window as any).ort) {
-            clearInterval(checkInterval);
-            resolve((window as any).ort);
-          }
-        }, 50);
-        return;
-      }
-
-      const script = document.createElement('script');
-      script.src = ORT_CDN_URL;
-      script.async = true;
-      script.onload = () => {
-        const ort = (window as any).ort;
-        if (ort) {
-          ort.env.wasm.wasmPaths = ORT_WASM_PATH;
-          ort.env.wasm.numThreads = Math.min(4, typeof navigator !== 'undefined' ? navigator.hardwareConcurrency || 2 : 2);
-          resolve(ort);
-        } else {
-          reject(new Error('Failed to bind window.ort'));
-        }
-      };
-      script.onerror = () => reject(new Error('Failed to load ONNX Runtime Web from CDN'));
-      document.head.appendChild(script);
-    });
-  }, []);
-
-  const getCachedModelBuffer = useCallback(async (url: string): Promise<ArrayBuffer> => {
-    if (typeof window !== 'undefined' && 'caches' in window) {
-      try {
-        const cache = await caches.open(MODEL_CACHE_NAME);
-        const cachedRes = await cache.match(url);
-        if (cachedRes) {
-          return await cachedRes.arrayBuffer();
-        }
-        setAiStatus('Downloading Neural Weights (~40MB, cached locally)...');
-        const fetchRes = await fetch(url);
-        if (!fetchRes.ok) throw new Error(`HTTP ${fetchRes.status}`);
-
-        await cache.put(url, fetchRes.clone());
-        return await fetchRes.arrayBuffer();
-      } catch (err) {
-        console.warn('CacheStorage read failed, falling back to direct network fetch:', err);
-      }
-    }
-    const res = await fetch(url);
-    return await res.arrayBuffer();
-  }, []);
 
   /* -------------------------------------------------------------
      HISTORY STACK MANAGER (20-Step Undo / Redo)
@@ -555,83 +499,49 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
   }, [renderCompositedResult, pushHistorySnapshot]);
 
   /* -------------------------------------------------------------
-     AI SMART MODE: ONNX RMBG-1.4 8-BIT CONTINUOUS ALPHA INFERENCE
+     BRIA RMBG-1.4 AI NEURAL BACKGROUND REMOVAL (OFFLOADED WORKER)
   ------------------------------------------------------------- */
   const runAiInference = useCallback(async () => {
     if (!currentImage || !maskCanvasRef.current) return;
     setIsAiProcessing(true);
-    setAiProgress(15);
-    setAiStatus('Loading ONNX Engine from CDN...');
+    setAiProgress(5);
+    setAiStatus('Initializing BRIA RMBG-1.4 Neural Engine...');
 
     try {
-      const ort = await loadOrtFromCDN();
-      setAiProgress(35);
-
-      if (!aiSessionRef.current) {
-        setAiStatus('Loading RMBG-1.4 Neural Model...');
-        const modelBuffer = await getCachedModelBuffer(AI_MODEL_URL);
-        setAiProgress(60);
-
-        setAiStatus(hasWebGPU ? 'Compiling WebGPU Shaders...' : 'Initializing WASM Threads...');
-        const ep = hasWebGPU ? ['webgpu', 'wasm'] : ['wasm'];
-
-        aiSessionRef.current = await ort.InferenceSession.create(modelBuffer, {
-          executionProviders: ep,
-          graphOptimizationLevel: 'all',
-        });
+      if (!briaWorkerRef.current) {
+        briaWorkerRef.current = new BriaRmbgWorkerClient();
       }
 
-      setAiProgress(75);
-      setAiStatus(hasWebGPU ? 'Running Inference via WebGPU...' : 'Running Inference via CPU WASM...');
-
-      // 1. Prepare CHW Float32 Normalized Tensor
       const img = currentImage.imageElement;
+      const INPUT_SIZE = 1024;
+
+      // 1. Prepare 1024x1024 intermediate canvas for RMBG-1.4 model
       const tempCanvas = document.createElement('canvas');
-      tempCanvas.width = AI_INPUT_SIZE;
-      tempCanvas.height = AI_INPUT_SIZE;
+      tempCanvas.width = INPUT_SIZE;
+      tempCanvas.height = INPUT_SIZE;
       const tctx = tempCanvas.getContext('2d');
       if (!tctx) throw new Error('Failed to create intermediate AI canvas context');
 
       tctx.imageSmoothingEnabled = true;
       tctx.imageSmoothingQuality = 'high';
-      tctx.drawImage(img, 0, 0, AI_INPUT_SIZE, AI_INPUT_SIZE);
+      tctx.drawImage(img, 0, 0, INPUT_SIZE, INPUT_SIZE);
 
-      const imgData = tctx.getImageData(0, 0, AI_INPUT_SIZE, AI_INPUT_SIZE);
-      const { data } = imgData;
+      const imgData = tctx.getImageData(0, 0, INPUT_SIZE, INPUT_SIZE);
 
-      const mean = [0.485, 0.456, 0.406];
-      const std = [0.229, 0.224, 0.225];
-      const planeSize = AI_INPUT_SIZE * AI_INPUT_SIZE;
-      const float32Data = new Float32Array(3 * planeSize);
+      // 2. Offload to background worker for local WebGPU / WASM execution
+      const result = await briaWorkerRef.current.removeBackground({
+        imageBuffer: imgData.data.buffer,
+        hasWebGPU: !!hasWebGPU,
+        onProgress: (pct, stage) => {
+          setAiProgress(pct);
+          setAiStatus(stage);
+        },
+      });
 
-      for (let i = 0; i < planeSize; i++) {
-        const r = data[i * 4] / 255.0;
-        const g = data[i * 4 + 1] / 255.0;
-        const b = data[i * 4 + 2] / 255.0;
+      setAiProgress(95);
+      setAiStatus('Compositing 8-bit continuous soft alpha...');
 
-        float32Data[i] = (r - mean[0]) / std[0];
-        float32Data[planeSize + i] = (g - mean[1]) / std[1];
-        float32Data[planeSize * 2 + i] = (b - mean[2]) / std[2];
-      }
-
-      const inputTensor = new ort.Tensor('float32', float32Data, [1, 3, AI_INPUT_SIZE, AI_INPUT_SIZE]);
-      const startTime = performance.now();
-
-      const inputName = aiSessionRef.current.inputNames[0];
-      const outputName = aiSessionRef.current.outputNames[0];
-      const feeds = { [inputName]: inputTensor };
-
-      const results = await aiSessionRef.current.run(feeds);
-      const elapsed = Math.round(performance.now() - startTime);
-      setAiInferenceTimeMs(elapsed);
-
-      setAiProgress(90);
-      setAiStatus('Compositing 8-Bit Soft Neural Alpha...');
-
-      const outputTensor = results[outputName];
-      const maskFloat = outputTensor.data as Float32Array;
-
-      // 2. Continuous 8-bit Alpha Upsampling (Preserving Hair & Translucent Edges)
+      // 3. Bilinear upsample the 1024x1024 mask back to full original image resolution
       const w = img.naturalWidth;
       const h = img.naturalHeight;
       const maskCanvas = maskCanvasRef.current;
@@ -641,26 +551,24 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
       if (!mctx) return;
 
       const lowResMaskCanvas = document.createElement('canvas');
-      lowResMaskCanvas.width = AI_INPUT_SIZE;
-      lowResMaskCanvas.height = AI_INPUT_SIZE;
+      lowResMaskCanvas.width = INPUT_SIZE;
+      lowResMaskCanvas.height = INPUT_SIZE;
       const lctx = lowResMaskCanvas.getContext('2d');
       if (!lctx) return;
 
-      const lowResImgData = lctx.createImageData(AI_INPUT_SIZE, AI_INPUT_SIZE);
+      const lowResImgData = lctx.createImageData(INPUT_SIZE, INPUT_SIZE);
       const lData = lowResImgData.data;
+      const alphaArray = new Uint8Array(result.alphaBuffer);
 
-      // Map continuous Float32 [0.0, 1.0] to 8-bit Alpha [0, 255]
-      for (let i = 0; i < maskFloat.length; i++) {
-        const alpha = Math.min(255, Math.max(0, Math.round(maskFloat[i] * 255)));
+      for (let i = 0; i < INPUT_SIZE * INPUT_SIZE; i++) {
         const idx = i * 4;
         lData[idx] = 255;
         lData[idx + 1] = 255;
         lData[idx + 2] = 255;
-        lData[idx + 3] = alpha; // Full 8-bit anti-aliased hair transparency!
+        lData[idx + 3] = alphaArray[i]; // 8-bit soft anti-aliased hair & edge alpha!
       }
       lctx.putImageData(lowResImgData, 0, 0);
 
-      // Upsample to full resolution via hardware bilinear interpolation
       mctx.clearRect(0, 0, w, h);
       mctx.imageSmoothingEnabled = true;
       mctx.imageSmoothingQuality = 'high';
@@ -669,28 +577,22 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
       pushHistorySnapshot();
       setAiProgress(100);
       setAiStatus('Complete');
+      setAiInferenceTimeMs(result.elapsedMs);
       renderCompositedResult();
-      onNotify('AI Cutout Complete', `Processed via ${hasWebGPU ? 'WebGPU' : 'WASM'} in ${elapsed}ms.`, 'success');
+      onNotify('AI Cutout Complete', `BRIA RMBG-1.4 isolated subject in ${result.elapsedMs}ms with 8-bit soft alpha.`, 'success');
     } catch (err: any) {
-      console.error('AI Smart Mode Inference failed:', err);
-      setAiStatus('Neural processing failed. Switched to Fast Mode.');
-      setEngineMode('fast');
-      onNotify('AI Notice', 'Model execution fell back to Fast Form Mode.', 'info');
-      if (currentImage && maskCanvasRef.current) {
-        runFastPerimeterClean(currentImage.imageElement, maskCanvasRef.current, tolerance);
-      }
+      console.error('BRIA RMBG-1.4 AI inference failed:', err);
+      const msg = (err && err.message) || 'Model execution failed';
+      setAiStatus(`Error: ${msg}`);
+      onNotify('AI Error', `${msg}. Please click "Re-run AI" to retry.`, 'error');
     } finally {
       setIsAiProcessing(false);
     }
   }, [
     currentImage,
-    loadOrtFromCDN,
-    getCachedModelBuffer,
     hasWebGPU,
     pushHistorySnapshot,
     renderCompositedResult,
-    runFastPerimeterClean,
-    tolerance,
     onNotify,
   ]);
 
@@ -1266,7 +1168,10 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
         <div className="flex items-center gap-1.5 w-full sm:w-auto">
           <button
             type="button"
-            onClick={() => setEngineMode('ai')}
+            onClick={() => {
+              setEngineMode('ai');
+              if (currentImage) runAiInference();
+            }}
             className={`flex-1 sm:flex-none py-1.5 px-3.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer ${
               engineMode === 'ai'
                 ? 'bg-white dark:bg-zinc-900 text-zinc-950 dark:text-white shadow-xs'
@@ -1274,15 +1179,20 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
             }`}
           >
             <Sparkles className="w-3.5 h-3.5 text-blue-500" />
-            <span>AI Smart Mode</span>
+            <span>BRIA RMBG-1.4 AI</span>
             <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400">
-              RMBG-1.4
+              Studio Cutout
             </span>
           </button>
 
           <button
             type="button"
-            onClick={() => setEngineMode('fast')}
+            onClick={() => {
+              setEngineMode('fast');
+              if (currentImage && maskCanvasRef.current) {
+                runFastPerimeterClean(currentImage.imageElement, maskCanvasRef.current, tolerance);
+              }
+            }}
             className={`flex-1 sm:flex-none py-1.5 px-3.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer ${
               engineMode === 'fast'
                 ? 'bg-white dark:bg-zinc-900 text-zinc-950 dark:text-white shadow-xs'
@@ -1290,9 +1200,9 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
             }`}
           >
             <Zap className="w-3.5 h-3.5 text-amber-500" />
-            <span>Fast Form Mode</span>
+            <span>Chroma / Flat Color Keyer</span>
             <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-zinc-200 dark:bg-zinc-750 text-zinc-700 dark:text-zinc-300">
-              0ms
+              Solid BG
             </span>
           </button>
         </div>
@@ -1385,6 +1295,18 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
               >
                 <RefreshCw className="w-3.5 h-3.5" />
                 <span>New Photo</span>
+              </button>
+
+              {/* Re-run AI Cutout */}
+              <button
+                type="button"
+                disabled={isAiProcessing}
+                onClick={runAiInference}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-blue-600 dark:text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 transition-colors cursor-pointer disabled:opacity-50"
+                title="Re-run BRIA RMBG-1.4 Neural Background Removal"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Re-run AI</span>
               </button>
 
               {/* Copy */}
@@ -1600,6 +1522,40 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
                     backgroundSize: '20px 20px',
                   }}
                 >
+                  {/* Neural Processing Overlay */}
+                  {isAiProcessing && (
+                    <div className="absolute inset-0 bg-zinc-950/80 backdrop-blur-xs flex flex-col items-center justify-center p-6 z-40 animate-in fade-in duration-200">
+                      <div className="w-full max-w-sm p-6 rounded-2xl bg-zinc-900 border border-zinc-800 text-center space-y-4 shadow-2xl">
+                        <div className="w-12 h-12 rounded-xl bg-blue-500/10 text-blue-400 mx-auto flex items-center justify-center">
+                          <Sparkles className="w-6 h-6 animate-pulse" />
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-semibold text-zinc-100">
+                            BRIA RMBG-1.4 Neural Cutout
+                          </h4>
+                          <p className="text-xs text-zinc-400 mt-1 font-mono">
+                            {aiStatus}
+                          </p>
+                        </div>
+                        <div className="space-y-1.5">
+                          <div className="flex justify-between text-[11px] font-mono text-zinc-400">
+                            <span>{hasWebGPU ? 'WebGPU Accelerated ⚡' : 'CPU WASM Engine'}</span>
+                            <span>{aiProgress}%</span>
+                          </div>
+                          <div className="w-full bg-zinc-800 h-2 rounded-full overflow-hidden">
+                            <div
+                              className="bg-blue-500 h-full transition-all duration-150 rounded-full"
+                              style={{ width: `${aiProgress}%` }}
+                            />
+                          </div>
+                        </div>
+                        <p className="text-[10px] text-zinc-500 font-mono">
+                          100% Client-Side · Cached Locally · 0 Bytes Sent to Server
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Floating Circular Brush Cursor */}
                   {cursorPos.visible &&
                     (activeToolMode === 'erase' || activeToolMode === 'restore') && (
