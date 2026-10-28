@@ -560,13 +560,15 @@ export class NeuralFaceEnhancer {
     // 3. In-thread fallback if Worker is unavailable or failed
     if (!restoredPatchCanvas) {
       const planeSize = patchInputDim * patchInputDim;
+      const plane2 = planeSize * 2;
       const float32Data = new Float32Array(3 * planeSize);
+      const inv1275 = 1.0 / 127.5;
 
       for (let i = 0; i < planeSize; i++) {
         const idx = i * 4;
-        float32Data[i] = (patchData[idx] / 127.5) - 1.0;
-        float32Data[planeSize + i] = (patchData[idx + 1] / 127.5) - 1.0;
-        float32Data[planeSize * 2 + i] = (patchData[idx + 2] / 127.5) - 1.0;
+        float32Data[i] = patchData[idx] * inv1275 - 1.0;
+        float32Data[planeSize + i] = patchData[idx + 1] * inv1275 - 1.0;
+        float32Data[plane2 + i] = patchData[idx + 2] * inv1275 - 1.0;
       }
 
       const session = await this.getSession(modelKey, hasWebGPU, onProgress);

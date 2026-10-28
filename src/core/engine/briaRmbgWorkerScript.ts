@@ -153,15 +153,17 @@ self.onmessage = async function(e) {
 
     var INPUT_SIZE = 1024;
     var planeSize = INPUT_SIZE * INPUT_SIZE;
+    var plane2 = planeSize * 2;
     var pixelBytes = new Uint8ClampedArray(imageBuffer);
     var float32Data = new Float32Array(3 * planeSize);
+    var inv255 = 1.0 / 255.0;
 
     // Official RMBG-1.4 normalization: (pixel / 255.0 - 0.5) / 1.0 -> [-0.5, 0.5]
     for (var i = 0; i < planeSize; i++) {
       var idx = i * 4;
-      float32Data[i] = (pixelBytes[idx] / 255.0) - 0.5;
-      float32Data[planeSize + i] = (pixelBytes[idx + 1] / 255.0) - 0.5;
-      float32Data[planeSize * 2 + i] = (pixelBytes[idx + 2] / 255.0) - 0.5;
+      float32Data[i] = pixelBytes[idx] * inv255 - 0.5;
+      float32Data[planeSize + i] = pixelBytes[idx + 1] * inv255 - 0.5;
+      float32Data[plane2 + i] = pixelBytes[idx + 2] * inv255 - 0.5;
     }
 
     var session = await getRmbgSession(hasWebGPU, sendProgress);
@@ -216,11 +218,12 @@ self.onmessage = async function(e) {
     }
 
     var range = (maxVal - minVal) > 0.00001 ? (maxVal - minVal) : 1.0;
+    var invRange = 255.0 / range;
     var alpha8 = new Uint8Array(INPUT_SIZE * INPUT_SIZE);
 
     for (var i = 0; i < maskFloat.length; i++) {
-      var norm = (maskFloat[i] - minVal) / range;
-      alpha8[i] = Math.min(255, Math.max(0, Math.round(norm * 255)));
+      var norm = (maskFloat[i] - minVal) * invRange;
+      alpha8[i] = norm <= 0 ? 0 : norm >= 255 ? 255 : (norm + 0.5) | 0;
     }
 
     sendProgress(100, 'Complete');

@@ -132,14 +132,16 @@ self.onmessage = async function(e) {
 
     var patchData = new Uint8ClampedArray(patchBuffer);
     var planeSize = patchDim * patchDim;
+    var plane2 = planeSize * 2;
     var float32Data = new Float32Array(3 * planeSize);
+    var inv1275 = 1.0 / 127.5;
 
     // GFPGAN & CodeFormer expect [-1.0, 1.0] range
     for (var i = 0; i < planeSize; i++) {
       var idx = i * 4;
-      float32Data[i] = (patchData[idx] / 127.5) - 1.0;
-      float32Data[planeSize + i] = (patchData[idx + 1] / 127.5) - 1.0;
-      float32Data[planeSize * 2 + i] = (patchData[idx + 2] / 127.5) - 1.0;
+      float32Data[i] = patchData[idx] * inv1275 - 1.0;
+      float32Data[planeSize + i] = patchData[idx + 1] * inv1275 - 1.0;
+      float32Data[plane2 + i] = patchData[idx + 2] * inv1275 - 1.0;
     }
 
     var session = await getSessionInWorker(modelKey, modelUrl, hasWebGPU, sendProgress);

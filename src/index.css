@@ -155,3 +155,84 @@
 .animate-backdrop-in {
   animation: drawerFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+/* AI Laser Scanning & Cybernetic HUD Animations (Compositor-Thread 60fps) */
+@keyframes aiScanLaser {
+  0% {
+    top: 0%;
+    opacity: 0.9;
+  }
+  50% {
+    top: 96%;
+    opacity: 1;
+  }
+  100% {
+    top: 0%;
+    opacity: 0.9;
+  }
+}
+
+@keyframes aiPulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(244, 63, 94, 0.4), inset 0 0 15px rgba(244, 63, 94, 0.2);
+    border-color: rgba(244, 63, 94, 0.6);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(244, 63, 94, 0.8), inset 0 0 25px rgba(244, 63, 94, 0.4);
+    border-color: rgba(244, 63, 94, 1);
+  }
+}
+
+@keyframes aiLaserBlueGlow {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(59, 130, 246, 0.5), inset 0 0 15px rgba(59, 130, 246, 0.2);
+    border-color: rgba(59, 130, 246, 0.6);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(59, 130, 246, 0.9), inset 0 0 25px rgba(59, 130, 246, 0.4);
+    border-color: rgba(59, 130, 246, 1);
+  }
+}
+
+@keyframes aiShimmerFlow {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes aiRadarSweep {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-ai-scan {
+  animation: aiScanLaser 2.2s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+  will-change: top, opacity;
+}
+
+.animate-ai-pulse-glow {
+  animation: aiPulseGlow 1.8s ease-in-out infinite;
+  will-change: box-shadow, border-color;
+}
+
+.animate-ai-blue-glow {
+  animation: aiLaserBlueGlow 1.8s ease-in-out infinite;
+  will-change: box-shadow, border-color;
+}
+
+.animate-ai-shimmer {
+  background-size: 200% 100%;
+  animation: aiShimmerFlow 1.8s linear infinite;
+}
+
+.animate-ai-radar {
+  animation: aiRadarSweep 3s linear infinite;
+  will-change: transform;
+}

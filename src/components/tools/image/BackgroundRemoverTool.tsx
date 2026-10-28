@@ -1151,7 +1151,7 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
     <div className="w-full max-w-7xl mx-auto space-y-6 sm:space-y-8 animate-in fade-in duration-200 select-none">
       {/* Header Section */}
       <div className="text-center space-y-2.5 max-w-2xl mx-auto">
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-medium uppercase tracking-wider text-zinc-600 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-850">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-medium uppercase tracking-wider text-zinc-600 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800">
           <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
           <span>100% Client-Side Engine · Zero Uploads</span>
         </div>
@@ -1159,12 +1159,12 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
           Instant Background Remover
         </h1>
         <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 max-w-md mx-auto leading-relaxed">
-          Desktop-grade cutout studio with WebGPU AI, tactile Zoom & Pan, undo history, and 8-bit soft alpha.
+          Desktop-grade cutout studio with WebGPU AI, tactile Zoom &amp; Pan, undo history, and 8-bit soft alpha.
         </p>
       </div>
 
       {/* Dual-Model Engine Mode Toggle */}
-      <div className="flex items-center justify-between flex-wrap gap-3 p-2 rounded-xl bg-zinc-100 dark:bg-zinc-850 border border-zinc-200 dark:border-zinc-800">
+      <div className="flex items-center justify-between flex-wrap gap-3 p-2 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
         <div className="flex items-center gap-1.5 w-full sm:w-auto">
           <button
             type="button"
@@ -1174,7 +1174,7 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
             }}
             className={`flex-1 sm:flex-none py-1.5 px-3.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer ${
               engineMode === 'ai'
-                ? 'bg-white dark:bg-zinc-900 text-zinc-950 dark:text-white shadow-xs'
+                ? 'bg-white dark:bg-zinc-800 text-zinc-950 dark:text-white shadow-xs'
                 : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
             }`}
           >
@@ -1195,13 +1195,13 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
             }}
             className={`flex-1 sm:flex-none py-1.5 px-3.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer ${
               engineMode === 'fast'
-                ? 'bg-white dark:bg-zinc-900 text-zinc-950 dark:text-white shadow-xs'
+                ? 'bg-white dark:bg-zinc-800 text-zinc-950 dark:text-white shadow-xs'
                 : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
             }`}
           >
             <Zap className="w-3.5 h-3.5 text-amber-500" />
             <span>Chroma / Flat Color Keyer</span>
-            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-zinc-200 dark:bg-zinc-750 text-zinc-700 dark:text-zinc-300">
+            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300">
               Solid BG
             </span>
           </button>
@@ -1291,7 +1291,7 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
               <button
                 type="button"
                 onClick={resetImage}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-750 transition-colors cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
                 <span>New Photo</span>
@@ -1314,7 +1314,7 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
                 type="button"
                 disabled={!resultBlob}
                 onClick={handleCopy}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-750 transition-colors cursor-pointer disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors cursor-pointer disabled:opacity-50"
               >
                 <Copy className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Copy</span>
@@ -1326,7 +1326,7 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
                   type="button"
                   disabled={!resultBlob}
                   onClick={handleShare}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-750 transition-colors cursor-pointer disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors cursor-pointer disabled:opacity-50"
                 >
                   <Share2 className="w-3.5 h-3.5" />
                   <span className="hidden sm:inline">Share</span>
@@ -1516,41 +1516,97 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
                       : 'cursor-none'
                   }`}
                   style={{
-                    backgroundColor: '#09090b',
-                    backgroundImage:
-                      'radial-gradient(circle, rgba(255,255,255,0.08) 1px, transparent 1px)',
-                    backgroundSize: '20px 20px',
+                    backgroundColor: isDark ? '#09090b' : '#f4f4f5',
+                    backgroundImage: isDark
+                      ? 'radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px), radial-gradient(ellipse at 50% 50%, rgba(59, 130, 246, 0.08), transparent 70%)'
+                      : 'radial-gradient(circle, rgba(0,0,0,0.05) 1px, transparent 1px), radial-gradient(ellipse at 50% 50%, rgba(59, 130, 246, 0.05), transparent 70%)',
+                    backgroundSize: '20px 20px, 100% 100%',
                   }}
                 >
-                  {/* Neural Processing Overlay */}
+                  {/* Cybernetic Laser Scanning & Neural Segmentation HUD (60fps GPU Compositor) */}
                   {isAiProcessing && (
-                    <div className="absolute inset-0 bg-zinc-950/80 backdrop-blur-xs flex flex-col items-center justify-center p-6 z-40 animate-in fade-in duration-200">
-                      <div className="w-full max-w-sm p-6 rounded-2xl bg-zinc-900 border border-zinc-800 text-center space-y-4 shadow-2xl">
-                        <div className="w-12 h-12 rounded-xl bg-blue-500/10 text-blue-400 mx-auto flex items-center justify-center">
-                          <Sparkles className="w-6 h-6 animate-pulse" />
-                        </div>
-                        <div>
-                          <h4 className="text-sm font-semibold text-zinc-100">
+                    <div className="absolute inset-0 bg-zinc-950/60 backdrop-blur-xs flex flex-col items-center justify-between p-4 sm:p-6 z-40 animate-in fade-in duration-150 select-none pointer-events-none">
+                      {/* Top AI Engine Status Bar */}
+                      <div className="w-full max-w-lg flex items-center justify-between px-3.5 py-1.5 rounded-full bg-zinc-950/85 border border-blue-500/30 backdrop-blur-md shadow-xl text-[11px] font-mono text-zinc-300">
+                        <div className="flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
+                          <span className="font-semibold text-cyan-400 uppercase tracking-wider">
                             BRIA RMBG-1.4 Neural Cutout
-                          </h4>
-                          <p className="text-xs text-zinc-400 mt-1 font-mono">
-                            {aiStatus}
-                          </p>
+                          </span>
                         </div>
-                        <div className="space-y-1.5">
-                          <div className="flex justify-between text-[11px] font-mono text-zinc-400">
-                            <span>{hasWebGPU ? 'WebGPU Accelerated ⚡' : 'CPU WASM Engine'}</span>
-                            <span>{aiProgress}%</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-zinc-400">
+                            {hasWebGPU ? 'WebGPU Tensor ⚡' : 'CPU Multi-Thread'}
+                          </span>
+                          <span className="px-1.5 py-0.5 rounded bg-blue-500/20 text-cyan-300 font-bold">
+                            {aiProgress}%
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Continuous 60fps Laser Segmentation Beam */}
+                      <div className="relative w-full max-w-xl h-60 sm:h-72 my-auto flex items-center justify-center">
+                        {/* Glowing Scanning Bounds */}
+                        <div className="absolute inset-0 rounded-2xl border border-blue-500/30 animate-ai-blue-glow pointer-events-none" />
+
+                        {/* Continuous 60fps Laser Scanner Beam */}
+                        <div className="absolute left-0 right-0 animate-ai-scan pointer-events-none">
+                          <div className="h-0.5 w-full bg-gradient-to-r from-transparent via-cyan-400 to-transparent shadow-[0_0_20px_#06b6d4,0_0_8px_#38bdf8]" />
+                          <div className="h-20 w-full bg-gradient-to-b from-cyan-500/25 via-blue-500/5 to-transparent" />
+                        </div>
+
+                        {/* Center HUD Reticle */}
+                        <div className="flex flex-col items-center justify-center space-y-2.5 pointer-events-none">
+                          <div className="relative w-14 h-14 rounded-2xl bg-blue-500/10 border border-blue-500/40 flex items-center justify-center text-blue-400 shadow-xl">
+                            <Sparkles className="w-7 h-7 animate-pulse text-cyan-400" />
+                            <div className="absolute -inset-1 rounded-2xl border border-blue-500/20 animate-ping pointer-events-none" />
                           </div>
-                          <div className="w-full bg-zinc-800 h-2 rounded-full overflow-hidden">
-                            <div
-                              className="bg-blue-500 h-full transition-all duration-150 rounded-full"
-                              style={{ width: `${aiProgress}%` }}
-                            />
+                          <span className="text-[10px] font-mono tracking-widest uppercase text-cyan-300 font-bold bg-black/70 px-3 py-1 rounded-full border border-blue-500/30 shadow-lg">
+                            AI Subject Segmentation Active
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Bottom Multi-Phase Progress Capsule */}
+                      <div className="w-full max-w-md bg-zinc-950/90 backdrop-blur-md rounded-2xl border border-zinc-800 p-3.5 sm:p-4 shadow-2xl space-y-2.5">
+                        <div className="flex items-center justify-between text-xs">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <Wand2 className="w-4 h-4 text-cyan-400 animate-pulse shrink-0" />
+                            <span className="font-semibold text-zinc-100 truncate">
+                              {aiStatus || 'Dissecting fine hair strands & silhouette boundaries...'}
+                            </span>
+                          </div>
+                          <span className="font-mono font-bold text-cyan-400 shrink-0 ml-2">
+                            {aiProgress}%
+                          </span>
+                        </div>
+
+                        {/* Shimmering Gradient Bar */}
+                        <div className="w-full bg-zinc-800/80 h-2 rounded-full overflow-hidden p-0.5 border border-zinc-700/50">
+                          <div
+                            className="bg-gradient-to-r from-blue-500 via-cyan-400 to-indigo-500 h-full rounded-full transition-all duration-200 animate-ai-shimmer"
+                            style={{ width: `${Math.max(6, aiProgress)}%` }}
+                          />
+                        </div>
+
+                        {/* 4-Phase Step Indicators */}
+                        <div className="grid grid-cols-4 gap-1 text-[9px] font-mono text-center">
+                          <div className={`px-1 py-0.5 rounded transition-colors ${aiProgress >= 10 ? 'bg-blue-500/20 text-cyan-300 border border-blue-500/30' : 'bg-zinc-900 text-zinc-500'}`}>
+                            1. Model
+                          </div>
+                          <div className={`px-1 py-0.5 rounded transition-colors ${aiProgress >= 35 ? 'bg-blue-500/20 text-cyan-300 border border-blue-500/30' : 'bg-zinc-900 text-zinc-500'}`}>
+                            2. Tensor
+                          </div>
+                          <div className={`px-1 py-0.5 rounded transition-colors ${aiProgress >= 75 ? 'bg-blue-500/20 text-cyan-300 border border-blue-500/30' : 'bg-zinc-900 text-zinc-500'}`}>
+                            3. Inference
+                          </div>
+                          <div className={`px-1 py-0.5 rounded transition-colors ${aiProgress >= 95 ? 'bg-blue-500/20 text-cyan-300 border border-blue-500/30' : 'bg-zinc-900 text-zinc-500'}`}>
+                            4. 8-Bit Alpha
                           </div>
                         </div>
-                        <p className="text-[10px] text-zinc-500 font-mono">
-                          100% Client-Side · Cached Locally · 0 Bytes Sent to Server
+
+                        <p className="text-[10px] text-center text-zinc-500 font-mono pt-0.5">
+                          100% In-Browser RAM Execution · Zero Server Uploads · No Privacy Leak
                         </p>
                       </div>
                     </div>
@@ -1586,11 +1642,12 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
                     <div
                       className="shadow-2xl rounded-sm overflow-hidden"
                       style={{
-                        backgroundImage:
-                          'linear-gradient(45deg, #e4e4e7 25%, transparent 25%), linear-gradient(-45deg, #e4e4e7 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #e4e4e7 75%), linear-gradient(-45deg, transparent 75%, #e4e4e7 75%)',
+                        backgroundImage: isDark
+                          ? 'linear-gradient(45deg, #27272a 25%, transparent 25%), linear-gradient(-45deg, #27272a 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #27272a 75%), linear-gradient(-45deg, transparent 75%, #27272a 75%)'
+                          : 'linear-gradient(45deg, #e4e4e7 25%, transparent 25%), linear-gradient(-45deg, #e4e4e7 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #e4e4e7 75%), linear-gradient(-45deg, transparent 75%, #e4e4e7 75%)',
                         backgroundSize: '16px 16px',
                         backgroundPosition: '0 0, 0 8px, 8px -8px, -8px 0px',
-                        backgroundColor: '#ffffff',
+                        backgroundColor: isDark ? '#18181b' : '#ffffff',
                       }}
                     >
                       {showOriginal ? (
