@@ -1078,7 +1078,7 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
                     processedSrc={compressedResult.url}
                     originalLabel={`Original (${formatFileSize(sourceImage.originalSize)})`}
                     processedLabel={`Compressed (${formatFileSize(compressedResult.size)})`}
-                    className="max-h-[500px] w-full"
+                    className="max-h-[500px]"
                   />
                 ) : (
                   <div className="relative max-h-[500px] max-w-full flex items-center justify-center overflow-hidden rounded-xl">

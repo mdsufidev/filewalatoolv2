@@ -720,7 +720,7 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
                     processedSrc={previewSrc}
                     originalLabel="Original"
                     processedLabel={upscaleFactor > 1 ? `Enhanced (${upscaleFactor}x HD)` : 'AI Enhanced'}
-                    className="max-h-[620px] w-full rounded-xl overflow-hidden shadow-2xl"
+                    className="max-h-[620px] rounded-xl overflow-hidden shadow-2xl"
                   />
                 </div>
               ) : previewSrc ? (
