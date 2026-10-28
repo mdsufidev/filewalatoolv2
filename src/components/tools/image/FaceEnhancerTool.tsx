@@ -25,6 +25,7 @@ import {
   Film,
   Feather,
   Loader2,
+  ChevronDown,
   Info,
 } from 'lucide-react';
 import { Dropzone } from '../../ui/Dropzone';
@@ -67,6 +68,17 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
   const [neuralModelKey, setNeuralModelKey] = useState<NeuralModelKey>('gfpgan-v14');
   const [neuralBlendStrength, setNeuralBlendStrength] = useState<number>(100);
 
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({
+    models: true,
+    presets: true,
+    upscale: true,
+    pro: false,
+    export: false,
+  });
+
+  const toggleSection = (key: string) => {
+    setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
   // Settings & Presets
   const [settings, setSettings] = useState<FaceEnhanceSettings>(DEFAULT_ENHANCE_SETTINGS);
   const [activePresetId, setActivePresetId] = useState<string>('smart-auto');
@@ -331,6 +343,13 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
     setActivePresetId(presetId);
     setSettings(preset.settings);
     scheduleEnhancement(preset.settings, upscaleFactor);
+  };
+
+  // Reset sliders to default
+  const handleResetSettings = () => {
+    setActivePresetId("smart-auto");
+    setSettings(DEFAULT_ENHANCE_SETTINGS);
+    scheduleEnhancement(DEFAULT_ENHANCE_SETTINGS, upscaleFactor);
   };
 
   // Handle upscale factor change
@@ -642,136 +661,134 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
           </div>
 
           {/* Controls & Export Panel (4 Columns on desktop, 5 on tablet) */}
-          <div className="md:col-span-5 lg:col-span-4 space-y-5">
-            {/* Generative AI Face Model Card (Remini-Grade) - PERMANENTLY VISIBLE */}
-            <div className={`p-5 rounded-2xl border space-y-4 shadow-sm ${isDark ? 'bg-zinc-900/80 border-zinc-800' : 'bg-white border-zinc-200'}`}>
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-bold text-zinc-900 dark:text-white flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-rose-500" />
-                  <span>AI Face Restoration Models</span>
-                </h3>
-                <span className="text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
-                  Remini-Grade
-                </span>
-              </div>
-
-              <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                100% in-browser WebGPU/WASM generative facial reconstruction. Reconstructs photorealistic human eyes, eyelids, smile, and natural skin pores.
-              </p>
-
-              {/* Model Selector Cards */}
-              <div className="space-y-2">
-                <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
-                  Select AI Face Model
-                </label>
-                <div className="grid grid-cols-1 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setNeuralModelKey('gfpgan-v14')}
-                    className={`p-3 rounded-xl text-left border transition cursor-pointer flex items-center justify-between ${
-                      neuralModelKey === 'gfpgan-v14'
-                        ? 'border-rose-500 bg-rose-500/10 text-rose-600 dark:text-rose-400 ring-1 ring-rose-500'
-                        : isDark
-                        ? 'border-zinc-800 hover:border-zinc-700 bg-zinc-950/40 text-zinc-400'
-                        : 'border-zinc-200 hover:border-zinc-300 bg-zinc-50 text-zinc-600'
-                    }`}
-                  >
-                    <div>
-                      <div className="text-xs font-bold flex items-center gap-1.5">
-                        <Sparkles className="w-3.5 h-3.5 text-rose-500" />
-                        <span>GFPGAN v1.4 (Clean Face Prior)</span>
-                      </div>
-                      <div className="text-[10px] text-zinc-500 mt-0.5">Quantized w16 · Natural skin texture, clear eyes & smile</div>
-                    </div>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500 text-white font-bold shrink-0 ml-2">
-                      RECOMMENDED
-                    </span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setNeuralModelKey('codeformer')}
-                    className={`p-3 rounded-xl text-left border transition cursor-pointer flex items-center justify-between ${
-                      neuralModelKey === 'codeformer'
-                        ? 'border-rose-500 bg-rose-500/10 text-rose-600 dark:text-rose-400 ring-1 ring-rose-500'
-                        : isDark
-                        ? 'border-zinc-800 hover:border-zinc-700 bg-zinc-950/40 text-zinc-400'
-                        : 'border-zinc-200 hover:border-zinc-300 bg-zinc-50 text-zinc-600'
-                    }`}
-                  >
-                    <div>
-                      <div className="text-xs font-bold flex items-center gap-1.5">
-                        <Wand2 className="w-3.5 h-3.5 text-blue-500" />
-                        <span>CodeFormer (Codebook Transformer)</span>
-                      </div>
-                      <div className="text-[10px] text-zinc-500 mt-0.5">FaceFusion CodeFormer · Heavy blur, vintage photos & deep restoration</div>
-                    </div>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500 text-white font-bold shrink-0 ml-2">
-                      ULTRA RESTORE
-                    </span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Blend Strength Slider */}
-              <Slider
-                label="AI Face Blend Strength"
-                unit="%"
-                min={50}
-                max={100}
-                value={neuralBlendStrength}
-                onChange={(val) => setNeuralBlendStrength(val)}
-              />
-
-              {/* Hardware Engine Status */}
-              <div className="flex items-center justify-between text-[11px] text-zinc-500 px-2.5 py-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800/50">
-                <span className="font-semibold text-zinc-600 dark:text-zinc-400">AI Accelerator:</span>
-                <span className="font-medium text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5">
-                  {hasWebGPU ? (
-                    <>
-                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                      <span>WebGPU (Hardware Accelerated)</span>
-                    </>
-                  ) : (
-                    <>
-                      <span className="w-2 h-2 rounded-full bg-blue-500" />
-                      <span>WASM CPU Multi-Thread</span>
-                    </>
-                  )}
-                </span>
-              </div>
-
-              {/* Main Action Button */}
-              <Button
-                onClick={runNeuralRestoration}
-                disabled={isProcessing}
-                className="w-full bg-gradient-to-r from-rose-500 via-pink-500 to-rose-600 hover:from-rose-600 hover:to-pink-600 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-rose-500/25 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 text-sm"
+          <div className="md:col-span-5 lg:col-span-4 flex flex-col gap-4 relative">
+            {/* 1. Accordion: AI Face Restoration Models */}
+            <div className={`p-4 rounded-2xl border transition-all ${isDark ? 'bg-zinc-900/80 border-zinc-800' : 'bg-white border-zinc-200'}`}>
+              <button
+                type="button"
+                onClick={() => toggleSection('models')}
+                className="w-full flex items-center justify-between text-left cursor-pointer"
               >
-                <Wand2 className="w-4 h-4" />
-                <span>Restore Face with AI (Remini-Grade)</span>
-              </Button>
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-rose-500" />
+                  <span className="text-sm font-bold text-zinc-900 dark:text-white">AI Restoration Models</span>
+                  <span className="text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                    Remini-Grade
+                  </span>
+                </div>
+                <ChevronDown className={`w-4 h-4 text-zinc-400 transition-transform duration-200 ${openSections.models ? 'rotate-180' : ''}`} />
+              </button>
 
-              <div className="flex items-center gap-2 text-[11px] text-zinc-400">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                <span>100% In-Browser RAM Execution · Zero Server Uploads · Saved to IndexedDB</span>
-              </div>
-            </div>
+              {openSections.models && (
+                <div className="mt-4 space-y-3.5 pt-3 border-t border-zinc-100 dark:border-zinc-800/80">
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                    100% in-browser WebGPU/WASM generative facial reconstruction. Reconstructs photorealistic human eyes, eyelids, smile, and natural skin pores.
+                  </p>
 
-            {/* Presets Selector */}
-                <div className={`p-5 rounded-2xl border space-y-3.5 ${isDark ? 'bg-zinc-900/80 border-zinc-800' : 'bg-white border-zinc-200'}`}>
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-bold text-zinc-900 dark:text-white flex items-center gap-2">
-                      <Wand2 className="w-4 h-4 text-rose-500" />
-                      <span>1-Click AI Presets</span>
-                    </h3>
-                    {activePresetId !== 'custom' && (
-                      <span className="text-[11px] font-medium text-rose-500 bg-rose-500/10 px-2 py-0.5 rounded-full">
-                        Active
+                  <div className="grid grid-cols-1 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setNeuralModelKey('gfpgan-v14')}
+                      className={`p-3 rounded-xl text-left border transition cursor-pointer flex items-center justify-between ${
+                        neuralModelKey === 'gfpgan-v14'
+                          ? 'border-rose-500 bg-rose-500/10 text-rose-600 dark:text-rose-400 ring-1 ring-rose-500'
+                          : isDark
+                          ? 'border-zinc-800 hover:border-zinc-700 bg-zinc-950/40 text-zinc-400'
+                          : 'border-zinc-200 hover:border-zinc-300 bg-zinc-50 text-zinc-600'
+                      }`}
+                    >
+                      <div>
+                        <div className="text-xs font-bold flex items-center gap-1.5">
+                          <Sparkles className="w-3.5 h-3.5 text-rose-500" />
+                          <span>GFPGAN v1.4 (Clean Face Prior)</span>
+                        </div>
+                        <div className="text-[10px] text-zinc-500 mt-0.5">Quantized w16 · Natural skin texture, clear eyes & smile</div>
+                      </div>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500 text-white font-bold shrink-0 ml-2">
+                        RECOMMENDED
                       </span>
-                    )}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setNeuralModelKey('codeformer')}
+                      className={`p-3 rounded-xl text-left border transition cursor-pointer flex items-center justify-between ${
+                        neuralModelKey === 'codeformer'
+                          ? 'border-rose-500 bg-rose-500/10 text-rose-600 dark:text-rose-400 ring-1 ring-rose-500'
+                          : isDark
+                          ? 'border-zinc-800 hover:border-zinc-700 bg-zinc-950/40 text-zinc-400'
+                          : 'border-zinc-200 hover:border-zinc-300 bg-zinc-50 text-zinc-600'
+                      }`}
+                    >
+                      <div>
+                        <div className="text-xs font-bold flex items-center gap-1.5">
+                          <Wand2 className="w-3.5 h-3.5 text-blue-500" />
+                          <span>CodeFormer (Codebook Transformer)</span>
+                        </div>
+                        <div className="text-[10px] text-zinc-500 mt-0.5">Heavy blur, vintage photos & deep restoration</div>
+                      </div>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500 text-white font-bold shrink-0 ml-2">
+                        ULTRA RESTORE
+                      </span>
+                    </button>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2">
+                  {/* Blend Strength Slider */}
+                  <Slider
+                    label="AI Face Blend Strength"
+                    unit="%"
+                    min={50}
+                    max={100}
+                    value={neuralBlendStrength}
+                    onChange={(val) => setNeuralBlendStrength(val)}
+                  />
+
+                  {/* Hardware Engine Status */}
+                  <div className="flex items-center justify-between text-[11px] text-zinc-500 px-2.5 py-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800/50">
+                    <span className="font-semibold text-zinc-600 dark:text-zinc-400">AI Accelerator:</span>
+                    <span className="font-medium text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5">
+                      {hasWebGPU ? (
+                        <>
+                          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                          <span>WebGPU (Hardware Accelerated)</span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="w-2 h-2 rounded-full bg-blue-500" />
+                          <span>WASM CPU Multi-Thread</span>
+                        </>
+                      )}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* 2. Accordion: 1-Click AI Presets (Minimalist Horizontal Chips) */}
+            <div className={`p-4 rounded-2xl border transition-all ${isDark ? 'bg-zinc-900/80 border-zinc-800' : 'bg-white border-zinc-200'}`}>
+              <button
+                type="button"
+                onClick={() => toggleSection('presets')}
+                className="w-full flex items-center justify-between text-left cursor-pointer"
+              >
+                <div className="flex items-center gap-2">
+                  <Wand2 className="w-4 h-4 text-rose-500" />
+                  <span className="text-sm font-bold text-zinc-900 dark:text-white">1-Click AI Presets</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {activePresetId !== 'custom' && (
+                    <span className="text-[10px] font-semibold text-rose-500 bg-rose-500/10 px-2 py-0.5 rounded-full">
+                      Active
+                    </span>
+                  )}
+                  <ChevronDown className={`w-4 h-4 text-zinc-400 transition-transform duration-200 ${openSections.presets ? 'rotate-180' : ''}`} />
+                </div>
+              </button>
+
+              {openSections.presets && (
+                <div className="mt-3.5 pt-3 border-t border-zinc-100 dark:border-zinc-800/80">
+                  {/* Clean Horizontal Chips Carousel */}
+                  <div className="flex items-center gap-2 overflow-x-auto pb-2 pt-0.5 scrollbar-thin scrollbar-thumb-zinc-700/40">
                     {FACE_ENHANCER_PRESETS.map((p) => {
                       const isActive = activePresetId === p.id;
                       return (
@@ -779,270 +796,334 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
                           key={p.id}
                           type="button"
                           onClick={() => applyPreset(p.id)}
-                          className={`flex flex-col items-start p-2.5 rounded-xl text-left border transition cursor-pointer ${
+                          className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
                             isActive
-                              ? 'border-rose-500 bg-rose-500/10 text-rose-600 dark:text-rose-400 font-semibold'
+                              ? 'bg-rose-500 text-white shadow-md shadow-rose-500/25 ring-2 ring-rose-500 ring-offset-1 dark:ring-offset-zinc-900'
                               : isDark
-                              ? 'border-zinc-800 hover:border-zinc-700 bg-zinc-950/40 text-zinc-300'
-                              : 'border-zinc-200 hover:border-zinc-300 bg-zinc-50 text-zinc-700'
+                              ? 'bg-zinc-800/80 hover:bg-zinc-800 text-zinc-300 border border-zinc-700/60'
+                              : 'bg-zinc-100 hover:bg-zinc-200/70 text-zinc-700 border border-zinc-200'
                           }`}
                         >
-                          <div className="flex items-center justify-between w-full">
-                            <span className="text-xs font-semibold">{p.name}</span>
-                            {p.badge && (
-                              <span className="text-[9px] px-1.5 py-0.2 rounded bg-rose-500 text-white font-bold uppercase">
-                                {p.badge}
-                              </span>
-                            )}
-                          </div>
-                          <span className="text-[10px] text-zinc-400 line-clamp-1 mt-0.5">{p.tagline}</span>
+                          <Sparkles className={`w-3 h-3 ${isActive ? 'text-white' : 'text-rose-500'}`} />
+                          <span>{p.name}</span>
+                          {p.badge && (
+                            <span className={`text-[9px] px-1.5 py-0.2 rounded font-bold uppercase ${
+                              isActive ? 'bg-white/20 text-white' : 'bg-rose-500/10 text-rose-500'
+                            }`}>
+                              {p.badge}
+                            </span>
+                          )}
                         </button>
                       );
                     })}
                   </div>
                 </div>
-
-                {/* AI Super-Resolution Upscaling */}
-                <div className={`p-5 rounded-2xl border space-y-3 ${isDark ? 'bg-zinc-900/80 border-zinc-800' : 'bg-white border-zinc-200'}`}>
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-bold text-zinc-900 dark:text-white flex items-center gap-2">
-                      <Layers className="w-4 h-4 text-blue-500" />
-                  <span>AI Super-Resolution Upscale</span>
-                </h3>
-                <span className="text-xs font-semibold text-blue-500">{upscaleFactor}x Resolution</span>
-              </div>
-
-              <div className="grid grid-cols-3 gap-2">
-                <button
-                  type="button"
-                  onClick={() => handleUpscaleChange(1)}
-                  className={`py-2 px-3 rounded-xl text-xs font-semibold border transition cursor-pointer text-center ${
-                    upscaleFactor === 1
-                      ? 'border-blue-500 bg-blue-500/10 text-blue-600 dark:text-blue-400'
-                      : isDark
-                      ? 'border-zinc-800 bg-zinc-950/40 text-zinc-400'
-                      : 'border-zinc-200 bg-zinc-50 text-zinc-600'
-                  }`}
-                >
-                  1x Standard
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleUpscaleChange(2)}
-                  className={`py-2 px-3 rounded-xl text-xs font-semibold border transition cursor-pointer text-center ${
-                    upscaleFactor === 2
-                      ? 'border-blue-500 bg-blue-500/10 text-blue-600 dark:text-blue-400'
-                      : isDark
-                      ? 'border-zinc-800 bg-zinc-950/40 text-zinc-400'
-                      : 'border-zinc-200 bg-zinc-50 text-zinc-600'
-                  }`}
-                >
-                  2x HD
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleUpscaleChange(4)}
-                  className={`py-2 px-3 rounded-xl text-xs font-semibold border transition cursor-pointer text-center ${
-                    upscaleFactor === 4
-                      ? 'border-blue-500 bg-blue-500/10 text-blue-600 dark:text-blue-400'
-                      : isDark
-                      ? 'border-zinc-800 bg-zinc-950/40 text-zinc-400'
-                      : 'border-zinc-200 bg-zinc-50 text-zinc-600'
-                  }`}
-                >
-                  4x Ultra HD
-                </button>
-              </div>
+              )}
             </div>
 
-            {/* Fine-Tuning Retouch Sliders */}
-            <div className={`p-5 rounded-2xl border space-y-4 ${isDark ? 'bg-zinc-900/80 border-zinc-800' : 'bg-white border-zinc-200'}`}>
-              <h3 className="text-sm font-bold text-zinc-900 dark:text-white flex items-center gap-2">
-                <Sliders className="w-4 h-4 text-emerald-500" />
-                <span>Pro Facial Adjustments</span>
-              </h3>
+            {/* 3. Accordion: AI Super-Resolution Upscaling */}
+            <div className={`p-4 rounded-2xl border transition-all ${isDark ? 'bg-zinc-900/80 border-zinc-800' : 'bg-white border-zinc-200'}`}>
+              <button
+                type="button"
+                onClick={() => toggleSection('upscale')}
+                className="w-full flex items-center justify-between text-left cursor-pointer"
+              >
+                <div className="flex items-center gap-2">
+                  <Layers className="w-4 h-4 text-blue-500" />
+                  <span className="text-sm font-bold text-zinc-900 dark:text-white">AI Super-Resolution</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold text-blue-500">{upscaleFactor}x HD</span>
+                  <ChevronDown className={`w-4 h-4 text-zinc-400 transition-transform duration-200 ${openSections.upscale ? 'rotate-180' : ''}`} />
+                </div>
+              </button>
 
-              <div className="space-y-4">
-                {/* AI Unblur & Focus */}
-                <Slider
-                  label="AI Unblur & Focus (Deblur)"
-                  unit="%"
-                  min={0}
-                  max={100}
-                  value={settings.deblur}
-                  onChange={(val) => updateSetting('deblur', val)}
-                />
-
-                {/* Facial Clarity & Definition */}
-                <Slider
-                  label="Facial Clarity & Definition"
-                  unit="%"
-                  min={0}
-                  max={100}
-                  value={settings.clarity}
-                  onChange={(val) => updateSetting('clarity', val)}
-                />
-
-                {/* Skin Smoothing */}
-                <Slider
-                  label="Skin Smoothing & Denoise"
-                  unit="%"
-                  min={0}
-                  max={100}
-                  value={settings.smooth}
-                  onChange={(val) => updateSetting('smooth', val)}
-                />
-
-                {/* Facial Sharpening */}
-                <Slider
-                  label="Sharpening & Eye Contours"
-                  unit="%"
-                  min={0}
-                  max={100}
-                  value={settings.sharpness}
-                  onChange={(val) => updateSetting('sharpness', val)}
-                />
-
-                {/* Eye & Teeth Clarity */}
-                <Slider
-                  label="Eye & Teeth Brightening"
-                  unit="%"
-                  min={0}
-                  max={100}
-                  value={settings.eyeTeethClarity}
-                  onChange={(val) => updateSetting('eyeTeethClarity', val)}
-                />
-
-                {/* Studio Skin Glow */}
-                <Slider
-                  label="Studio Skin Radiance"
-                  unit="%"
-                  min={0}
-                  max={100}
-                  value={settings.glow}
-                  onChange={(val) => updateSetting('glow', val)}
-                />
-
-                {/* Skin Warmth */}
-                <Slider
-                  label="Skin Warmth (Tone)"
-                  min={-50}
-                  max={50}
-                  value={settings.warmth}
-                  onChange={(val) => updateSetting('warmth', val)}
-                />
-
-                {/* Exposure / Brightness */}
-                <Slider
-                  label="Face Exposure Lift"
-                  min={-50}
-                  max={50}
-                  value={settings.brightness}
-                  onChange={(val) => updateSetting('brightness', val)}
-                />
-
-                {/* Dynamic Contrast */}
-                <Slider
-                  label="Dynamic Contrast"
-                  min={-50}
-                  max={50}
-                  value={settings.contrast}
-                  onChange={(val) => updateSetting('contrast', val)}
-                />
-              </div>
-            </div>
-
-            {/* Export & Download Card */}
-            <div className={`p-5 rounded-2xl border space-y-4 ${isDark ? 'bg-zinc-900/80 border-zinc-800' : 'bg-white border-zinc-200'}`}>
-              <h3 className="text-sm font-bold text-zinc-900 dark:text-white flex items-center justify-between">
-                <span>Export & Download</span>
-                {processedBlob && (
-                  <span className="text-xs text-zinc-400 font-normal">
-                    {formatBytes(processedBlob.size)}
-                  </span>
-                )}
-              </h3>
-
-              {/* Format selection */}
-              <div className="grid grid-cols-3 gap-2">
-                {(['image/jpeg', 'image/png', 'image/webp'] as OutputFormat[]).map((fmt) => {
-                  const label = fmt === 'image/jpeg' ? 'JPG' : fmt === 'image/png' ? 'PNG' : 'WebP';
-                  const isSelected = exportFormat === fmt;
-                  return (
+              {openSections.upscale && (
+                <div className="mt-3.5 pt-3 border-t border-zinc-100 dark:border-zinc-800/80">
+                  <div className="grid grid-cols-3 gap-2">
                     <button
-                      key={fmt}
                       type="button"
-                      onClick={() => {
-                        setExportFormat(fmt);
-                        runEnhancement(settings, upscaleFactor);
-                      }}
-                      className={`py-1.5 px-3 rounded-lg text-xs font-semibold border transition cursor-pointer text-center ${
-                        isSelected
-                          ? 'border-rose-500 bg-rose-500/10 text-rose-500'
+                      onClick={() => handleUpscaleChange(1)}
+                      className={`py-2 px-3 rounded-xl text-xs font-semibold border transition cursor-pointer text-center ${
+                        upscaleFactor === 1
+                          ? 'border-blue-500 bg-blue-500/10 text-blue-600 dark:text-blue-400'
                           : isDark
                           ? 'border-zinc-800 bg-zinc-950/40 text-zinc-400'
                           : 'border-zinc-200 bg-zinc-50 text-zinc-600'
                       }`}
                     >
-                      {label}
+                      1x Standard
                     </button>
-                  );
-                })}
-              </div>
-
-              {/* Quality slider for JPG / WebP */}
-              {exportFormat !== 'image/png' && (
-                <Slider
-                  label="Compression Quality"
-                  unit="%"
-                  min={70}
-                  max={100}
-                  value={exportQuality}
-                  onChange={(val) => {
-                    setExportQuality(val);
-                    runEnhancement(settings, upscaleFactor);
-                  }}
-                />
+                    <button
+                      type="button"
+                      onClick={() => handleUpscaleChange(2)}
+                      className={`py-2 px-3 rounded-xl text-xs font-semibold border transition cursor-pointer text-center ${
+                        upscaleFactor === 2
+                          ? 'border-blue-500 bg-blue-500/10 text-blue-600 dark:text-blue-400'
+                          : isDark
+                          ? 'border-zinc-800 bg-zinc-950/40 text-zinc-400'
+                          : 'border-zinc-200 bg-zinc-50 text-zinc-600'
+                      }`}
+                    >
+                      2x HD
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleUpscaleChange(4)}
+                      className={`py-2 px-3 rounded-xl text-xs font-semibold border transition cursor-pointer text-center ${
+                        upscaleFactor === 4
+                          ? 'border-blue-500 bg-blue-500/10 text-blue-600 dark:text-blue-400'
+                          : isDark
+                          ? 'border-zinc-800 bg-zinc-950/40 text-zinc-400'
+                          : 'border-zinc-200 bg-zinc-50 text-zinc-600'
+                      }`}
+                    >
+                      4x Ultra HD
+                    </button>
+                  </div>
+                </div>
               )}
+            </div>
 
-              {/* Action Buttons */}
-              <div className="space-y-2 pt-1">
-                <Button
-                  onClick={handleDownload}
-                  disabled={!processedBlob || isProcessing}
-                  className="w-full bg-rose-500 hover:bg-rose-600 text-white font-semibold py-2.5 rounded-xl shadow-lg shadow-rose-500/20 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-                >
-                  <Download className="w-4 h-4" />
-                  <span>Download Enhanced Photo</span>
-                </Button>
+            {/* 4. Accordion: Pro Facial Adjustments (Progressive Disclosure - Collapsed by default) */}
+            <div className={`p-4 rounded-2xl border transition-all ${isDark ? 'bg-zinc-900/80 border-zinc-800' : 'bg-white border-zinc-200'}`}>
+              <button
+                type="button"
+                onClick={() => toggleSection('pro')}
+                className="w-full flex items-center justify-between text-left cursor-pointer"
+              >
+                <div className="flex items-center gap-2">
+                  <Sliders className="w-4 h-4 text-emerald-500" />
+                  <span className="text-sm font-bold text-zinc-900 dark:text-white">Pro Facial Adjustments</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] text-zinc-400 uppercase font-semibold">Fine-tune</span>
+                  <ChevronDown className={`w-4 h-4 text-zinc-400 transition-transform duration-200 ${openSections.pro ? 'rotate-180' : ''}`} />
+                </div>
+              </button>
 
-                <div className="grid grid-cols-2 gap-2">
+              {openSections.pro && (
+                <div className="mt-3.5 pt-3 border-t border-zinc-100 dark:border-zinc-800/80 space-y-4">
+                  <div className="flex items-center justify-between pb-1">
+                    <span className="text-xs text-zinc-500">Fine-tune individual facial attributes</span>
+                    <button
+                      type="button"
+                      onClick={handleResetSettings}
+                      className="text-xs text-rose-500 hover:text-rose-400 font-medium flex items-center gap-1 cursor-pointer"
+                    >
+                      <RotateCcw className="w-3 h-3" />
+                      <span>Reset</span>
+                    </button>
+                  </div>
+
+                  <Slider
+                    label="AI Unblur & Focus (Deblur)"
+                    unit="%"
+                    min={0}
+                    max={100}
+                    value={settings.deblur}
+                    onChange={(val) => updateSetting('deblur', val)}
+                  />
+
+                  <Slider
+                    label="Facial Clarity & Definition"
+                    unit="%"
+                    min={0}
+                    max={100}
+                    value={settings.clarity}
+                    onChange={(val) => updateSetting('clarity', val)}
+                  />
+
+                  <Slider
+                    label="Skin Smoothing & Denoise"
+                    unit="%"
+                    min={0}
+                    max={100}
+                    value={settings.smooth}
+                    onChange={(val) => updateSetting('smooth', val)}
+                  />
+
+                  <Slider
+                    label="Sharpening & Eye Contours"
+                    unit="%"
+                    min={0}
+                    max={100}
+                    value={settings.sharpness}
+                    onChange={(val) => updateSetting('sharpness', val)}
+                  />
+
+                  <Slider
+                    label="Eye & Teeth Brightening"
+                    unit="%"
+                    min={0}
+                    max={100}
+                    value={settings.eyeTeethClarity}
+                    onChange={(val) => updateSetting('eyeTeethClarity', val)}
+                  />
+
+                  <Slider
+                    label="Studio Skin Radiance"
+                    unit="%"
+                    min={0}
+                    max={100}
+                    value={settings.glow}
+                    onChange={(val) => updateSetting('glow', val)}
+                  />
+
+                  <Slider
+                    label="Skin Warmth (Tone)"
+                    min={-50}
+                    max={50}
+                    value={settings.warmth}
+                    onChange={(val) => updateSetting('warmth', val)}
+                  />
+
+                  <Slider
+                    label="Face Exposure Lift"
+                    min={-50}
+                    max={50}
+                    value={settings.brightness}
+                    onChange={(val) => updateSetting('brightness', val)}
+                  />
+
+                  <Slider
+                    label="Dynamic Contrast"
+                    min={-50}
+                    max={50}
+                    value={settings.contrast}
+                    onChange={(val) => updateSetting('contrast', val)}
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* 5. Accordion: Export & Format Settings */}
+            <div className={`p-4 rounded-2xl border transition-all ${isDark ? 'bg-zinc-900/80 border-zinc-800' : 'bg-white border-zinc-200'}`}>
+              <button
+                type="button"
+                onClick={() => toggleSection('export')}
+                className="w-full flex items-center justify-between text-left cursor-pointer"
+              >
+                <div className="flex items-center gap-2">
+                  <Download className="w-4 h-4 text-zinc-400" />
+                  <span className="text-sm font-bold text-zinc-900 dark:text-white">Export & Format</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {processedBlob && (
+                    <span className="text-xs text-zinc-400 font-normal">
+                      {formatBytes(processedBlob.size)}
+                    </span>
+                  )}
+                  <ChevronDown className={`w-4 h-4 text-zinc-400 transition-transform duration-200 ${openSections.export ? 'rotate-180' : ''}`} />
+                </div>
+              </button>
+
+              {openSections.export && (
+                <div className="mt-3.5 pt-3 border-t border-zinc-100 dark:border-zinc-800/80 space-y-3.5">
+                  <div className="grid grid-cols-3 gap-2">
+                    {(['image/jpeg', 'image/png', 'image/webp'] as OutputFormat[]).map((fmt) => {
+                      const label = fmt === 'image/jpeg' ? 'JPG' : fmt === 'image/png' ? 'PNG' : 'WebP';
+                      const isSelected = exportFormat === fmt;
+                      return (
+                        <button
+                          key={fmt}
+                          type="button"
+                          onClick={() => {
+                            setExportFormat(fmt);
+                            runEnhancement(settings, upscaleFactor);
+                          }}
+                          className={`py-1.5 px-3 rounded-lg text-xs font-semibold border transition cursor-pointer text-center ${
+                            isSelected
+                              ? 'border-rose-500 bg-rose-500/10 text-rose-500'
+                              : isDark
+                              ? 'border-zinc-800 bg-zinc-950/40 text-zinc-400'
+                              : 'border-zinc-200 bg-zinc-50 text-zinc-600'
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {exportFormat !== 'image/png' && (
+                    <Slider
+                      label="Compression Quality"
+                      unit="%"
+                      min={70}
+                      max={100}
+                      value={exportQuality}
+                      onChange={(val) => {
+                        setExportQuality(val);
+                        runEnhancement(settings, upscaleFactor);
+                      }}
+                    />
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* STICKY CTA FOOTER: Pinned to bottom of right sidebar */}
+            <div className={`sticky bottom-4 z-20 p-4 rounded-2xl border shadow-2xl backdrop-blur-md space-y-2.5 transition-all ${
+              isDark
+                ? 'bg-zinc-900/95 border-zinc-800 shadow-black/50'
+                : 'bg-white/95 border-zinc-200 shadow-zinc-300/50'
+            }`}>
+              {/* Primary AI Restore Action */}
+              <Button
+                onClick={runNeuralRestoration}
+                disabled={isProcessing}
+                className="w-full bg-gradient-to-r from-rose-500 via-pink-500 to-rose-600 hover:from-rose-600 hover:to-pink-600 text-white font-bold py-3 rounded-xl shadow-lg shadow-rose-500/25 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 text-sm"
+              >
+                {isProcessing ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Processing Facial AI...</span>
+                  </>
+                ) : (
+                  <>
+                    <Wand2 className="w-4 h-4" />
+                    <span>Restore Face with AI (Remini-Grade)</span>
+                  </>
+                )}
+              </Button>
+
+              {/* Secondary Download Button */}
+              <Button
+                onClick={handleDownload}
+                disabled={!processedBlob || isProcessing}
+                className="w-full bg-rose-500 hover:bg-rose-600 text-white font-semibold py-2.5 rounded-xl shadow-md shadow-rose-500/20 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 text-xs"
+              >
+                <Download className="w-4 h-4" />
+                <span>Download Enhanced Photo {processedBlob ? `(${formatBytes(processedBlob.size)})` : ''}</span>
+              </Button>
+
+              {/* Quick Actions (Copy / Share / Privacy) */}
+              <div className="flex items-center justify-between pt-1 border-t border-zinc-100 dark:border-zinc-800/80">
+                <div className="flex items-center gap-1.5 text-[10px] text-zinc-400">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                  <span>100% In-Browser RAM · Zero Server Uploads</span>
+                </div>
+
+                <div className="flex items-center gap-1.5">
                   <button
                     type="button"
                     onClick={handleCopy}
                     disabled={!processedBlob || isProcessing}
-                    className={`py-2 px-3 rounded-xl text-xs font-medium border flex items-center justify-center gap-1.5 transition cursor-pointer disabled:opacity-50 ${
-                      isDark
-                        ? 'border-zinc-800 hover:bg-zinc-800 text-zinc-300'
-                        : 'border-zinc-200 hover:bg-zinc-100 text-zinc-700'
-                    }`}
+                    title="Copy to Clipboard"
+                    className="p-1.5 rounded-lg border text-zinc-400 hover:text-zinc-200 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-40 transition cursor-pointer"
                   >
                     <Copy className="w-3.5 h-3.5" />
-                    <span>Copy</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={handleShare}
                     disabled={!processedBlob || isProcessing}
-                    className={`py-2 px-3 rounded-xl text-xs font-medium border flex items-center justify-center gap-1.5 transition cursor-pointer disabled:opacity-50 ${
-                      isDark
-                        ? 'border-zinc-800 hover:bg-zinc-800 text-zinc-300'
-                        : 'border-zinc-200 hover:bg-zinc-100 text-zinc-700'
-                    }`}
+                    title="Share Image"
+                    className="p-1.5 rounded-lg border text-zinc-400 hover:text-zinc-200 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-40 transition cursor-pointer"
                   >
                     <Share2 className="w-3.5 h-3.5" />
-                    <span>Share</span>
                   </button>
                 </div>
               </div>
