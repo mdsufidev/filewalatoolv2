@@ -30,7 +30,7 @@ export const HumanLoadingOverlay: React.FC<HumanLoadingOverlayProps> = ({
           {/* Stylized Human Figure SVG */}
           <svg
             viewBox="0 0 120 120"
-            className="w-24 h-24 relative z-10 animate-[bounce_2.5s_ease-in-out_infinite]"
+            className="w-24 h-24 relative z-10 animate-human-bounce"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
           >
@@ -85,7 +85,7 @@ export const HumanLoadingOverlay: React.FC<HumanLoadingOverlayProps> = ({
             <circle cx="70" cy="48" r="2" fill="#f43f5e" opacity="0.4" />
 
             {/* Magic Stylus / Brush held in hand */}
-            <g className="origin-[82px_68px] animate-[pulse_2s_ease-in-out_infinite]">
+            <g className="origin-[82px_68px] animate-retoucher-wand">
               <line
                 x1="82"
                 y1="68"
@@ -128,16 +128,25 @@ export const HumanLoadingOverlay: React.FC<HumanLoadingOverlayProps> = ({
           </svg>
         </div>
 
-        {/* Loading ..... Typography with animated bouncing dots */}
+        {/* Loading ..... Typography with animated bouncing dots wave */}
         <div className="space-y-1">
           <div className="flex items-center justify-center gap-1.5 text-base sm:text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
             <span>{title}</span>
             <span
-              className={`inline-flex font-mono text-lg tracking-widest font-extrabold animate-pulse ${
+              className={`inline-flex items-center gap-1 font-mono text-xl font-extrabold ml-1 ${
                 isRose ? 'text-rose-500' : 'text-blue-500'
               }`}
+              aria-label="Loading dots"
             >
-              . . . . .
+              {[0, 1, 2, 3, 4].map((i) => (
+                <span
+                  key={i}
+                  className="inline-block animate-dot-hop"
+                  style={{ animationDelay: `${i * 120}ms` }}
+                >
+                  .
+                </span>
+              ))}
             </span>
           </div>
 
@@ -146,22 +155,25 @@ export const HumanLoadingOverlay: React.FC<HumanLoadingOverlayProps> = ({
           </p>
         </div>
 
-        {/* Clean, simple progress bar */}
+        {/* Clean, simple progress bar with active glossy shimmer */}
         <div className="space-y-1.5 pt-1">
-          <div className="w-full bg-zinc-100 dark:bg-zinc-800 h-2 rounded-full overflow-hidden p-0.5">
+          <div className="w-full bg-zinc-100 dark:bg-zinc-800 h-2.5 rounded-full overflow-hidden p-0.5 relative">
             <div
-              className={`h-full rounded-full transition-all duration-200 ${
+              className={`h-full rounded-full transition-all duration-150 ease-out relative overflow-hidden ${
                 isRose
                   ? 'bg-gradient-to-r from-rose-500 to-pink-500'
                   : 'bg-gradient-to-r from-blue-500 to-cyan-400'
               }`}
-              style={{ width: `${Math.max(6, percent)}%` }}
-            />
+              style={{ width: `${Math.max(6, Math.min(100, percent))}%` }}
+            >
+              {/* Subtle fast gloss streak traveling across the active bar */}
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/35 to-transparent animate-gloss-shimmer" />
+            </div>
           </div>
 
           <div className="flex items-center justify-between text-[11px] font-mono text-zinc-400">
             <span>Processing</span>
-            <span className="font-bold text-zinc-600 dark:text-zinc-300">{percent}%</span>
+            <span className="font-bold text-zinc-600 dark:text-zinc-300">{Math.round(percent)}%</span>
           </div>
         </div>
 

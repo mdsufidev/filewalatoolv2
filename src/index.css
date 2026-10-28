@@ -155,3 +155,61 @@
 .animate-backdrop-in {
   animation: drawerFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+/* Snappy Human Retoucher Bounce & Liquid Bouncing Dots */
+@keyframes humanRetoucherBounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes retoucherSparklePulse {
+  0%, 100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 0.85;
+  }
+  50% {
+    transform: scale(1.15) rotate(5deg);
+    opacity: 1;
+  }
+}
+
+@keyframes dotHopWave {
+  0%, 100% {
+    transform: translateY(0);
+    opacity: 0.35;
+  }
+  50% {
+    transform: translateY(-6px);
+    opacity: 1;
+  }
+}
+
+@keyframes progressGlossShimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(250%);
+  }
+}
+
+.animate-human-bounce {
+  animation: humanRetoucherBounce 0.95s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.animate-retoucher-wand {
+  animation: retoucherSparklePulse 0.75s ease-in-out infinite;
+}
+
+.animate-dot-hop {
+  animation: dotHopWave 0.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.animate-gloss-shimmer {
+  animation: progressGlossShimmer 1.3s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+

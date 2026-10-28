@@ -308,6 +308,16 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
     setProgressPercent(5);
     setProgressStage('Initializing Studio-grade AI Engine...');
 
+    let progressTimer: ReturnType<typeof setInterval> | null = null;
+    let currentPct = 5;
+
+    const stopProgressTimer = () => {
+      if (progressTimer) {
+        clearInterval(progressTimer);
+        progressTimer = null;
+      }
+    };
+
     try {
       const img = currentImage.imageElement;
       const restoredCanvas = await NeuralFaceEnhancer.restoreFacePatch(img, {
@@ -315,10 +325,29 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
         hasWebGPU: !!hasWebGPU,
         blendStrength: neuralBlendStrength / 100,
         onProgress: (pct, stage) => {
-          setProgressPercent(pct);
           setProgressStage(stage);
+          if (pct >= 70) {
+            stopProgressTimer();
+            currentPct = Math.max(currentPct, 72);
+            setProgressPercent(Math.round(currentPct));
+            // During heavy neural inference, continuously advance progress towards 94%
+            // so the user never experiences a frozen progress bar
+            progressTimer = setInterval(() => {
+              if (currentPct < 94) {
+                currentPct += (94.5 - currentPct) * 0.05;
+                setProgressPercent(Math.round(currentPct));
+              }
+            }, 70);
+          } else {
+            currentPct = Math.max(currentPct, pct);
+            setProgressPercent(Math.round(currentPct));
+          }
         },
       });
+
+      stopProgressTimer();
+      setProgressPercent(98);
+      setProgressStage('Finishing Studio-Grade enhancement...');
 
       // Persist restored canvas as active working base so other tools/sliders build on it!
       neuralRestoredCanvasRef.current = restoredCanvas;
@@ -363,6 +392,7 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
         exportQuality / 100
       );
     } catch (err: any) {
+      stopProgressTimer();
       console.error('Neural restoration failed:', err);
       setIsProcessing(false);
       onNotify('AI Notice', 'Switched to high-performance local engine: ' + (err.message || ''), 'info');
