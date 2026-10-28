@@ -844,6 +844,39 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
           </div>
         </div>
 
+        {/* Bottom Privacy & Trust Card */}
+        <div
+          className={`rounded-2xl border p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition-colors ${
+            isDark
+              ? 'bg-zinc-900/60 border-zinc-800/70'
+              : 'bg-zinc-50 border-zinc-200'
+          }`}
+        >
+          <div className="flex items-start gap-3.5">
+            <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 flex items-center justify-center shrink-0 mt-0.5">
+              <ShieldCheck className="w-5 h-5 stroke-[2]" />
+            </div>
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <h4 className={`text-xs sm:text-sm font-bold ${isDark ? 'text-white' : 'text-zinc-900'}`}>
+                  100% Client-Side Privacy & Zero Server Uploads
+                </h4>
+                <span className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-medium ${isDark ? 'text-zinc-400 bg-zinc-800' : 'text-zinc-600 bg-zinc-200'}`}>
+                  Local RAM
+                </span>
+              </div>
+              <p className="text-[11px] sm:text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed max-w-2xl">
+                Your images and personal photographs never leave your device. All compression calculations
+                and canvas rendering run directly in local browser memory.
+              </p>
+            </div>
+          </div>
+
+          <div className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-mono font-medium ${isDark ? 'border-zinc-800 bg-zinc-850 text-zinc-400' : 'border-zinc-200 bg-white text-zinc-600'}`}>
+            <span>0 Bytes Transmitted</span>
+          </div>
+        </div>
+
         {/* Detailed Reference, Format Matrix, Presets Guide & FAQ */}
         <CompressionGuideAndFaq isDark={isDark} />
       </div>
@@ -862,7 +895,7 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
       onDragOver={handleWorkspaceDragOver}
       onDragLeave={handleWorkspaceDragLeave}
       onDrop={handleWorkspaceDrop}
-      className="w-full max-w-7xl mx-auto space-y-6 animate-in fade-in duration-200 relative select-none"
+      className="w-full max-w-7xl mx-auto space-y-6 sm:space-y-8 animate-in fade-in duration-200 relative select-none"
     >
       {/* Hidden input for replacing image from workspace */}
       <input
@@ -882,456 +915,275 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
 
       {/* Visual Drop Overlay when dragging a new file over active workspace */}
       {isWorkspaceDragOver && (
-        <div className="absolute inset-0 z-50 rounded-lg border border-dashed border-zinc-400 bg-zinc-950/80 flex flex-col items-center justify-center space-y-3 pointer-events-none">
-          <div className="w-12 h-12 rounded-md bg-zinc-800 text-zinc-300 flex items-center justify-center border border-zinc-700">
-            <UploadCloud className="w-6 h-6" />
+        <div className="absolute inset-0 z-50 rounded-2xl border-2 border-dashed border-red-500 bg-zinc-950/85 backdrop-blur-xs flex flex-col items-center justify-center space-y-3 pointer-events-none">
+          <div className="w-12 h-12 rounded-xl bg-red-500/10 text-red-500 flex items-center justify-center border border-red-500/30">
+            <UploadCloud className="w-6 h-6 stroke-[2]" />
           </div>
-          <div className="text-center">
-            <h4 className="text-sm font-semibold text-white">Drop new image to compress</h4>
-            <p className="text-xs text-zinc-400">Replaces current image immediately</p>
+          <div className="text-center space-y-1">
+            <h4 className="text-sm font-bold text-white">Drop replacement image</h4>
+            <p className="text-xs text-zinc-400">Replaces current image immediately in local RAM</p>
           </div>
         </div>
       )}
 
-      {/* Top Header Bar */}
-      <div
-        className={`flex flex-wrap items-center justify-between gap-4 p-3.5 sm:p-4 border rounded-xl ${
-          isDark
-            ? 'bg-zinc-900 border-zinc-800 text-zinc-100'
-            : 'bg-white border-zinc-200 text-zinc-900'
-        }`}
-      >
-        <div className="flex items-center gap-3 min-w-0">
-          <div
-            className={`w-9 h-9 rounded-lg overflow-hidden shrink-0 flex items-center justify-center ${
-              isDark ? 'bg-zinc-950' : 'bg-zinc-100'
-            }`}
-          >
-            <img
-              src={sourceImage.previewUrl}
-              alt="Source Thumbnail"
-              draggable={false}
-              className="w-full h-full object-cover select-none"
-            />
+      {/* Hero Title & Top Action Bar Row */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pt-1">
+        <div className="space-y-1.5">
+          <div className="inline-flex items-center gap-2 text-[11px] font-mono font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+            <span className="w-2 h-2 rounded-full bg-red-500 shrink-0" />
+            <span>PHOTO TOOLS</span>
           </div>
-          <div className="min-w-0">
-            <h3 className={`text-xs sm:text-sm font-semibold truncate ${isDark ? 'text-white' : 'text-zinc-900'}`}>
-              {sourceImage.name}
-            </h3>
-            <div className={`flex items-center gap-2 text-[11px] mt-0.5 ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
-              <span className="font-mono">
-                {sourceImage.width} × {sourceImage.height} px
-              </span>
-              <span>·</span>
-              <span className="font-medium">
-                {formatFileSize(sourceImage.originalSize)}
-              </span>
-            </div>
-          </div>
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-zinc-950 dark:text-white">
+            Image Compressor to KB
+          </h1>
+          <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400">
+            Make your images lighter without losing the details that matter.
+          </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          {/* Change File Button */}
-          <button
-            onClick={() => workspaceFileInputRef.current?.click()}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
-              isDark
-                ? 'bg-zinc-800 hover:bg-zinc-750 text-zinc-200'
-                : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700'
-            }`}
-          >
-            <UploadCloud className="w-3.5 h-3.5" />
-            <span>Replace</span>
-          </button>
-
-          {/* Reset Button */}
-          <button
-            onClick={handleReset}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
-              isDark
-                ? 'bg-zinc-800 hover:bg-zinc-750 text-zinc-200'
-                : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700'
-            }`}
-          >
-            <RefreshCw className="w-3.5 h-3.5" />
-            <span>New</span>
-          </button>
-
-          {/* Direct Download Button */}
-          <button
-            disabled={!compressedResult || isProcessing}
-            onClick={handleDownload}
-            className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
-              isDark
-                ? 'bg-zinc-100 hover:bg-zinc-200 text-zinc-900'
-                : 'bg-zinc-900 hover:bg-zinc-800 text-white'
-            }`}
-          >
-            <Download className="w-3.5 h-3.5" />
-            <span>Download {compressedResult ? `(${formatFileSize(compressedResult.size)})` : ''}</span>
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={() => workspaceFileInputRef.current?.click()}
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-750 text-xs sm:text-sm font-semibold text-zinc-900 dark:text-white transition-all shadow-xs shrink-0 cursor-pointer"
+        >
+          <UploadCloud className="w-4 h-4 text-zinc-500" />
+          <span>Choose image</span>
+        </button>
       </div>
 
-      {/* Main Grid: Left Preview Dashboard / Right Controls */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* LEFT COLUMN: Before & After Preview Dashboard */}
-        <div className="lg:col-span-8 space-y-4">
-          {/* View mode toggle header */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5">
-              <span className={`text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>
-                Preview
-              </span>
+      {/* Main Grid: Left Comparison Preview / Right Stacked Cards */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* LEFT COLUMN: Before & After Comparison Preview Card */}
+        <div className="lg:col-span-7 xl:col-span-8">
+          <div
+            className={`border rounded-2xl p-3.5 sm:p-4 space-y-3.5 transition-colors relative overflow-hidden ${
+              isDark
+                ? 'bg-zinc-900/90 border-zinc-800/80 shadow-xs'
+                : 'bg-white border-zinc-200 shadow-xs'
+            }`}
+          >
+            {/* Header bar inside left card */}
+            <div className="flex items-center justify-between gap-3 px-1">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div
+                  className={`w-8 h-8 rounded-lg overflow-hidden shrink-0 flex items-center justify-center border ${
+                    isDark ? 'bg-zinc-850 border-zinc-800 text-zinc-400' : 'bg-zinc-100 border-zinc-200 text-zinc-600'
+                  }`}
+                >
+                  <ImageIcon className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className={`text-xs sm:text-sm font-semibold truncate ${isDark ? 'text-white' : 'text-zinc-900'}`}>
+                    {sourceImage.name}
+                  </h3>
+                  <div className={`flex items-center gap-2 text-[11px] font-mono mt-0.5 ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                    <span>{sourceImage.width} × {sourceImage.height} px</span>
+                    <span>·</span>
+                    <span className="font-semibold">{formatFileSize(sourceImage.originalSize)}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => workspaceFileInputRef.current?.click()}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors cursor-pointer ${
+                    isDark
+                      ? 'border-zinc-700 bg-zinc-800 text-zinc-200 hover:bg-zinc-750'
+                      : 'border-zinc-200 bg-zinc-50 text-zinc-700 hover:bg-zinc-100'
+                  }`}
+                >
+                  <UploadCloud className="w-3.5 h-3.5" />
+                  <span>Replace</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Comparison Canvas Area */}
+            <div className="relative rounded-xl overflow-hidden bg-black/15 min-h-[360px] sm:min-h-[460px] flex items-center justify-center border border-zinc-200/50 dark:border-zinc-800/60">
               {isProcessing && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-medium bg-blue-500/10 text-blue-400 animate-pulse">
-                  Optimizing...
-                </span>
+                <div className="absolute inset-0 z-20 bg-zinc-950/60 backdrop-blur-xs flex flex-col items-center justify-center space-y-3">
+                  <div className="w-8 h-8 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
+                  <span className="text-xs font-mono font-medium text-zinc-200 bg-zinc-900 px-3 py-1 rounded">
+                    Optimizing image in local RAM...
+                  </span>
+                </div>
+              )}
+
+              {compressedResult ? (
+                <ComparisonSlider
+                  originalSrc={sourceImage.previewUrl}
+                  processedSrc={compressedResult.url}
+                  originalLabel={`Original`}
+                  processedLabel={`Compressed`}
+                  className="max-h-[520px] w-full"
+                />
+              ) : (
+                <div className="relative max-h-[500px] max-w-full flex items-center justify-center overflow-hidden">
+                  <img
+                    src={sourceImage.previewUrl}
+                    alt="Original Preview"
+                    draggable={false}
+                    className="max-h-[460px] max-w-full object-contain select-none"
+                  />
+                </div>
               )}
             </div>
 
-            <div
-              className={`inline-flex p-0.5 rounded-lg text-xs ${
-                isDark ? 'bg-zinc-900 border border-zinc-800' : 'bg-zinc-100 border border-zinc-200'
-              }`}
-            >
-              <button
-                onClick={() => setViewMode('split')}
-                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer ${
-                  viewMode === 'split'
-                    ? isDark
-                      ? 'bg-zinc-800 text-white shadow-xs font-semibold'
-                      : 'bg-white text-zinc-900 shadow-xs font-semibold'
-                    : isDark
-                      ? 'text-zinc-400 hover:text-zinc-200'
-                      : 'text-zinc-600 hover:text-zinc-950'
-                }`}
-              >
-                <Columns className="w-3.5 h-3.5" />
-                <span>Split Slider</span>
-              </button>
+            {/* Quick Action footer inside left card */}
+            <div className="flex flex-wrap items-center justify-between text-xs text-zinc-500 px-1 pt-0.5 gap-2">
+              <span className="flex items-center gap-1.5 text-[11px] font-mono">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+                <span>100% In-Browser Engine · Zero Uploads</span>
+              </span>
 
-              <button
-                onClick={() => setViewMode('side-by-side')}
-                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer ${
-                  viewMode === 'side-by-side'
-                    ? isDark
-                      ? 'bg-zinc-800 text-white shadow-xs font-semibold'
-                      : 'bg-white text-zinc-900 shadow-xs font-semibold'
-                    : isDark
-                      ? 'text-zinc-400 hover:text-zinc-200'
-                      : 'text-zinc-600 hover:text-zinc-950'
-                }`}
-              >
-                <Layers className="w-3.5 h-3.5" />
-                <span>Side by Side</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Preview Container */}
-          <div
-            className={`border rounded-xl p-4 flex flex-col items-center justify-center min-h-[420px] transition-colors relative overflow-hidden ${
-              isDark
-                ? 'bg-zinc-900 border-zinc-800'
-                : 'bg-zinc-50 border-zinc-200'
-            }`}
-          >
-            {isProcessing && (
-              <div className="absolute inset-0 z-20 bg-zinc-950/60 flex flex-col items-center justify-center space-y-3">
-                <div className="w-8 h-8 border-2 border-zinc-400 border-t-transparent rounded-full animate-spin" />
-                <span className="text-xs font-mono font-medium text-zinc-200 bg-zinc-900 px-3 py-1 rounded">
-                  Optimizing in browser...
-                </span>
-              </div>
-            )}
-
-            {/* Split Slider Mode */}
-            {viewMode === 'split' && (
-              <div className="w-full h-full flex items-center justify-center">
-                {compressedResult ? (
-                  <ComparisonSlider
-                    originalSrc={sourceImage.previewUrl}
-                    processedSrc={compressedResult.url}
-                    originalLabel={`Original (${formatFileSize(sourceImage.originalSize)})`}
-                    processedLabel={`Compressed (${formatFileSize(compressedResult.size)})`}
-                    className="max-h-[500px]"
-                  />
-                ) : (
-                  <div className="relative max-h-[500px] max-w-full flex items-center justify-center overflow-hidden rounded-xl">
-                    <img
-                      src={sourceImage.previewUrl}
-                      alt="Original Preview"
-                      draggable={false}
-                      className="max-h-[440px] max-w-full object-contain select-none"
-                    />
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Side-by-Side Dual Card Mode */}
-            {viewMode === 'side-by-side' && (
-              <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Original Card */}
-                <div
-                  className={`rounded-xl p-3 flex flex-col space-y-2 ${
-                    isDark ? 'bg-zinc-950/70' : 'bg-zinc-100/70'
-                  }`}
-                >
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-zinc-400 uppercase text-[10px] tracking-wider">
-                      Original
-                    </span>
-                    <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded bg-zinc-900/60 text-zinc-300">
-                      {formatFileSize(sourceImage.originalSize)}
-                    </span>
-                  </div>
-                  <div className="h-[280px] w-full flex items-center justify-center overflow-hidden rounded-lg bg-black/10">
-                    <img
-                      src={sourceImage.previewUrl}
-                      alt="Original"
-                      draggable={false}
-                      className="max-h-full max-w-full object-contain select-none"
-                    />
-                  </div>
-                  <div className="text-[11px] font-mono text-zinc-500 flex justify-between">
-                    <span>{sourceImage.width} × {sourceImage.height} px</span>
-                    <span>{sourceImage.format.replace('image/', '').toUpperCase()}</span>
-                  </div>
-                </div>
-
-                {/* Compressed Card */}
-                <div
-                  className={`rounded-xl p-3 flex flex-col space-y-2 ${
-                    isDark ? 'bg-zinc-950/70' : 'bg-zinc-100/70'
-                  }`}
-                >
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-emerald-500 uppercase text-[10px] tracking-wider flex items-center gap-1">
-                      <Check className="w-3 h-3" /> Compressed
-                    </span>
-                    <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400">
-                      {compressedResult ? formatFileSize(compressedResult.size) : '...'}
-                    </span>
-                  </div>
-                  <div className="h-[280px] w-full flex items-center justify-center overflow-hidden rounded-lg bg-black/10">
-                    {compressedResult ? (
-                      <img
-                        src={compressedResult.url}
-                        alt="Compressed"
-                        draggable={false}
-                        className="max-h-full max-w-full object-contain select-none"
-                      />
-                    ) : (
-                      <div className="w-6 h-6 border-2 border-zinc-600 border-t-transparent rounded-full animate-spin" />
-                    )}
-                  </div>
-                  <div className="text-[11px] font-mono text-zinc-500 flex justify-between">
-                    <span>
-                      {compressedResult ? `${compressedResult.width} × ${compressedResult.height} px` : '...'}
-                    </span>
-                    <span className={isReduced ? 'text-emerald-400 font-semibold' : 'text-amber-400 font-semibold'}>
-                      {compressedResult && (isReduced ? `${savedPercentage}% smaller` : 'Original size')}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Quick Action Bar under Preview (Copy to clipboard & Share) */}
-          <div className="flex flex-wrap items-center justify-between text-xs text-zinc-500 px-1 gap-2">
-            <span className="flex items-center gap-1.5">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-              <span>In-Browser RAM</span>
-            </span>
-
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={handleCopyToClipboard}
-                disabled={!compressedResult}
-                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors cursor-pointer disabled:opacity-50 ${
-                  isDark
-                    ? 'bg-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-750'
-                    : 'bg-zinc-100 text-zinc-700 hover:text-zinc-900 hover:bg-zinc-200'
-                }`}
-              >
-                <Copy className="w-3 h-3 text-blue-500" />
-                <span>Copy</span>
-              </button>
-
-              {typeof navigator !== 'undefined' && 'share' in navigator && (
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={handleShare}
+                  onClick={handleCopyToClipboard}
                   disabled={!compressedResult}
-                  className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors cursor-pointer disabled:opacity-50 ${
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer disabled:opacity-50 ${
                     isDark
                       ? 'bg-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-750'
                       : 'bg-zinc-100 text-zinc-700 hover:text-zinc-900 hover:bg-zinc-200'
                   }`}
                 >
-                  <Share2 className="w-3 h-3 text-indigo-500" />
-                  <span>Share</span>
+                  <Copy className="w-3.5 h-3.5 text-blue-500" />
+                  <span>Copy</span>
                 </button>
-              )}
+
+                {typeof navigator !== 'undefined' && 'share' in navigator && (
+                  <button
+                    type="button"
+                    onClick={handleShare}
+                    disabled={!compressedResult}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer disabled:opacity-50 ${
+                      isDark
+                        ? 'bg-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-750'
+                        : 'bg-zinc-100 text-zinc-700 hover:text-zinc-900 hover:bg-zinc-200'
+                    }`}
+                  >
+                    <Share2 className="w-3.5 h-3.5 text-indigo-500" />
+                    <span>Share</span>
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>
 
-        {/* RIGHT COLUMN: Controls Panel & Metrics */}
-        <div className="lg:col-span-4 space-y-4">
-          {/* 1. Metrics & Savings Card (Unboxed Inner Elements) */}
+        {/* RIGHT COLUMN: Results & Fine Tune Stacked Cards */}
+        <div className="lg:col-span-5 xl:col-span-4 space-y-4">
+          {/* Card 1: YOUR RESULTS */}
           <div
-            className={`p-4 sm:p-5 rounded-xl border space-y-3.5 ${
-              isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'
+            className={`p-5 rounded-2xl border space-y-4 transition-colors ${
+              isDark ? 'bg-zinc-900/90 border-zinc-800/80 shadow-xs' : 'bg-white border-zinc-200 shadow-xs'
             }`}
           >
             <div className="flex items-center justify-between">
-              <span className={`text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
-                Result
-              </span>
+              <div>
+                <span className="text-[10px] font-mono font-bold tracking-wider uppercase text-zinc-400 dark:text-zinc-500 block">
+                  YOUR RESULTS
+                </span>
+                <h3 className={`text-base font-bold mt-0.5 ${isDark ? 'text-white' : 'text-zinc-950'}`}>
+                  File size
+                </h3>
+              </div>
 
-              <span
-                className={`text-xs font-mono font-bold px-2 py-0.5 rounded ${
-                  isReduced
-                    ? isDark
-                      ? 'bg-emerald-500/10 text-emerald-400'
-                      : 'bg-emerald-50 text-emerald-700'
-                    : isIncreased
-                      ? isDark
-                        ? 'bg-rose-500/10 text-rose-400'
-                        : 'bg-rose-50 text-rose-700'
-                      : isDark
-                        ? 'bg-amber-500/10 text-amber-400'
-                        : 'bg-amber-50 text-amber-700'
-                }`}
-              >
-                {isReduced ? (
-                  <span className="flex items-center gap-1">
-                    <TrendingDown className="w-3 h-3 text-emerald-500" />
-                    {savedPercentage}% Smaller
-                  </span>
-                ) : isIncreased ? (
-                  <span className="flex items-center gap-1">
-                    <TrendingUp className="w-3 h-3 text-rose-500" />
-                    +{Math.abs(savedPercentage)}% Larger
-                  </span>
-                ) : (
-                  'Original Size'
-                )}
-              </span>
+              {isReduced ? (
+                <span className="px-2.5 py-1 rounded-full text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/50">
+                  {savedPercentage}% smaller
+                </span>
+              ) : isIncreased ? (
+                <span className="px-2.5 py-1 rounded-full text-xs font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800/50">
+                  +{Math.abs(savedPercentage)}% larger
+                </span>
+              ) : (
+                <span className="px-2.5 py-1 rounded-full text-xs font-bold text-zinc-600 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800">
+                  Optimized
+                </span>
+              )}
             </div>
 
-            {/* Comparison Metrics Grid: Target Size & Final Output Size side-by-side */}
-            <div className={`grid ${mode === 'target-size' ? 'grid-cols-3' : 'grid-cols-2'} gap-2.5`}>
-              <div className={`p-3 rounded-lg ${isDark ? 'bg-zinc-850' : 'bg-zinc-100'}`}>
-                <span className={`text-[10px] font-mono block ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
-                  ORIGINAL
-                </span>
-                <span className={`text-sm font-bold mt-0.5 block ${isDark ? 'text-white' : 'text-zinc-900'}`}>
+            {/* Stats Breakdown Rows */}
+            <div className="space-y-3 pt-2 border-t border-zinc-100 dark:border-zinc-800/80">
+              {/* Row 1: Original */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <span className="w-2 h-2 rounded-full bg-zinc-400 shrink-0" />
+                  <div>
+                    <span className={`text-xs sm:text-sm font-semibold block ${isDark ? 'text-zinc-200' : 'text-zinc-800'}`}>
+                      Original
+                    </span>
+                    <span className="text-[11px] text-zinc-500 block">
+                      Before compression
+                    </span>
+                  </div>
+                </div>
+                <span className={`text-xs sm:text-sm font-mono font-bold ${isDark ? 'text-white' : 'text-zinc-950'}`}>
                   {formatFileSize(sourceImage.originalSize)}
                 </span>
-                <span className="text-[10px] text-zinc-500 block truncate font-mono">
-                  {sourceImage.width}×{sourceImage.height}px
-                </span>
               </div>
 
-              {mode === 'target-size' && (
-                <div className={`p-3 rounded-lg border ${isDark ? 'bg-zinc-850/80 border-blue-500/30' : 'bg-blue-50/60 border-blue-200'}`}>
-                  <span className={`text-[10px] font-mono block ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>
-                    TARGET SIZE
-                  </span>
-                  <span className={`text-sm font-bold mt-0.5 block ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>
-                    {targetKb} KB
-                  </span>
-                  <span className="text-[10px] text-blue-500/80 block truncate font-mono">
-                    Max Limit
-                  </span>
+              {/* Row 2: Compressed */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <span className="w-2 h-2 rounded-full bg-red-500 shrink-0" />
+                  <div>
+                    <span className={`text-xs sm:text-sm font-semibold block ${isDark ? 'text-white' : 'text-zinc-900'}`}>
+                      Compressed
+                    </span>
+                    <span className="text-[11px] text-zinc-500 block">
+                      {outputFormat === 'original'
+                        ? sourceImage.format.replace('image/', '').toUpperCase()
+                        : outputFormat.replace('image/', '').toUpperCase()}{' '}
+                      · {mode === 'quality' ? `${quality}% quality` : `${targetKb} KB limit`}
+                    </span>
+                  </div>
                 </div>
-              )}
-
-              <div className={`p-3 rounded-lg border ${compressedResult && mode === 'target-size' && compressedResult.size <= targetKb * 1024 ? (isDark ? 'bg-emerald-950/20 border-emerald-500/30' : 'bg-emerald-50/60 border-emerald-200') : (isDark ? 'bg-zinc-850 border-transparent' : 'bg-zinc-100 border-transparent')}`}>
-                <span className={`text-[10px] font-mono block ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
-                  FINAL OUTPUT
-                </span>
-                <span className="text-sm font-bold text-emerald-500 mt-0.5 block">
+                <span className={`text-xs sm:text-sm font-mono font-bold ${isReduced ? 'text-emerald-500' : isDark ? 'text-white' : 'text-zinc-950'}`}>
                   {compressedResult ? formatFileSize(compressedResult.size) : 'Calculating...'}
-                </span>
-                <span className="text-[10px] text-emerald-500/80 block truncate font-mono">
-                  {compressedResult ? (
-                    mode === 'target-size' && compressedResult.size <= targetKb * 1024
-                      ? '✓ Meets Limit'
-                      : isReduced
-                        ? `Saved ${formatFileSize(compressedResult.savedBytes)}`
-                        : 'No size reduction'
-                  ) : '...'}
                 </span>
               </div>
             </div>
 
-            {/* Downscaled Warning badge if solver automatically resized dimensions for quota */}
-            {compressedResult?.wasDownscaled && (
-              <div className="p-2.5 rounded-lg bg-indigo-500/10 text-indigo-400 text-[11px] flex items-center gap-2">
-                <Info className="w-3.5 h-3.5 shrink-0" />
-                <span>Scaled to {compressedResult.width}×{compressedResult.height}px for {targetKb}KB quota.</span>
+            {/* Highlight Banner */}
+            {isReduced && compressedResult ? (
+              <div className="p-3 rounded-xl bg-zinc-100 dark:bg-zinc-800/80 border border-zinc-200/80 dark:border-zinc-700/50 text-xs font-medium text-zinc-800 dark:text-zinc-200 flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-red-500 shrink-0" />
+                <span>+ You save <strong>{formatFileSize(compressedResult.savedBytes)}</strong> with this setting</span>
               </div>
-            )}
-
-            {/* Notice if PNG size increased or not reducing */}
-            {((outputFormat === 'image/png') || (sourceImage.format === 'image/png' && outputFormat === 'original')) && (
-              <div className="p-2.5 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[11px] flex items-center justify-between gap-2">
-                <div className="flex items-center gap-1.5">
-                  <Info className="w-3.5 h-3.5 shrink-0" />
-                  <span>PNG is lossless. Switch to <strong>WebP</strong> for up to 80% size savings.</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setOutputFormat('image/webp')}
-                  className="px-2 py-0.5 rounded font-semibold bg-blue-600 text-white hover:bg-blue-700 text-[10px] shrink-0 cursor-pointer"
-                >
-                  Use WebP
-                </button>
+            ) : isIncreased ? (
+              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-500 flex items-center gap-2">
+                <Info className="w-4 h-4 shrink-0" />
+                <span>Re-encoding produced a larger output. Lower quality or choose WebP format.</span>
               </div>
-            )}
-
-            {/* Progress bar showing reduction */}
-            {compressedResult && (
-              <div className="space-y-1.5 pt-1">
-                <div className="flex items-center justify-between text-[11px] font-mono text-zinc-500">
-                  <span>File Size Savings</span>
-                  <span className={isReduced ? 'text-emerald-500 font-bold' : isIncreased ? 'text-rose-500 font-bold' : 'text-zinc-400'}>
-                    {isReduced ? `-${savedPercentage}%` : isIncreased ? `+${Math.abs(savedPercentage)}%` : '0%'}
-                  </span>
-                </div>
-                <div className={`h-2 rounded-full overflow-hidden ${isDark ? 'bg-zinc-800' : 'bg-zinc-200'}`}>
-                  <div
-                    className={`h-full rounded-full transition-all duration-300 ${isReduced ? 'bg-emerald-500' : isIncreased ? 'bg-rose-500' : 'bg-zinc-400'}`}
-                    style={{ width: `${Math.min(100, Math.max(0, isReduced ? savedPercentage : Math.abs(savedPercentage)))}%` }}
-                  />
-                </div>
-              </div>
-            )}
+            ) : null}
           </div>
 
-          {/* 2. Compression Controls Panel */}
+          {/* Card 2: FINE TUNE */}
           <div
-            className={`p-4 sm:p-5 rounded-xl border space-y-4 ${
-              isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'
+            className={`p-5 rounded-2xl border space-y-4 transition-colors ${
+              isDark ? 'bg-zinc-900/90 border-zinc-800/80 shadow-xs' : 'bg-white border-zinc-200 shadow-xs'
             }`}
           >
             <div className="flex items-center justify-between">
-              <h4 className={`text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-zinc-300' : 'text-zinc-700'}`}>
-                Settings
-              </h4>
+              <div>
+                <span className="text-[10px] font-mono font-bold tracking-wider uppercase text-zinc-400 dark:text-zinc-500 block">
+                  FINE TUNE
+                </span>
+                <h3 className={`text-base font-bold mt-0.5 ${isDark ? 'text-white' : 'text-zinc-950'}`}>
+                  Compression
+                </h3>
+              </div>
 
               {/* Mode switch: Quality slider vs Target KB */}
-              <div className={`flex items-center p-0.5 rounded-lg ${isDark ? 'bg-zinc-850' : 'bg-zinc-100'}`}>
+              <div className={`inline-flex p-0.5 rounded-lg text-xs ${isDark ? 'bg-zinc-800' : 'bg-zinc-100'}`}>
                 <button
+                  type="button"
                   onClick={() => setMode('quality')}
-                  className={`px-2 py-0.5 rounded-md text-xs font-medium transition-colors cursor-pointer ${
+                  className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer ${
                     mode === 'quality'
                       ? isDark
                         ? 'bg-zinc-700 text-white shadow-xs font-semibold'
@@ -1344,8 +1196,9 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
                   Quality
                 </button>
                 <button
+                  type="button"
                   onClick={() => setMode('target-size')}
-                  className={`px-2 py-0.5 rounded-md text-xs font-medium transition-colors cursor-pointer ${
+                  className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer ${
                     mode === 'target-size'
                       ? isDark
                         ? 'bg-zinc-700 text-white shadow-xs font-semibold'
@@ -1362,14 +1215,19 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
 
             {/* Quality Slider Controls */}
             {mode === 'quality' ? (
-              <div className="space-y-3">
+              <div className="space-y-2.5 pt-1 border-t border-zinc-100 dark:border-zinc-800/80">
                 <div className="flex items-center justify-between text-xs">
-                  <label className={`font-medium ${isDark ? 'text-zinc-300' : 'text-zinc-700'}`}>
-                    Quality Level
-                  </label>
-                  <span className={`font-mono text-xs font-bold px-2 py-0.5 rounded ${isDark ? 'text-zinc-200 bg-zinc-800' : 'text-zinc-800 bg-zinc-100'}`}>
-                    {quality}%
+                  <span className={`font-semibold ${isDark ? 'text-zinc-300' : 'text-zinc-700'}`}>
+                    Quality
                   </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-medium text-zinc-500">
+                      {quality <= 40 ? 'Max Compression' : quality <= 65 ? 'High Savings' : quality <= 85 ? 'Balanced' : 'High Quality'}
+                    </span>
+                    <span className={`font-mono text-xs font-bold px-2 py-0.5 rounded ${isDark ? 'text-white bg-zinc-800' : 'text-zinc-900 bg-zinc-100'}`}>
+                      {quality}%
+                    </span>
+                  </div>
                 </div>
 
                 <input
@@ -1380,33 +1238,37 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
                   value={quality}
                   aria-label="Compression quality slider"
                   onChange={(e) => setQuality(parseInt(e.target.value, 10))}
-                  className="w-full h-1.5 rounded-lg appearance-none cursor-pointer accent-blue-500 focus:outline-none"
+                  className="w-full h-1.5 rounded-lg appearance-none cursor-pointer accent-red-500 focus:outline-none"
                   style={{
                     background: isDark
-                      ? `linear-gradient(to right, #3b82f6 ${(quality - 10) / 0.9}%, #27272a ${(quality - 10) / 0.9}%)`
-                      : `linear-gradient(to right, #3b82f6 ${(quality - 10) / 0.9}%, #e4e4e7 ${(quality - 10) / 0.9}%)`,
+                      ? `linear-gradient(to right, #ef4444 ${(quality - 10) / 0.9}%, #27272a ${(quality - 10) / 0.9}%)`
+                      : `linear-gradient(to right, #ef4444 ${(quality - 10) / 0.9}%, #e4e4e7 ${(quality - 10) / 0.9}%)`,
                   }}
                 />
 
-                {/* Quick Presets */}
-                <div className="flex items-center justify-between gap-1.5 pt-1">
+                <div className="flex items-center justify-between text-[11px] text-zinc-400 pt-0.5">
+                  <span>Smaller</span>
+                  <span>Sharper</span>
+                </div>
+
+                {/* Quick Quality Presets */}
+                <div className="grid grid-cols-4 gap-1.5 pt-1">
                   {[
-                    { label: 'Max (35%)', val: 35 },
-                    { label: 'Web (60%)', val: 60 },
-                    { label: 'Balanced (75%)', val: 75 },
-                    { label: 'High (90%)', val: 90 },
+                    { label: '35%', val: 35 },
+                    { label: '60%', val: 60 },
+                    { label: 'Balanced', val: 75 },
+                    { label: '90%', val: 90 },
                   ].map((p) => (
                     <button
                       key={p.val}
+                      type="button"
                       onClick={() => applyQualityPreset(p.val)}
-                      className={`text-[10px] px-2 py-1 rounded-md font-medium transition-colors cursor-pointer flex-1 text-center ${
+                      className={`text-[10px] px-2 py-1 rounded-md font-medium transition-colors cursor-pointer text-center ${
                         quality === p.val
-                          ? isDark
-                            ? 'bg-zinc-800 text-white font-semibold'
-                            : 'bg-zinc-200 text-zinc-950 font-semibold'
+                          ? 'bg-red-500 text-white font-semibold'
                           : isDark
-                            ? 'bg-zinc-850 text-zinc-400 hover:text-white'
-                            : 'bg-zinc-100 text-zinc-600 hover:text-zinc-950'
+                            ? 'bg-zinc-800 text-zinc-300 hover:text-white'
+                            : 'bg-zinc-100 text-zinc-700 hover:text-zinc-950'
                       }`}
                     >
                       {p.label}
@@ -1416,12 +1278,12 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
               </div>
             ) : (
               /* Target KB Solver Mode */
-              <div className="space-y-3">
+              <div className="space-y-3 pt-1 border-t border-zinc-100 dark:border-zinc-800/80">
                 <div className="flex items-center justify-between text-xs">
-                  <label className={`font-medium ${isDark ? 'text-zinc-300' : 'text-zinc-700'}`}>
+                  <span className={`font-semibold ${isDark ? 'text-zinc-300' : 'text-zinc-700'}`}>
                     Target File Size
-                  </label>
-                  <span className="font-mono text-xs font-bold text-blue-400">
+                  </span>
+                  <span className="font-mono text-xs font-bold text-red-500">
                     {targetKb} KB
                   </span>
                 </div>
@@ -1448,7 +1310,7 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
                         setTargetKb(20);
                       }
                     }}
-                    className={`w-full px-3 py-1.5 rounded-lg text-xs font-mono font-medium border focus:outline-none focus:ring-1 focus:ring-blue-500 ${
+                    className={`w-full px-3 py-1.5 rounded-lg text-xs font-mono font-medium border focus:outline-none focus:ring-1 focus:ring-red-500 ${
                       isDark
                         ? 'bg-zinc-850 border-zinc-750 text-white'
                         : 'bg-zinc-50 border-zinc-200 text-zinc-900'
@@ -1457,24 +1319,24 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
                   <span className="text-xs text-zinc-400 font-mono font-semibold">KB</span>
                 </div>
 
+                {/* Indian Govt & Exam Portal Chips */}
                 <div className="grid grid-cols-4 gap-1.5">
                   {[
-                    { kb: 20, label: '20 KB' },
-                    { kb: 50, label: '50 KB' },
-                    { kb: 100, label: '100 KB' },
-                    { kb: 250, label: '250 KB' },
+                    { kb: 20, label: '< 20 KB' },
+                    { kb: 50, label: '< 50 KB' },
+                    { kb: 100, label: '< 100 KB' },
+                    { kb: 200, label: '< 200 KB' },
                   ].map((item) => (
                     <button
                       key={item.kb}
+                      type="button"
                       onClick={() => applyTargetKbPreset(item.kb)}
                       className={`text-[10px] py-1 px-1 rounded-md font-medium text-center transition-colors cursor-pointer ${
                         targetKb === item.kb
-                          ? isDark
-                            ? 'bg-zinc-800 text-white font-semibold'
-                            : 'bg-zinc-200 text-zinc-950 font-semibold'
+                          ? 'bg-red-500 text-white font-semibold'
                           : isDark
-                            ? 'bg-zinc-850 text-zinc-400 hover:text-white'
-                            : 'bg-zinc-100 text-zinc-600 hover:text-zinc-950'
+                            ? 'bg-zinc-800 text-zinc-300 hover:text-white'
+                            : 'bg-zinc-100 text-zinc-700 hover:text-zinc-950'
                       }`}
                     >
                       {item.label}
@@ -1485,40 +1347,46 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
             )}
 
             {/* Output Format Selector */}
-            <div className="space-y-1.5 pt-2 border-t border-zinc-200 dark:border-zinc-800">
-              <label className={`text-xs font-medium ${isDark ? 'text-zinc-300' : 'text-zinc-700'}`}>
-                Output Format
-              </label>
+            <div className="space-y-2 pt-2 border-t border-zinc-100 dark:border-zinc-800/80">
+              <div className="flex items-center justify-between text-xs">
+                <span className={`font-semibold ${isDark ? 'text-zinc-300' : 'text-zinc-700'}`}>
+                  Output format
+                </span>
+                <span className="text-[11px] text-zinc-500">
+                  Choose one
+                </span>
+              </div>
+
               <div className="grid grid-cols-4 gap-1.5">
                 {[
-                  { id: 'original', label: 'Original' },
-                  { id: 'image/webp', label: 'WebP' },
+                  { id: 'image/webp', label: 'WEBP' },
                   { id: 'image/jpeg', label: 'JPG' },
                   { id: 'image/png', label: 'PNG' },
+                  { id: 'original', label: 'Original' },
                 ].map((fmt) => (
                   <button
                     key={fmt.id}
+                    type="button"
                     onClick={() => setOutputFormat(fmt.id as OutputFormat)}
-                    className={`py-1.5 px-1 rounded-md text-xs font-medium text-center transition-all cursor-pointer ${
+                    className={`py-2 px-1 rounded-lg text-xs font-semibold text-center transition-all cursor-pointer flex items-center justify-center gap-1 ${
                       outputFormat === fmt.id
-                        ? isDark
-                          ? 'bg-zinc-800 text-white font-semibold'
-                          : 'bg-zinc-900 text-white font-semibold'
+                        ? 'border-2 border-red-500 bg-red-500/10 text-red-500 dark:text-red-400'
                         : isDark
-                          ? 'bg-zinc-850 text-zinc-400 hover:text-white'
-                          : 'bg-zinc-100 text-zinc-600 hover:text-zinc-950'
+                          ? 'border border-zinc-800 bg-zinc-850 text-zinc-400 hover:text-white hover:bg-zinc-800'
+                          : 'border border-zinc-200 bg-zinc-50 text-zinc-600 hover:text-zinc-950 hover:bg-zinc-100'
                     }`}
                   >
-                    {fmt.label}
+                    <span>{fmt.label}</span>
+                    {outputFormat === fmt.id && <Check className="w-3 h-3 stroke-[3]" />}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Scale Down Resolution (Optional) */}
-            <div className="space-y-2 pt-2 border-t border-zinc-200 dark:border-zinc-800">
+            {/* Resolution Scaling Dropdown/Chips */}
+            <div className="space-y-1.5 pt-2 border-t border-zinc-100 dark:border-zinc-800/80">
               <div className="flex items-center justify-between text-xs">
-                <span className={`font-medium ${isDark ? 'text-zinc-300' : 'text-zinc-700'}`}>
+                <span className={`font-medium ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>
                   Resolution
                 </span>
                 <span className="font-mono text-zinc-400 text-xs">
@@ -1530,6 +1398,7 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
                 {[100, 75, 50, 25].map((pct) => (
                   <button
                     key={pct}
+                    type="button"
                     onClick={() => setScalePercentage(pct)}
                     className={`py-1 rounded-md text-xs font-medium transition-colors cursor-pointer ${
                       scalePercentage === pct
@@ -1547,36 +1416,54 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
               </div>
             </div>
 
-            {/* Direct Re-compress Action Button */}
-            <div className="pt-1">
+            {/* Primary Action: Download Button */}
+            <div className="pt-2">
               <button
-                disabled={isProcessing}
-                onClick={executeCompression}
-                className={`w-full py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-2 transition-colors cursor-pointer ${
-                  isDark
-                    ? 'bg-zinc-800 hover:bg-zinc-750 text-zinc-200'
-                    : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-800'
-                }`}
+                type="button"
+                disabled={!compressedResult || isProcessing}
+                onClick={handleDownload}
+                className="w-full py-3 px-4 rounded-xl text-xs sm:text-sm font-bold bg-red-600 hover:bg-red-500 active:scale-[0.99] text-white flex items-center justify-center gap-2 transition-all shadow-md shadow-red-600/25 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
               >
-                <RefreshCw className={`w-3.5 h-3.5 ${isProcessing ? 'animate-spin' : ''}`} />
-                <span>{isProcessing ? 'Optimizing...' : 'Re-compress'}</span>
+                <Download className="w-4 h-4 stroke-[2.5]" />
+                <span>
+                  {compressedResult ? `Download (${formatFileSize(compressedResult.size)})` : 'Download Image'}
+                </span>
               </button>
             </div>
           </div>
+        </div>
+      </div>
 
-          {/* 3. Direct Download CTA */}
-          <button
-            disabled={!compressedResult || isProcessing}
-            onClick={handleDownload}
-            className={`w-full py-2.5 px-4 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
-              isDark
-                ? 'bg-zinc-100 hover:bg-zinc-200 text-zinc-900'
-                : 'bg-zinc-900 hover:bg-zinc-800 text-white'
-            }`}
-          >
-            <Download className="w-4 h-4" />
-            <span>Download Image</span>
-          </button>
+      {/* Bottom Privacy & Trust Card */}
+      <div
+        className={`rounded-2xl border p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition-colors ${
+          isDark
+            ? 'bg-zinc-900/60 border-zinc-800/70'
+            : 'bg-zinc-50 border-zinc-200'
+        }`}
+      >
+        <div className="flex items-start gap-3.5">
+          <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 flex items-center justify-center shrink-0 mt-0.5">
+            <ShieldCheck className="w-5 h-5 stroke-[2]" />
+          </div>
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <h4 className={`text-xs sm:text-sm font-bold ${isDark ? 'text-white' : 'text-zinc-900'}`}>
+                100% Client-Side Privacy & Zero Server Uploads
+              </h4>
+              <span className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-medium ${isDark ? 'text-zinc-400 bg-zinc-800' : 'text-zinc-600 bg-zinc-200'}`}>
+                Local RAM
+              </span>
+            </div>
+            <p className="text-[11px] sm:text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed max-w-2xl">
+              Your images and personal photographs never leave your device. All compression calculations
+              and canvas rendering run directly in local browser memory.
+            </p>
+          </div>
+        </div>
+
+        <div className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-mono font-medium ${isDark ? 'border-zinc-800 bg-zinc-850 text-zinc-400' : 'border-zinc-200 bg-white text-zinc-600'}`}>
+          <span>0 Bytes Transmitted</span>
         </div>
       </div>
 
