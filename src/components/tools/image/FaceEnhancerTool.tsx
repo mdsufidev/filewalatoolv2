@@ -683,7 +683,7 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
                     >
                       <div>
                         <div className="text-xs font-bold">CodeFormer (Discrete Codebook Transformer)</div>
-                        <div className="text-[10px] text-zinc-500">Quantized FP16 · Heavy blur, vintage photos & deep restoration</div>
+                        <div className="text-[10px] text-zinc-500">FaceFusion CodeFormer · Heavy blur, vintage photos & deep restoration</div>
                       </div>
                       <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500 text-white font-bold shrink-0 ml-2">
                         ULTRA RESTORE

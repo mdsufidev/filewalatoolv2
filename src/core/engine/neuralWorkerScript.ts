@@ -173,7 +173,26 @@ self.onmessage = async function(e) {
 
     sendProgress(90, 'Unpacking photorealistic facial features...');
 
-    var outputTensor = results[outputName];
+    // Intelligently locate the face image tensor among all returned outputs
+    var outputTensor = null;
+    if (results['output']) outputTensor = results['output'];
+    else if (results['y']) outputTensor = results['y'];
+    else if (results['graph_output_cast_0']) outputTensor = results['graph_output_cast_0'];
+
+    if (!outputTensor) {
+      for (var outKey in results) {
+        var cand = results[outKey];
+        if (cand && cand.data && cand.data.length >= patchDim * patchDim * 3) {
+          outputTensor = cand;
+          break;
+        }
+      }
+    }
+
+    if (!outputTensor) {
+      outputTensor = results[session.outputNames[0]];
+    }
+
     var outData = outputTensor.data;
     var dims = outputTensor.dims || [];
 

@@ -46,9 +46,9 @@ export const AI_MODEL_CONFIGS: Record<NeuralModelKey, AIModelConfig> = {
   'codeformer': {
     id: 'codeformer',
     name: 'CodeFormer (Discrete Codebook Transformer)',
-    tagline: 'Quantized FP16, transformer codebook prior for heavily blurry & vintage faces',
-    url: 'https://huggingface.co/OwlMaster/AllFilesRope/resolve/main/codeformer_fp16.onnx',
-    sizeBytes: 188577164,
+    tagline: 'Deep transformer codebook prior for heavily blurry & vintage faces',
+    url: 'https://huggingface.co/facefusion/models-3.0.0/resolve/main/codeformer.onnx',
+    sizeBytes: 376951650,
     inputDim: 512,
   },
 };
@@ -524,7 +524,26 @@ export class NeuralFaceEnhancer {
         results = await wasmSession.run(feeds);
       }
 
-      const outputTensor = results[outputName];
+      // Intelligently locate the face image tensor among all returned outputs
+      let outputTensor: any = null;
+      if (results['output']) outputTensor = results['output'];
+      else if (results['y']) outputTensor = results['y'];
+      else if (results['graph_output_cast_0']) outputTensor = results['graph_output_cast_0'];
+
+      if (!outputTensor) {
+        for (const outKey in results) {
+          const cand = results[outKey];
+          if (cand && cand.data && cand.data.length >= patchInputDim * patchInputDim * 3) {
+            outputTensor = cand;
+            break;
+          }
+        }
+      }
+
+      if (!outputTensor) {
+        outputTensor = results[session.outputNames[0]];
+      }
+
       const outData = outputTensor.data as Float32Array;
       const dims = (outputTensor.dims || []) as number[];
 
