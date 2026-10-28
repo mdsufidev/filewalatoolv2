@@ -640,6 +640,26 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
               </h3>
 
               <div className="space-y-4">
+                {/* AI Unblur & Focus */}
+                <Slider
+                  label="AI Unblur & Focus (Deblur)"
+                  unit="%"
+                  min={0}
+                  max={100}
+                  value={settings.deblur}
+                  onChange={(val) => updateSetting('deblur', val)}
+                />
+
+                {/* Facial Clarity & Definition */}
+                <Slider
+                  label="Facial Clarity & Definition"
+                  unit="%"
+                  min={0}
+                  max={100}
+                  value={settings.clarity}
+                  onChange={(val) => updateSetting('clarity', val)}
+                />
+
                 {/* Skin Smoothing */}
                 <Slider
                   label="Skin Smoothing & Denoise"
