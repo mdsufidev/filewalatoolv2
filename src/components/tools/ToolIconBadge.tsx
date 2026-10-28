@@ -751,6 +751,7 @@ export const ToolIconBadge: React.FC<ToolIconBadgeProps> = ({
   if (toolId === 'resizer' || toolId === 'image-resizer') return wrapBadge(<Maximize2 {...iconProps} />, 'bg-blue-500');
   if (toolId === 'cropper' || toolId === 'crop-image') return wrapBadge(<Crop {...iconProps} />, 'bg-amber-500');
   if (toolId === 'bg-remover') return wrapBadge(<Sparkles {...iconProps} />, 'bg-violet-500');
+  if (toolId === 'face-enhancer' || toolId === 'ai-face-enhancer') return wrapBadge(<Sparkles {...iconProps} />, 'bg-rose-500');
   if (toolId === 'watermark-img' || toolId === 'watermark-image') return wrapBadge(<Type {...iconProps} />, 'bg-teal-500');
   if (toolId === 'palette-img' || toolId === 'color-palette') return wrapBadge(<Pipette {...iconProps} />, 'bg-pink-500');
   if (toolId === 'meme-img' || toolId === 'meme-generator') return wrapBadge(<Smile {...iconProps} />, 'bg-amber-500');

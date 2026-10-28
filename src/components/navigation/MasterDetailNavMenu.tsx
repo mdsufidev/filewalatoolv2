@@ -42,6 +42,7 @@ export const MASTER_NAV_DATA: MasterNavCategory[] = [
       { id: 'compressor', name: 'Image Compressor', subToolId: 'compressor', section: 'image-tools' },
       { id: 'resizer', name: 'Image Resizer', subToolId: 'resizer', section: 'image-tools' },
       { id: 'bg-remover', name: 'Background Remover', subToolId: 'bg-remover', section: 'image-tools' },
+      { id: 'face-enhancer', name: 'AI Face Enhancer', subToolId: 'face-enhancer', section: 'image-tools' },
       { id: 'cropper', name: 'Image Cropper', subToolId: 'cropper', section: 'image-tools' },
       { id: 'batch', name: 'Batch Processor', subToolId: 'batch', section: 'image-tools' },
       { id: 'adjust', name: 'Filters & Adjust', subToolId: 'adjust', section: 'image-tools' },

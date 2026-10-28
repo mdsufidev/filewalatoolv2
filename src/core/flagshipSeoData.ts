@@ -143,6 +143,114 @@ export const FLAGSHIP_SEO_TOOLS: Record<string, FlagshipSeoConfig> = {
     }
   },
 
+  'face-enhancer': {
+    id: 'face-enhancer',
+    toolName: 'AI Face Enhancer & Photo Retouch',
+    slug: '/face-enhancer',
+    title: 'AI Face Enhancer Online Free – HD Photo Retouch & Clear Face | FileWala',
+    description: 'Enhance face photos online for free with AI-powered clarity, skin smoothing, eye sharpening, and natural glow. 100% private, client-side photo face retouch with zero uploads.',
+    canonicalUrl: 'https://www.filewalatool.com/face-enhancer',
+    intro: 'Enhance your portrait and selfie photos in seconds with client-side AI. FileWala AI Face Enhancer removes skin blemishes, refines skin tone, sharpens eyes and eyelashes, and upscales resolution up to 4x Ultra HD. Powered by 100% in-browser HTML5 Canvas and Web Workers with zero cloud uploads.',
+    category: 'image-tools',
+    matchingSubToolIds: ['face-enhancer'],
+    faqs: [
+      {
+        question: 'Is my face photo or biometric data uploaded to any server or cloud database?',
+        answer: 'Absolutely not. FileWala operates with a strict 100% zero-upload privacy architecture. All neural and canvas processing runs directly on your device CPU/GPU.',
+      },
+      {
+        question: 'What is the difference between standard photo filters and this AI Face Enhancer?',
+        answer: "Standard filters apply a uniform tint across the entire picture. FileWala's Face Enhancer uses an intelligent multi-pass pipeline: it selectively smooths skin while strictly preserving and sharpening eye contours, pupil highlights, eyelashes, lips, and hair strands without halo artifacts.",
+      },
+      {
+        question: 'Can I use this tool to fix blurry or low-light portraits?',
+        answer: 'Yes. The built-in high-pass unsharp convolution and exposure lift brighten dark midtones and reconstruct micro-contrast around facial features.',
+      },
+      {
+        question: 'How does the 2x and 4x Super-Resolution Upscaling work?',
+        answer: 'Our upscaling engine utilizes bicubic Hermite interpolation combined with gradient-directed edge reconstruction in a multi-threaded Web Worker to double or quadruple pixel density without creating blocky artifacts.',
+      },
+      {
+        question: 'Is the output image suitable for government job portals (UPSC, SSC, Passport Seva)?',
+        answer: 'Yes! The "ID & Passport Clear" preset is specifically calibrated to meet Indian and international passport photo standards with clean, natural contrast and zero glares.',
+      },
+      {
+        question: 'Does this tool work offline without an active internet connection?',
+        answer: 'Yes. Once the webpage is loaded in your browser, all processing happens locally using client-side JavaScript, Web Workers, and HTML5 Canvas.',
+      },
+    ],
+    schema: {
+      '@context': 'https://schema.org',
+      '@graph': [
+        {
+          '@type': 'WebApplication',
+          '@id': 'https://www.filewalatool.com/face-enhancer#app',
+          name: 'FileWala AI Face Enhancer & Photo Retouch',
+          url: 'https://www.filewalatool.com/face-enhancer',
+          applicationCategory: 'MultimediaApplication',
+          operatingSystem: 'All (Modern Web Browser)',
+          offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+          author: { '@type': 'Person', name: 'mdsufidev', url: 'https://www.filewalatool.com/about' },
+          description: '100% private in-browser AI face enhancer, skin smoother, and portrait super-resolution upscaler.',
+        },
+        {
+          '@type': 'FAQPage',
+          '@id': 'https://www.filewalatool.com/face-enhancer#faq',
+          mainEntity: [
+            {
+              '@type': 'Question',
+              name: 'Is my face photo or biometric data uploaded to any server or cloud database?',
+              acceptedAnswer: {
+                '@type': 'Answer',
+                text: 'Absolutely not. FileWala operates with a strict 100% zero-upload privacy architecture. All neural and canvas processing runs directly on your device CPU/GPU.',
+              },
+            },
+            {
+              '@type': 'Question',
+              name: 'What is the difference between standard photo filters and this AI Face Enhancer?',
+              acceptedAnswer: {
+                '@type': 'Answer',
+                text: "Standard filters apply a uniform tint across the entire picture. FileWala's Face Enhancer uses an intelligent multi-pass pipeline: it selectively smooths skin while strictly preserving and sharpening eye contours, pupil highlights, eyelashes, lips, and hair strands without halo artifacts.",
+              },
+            },
+            {
+              '@type': 'Question',
+              name: 'Can I use this tool to fix blurry or low-light portraits?',
+              acceptedAnswer: {
+                '@type': 'Answer',
+                text: 'Yes. The built-in high-pass unsharp convolution and exposure lift brighten dark midtones and reconstruct micro-contrast around facial features.',
+              },
+            },
+            {
+              '@type': 'Question',
+              name: 'How does the 2x and 4x Super-Resolution Upscaling work?',
+              acceptedAnswer: {
+                '@type': 'Answer',
+                text: 'Our upscaling engine utilizes bicubic Hermite interpolation combined with gradient-directed edge reconstruction in a multi-threaded Web Worker to double or quadruple pixel density without creating blocky artifacts.',
+              },
+            },
+            {
+              '@type': 'Question',
+              name: 'Is the output image suitable for government job portals (UPSC, SSC, Passport Seva)?',
+              acceptedAnswer: {
+                '@type': 'Answer',
+                text: 'Yes! The "ID & Passport Clear" preset is specifically calibrated to meet Indian and international passport photo standards with clean, natural contrast and zero glares.',
+              },
+            },
+            {
+              '@type': 'Question',
+              name: 'Does this tool work offline without an active internet connection?',
+              acceptedAnswer: {
+                '@type': 'Answer',
+                text: 'Yes. Once the webpage is loaded in your browser, all processing happens locally using client-side JavaScript, Web Workers, and HTML5 Canvas.',
+              },
+            },
+          ],
+        },
+      ],
+    },
+  },
+
   'merge-pdf': {
     id: 'merge-pdf',
     toolName: 'Merge PDF / Combine PDF',

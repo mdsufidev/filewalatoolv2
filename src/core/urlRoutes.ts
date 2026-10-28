@@ -114,6 +114,14 @@ export const ROUTE_ALIASES: Record<string, string> = {
   'remove-background': 'bg-remover',
   'image-tools/bg-remover': 'bg-remover',
   'image-tools/background-remover': 'bg-remover',
+  'face-enhancer': 'face-enhancer',
+  'ai-face-enhancer': 'face-enhancer',
+  'enhance-face': 'face-enhancer',
+  'face-retouch': 'face-enhancer',
+  'photo-enhancer': 'face-enhancer',
+  'portrait-enhancer': 'face-enhancer',
+  'image-tools/face-enhancer': 'face-enhancer',
+  'image-tools/ai-face-enhancer': 'face-enhancer',
   'batch-image-cropper': 'batch',
   'batch-processor': 'batch',
   'merge-pdf': 'merge-pdf',
@@ -323,6 +331,8 @@ export function getToolRouteUrl(section: string, subToolId: string): string {
       return '/filter-adjust';
     case 'bg-remover':
       return '/bg-remover';
+    case 'face-enhancer':
+      return '/face-enhancer';
   }
 
   // Default clean URL fallback

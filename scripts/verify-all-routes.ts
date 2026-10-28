@@ -34,6 +34,7 @@ export const EXPECTED_ROUTE_H1: Record<string, string[]> = {
   '/compress-pdf': ['Compress PDF Files'],
   '/crop-image': ['Crop & Rotate Tool'],
   '/bg-remover': ['Instant Background Remover'],
+  '/face-enhancer': ['AI Face Enhancer & Photo Retouch', 'Face Enhancer', 'AI Face Enhancer'],
   '/split-pdf': ['Split PDF & Extract Pages'],
   '/rotate-pdf': ['Rotate PDF Pages'],
   '/pdf-to-image': ['PDF to Image Converter'],

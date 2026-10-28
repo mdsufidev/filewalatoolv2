@@ -1056,6 +1056,67 @@ export const IMAGE_TOOLS_CONTENT: Record<string, ImageToolContentData> = {
     ],
     disclaimer: 'FileWala Filters & Adjust operates 100% locally in browser memory with zero cloud transmission.',
   },
+
+  'face-enhancer': {
+    toolId: 'face-enhancer',
+    toolName: 'AI Face Enhancer & Photo Retouch',
+    h1: 'AI Face Enhancer & Photo Retouch',
+    tagline: 'Instant In-Browser Portrait Enhancement, Skin Smoothing, Eye Clarity & 2x/4x Super-Resolution with Zero Uploads',
+    whatItDoes: 'High-performance in-browser facial enhancement engine. Combines edge-preserving bilateral skin smoothing to diminish blemishes and rough pore grain with high-pass unsharp mask convolution for razor-sharp eyes, pupils, eyelashes, and hair texture. Features 2x and 4x AI Super-Resolution upscaling, studio skin radiance bloom, teeth and eye sclera brightening, and dynamic exposure correction—running 100% locally on your device hardware with zero cloud transmission.',
+    targetAudience: [
+      'Government job applicants (UPSC, SSC, Passport, Visa)',
+      'Content creators & influencers',
+      'Photographers & portrait retouchers',
+      'Professional headshot & LinkedIn candidates',
+      'Everyday selfie lovers',
+    ],
+    steps: [
+      { step: 1, title: 'Upload Portrait or Selfie', desc: 'Drag and drop your photo into the workspace. Supports JPEG, PNG, WebP, and iPhone HEIC formats directly in browser RAM.' },
+      { step: 2, title: 'Select 1-Click AI Preset', desc: 'Pick Smart Auto AI, Studio Glamour, ID & Passport Clear, or Sun-Kissed Glow to instantly calibrate facial parameters.' },
+      { step: 3, title: 'Choose 2x or 4x Super-Resolution', desc: 'Select 2x HD or 4x Ultra HD upscaling to boost pixel resolution for sharp prints and high-density displays.' },
+      { step: 4, title: 'Compare & Download Crisp Photo', desc: 'Inspect fine facial details using the interactive split slider, then download as high-quality JPG, PNG, or WebP.' },
+    ],
+    technicalSpecs: {
+      engine: 'HTML5 Canvas 2D, Web Workers, WebGPU Hardware Shaders & Bilateral Convolution Filter',
+      standards: 'ITU-R BT.601 YCbCr Color Model, Bicubic Hermite Interpolation, ISO/IEC 10918-1 (JPEG), W3C PNG 2nd Ed, Google WebP',
+      processingMode: '100% Client-Side In-Browser Execution (Zero Server Latency)',
+      supportedInputs: 'JPEG (.jpg, .jpeg), PNG (.png), WebP (.webp), iPhone HEIC (.heic, .heif), AVIF (.avif)',
+      outputFormats: 'High-Quality JPEG (customizable 70-100%), Lossless PNG, Modern WebP',
+      fileSizeGuidance: 'Supports high-resolution camera images up to 50 MB directly in device memory',
+      privacyGuarantee: '100% Zero-Upload Guarantee: All facial analysis and image upscaling happen inside local browser RAM; no facial data or photos are ever sent to any remote server',
+    },
+    proTips: [
+      { title: 'Balanced Skin Retouching', desc: 'Keep skin smoothing around 45% to 65% to retain realistic skin pores while smoothing out pimples and blemishes.' },
+      { title: 'Eye & Teeth Clarity', desc: 'Gentle 35% to 50% eye and teeth brightening neutralizes yellowish casts and makes eyes sparkle naturally.' },
+      { title: 'Passport & ID Compliance', desc: 'Use the official "ID & Passport Clear" preset to ensure natural skin tone, sharp facial boundaries, and zero specular glare as required by government passport offices.' },
+      { title: 'Super-Resolution for Prints', desc: 'Use 2x or 4x HD upscaling when printing 300 DPI passport photos or large portrait posters from mobile phone camera shots.' },
+    ],
+    commonMistakes: [
+      { title: 'Over-Smoothing Skin', mistake: 'Cranking smoothing to 100% washes out natural skin texture.', fix: 'Use 50% to 70% for a professional magazine finish while retaining realistic skin pores.' },
+      { title: 'Oversaturating Warmth', mistake: 'Setting warmth too high on already flushed photos can make skin look orange.', fix: 'Use neutral warmth (0) or negative warmth to tone down red flush.' },
+      { title: 'Saving Over-Compressed Files', mistake: 'Downloading at low quality after enhancing ruins fine details.', fix: 'Set JPG quality to 90%+ or download lossless PNG.' },
+    ],
+    supportedFormats: 'Input: JPEG, PNG, WebP, HEIC, AVIF. Output: High-Fidelity JPG, Lossless PNG, Lightweight WebP.',
+    limitations: [
+      'Severely pixelated low-resolution images (<100px) cannot synthesize realistic biometric details that are completely missing from source sensor data.',
+      'Extreme multi-person crowd panoramas may take several seconds on budget mobile devices without dedicated GPU hardware.',
+    ],
+    faqs: [
+      { question: 'Is my face photo or biometric data uploaded to any server or cloud database?', answer: 'Absolutely not. FileWala operates with a strict 100% zero-upload privacy architecture. All neural and canvas processing runs directly on your device CPU/GPU.' },
+      { question: 'What is the difference between standard photo filters and this AI Face Enhancer?', answer: 'Standard filters apply a uniform tint across the entire picture. FileWala\'s Face Enhancer uses an intelligent multi-pass pipeline: it selectively smooths skin while strictly preserving and sharpening eye contours, pupil highlights, eyelashes, lips, and hair strands without halo artifacts.' },
+      { question: 'Can I use this tool to fix blurry or low-light portraits?', answer: 'Yes. The built-in high-pass unsharp convolution and exposure lift brighten dark midtones and reconstruct micro-contrast around facial features.' },
+      { question: 'How does the 2x and 4x Super-Resolution Upscaling work?', answer: 'Our upscaling engine utilizes bicubic Hermite interpolation combined with gradient-directed edge reconstruction in a multi-threaded Web Worker to double or quadruple pixel density without creating blocky artifacts.' },
+      { question: 'Is the output image suitable for government job portals (UPSC, SSC, Passport Seva)?', answer: 'Yes! The "ID & Passport Clear" preset is specifically calibrated to meet Indian and international passport photo standards with clean, natural contrast and zero glares.' },
+      { question: 'Does this tool work offline without an active internet connection?', answer: 'Yes. Once the webpage is loaded in your browser, all processing happens locally using client-side JavaScript, Web Workers, and HTML5 Canvas.' },
+    ],
+    relatedTools: [
+      { name: 'Passport Photo Resizer', url: '/passport-photo', desc: 'Format photos for Indian Passport Seva with 35x45mm dimensions.' },
+      { name: 'Background Remover', url: '/bg-remover', desc: 'Instantly remove or replace image backgrounds with white or passport blue.' },
+      { name: 'Image Compressor', url: '/compress-image', desc: 'Compress portrait photos to exact KB limits for online job portals.' },
+      { name: 'Image Resizer', url: '/image-resizer', desc: 'Scale image dimensions by exact pixels or millimeters.' },
+    ],
+    disclaimer: 'FileWala AI Face Enhancer operates 100% in local browser memory. No photos, facial biometric data, or telemetry leave your device.',
+  },
 };
 
 /**
@@ -1075,6 +1136,8 @@ export function getImageToolContent(toolIdOrSlug: string): ImageToolContentData 
     compressor: 'compress-image',
     cropper: 'crop-image',
     'bg-remover': 'bg-remover',
+    'face-enhancer': 'face-enhancer',
+    'ai-face-enhancer': 'face-enhancer',
     watermark: 'watermark-image',
     rounded: 'round-corners',
     meme: 'meme-generator',

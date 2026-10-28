@@ -24,6 +24,7 @@ import { PaletteExtractorTool } from './image/PaletteExtractorTool';
 import { FilterWatermarkTool } from './FilterWatermarkTool';
 import { BatchTool } from './BatchTool';
 import { BackgroundRemoverTool } from './image/BackgroundRemoverTool';
+import { FaceEnhancerTool } from './image/FaceEnhancerTool';
 import { useTheme } from '../../core/themeContext';
 
 export type OptimizerToolId =
@@ -31,6 +32,7 @@ export type OptimizerToolId =
   | 'resizer'
   | 'cropper'
   | 'bg-remover'
+  | 'face-enhancer'
   | 'base64'
   | 'rounded'
   | 'watermark'
@@ -83,6 +85,15 @@ export const IMAGE_TOOLS_LIST: ImageToolMeta[] = [
     targetKeyword: 'Remove background from image online for free',
     description: 'Instantly remove image background with transparent PNG or solid color',
     badge: 'Chroma',
+    category: 'creative',
+  },
+  {
+    id: 'face-enhancer',
+    label: 'AI Face Enhancer',
+    icon: <Sparkles className="w-4 h-4 text-rose-500" />,
+    targetKeyword: 'AI Face Enhancer online free / Photo face retouch and skin smoother',
+    description: 'Smooth skin, sharpen eyes, unblur portraits, and upscale 2x/4x HD',
+    badge: 'AI Smart',
     category: 'creative',
   },
   // Creative & Developer Utilities
@@ -178,6 +189,7 @@ export const ImageToolsWrapper: React.FC<{
         {activeTool === 'resizer' && <ResizerTool onNotify={onNotify} initialFile={primaryFile} />}
         {activeTool === 'cropper' && <CropRotateTool onNotify={onNotify} initialFile={primaryFile} />}
         {activeTool === 'bg-remover' && <BackgroundRemoverTool onNotify={onNotify} initialFiles={initialFiles} />}
+        {activeTool === 'face-enhancer' && <FaceEnhancerTool onNotify={onNotify} initialFiles={initialFiles} />}
         {activeTool === 'base64' && <Base64ConverterTool onNotify={onNotify} />}
         {activeTool === 'rounded' && <RoundedCornerTool onNotify={onNotify} />}
         {activeTool === 'watermark' && <WatermarkerTool onNotify={onNotify} />}
