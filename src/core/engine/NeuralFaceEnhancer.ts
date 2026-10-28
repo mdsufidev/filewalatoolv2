@@ -81,10 +81,11 @@ export class NeuralFaceEnhancer {
         const ort = (window as any).ort;
         if (ort) {
           ort.env.wasm.wasmPaths = ORT_WASM_PATH;
-          ort.env.wasm.numThreads = Math.min(
-            4,
-            typeof navigator !== 'undefined' ? navigator.hardwareConcurrency || 2 : 2
-          );
+          const isIsolated = typeof crossOriginIsolated !== 'undefined' && crossOriginIsolated;
+          ort.env.wasm.numThreads = isIsolated
+            ? Math.min(4, typeof navigator !== 'undefined' ? navigator.hardwareConcurrency || 2 : 2)
+            : 1;
+          ort.env.wasm.proxy = false;
           this.ortInstance = ort;
           resolve(ort);
         } else {
@@ -313,8 +314,8 @@ export class NeuralFaceEnhancer {
 
     if (onProgress) onProgress(5, 'Cropping facial patch for RAM-safe processing...');
 
-    // Patch size for neural input (384x384 is optimal sweet spot for speed and detail)
-    const patchInputDim = 384;
+    // Patch size for neural input (192x192 ensures intermediate WebGPU buffers stay under 38MB, preventing kernel allocation failure)
+    const patchInputDim = 192;
     const patchCanvas = document.createElement('canvas');
     patchCanvas.width = patchInputDim;
     patchCanvas.height = patchInputDim;
@@ -335,7 +336,7 @@ export class NeuralFaceEnhancer {
       patchInputDim
     );
 
-    // 2. Prepare NCHW Float32 input tensor [1, 3, 384, 384] in range [0, 1]
+    // 2. Prepare NCHW Float32 input tensor [1, 3, 192, 192] in range [0, 1]
     const patchData = pctx.getImageData(0, 0, patchInputDim, patchInputDim).data;
     const planeSize = patchInputDim * patchInputDim;
     const float32Data = new Float32Array(3 * planeSize);
@@ -362,18 +363,55 @@ export class NeuralFaceEnhancer {
     const feeds = { [inputName]: inputTensor };
 
     const startTime = performance.now();
-    const results = await session.run(feeds);
+    let results: any = null;
+
+    try {
+      results = await session.run(feeds);
+    } catch (gpuErr: any) {
+      console.warn('[NeuralFaceEnhancer] WebGPU run failed, automatically falling back to WASM CPU:', gpuErr);
+      if (onProgress) {
+        onProgress(86, 'WebGPU limit reached, switching to CPU WebAssembly fallback...');
+      }
+      // Force CPU WASM session
+      const wasmSession = await this.getSession(modelKey, false, onProgress);
+      results = await wasmSession.run(feeds);
+    }
+
     const elapsed = Math.round(performance.now() - startTime);
     console.log(`[NeuralFaceEnhancer] Inference completed in ${elapsed} ms`);
 
     const outputTensor = results[outputName];
     const outData = outputTensor.data as Float32Array;
+    const dims = (outputTensor.dims || []) as number[];
 
-    const outPatchW = patchInputDim * 4; // 1536 px
-    const outPatchH = patchInputDim * 4; // 1536 px
-    const outPlaneSize = outPatchW * outPatchH;
+    // Detect layout: WebGPU JSEP outputs NHWC [1, H, W, 3], while standard models/WASM may output NCHW [1, 3, H, W]
+    let outPatchW = patchInputDim * 4;
+    let outPatchH = patchInputDim * 4;
+    let isNHWC = false;
 
-    // Convert NCHW Float32 output back to RGBA Canvas ImageData
+    if (dims && dims.length === 4) {
+      if (dims[3] === 3) {
+        // NHWC: [batch, height, width, channels]
+        isNHWC = true;
+        outPatchH = dims[1];
+        outPatchW = dims[2];
+      } else if (dims[1] === 3) {
+        // NCHW: [batch, channels, height, width]
+        isNHWC = false;
+        outPatchH = dims[2];
+        outPatchW = dims[3];
+      }
+    }
+
+    // Dynamic value range detection (handles [0, 1] and [0, 255] float outputs)
+    let maxVal = 0;
+    const sampleCount = Math.min(200, outData.length);
+    for (let k = 0; k < sampleCount; k++) {
+      if (outData[k] > maxVal) maxVal = outData[k];
+    }
+    const scaleFactor = maxVal > 1.5 ? 1 : 255;
+
+    // Convert output tensor back to RGBA Canvas ImageData
     const restoredPatchCanvas = document.createElement('canvas');
     restoredPatchCanvas.width = outPatchW;
     restoredPatchCanvas.height = outPatchH;
@@ -383,25 +421,40 @@ export class NeuralFaceEnhancer {
     const restoredImgData = rctx.createImageData(outPatchW, outPatchH);
     const rPixels = restoredImgData.data;
 
-    for (let i = 0; i < outPlaneSize; i++) {
-      const r = Math.min(255, Math.max(0, Math.round(outData[i] * 255)));
-      const g = Math.min(255, Math.max(0, Math.round(outData[outPlaneSize + i] * 255)));
-      const b = Math.min(255, Math.max(0, Math.round(outData[outPlaneSize * 2 + i] * 255)));
-
-      const pIdx = i * 4;
-      rPixels[pIdx] = r;
-      rPixels[pIdx + 1] = g;
-      rPixels[pIdx + 2] = b;
-      rPixels[pIdx + 3] = 255;
+    if (isNHWC) {
+      const totalPixels = outPatchW * outPatchH;
+      for (let i = 0; i < totalPixels; i++) {
+        const s = i * 3;
+        const d = i * 4;
+        rPixels[d]     = Math.min(255, Math.max(0, Math.round(outData[s] * scaleFactor)));
+        rPixels[d + 1] = Math.min(255, Math.max(0, Math.round(outData[s + 1] * scaleFactor)));
+        rPixels[d + 2] = Math.min(255, Math.max(0, Math.round(outData[s + 2] * scaleFactor)));
+        rPixels[d + 3] = 255;
+      }
+    } else {
+      const planeSize = outPatchW * outPatchH;
+      for (let i = 0; i < planeSize; i++) {
+        const d = i * 4;
+        rPixels[d]     = Math.min(255, Math.max(0, Math.round(outData[i] * scaleFactor)));
+        rPixels[d + 1] = Math.min(255, Math.max(0, Math.round(outData[planeSize + i] * scaleFactor)));
+        rPixels[d + 2] = Math.min(255, Math.max(0, Math.round(outData[planeSize * 2 + i] * scaleFactor)));
+        rPixels[d + 3] = 255;
+      }
     }
 
     rctx.putImageData(restoredImgData, 0, 0);
 
     if (onProgress) onProgress(95, 'Blending crystal-clear face onto full portrait...');
 
-    // 4. Construct Final 4x Output Canvas
-    const finalW = w * 4;
-    const finalH = h * 4;
+    // 4. Construct Final Output Canvas (Capped at 4096px to avoid mobile browser canvas limit crashes)
+    const maxAllowedDim = 4096;
+    const naturalTargetScale = 4;
+    const targetScale = (Math.max(w, h) * naturalTargetScale > maxAllowedDim)
+      ? Math.max(1, maxAllowedDim / Math.max(w, h))
+      : naturalTargetScale;
+
+    const finalW = Math.round(w * targetScale);
+    const finalH = Math.round(h * targetScale);
     const outputCanvas = document.createElement('canvas');
     outputCanvas.width = finalW;
     outputCanvas.height = finalH;
@@ -447,11 +500,11 @@ export class NeuralFaceEnhancer {
       }
     }
 
-    // Blend restored patch onto the corresponding location in the 4x canvas
-    const targetX = box.x * 4;
-    const targetY = box.y * 4;
-    const targetW = box.width * 4;
-    const targetH = box.height * 4;
+    // Blend restored patch onto the corresponding location in the canvas
+    const targetX = Math.round(box.x * targetScale);
+    const targetY = Math.round(box.y * targetScale);
+    const targetW = Math.round(box.width * targetScale);
+    const targetH = Math.round(box.height * targetScale);
 
     octx.globalAlpha = Math.max(0, Math.min(1, blendStrength));
     octx.drawImage(featherCanvas, targetX, targetY, targetW, targetH);
