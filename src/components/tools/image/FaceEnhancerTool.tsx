@@ -93,6 +93,8 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
   const workerClientRef = useRef<FaceEnhanceWorkerClient | null>(null);
   const debounceTimerRef = useRef<any>(null);
   const activeBlobUrlRef = useRef<string | null>(null);
+  const neuralRestoredCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [hasNeuralRestoration, setHasNeuralRestoration] = useState<boolean>(false);
 
   // Check WebGPU availability
   useEffect(() => {
@@ -162,9 +164,13 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
     applyPreset('smart-auto');
   }, [currentImage]);
 
-  // Execute Face Enhancement pipeline
+  // Execute Face Enhancement pipeline (Always preserves neural face restoration if active)
   const runEnhancement = useCallback(
-    async (targetSettings: FaceEnhanceSettings, targetUpscale: 1 | 2 | 4) => {
+    async (
+      targetSettings: FaceEnhanceSettings,
+      targetUpscale: 1 | 2 | 4,
+      overrideSourceCanvas?: HTMLCanvasElement | null
+    ) => {
       if (!currentImage) return;
 
       setIsProcessing(true);
@@ -172,19 +178,66 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
       setProgressStage('Preparing canvas...');
 
       try {
+        const baseCanvas = overrideSourceCanvas !== undefined
+          ? overrideSourceCanvas
+          : neuralRestoredCanvasRef.current;
+
         const img = currentImage.imageElement;
-        const sourceW = img.naturalWidth || img.width;
-        const sourceH = img.naturalHeight || img.height;
+        const origW = img.naturalWidth || img.width;
+        const origH = img.naturalHeight || img.height;
 
-        // Render to working canvas
+        let sourceW: number;
+        let sourceH: number;
+        let effectiveScale = targetUpscale;
+
         const canvas = document.createElement('canvas');
-        canvas.width = sourceW;
-        canvas.height = sourceH;
-        const ctx = canvas.getContext('2d', { willReadFrequently: true });
-        if (!ctx) throw new Error('Could not create canvas context');
 
-        ctx.drawImage(img, 0, 0);
-        const sourceImageData = ctx.getImageData(0, 0, sourceW, sourceH);
+        if (baseCanvas) {
+          const baseScale = Math.max(1, Math.round(baseCanvas.width / origW));
+          if (targetUpscale > baseScale) {
+            effectiveScale = Math.round(targetUpscale / baseScale) as 1 | 2 | 4;
+            sourceW = baseCanvas.width;
+            sourceH = baseCanvas.height;
+            canvas.width = sourceW;
+            canvas.height = sourceH;
+            const ctx = canvas.getContext('2d', { willReadFrequently: true });
+            if (!ctx) throw new Error('Could not create canvas context');
+            ctx.drawImage(baseCanvas, 0, 0);
+          } else if (targetUpscale === baseScale) {
+            effectiveScale = 1;
+            sourceW = baseCanvas.width;
+            sourceH = baseCanvas.height;
+            canvas.width = sourceW;
+            canvas.height = sourceH;
+            const ctx = canvas.getContext('2d', { willReadFrequently: true });
+            if (!ctx) throw new Error('Could not create canvas context');
+            ctx.drawImage(baseCanvas, 0, 0);
+          } else {
+            effectiveScale = 1;
+            sourceW = origW * targetUpscale;
+            sourceH = origH * targetUpscale;
+            canvas.width = sourceW;
+            canvas.height = sourceH;
+            const ctx = canvas.getContext('2d', { willReadFrequently: true });
+            if (!ctx) throw new Error('Could not create canvas context');
+            ctx.drawImage(baseCanvas, 0, 0, sourceW, sourceH);
+          }
+        } else {
+          sourceW = origW;
+          sourceH = origH;
+          canvas.width = sourceW;
+          canvas.height = sourceH;
+          const ctx = canvas.getContext('2d', { willReadFrequently: true });
+          if (!ctx) throw new Error('Could not create canvas context');
+          ctx.drawImage(img, 0, 0);
+        }
+
+        const sourceImageData = canvas.getContext('2d')!.getImageData(0, 0, sourceW, sourceH);
+
+        // When neural face is active, clamp deblur to max 25 so it doesn't over-deconvolve an already crisp AI face
+        const sanitizedSettings = baseCanvas
+          ? { ...targetSettings, deblur: Math.min(25, targetSettings.deblur) }
+          : targetSettings;
 
         let finalImageData: ImageData;
 
@@ -192,8 +245,8 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
         if (workerClientRef.current) {
           finalImageData = await workerClientRef.current.process(
             sourceImageData,
-            targetSettings,
-            targetUpscale,
+            sanitizedSettings,
+            effectiveScale,
             (pct, stage) => {
               setProgressPercent(pct);
               setProgressStage(stage);
@@ -202,7 +255,7 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
         } else {
           // Main-thread synchronous fallback
           setProgressStage('Processing on main thread...');
-          const enhancedCanvas = FaceEnhancerEngine.processImage(canvas, targetSettings);
+          const enhancedCanvas = FaceEnhancerEngine.processImage(canvas, sanitizedSettings);
           const ectx = enhancedCanvas.getContext('2d');
           finalImageData = ectx!.getImageData(0, 0, enhancedCanvas.width, enhancedCanvas.height);
           setProgressPercent(100);
@@ -265,10 +318,30 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
         },
       });
 
+      // Persist restored canvas as active working base so other tools/sliders build on it!
+      neuralRestoredCanvasRef.current = restoredCanvas;
+      setHasNeuralRestoration(true);
+
       setEnhancedDimensions({ width: restoredCanvas.width, height: restoredCanvas.height });
       const origW = img.naturalWidth || img.width || 1;
       const detectedScale = Math.max(1, Math.min(4, Math.round(restoredCanvas.width / origW))) as 1 | 2 | 4;
       setUpscaleFactor(detectedScale);
+
+      // Set clean, balanced retouch defaults so face stays natural and doesn't get harsh halos
+      const neuralRetouchSettings: FaceEnhanceSettings = {
+        deblur: 0,
+        clarity: 15,
+        smooth: 25,
+        sharpness: 20,
+        glow: 15,
+        warmth: 0,
+        brightness: 0,
+        contrast: 5,
+        eyeTeethClarity: 20,
+        monochrome: false,
+      };
+      setSettings(neuralRetouchSettings);
+      setActivePresetId('ai-restored');
 
       restoredCanvas.toBlob(
         (blob) => {
@@ -282,7 +355,7 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
             setProcessedBlob(blob);
           }
           setIsProcessing(false);
-          onNotify('Face Restored!', 'Remini-grade Ultra Clear facial features generated', 'success');
+          onNotify('Face Restored!', 'Remini-grade Ultra Clear facial features generated and locked as working base', 'success');
         },
         exportFormat,
         exportQuality / 100
@@ -335,9 +408,38 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
 
   // Reset sliders to default
   const handleResetSettings = () => {
-    setActivePresetId("smart-auto");
+    if (neuralRestoredCanvasRef.current) {
+      const resetSettings: FaceEnhanceSettings = {
+        deblur: 0,
+        clarity: 15,
+        smooth: 25,
+        sharpness: 20,
+        glow: 15,
+        warmth: 0,
+        brightness: 0,
+        contrast: 5,
+        eyeTeethClarity: 20,
+        monochrome: false,
+      };
+      setActivePresetId('ai-restored');
+      setSettings(resetSettings);
+      scheduleEnhancement(resetSettings, upscaleFactor);
+    } else {
+      setActivePresetId('smart-auto');
+      setSettings(DEFAULT_ENHANCE_SETTINGS);
+      scheduleEnhancement(DEFAULT_ENHANCE_SETTINGS, upscaleFactor);
+    }
+  };
+
+  // Revert back to original raw image (removes AI face restoration)
+  const handleRevertToOriginal = () => {
+    neuralRestoredCanvasRef.current = null;
+    setHasNeuralRestoration(false);
+    setActivePresetId('smart-auto');
     setSettings(DEFAULT_ENHANCE_SETTINGS);
-    scheduleEnhancement(DEFAULT_ENHANCE_SETTINGS, upscaleFactor);
+    setUpscaleFactor(1);
+    runEnhancement(DEFAULT_ENHANCE_SETTINGS, 1, null);
+    onNotify('Reverted to Raw', 'Restored original photo without AI modifications', 'info');
   };
 
   // Handle upscale factor change
@@ -745,6 +847,23 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
               <p className="text-xs text-zinc-500 dark:text-zinc-400">
                 100% in-browser WebGPU/WASM generative facial reconstruction. Restores eyes, eyelids, smile, and natural skin pores.
               </p>
+
+              {hasNeuralRestoration && (
+                <div className="flex items-center justify-between p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs">
+                  <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-semibold">
+                    <Check className="w-4 h-4 text-emerald-500" />
+                    <span>AI Face Restoration Active</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleRevertToOriginal}
+                    className="text-zinc-500 hover:text-rose-500 text-[11px] underline cursor-pointer"
+                    title="Discard AI Face Restoration and return to raw original"
+                  >
+                    Revert to Raw Photo
+                  </button>
+                </div>
+              )}
 
               <div className="grid grid-cols-1 gap-2">
                 {/* GFPGAN */}
