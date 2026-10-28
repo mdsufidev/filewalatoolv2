@@ -14,6 +14,8 @@
  *    Smoothly composites the 4x super-resolved facial patch back onto the canvas with zero visible seams.
  */
 
+import { NeuralWorkerClient } from './NeuralWorkerClient';
+
 export const ORT_CDN_URL = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/ort.all.min.js';
 export const ORT_WASM_PATH = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/';
 
@@ -48,6 +50,22 @@ export interface FacePatchBox {
 export class NeuralFaceEnhancer {
   private static ortInstance: any = null;
   private static sessions: Map<string, any> = new Map();
+  private static workerClient: NeuralWorkerClient | null = null;
+
+  public static getWorkerClient(): NeuralWorkerClient | null {
+    if (typeof window === 'undefined') return null;
+    if (!this.workerClient) {
+      this.workerClient = new NeuralWorkerClient();
+    }
+    return this.workerClient.isAvailable() ? this.workerClient : null;
+  }
+
+  public static terminateWorker(): void {
+    if (this.workerClient) {
+      this.workerClient.terminate();
+      this.workerClient = null;
+    }
+  }
 
   /**
    * Loads ONNX Runtime Web from CDN dynamically (Zero initial bundle bloat)
@@ -192,7 +210,7 @@ export class NeuralFaceEnhancer {
       try {
         session = await ort.InferenceSession.create(modelBuffer, {
           executionProviders: ['webgpu', 'wasm'],
-          graphOptimizationLevel: 'all',
+          graphOptimizationLevel: 'basic',
         });
       } catch (gpuErr) {
         console.warn('WebGPU execution provider failed, falling back to WASM:', gpuErr);
@@ -202,7 +220,7 @@ export class NeuralFaceEnhancer {
     if (!session) {
       session = await ort.InferenceSession.create(modelBuffer, {
         executionProviders: ['wasm'],
-        graphOptimizationLevel: 'all',
+        graphOptimizationLevel: 'basic',
       });
     }
 
@@ -311,11 +329,14 @@ export class NeuralFaceEnhancer {
 
     // 1. Determine facial bounding box
     const box = options.faceBox || this.estimateFaceBoundingBox(source);
+    const config = AI_MODEL_CONFIGS[modelKey];
 
     if (onProgress) onProgress(5, 'Cropping facial patch for RAM-safe processing...');
 
-    // Patch size for neural input (192x192 ensures intermediate WebGPU buffers stay under 38MB, preventing kernel allocation failure)
-    const patchInputDim = 192;
+    // Adaptive patch dimensions:
+    // - Real-ESRGAN Plus (33.7MB): 128x128 patch (reduces 30 billion operations down to ~13B, runs 2.25x faster, outputs 512x512 HD face details, prevents tab hang)
+    // - Real-ESRGAN Compact (4.8MB): 192x192 patch (outputs 768x768 HD face)
+    const patchInputDim = modelKey === 'realesr-hd' ? 128 : 192;
     const patchCanvas = document.createElement('canvas');
     patchCanvas.width = patchInputDim;
     patchCanvas.height = patchInputDim;
@@ -336,113 +357,145 @@ export class NeuralFaceEnhancer {
       patchInputDim
     );
 
-    // 2. Prepare NCHW Float32 input tensor [1, 3, 192, 192] in range [0, 1]
     const patchData = pctx.getImageData(0, 0, patchInputDim, patchInputDim).data;
-    const planeSize = patchInputDim * patchInputDim;
-    const float32Data = new Float32Array(3 * planeSize);
-
-    for (let i = 0; i < planeSize; i++) {
-      const idx = i * 4;
-      float32Data[i] = patchData[idx] / 255.0;                      // R
-      float32Data[planeSize + i] = patchData[idx + 1] / 255.0;      // G
-      float32Data[planeSize * 2 + i] = patchData[idx + 2] / 255.0;  // B
-    }
-
-    // 3. Acquire ONNX Session
-    const session = await this.getSession(modelKey, hasWebGPU, onProgress);
-
-    const ort = this.ortInstance;
-    const inputTensor = new ort.Tensor('float32', float32Data, [1, 3, patchInputDim, patchInputDim]);
-
-    if (onProgress) {
-      onProgress(85, hasWebGPU ? 'Restoring facial features via WebGPU...' : 'Restoring facial features via WASM CPU...');
-    }
-
-    const inputName = session.inputNames[0];
-    const outputName = session.outputNames[0];
-    const feeds = { [inputName]: inputTensor };
-
-    const startTime = performance.now();
-    let results: any = null;
-
-    try {
-      results = await session.run(feeds);
-    } catch (gpuErr: any) {
-      console.warn('[NeuralFaceEnhancer] WebGPU run failed, automatically falling back to WASM CPU:', gpuErr);
-      if (onProgress) {
-        onProgress(86, 'WebGPU limit reached, switching to CPU WebAssembly fallback...');
-      }
-      // Force CPU WASM session
-      const wasmSession = await this.getSession(modelKey, false, onProgress);
-      results = await wasmSession.run(feeds);
-    }
-
-    const elapsed = Math.round(performance.now() - startTime);
-    console.log(`[NeuralFaceEnhancer] Inference completed in ${elapsed} ms`);
-
-    const outputTensor = results[outputName];
-    const outData = outputTensor.data as Float32Array;
-    const dims = (outputTensor.dims || []) as number[];
-
-    // Detect layout: WebGPU JSEP outputs NHWC [1, H, W, 3], while standard models/WASM may output NCHW [1, 3, H, W]
+    let restoredPatchCanvas: HTMLCanvasElement | null = null;
     let outPatchW = patchInputDim * 4;
     let outPatchH = patchInputDim * 4;
-    let isNHWC = false;
 
-    if (dims && dims.length === 4) {
-      if (dims[3] === 3) {
-        // NHWC: [batch, height, width, channels]
-        isNHWC = true;
-        outPatchH = dims[1];
-        outPatchW = dims[2];
-      } else if (dims[1] === 3) {
-        // NCHW: [batch, channels, height, width]
-        isNHWC = false;
-        outPatchH = dims[2];
-        outPatchW = dims[3];
+    // 2. Offload to dedicated Web Worker to keep main UI thread 100% fluid & prevent "Page Not Responding"
+    const worker = this.getWorkerClient();
+
+    if (worker) {
+      try {
+        const patchBufferCopy = patchData.buffer.slice(0);
+        const res = await worker.restorePatch({
+          patchBuffer: patchBufferCopy,
+          patchDim: patchInputDim,
+          modelKey: modelKey,
+          modelUrl: config.url,
+          hasWebGPU: hasWebGPU,
+          onProgress: onProgress,
+        });
+
+        outPatchW = res.width;
+        outPatchH = res.height;
+
+        restoredPatchCanvas = document.createElement('canvas');
+        restoredPatchCanvas.width = outPatchW;
+        restoredPatchCanvas.height = outPatchH;
+        const rctx = restoredPatchCanvas.getContext('2d');
+        if (rctx) {
+          const restoredImgData = new ImageData(
+            new Uint8ClampedArray(res.buffer),
+            outPatchW,
+            outPatchH
+          );
+          rctx.putImageData(restoredImgData, 0, 0);
+        }
+      } catch (workerErr) {
+        console.warn('[NeuralFaceEnhancer] Worker run failed, attempting in-thread fallback:', workerErr);
+        restoredPatchCanvas = null;
       }
     }
 
-    // Dynamic value range detection (handles [0, 1] and [0, 255] float outputs)
-    let maxVal = 0;
-    const sampleCount = Math.min(200, outData.length);
-    for (let k = 0; k < sampleCount; k++) {
-      if (outData[k] > maxVal) maxVal = outData[k];
-    }
-    const scaleFactor = maxVal > 1.5 ? 1 : 255;
+    // 3. Fallback to in-thread inference only if Worker is unavailable or failed
+    if (!restoredPatchCanvas) {
+      const planeSize = patchInputDim * patchInputDim;
+      const float32Data = new Float32Array(3 * planeSize);
 
-    // Convert output tensor back to RGBA Canvas ImageData
-    const restoredPatchCanvas = document.createElement('canvas');
-    restoredPatchCanvas.width = outPatchW;
-    restoredPatchCanvas.height = outPatchH;
-    const rctx = restoredPatchCanvas.getContext('2d');
-    if (!rctx) throw new Error('Failed to create restored patch context');
-
-    const restoredImgData = rctx.createImageData(outPatchW, outPatchH);
-    const rPixels = restoredImgData.data;
-
-    if (isNHWC) {
-      const totalPixels = outPatchW * outPatchH;
-      for (let i = 0; i < totalPixels; i++) {
-        const s = i * 3;
-        const d = i * 4;
-        rPixels[d]     = Math.min(255, Math.max(0, Math.round(outData[s] * scaleFactor)));
-        rPixels[d + 1] = Math.min(255, Math.max(0, Math.round(outData[s + 1] * scaleFactor)));
-        rPixels[d + 2] = Math.min(255, Math.max(0, Math.round(outData[s + 2] * scaleFactor)));
-        rPixels[d + 3] = 255;
-      }
-    } else {
-      const planeSize = outPatchW * outPatchH;
       for (let i = 0; i < planeSize; i++) {
-        const d = i * 4;
-        rPixels[d]     = Math.min(255, Math.max(0, Math.round(outData[i] * scaleFactor)));
-        rPixels[d + 1] = Math.min(255, Math.max(0, Math.round(outData[planeSize + i] * scaleFactor)));
-        rPixels[d + 2] = Math.min(255, Math.max(0, Math.round(outData[planeSize * 2 + i] * scaleFactor)));
-        rPixels[d + 3] = 255;
+        const idx = i * 4;
+        float32Data[i] = patchData[idx] / 255.0;                      // R
+        float32Data[planeSize + i] = patchData[idx + 1] / 255.0;      // G
+        float32Data[planeSize * 2 + i] = patchData[idx + 2] / 255.0;  // B
       }
-    }
 
-    rctx.putImageData(restoredImgData, 0, 0);
+      const session = await this.getSession(modelKey, hasWebGPU, onProgress);
+      const ort = this.ortInstance;
+      const inputTensor = new ort.Tensor('float32', float32Data, [1, 3, patchInputDim, patchInputDim]);
+
+      if (onProgress) {
+        onProgress(80, hasWebGPU ? 'Restoring facial features via WebGPU...' : 'Restoring facial features via WASM CPU...');
+      }
+
+      const inputName = session.inputNames[0];
+      const outputName = session.outputNames[0];
+      const feeds = { [inputName]: inputTensor };
+
+      const startTime = performance.now();
+      let results: any = null;
+
+      try {
+        results = await session.run(feeds);
+      } catch (gpuErr: any) {
+        console.warn('[NeuralFaceEnhancer] WebGPU run failed, automatically falling back to WASM CPU:', gpuErr);
+        if (onProgress) {
+          onProgress(82, 'WebGPU limit reached, switching to CPU WebAssembly fallback...');
+        }
+        const wasmSession = await this.getSession(modelKey, false, onProgress);
+        results = await wasmSession.run(feeds);
+      }
+
+      const elapsed = Math.round(performance.now() - startTime);
+      console.log(`[NeuralFaceEnhancer] In-thread inference completed in ${elapsed} ms`);
+
+      const outputTensor = results[outputName];
+      const outData = outputTensor.data as Float32Array;
+      const dims = (outputTensor.dims || []) as number[];
+
+      let isNHWC = false;
+
+      if (dims && dims.length === 4) {
+        if (dims[3] === 3) {
+          isNHWC = true;
+          outPatchH = dims[1];
+          outPatchW = dims[2];
+        } else if (dims[1] === 3) {
+          isNHWC = false;
+          outPatchH = dims[2];
+          outPatchW = dims[3];
+        }
+      }
+
+      let maxVal = 0;
+      const sampleCount = Math.min(200, outData.length);
+      for (let k = 0; k < sampleCount; k++) {
+        if (outData[k] > maxVal) maxVal = outData[k];
+      }
+      const scaleFactor = maxVal > 1.5 ? 1 : 255;
+
+      restoredPatchCanvas = document.createElement('canvas');
+      restoredPatchCanvas.width = outPatchW;
+      restoredPatchCanvas.height = outPatchH;
+      const rctx = restoredPatchCanvas.getContext('2d');
+      if (!rctx) throw new Error('Failed to create restored patch context');
+
+      const restoredImgData = rctx.createImageData(outPatchW, outPatchH);
+      const rPixels = restoredImgData.data;
+
+      if (isNHWC) {
+        const totalPixels = outPatchW * outPatchH;
+        for (let i = 0; i < totalPixels; i++) {
+          const s = i * 3;
+          const d = i * 4;
+          rPixels[d]     = Math.min(255, Math.max(0, Math.round(outData[s] * scaleFactor)));
+          rPixels[d + 1] = Math.min(255, Math.max(0, Math.round(outData[s + 1] * scaleFactor)));
+          rPixels[d + 2] = Math.min(255, Math.max(0, Math.round(outData[s + 2] * scaleFactor)));
+          rPixels[d + 3] = 255;
+        }
+      } else {
+        const planeSize = outPatchW * outPatchH;
+        for (let i = 0; i < planeSize; i++) {
+          const d = i * 4;
+          rPixels[d]     = Math.min(255, Math.max(0, Math.round(outData[i] * scaleFactor)));
+          rPixels[d + 1] = Math.min(255, Math.max(0, Math.round(outData[planeSize + i] * scaleFactor)));
+          rPixels[d + 2] = Math.min(255, Math.max(0, Math.round(outData[planeSize * 2 + i] * scaleFactor)));
+          rPixels[d + 3] = 255;
+        }
+      }
+
+      rctx.putImageData(restoredImgData, 0, 0);
+    }
 
     if (onProgress) onProgress(95, 'Blending crystal-clear face onto full portrait...');
 

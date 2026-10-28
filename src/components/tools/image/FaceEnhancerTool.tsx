@@ -122,6 +122,7 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
       if (activeBlobUrlRef.current) {
         URL.revokeObjectURL(activeBlobUrlRef.current);
       }
+      NeuralFaceEnhancer.terminateWorker();
     };
   }, []);
 
@@ -640,7 +641,7 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
                 </div>
 
                 <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                  Crops facial patch (RAM-safe 192×192) to stay under 60MB RAM, runs Real-ESRGAN super-resolution via WebGPU / WASM, and seamlessly blends 4K facial details onto your photo.
+                  Crops facial patch (RAM-safe adaptive patch) and processes via background Web Worker on WebGPU / WASM so your browser UI stays 100% fluid without freezing.
                 </p>
 
                 {/* Model Selector */}
