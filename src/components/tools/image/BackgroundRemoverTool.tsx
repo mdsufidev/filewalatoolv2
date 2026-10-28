@@ -40,6 +40,7 @@ import {
 import { useTheme } from '../../../core/themeContext';
 import { CanvasEngine } from '../../../core/engine/CanvasEngine';
 import { BriaRmbgWorkerClient } from '../../../core/engine/BriaRmbgWorkerClient';
+import { HumanLoadingOverlay } from '../../ui/HumanLoadingOverlay';
 
 interface BackgroundRemoverToolProps {
   onNotify: (title: string, desc?: string, type?: 'success' | 'error' | 'info') => void;
@@ -1516,100 +1517,21 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
                       : 'cursor-none'
                   }`}
                   style={{
-                    backgroundColor: isDark ? '#09090b' : '#f4f4f5',
+                    backgroundColor: isDark ? '#09090b' : '#f8fafc',
                     backgroundImage: isDark
-                      ? 'radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px), radial-gradient(ellipse at 50% 50%, rgba(59, 130, 246, 0.08), transparent 70%)'
-                      : 'radial-gradient(circle, rgba(0,0,0,0.05) 1px, transparent 1px), radial-gradient(ellipse at 50% 50%, rgba(59, 130, 246, 0.05), transparent 70%)',
-                    backgroundSize: '20px 20px, 100% 100%',
+                      ? 'radial-gradient(circle, rgba(255,255,255,0.05) 1px, transparent 1px)'
+                      : 'radial-gradient(circle, rgba(0,0,0,0.05) 1px, transparent 1px)',
+                    backgroundSize: '20px 20px',
                   }}
                 >
-                  {/* Cybernetic Laser Scanning & Neural Segmentation HUD (60fps GPU Compositor) */}
+                  {/* Human-type Animation: Friendly Retoucher with Loading ..... */}
                   {isAiProcessing && (
-                    <div className="absolute inset-0 bg-zinc-950/60 backdrop-blur-xs flex flex-col items-center justify-between p-4 sm:p-6 z-40 animate-in fade-in duration-150 select-none pointer-events-none">
-                      {/* Top AI Engine Status Bar */}
-                      <div className="w-full max-w-lg flex items-center justify-between px-3.5 py-1.5 rounded-full bg-zinc-950/85 border border-blue-500/30 backdrop-blur-md shadow-xl text-[11px] font-mono text-zinc-300">
-                        <div className="flex items-center gap-2">
-                          <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
-                          <span className="font-semibold text-cyan-400 uppercase tracking-wider">
-                            BRIA RMBG-1.4 Neural Cutout
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-zinc-400">
-                            {hasWebGPU ? 'WebGPU Tensor ⚡' : 'CPU Multi-Thread'}
-                          </span>
-                          <span className="px-1.5 py-0.5 rounded bg-blue-500/20 text-cyan-300 font-bold">
-                            {aiProgress}%
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Continuous 60fps Laser Segmentation Beam */}
-                      <div className="relative w-full max-w-xl h-60 sm:h-72 my-auto flex items-center justify-center">
-                        {/* Glowing Scanning Bounds */}
-                        <div className="absolute inset-0 rounded-2xl border border-blue-500/30 animate-ai-blue-glow pointer-events-none" />
-
-                        {/* Continuous 60fps Laser Scanner Beam */}
-                        <div className="absolute left-0 right-0 animate-ai-scan pointer-events-none">
-                          <div className="h-0.5 w-full bg-gradient-to-r from-transparent via-cyan-400 to-transparent shadow-[0_0_20px_#06b6d4,0_0_8px_#38bdf8]" />
-                          <div className="h-20 w-full bg-gradient-to-b from-cyan-500/25 via-blue-500/5 to-transparent" />
-                        </div>
-
-                        {/* Center HUD Reticle */}
-                        <div className="flex flex-col items-center justify-center space-y-2.5 pointer-events-none">
-                          <div className="relative w-14 h-14 rounded-2xl bg-blue-500/10 border border-blue-500/40 flex items-center justify-center text-blue-400 shadow-xl">
-                            <Sparkles className="w-7 h-7 animate-pulse text-cyan-400" />
-                            <div className="absolute -inset-1 rounded-2xl border border-blue-500/20 animate-ping pointer-events-none" />
-                          </div>
-                          <span className="text-[10px] font-mono tracking-widest uppercase text-cyan-300 font-bold bg-black/70 px-3 py-1 rounded-full border border-blue-500/30 shadow-lg">
-                            AI Subject Segmentation Active
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Bottom Multi-Phase Progress Capsule */}
-                      <div className="w-full max-w-md bg-zinc-950/90 backdrop-blur-md rounded-2xl border border-zinc-800 p-3.5 sm:p-4 shadow-2xl space-y-2.5">
-                        <div className="flex items-center justify-between text-xs">
-                          <div className="flex items-center gap-2 min-w-0">
-                            <Wand2 className="w-4 h-4 text-cyan-400 animate-pulse shrink-0" />
-                            <span className="font-semibold text-zinc-100 truncate">
-                              {aiStatus || 'Dissecting fine hair strands & silhouette boundaries...'}
-                            </span>
-                          </div>
-                          <span className="font-mono font-bold text-cyan-400 shrink-0 ml-2">
-                            {aiProgress}%
-                          </span>
-                        </div>
-
-                        {/* Shimmering Gradient Bar */}
-                        <div className="w-full bg-zinc-800/80 h-2 rounded-full overflow-hidden p-0.5 border border-zinc-700/50">
-                          <div
-                            className="bg-gradient-to-r from-blue-500 via-cyan-400 to-indigo-500 h-full rounded-full transition-all duration-200 animate-ai-shimmer"
-                            style={{ width: `${Math.max(6, aiProgress)}%` }}
-                          />
-                        </div>
-
-                        {/* 4-Phase Step Indicators */}
-                        <div className="grid grid-cols-4 gap-1 text-[9px] font-mono text-center">
-                          <div className={`px-1 py-0.5 rounded transition-colors ${aiProgress >= 10 ? 'bg-blue-500/20 text-cyan-300 border border-blue-500/30' : 'bg-zinc-900 text-zinc-500'}`}>
-                            1. Model
-                          </div>
-                          <div className={`px-1 py-0.5 rounded transition-colors ${aiProgress >= 35 ? 'bg-blue-500/20 text-cyan-300 border border-blue-500/30' : 'bg-zinc-900 text-zinc-500'}`}>
-                            2. Tensor
-                          </div>
-                          <div className={`px-1 py-0.5 rounded transition-colors ${aiProgress >= 75 ? 'bg-blue-500/20 text-cyan-300 border border-blue-500/30' : 'bg-zinc-900 text-zinc-500'}`}>
-                            3. Inference
-                          </div>
-                          <div className={`px-1 py-0.5 rounded transition-colors ${aiProgress >= 95 ? 'bg-blue-500/20 text-cyan-300 border border-blue-500/30' : 'bg-zinc-900 text-zinc-500'}`}>
-                            4. 8-Bit Alpha
-                          </div>
-                        </div>
-
-                        <p className="text-[10px] text-center text-zinc-500 font-mono pt-0.5">
-                          100% In-Browser RAM Execution · Zero Server Uploads · No Privacy Leak
-                        </p>
-                      </div>
-                    </div>
+                    <HumanLoadingOverlay
+                      title="Loading"
+                      stage={aiStatus}
+                      percent={aiProgress}
+                      accentColor="blue"
+                    />
                   )}
 
                   {/* Floating Circular Brush Cursor */}

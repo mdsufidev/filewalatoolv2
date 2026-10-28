@@ -32,6 +32,7 @@ import { Dropzone } from '../../ui/Dropzone';
 import { Button } from '../../ui/Button';
 import { Slider } from '../../ui/Slider';
 import { ComparisonSlider } from '../../ui/ComparisonSlider';
+import { HumanLoadingOverlay } from '../../ui/HumanLoadingOverlay';
 import { useTheme } from '../../../core/themeContext';
 import { useImageUpload } from '../../../hooks/useImageUpload';
 import { ImageToolGuideSection } from './ImageToolGuideSection';
@@ -683,114 +684,22 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
               </div>
             </div>
 
-            {/* Interactive Preview Canvas with Studio Lighting & Biometric Laser Scanner */}
+            {/* Interactive Preview Canvas with Clean Presentation */}
             <div
-              className={`relative min-h-[460px] max-h-[680px] w-full rounded-2xl overflow-hidden border flex items-center justify-center transition-colors shadow-2xl ${
+              className={`relative min-h-[460px] max-h-[680px] w-full rounded-2xl overflow-hidden border flex items-center justify-center transition-colors shadow-lg ${
                 isDark
-                  ? 'border-zinc-800/80 shadow-black/60'
-                  : 'border-zinc-200/90 shadow-zinc-300/40'
+                  ? 'border-zinc-800 bg-zinc-950/80 shadow-black/40'
+                  : 'border-zinc-200 bg-zinc-50 shadow-zinc-200/50'
               }`}
-              style={{
-                background: isDark
-                  ? 'radial-gradient(circle at 50% 45%, rgba(244, 63, 94, 0.08) 0%, rgba(24, 24, 27, 0.95) 45%, #09090b 100%)'
-                  : 'radial-gradient(circle at 50% 45%, rgba(244, 63, 94, 0.05) 0%, rgba(244, 244, 245, 0.95) 50%, #e4e4e7 100%)',
-                backgroundImage: isDark
-                  ? 'radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px), radial-gradient(circle at 50% 45%, rgba(244, 63, 94, 0.08) 0%, rgba(24, 24, 27, 0.95) 45%, #09090b 100%)'
-                  : 'radial-gradient(circle, rgba(0,0,0,0.03) 1px, transparent 1px), radial-gradient(circle at 50% 45%, rgba(244, 63, 94, 0.05) 0%, rgba(244, 244, 245, 0.95) 50%, #e4e4e7 100%)',
-                backgroundSize: '24px 24px, 100% 100%',
-              }}
             >
-              {/* Studio Laser Scanning & Biometric HUD Overlay (60fps GPU Compositor) */}
+              {/* Human-type Animation: Friendly Retoucher with Loading ..... */}
               {isProcessing && (
-                <div className="absolute inset-0 z-30 flex flex-col items-center justify-between p-4 sm:p-6 bg-zinc-950/60 backdrop-blur-xs select-none pointer-events-none animate-in fade-in duration-150">
-                  {/* Top HUD Status Bar */}
-                  <div className="w-full max-w-lg flex items-center justify-between px-3.5 py-1.5 rounded-full bg-zinc-950/85 border border-rose-500/30 backdrop-blur-md shadow-xl text-[11px] font-mono text-zinc-300">
-                    <div className="flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
-                      <span className="font-semibold text-rose-400 uppercase tracking-wider">
-                        {neuralModelKey === 'codeformer' ? 'CodeFormer Discrete Codebook' : 'GFPGAN v1.4 Clean Prior'}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-zinc-400">
-                        {hasWebGPU ? 'WebGPU ⚡' : 'CPU Threads'}
-                      </span>
-                      <span className="px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 font-bold">
-                        {progressPercent}%
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Centered Biometric Target Reticle with 60fps Laser Scanning Beam */}
-                  <div className="relative w-64 h-64 sm:w-80 sm:h-80 my-auto flex items-center justify-center">
-                    {/* Cybernetic Target Brackets */}
-                    <div className="absolute inset-0 pointer-events-none animate-ai-pulse-glow rounded-xl border border-rose-500/30">
-                      <span className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-rose-500 rounded-tl-md" />
-                      <span className="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 border-rose-500 rounded-tr-md" />
-                      <span className="absolute bottom-0 left-0 w-6 h-6 border-b-2 border-l-2 border-rose-500 rounded-bl-md" />
-                      <span className="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-rose-500 rounded-br-md" />
-                    </div>
-
-                    {/* Rotating Neural Aperture / Radar Rings */}
-                    <div className="absolute inset-4 rounded-full border border-dashed border-rose-500/25 animate-ai-radar pointer-events-none" />
-                    <div className="absolute inset-12 rounded-full border border-rose-500/15 pointer-events-none" />
-
-                    {/* 60fps Continuous Holographic Laser Scanner Beam */}
-                    <div className="absolute left-0 right-0 animate-ai-scan pointer-events-none">
-                      <div className="h-0.5 w-full bg-gradient-to-r from-transparent via-rose-500 to-transparent shadow-[0_0_15px_#f43f5e,0_0_8px_#fb7185]" />
-                      <div className="h-16 w-full bg-gradient-to-b from-rose-500/20 via-pink-500/5 to-transparent" />
-                    </div>
-
-                    {/* Center Crosshair Reticle */}
-                    <div className="flex flex-col items-center justify-center space-y-2 pointer-events-none">
-                      <div className="w-10 h-10 rounded-full bg-rose-500/10 border border-rose-500/40 flex items-center justify-center text-rose-400">
-                        <Sparkles className="w-5 h-5 animate-spin" />
-                      </div>
-                      <span className="text-[10px] font-mono tracking-widest uppercase text-rose-300 font-bold bg-black/70 px-2.5 py-0.5 rounded-full border border-rose-500/30">
-                        Biometric Facial Scan
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Bottom Multi-Phase Progress HUD */}
-                  <div className="w-full max-w-md bg-zinc-950/85 backdrop-blur-md rounded-2xl border border-zinc-800 p-3.5 sm:p-4 shadow-2xl space-y-2.5">
-                    <div className="flex items-center justify-between text-xs">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <Wand2 className="w-4 h-4 text-rose-400 animate-pulse shrink-0" />
-                        <span className="font-semibold text-zinc-100 truncate">
-                          {progressStage || 'Enhancing facial definition & pore textures...'}
-                        </span>
-                      </div>
-                      <span className="font-mono font-bold text-rose-400 shrink-0 ml-2">
-                        {progressPercent}%
-                      </span>
-                    </div>
-
-                    {/* Shimmering Progress Bar */}
-                    <div className="w-full bg-zinc-800/80 h-2 rounded-full overflow-hidden p-0.5 border border-zinc-700/50">
-                      <div
-                        className="bg-gradient-to-r from-rose-500 via-pink-500 to-amber-400 h-full rounded-full transition-all duration-200 animate-ai-shimmer"
-                        style={{ width: `${Math.max(6, progressPercent)}%` }}
-                      />
-                    </div>
-
-                    {/* Dynamic Phase Pill Indicators */}
-                    <div className="grid grid-cols-4 gap-1 text-[9px] font-mono text-center">
-                      <div className={`px-1 py-0.5 rounded transition-colors ${progressPercent >= 10 ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' : 'bg-zinc-900 text-zinc-500'}`}>
-                        1. Detect
-                      </div>
-                      <div className={`px-1 py-0.5 rounded transition-colors ${progressPercent >= 35 ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' : 'bg-zinc-900 text-zinc-500'}`}>
-                        2. Prior
-                      </div>
-                      <div className={`px-1 py-0.5 rounded transition-colors ${progressPercent >= 70 ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' : 'bg-zinc-900 text-zinc-500'}`}>
-                        3. Eyes &amp; Pores
-                      </div>
-                      <div className={`px-1 py-0.5 rounded transition-colors ${progressPercent >= 90 ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' : 'bg-zinc-900 text-zinc-500'}`}>
-                        4. Stitch
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                <HumanLoadingOverlay
+                  title="Loading"
+                  stage={progressStage}
+                  percent={progressPercent}
+                  accentColor="rose"
+                />
               )}
 
               {/* Hold for Original Preview Override */}
