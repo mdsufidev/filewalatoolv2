@@ -59,7 +59,7 @@ type ViewMode = 'split' | 'side-by-side' | 'enhanced-only';
 export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, initialFiles }) => {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
-  const { currentImage, loadFile, reset: resetImage } = useImageUpload();
+  const { currentImage, isLoading: isImageLoading, loadFile, reset: resetImage } = useImageUpload();
 
   // Hardware acceleration status
   const [hasWebGPU, setHasWebGPU] = useState<boolean | null>(null);
@@ -563,15 +563,24 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
 
       {!currentImage ? (
         /* Empty Upload State */
-        <div className="max-w-2xl mx-auto space-y-6">
-          <Dropzone
-            onFilesSelected={(files) => {
-              if (files.length > 0) loadFile(files[0]);
-            }}
-            title="Upload Portrait, Selfie, or ID Photo"
-            description="Drag & drop or click to enhance facial clarity, smooth skin, and unblur eyes"
-            accept="image/*"
-          />
+        <div className="max-w-2xl mx-auto space-y-6 relative min-h-[220px]">
+          {isImageLoading ? (
+            <HumanLoadingOverlay
+              title="Loading"
+              stage="Reading portrait file..."
+              percent={20}
+              accentColor="rose"
+            />
+          ) : (
+            <Dropzone
+              onFilesSelected={(files) => {
+                if (files.length > 0) loadFile(files[0]);
+              }}
+              title="Upload Portrait, Selfie, or ID Photo"
+              description="Drag & drop or click to enhance facial clarity, smooth skin, and unblur eyes"
+              accept="image/*"
+            />
+          )}
 
           {/* Quick Features Highlight */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">

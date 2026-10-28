@@ -69,7 +69,7 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
 }) => {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
-  const { currentImage, loadFile, reset: resetImage } = useImageUpload();
+  const { currentImage, isLoading: isImageLoading, loadFile, reset: resetImage } = useImageUpload();
 
   // Engine Mode
   const [engineMode, setEngineMode] = useState<RemovalEngine>('ai');
@@ -670,12 +670,10 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
     if (engineMode === 'fast') {
       runFastPerimeterClean(img, mask, tolerance);
     } else {
-      // 1. Instant 15ms speculative cutout so the background is visibly removed immediately!
-      runFastPerimeterClean(img, mask, tolerance);
-      // 2. Studio-grade 8-bit soft alpha neural refinement on pre-warmed worker
+      // Direct high-performance AI inference with zero main-thread block
       runAiInference();
     }
-  }, [currentImage, engineMode]);
+  }, [currentImage, engineMode, runAiInference]);
 
   /* -------------------------------------------------------------
      INTERACTIVE BRUSH ENGINE: CONTINUOUS PATH INTERPOLATION
@@ -1248,15 +1246,24 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
 
       {/* Upload Zone (When no image is loaded) */}
       {!currentImage ? (
-        <div className="max-w-3xl mx-auto">
-          <Dropzone
-            onFilesSelected={(files) => {
-              if (files.length > 0) loadFile(files[0]);
-            }}
-            accept="image/*"
-            title="Drop image here for background removal"
-            description="100% In-Browser Engine · Zero Uploads · Supports PNG, JPG, WebP, HEIC"
-          />
+        <div className="max-w-3xl mx-auto relative min-h-[220px]">
+          {isImageLoading ? (
+            <HumanLoadingOverlay
+              title="Loading"
+              stage="Reading image file..."
+              percent={20}
+              accentColor="blue"
+            />
+          ) : (
+            <Dropzone
+              onFilesSelected={(files) => {
+                if (files.length > 0) loadFile(files[0]);
+              }}
+              accept="image/*"
+              title="Drop image here for background removal"
+              description="100% In-Browser Engine · Zero Uploads · Supports PNG, JPG, WebP, HEIC"
+            />
+          )}
         </div>
       ) : (
         /* =========================================================================
