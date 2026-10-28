@@ -180,6 +180,8 @@ export const PdfToImageTool: React.FC<PdfToImageToolProps> = ({ onNotify }) => {
   const inspectPdf = useCallback(async (selectedFile: File) => {
     setIsAnalyzing(true);
     setErrorMessage(null);
+    let inspectDoc: any = null;
+    let inspectTask: any = null;
     try {
       const buffer = await selectedFile.arrayBuffer();
       const loadingTask = pdfjsLib.getDocument({
@@ -187,7 +189,9 @@ export const PdfToImageTool: React.FC<PdfToImageToolProps> = ({ onNotify }) => {
         cMapUrl: 'https://unpkg.com/pdfjs-dist@6.4.299/cmaps/',
         cMapPacked: true,
       });
+      inspectTask = loadingTask;
       const pdfDoc = await loadingTask.promise;
+      inspectDoc = pdfDoc;
       const count = pdfDoc.numPages;
       setPageCount(count);
       setCustomRangeStr(`1-${count}`);
@@ -207,6 +211,14 @@ export const PdfToImageTool: React.FC<PdfToImageToolProps> = ({ onNotify }) => {
         setPageCount(null);
       }
     } finally {
+      if (inspectDoc) {
+        try {
+          await inspectDoc.destroy?.();
+          await inspectTask?.destroy?.();
+        } catch {
+          // ignore
+        }
+      }
       setIsAnalyzing(false);
     }
   }, []);
@@ -407,6 +419,8 @@ export const PdfToImageTool: React.FC<PdfToImageToolProps> = ({ onNotify }) => {
     const totalToRender = parsedTargetPages.length;
     const newRenderedItems: RenderedPageItem[] = [];
 
+    let renderDoc: any = null;
+    let renderTask: any = null;
     try {
       const buffer = await file.arrayBuffer();
       const loadingTask = pdfjsLib.getDocument({
@@ -415,7 +429,9 @@ export const PdfToImageTool: React.FC<PdfToImageToolProps> = ({ onNotify }) => {
         cMapPacked: true,
         standardFontDataUrl: 'https://unpkg.com/pdfjs-dist@6.4.299/standard_fonts/',
       });
+      renderTask = loadingTask;
       const pdfDoc = await loadingTask.promise;
+      renderDoc = pdfDoc;
 
       // Render scale factor: 1x = 1.0 (72 DPI), 2x = 2.0 (150 DPI), 3x = 3.0 (300 DPI)
       const renderScale = scale === 1 ? 1.0 : scale === 2 ? 2.0 : 3.0;
@@ -437,70 +453,78 @@ export const PdfToImageTool: React.FC<PdfToImageToolProps> = ({ onNotify }) => {
         });
 
         const page = await pdfDoc.getPage(pageNum);
-        const viewport = page.getViewport({ scale: renderScale });
+        try {
+          const viewport = page.getViewport({ scale: renderScale });
 
-        const canvas = document.createElement('canvas');
-        canvas.width = Math.floor(viewport.width);
-        canvas.height = Math.floor(viewport.height);
-        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.floor(viewport.width);
+          canvas.height = Math.floor(viewport.height);
+          const ctx = canvas.getContext('2d', { willReadFrequently: true });
 
-        if (!ctx) {
-          throw new Error('Canvas 2D context could not be initialized.');
+          if (!ctx) {
+            throw new Error('Canvas 2D context could not be initialized.');
+          }
+
+          // Fill solid white background for JPG (and as standard crisp background)
+          if (format === 'jpg') {
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+          } else {
+            // For PNG and WebP, default to crisp white background for document readability
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+          }
+
+          const renderContext = {
+            canvasContext: ctx,
+            viewport: viewport,
+          };
+
+          await page.render(renderContext as any).promise;
+
+          const mimeType =
+            format === 'png' ? 'image/png' : format === 'webp' ? 'image/webp' : 'image/jpeg';
+          const blobQuality = format === 'png' ? undefined : quality;
+
+          const blob: Blob = await new Promise((resolve, reject) => {
+            canvas.toBlob(
+              (b) => {
+                if (b) resolve(b);
+                else reject(new Error(`Failed to encode page ${pageNum} into ${format.toUpperCase()}`));
+              },
+              mimeType,
+              blobQuality
+            );
+          });
+
+          // Clean up canvas memory immediately
+          const w = canvas.width;
+          const h = canvas.height;
+          canvas.width = 0;
+          canvas.height = 0;
+
+          const objectUrl = registerTrackedUrl(createSafeObjectURL(blob));
+
+          const item: RenderedPageItem = {
+            pageNum,
+            blob,
+            url: objectUrl,
+            width: w,
+            height: h,
+            size: blob.size,
+            format,
+          };
+
+          newRenderedItems.push(item);
+          // Incremental state update so user sees results in real-time as they render!
+          setRenderedPages([...newRenderedItems]);
+        } finally {
+          try {
+            page.cleanup?.();
+          } catch {
+            // ignore
+          }
         }
-
-        // Fill solid white background for JPG (and as standard crisp background)
-        if (format === 'jpg') {
-          ctx.fillStyle = '#FFFFFF';
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-        } else {
-          // For PNG and WebP, default to crisp white background for document readability
-          ctx.fillStyle = '#FFFFFF';
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-        }
-
-        const renderContext = {
-          canvasContext: ctx,
-          viewport: viewport,
-        };
-
-        await page.render(renderContext as any).promise;
-
-        const mimeType =
-          format === 'png' ? 'image/png' : format === 'webp' ? 'image/webp' : 'image/jpeg';
-        const blobQuality = format === 'png' ? undefined : quality;
-
-        const blob: Blob = await new Promise((resolve, reject) => {
-          canvas.toBlob(
-            (b) => {
-              if (b) resolve(b);
-              else reject(new Error(`Failed to encode page ${pageNum} into ${format.toUpperCase()}`));
-            },
-            mimeType,
-            blobQuality
-          );
-        });
-
-        // Clean up canvas memory immediately
-        const w = canvas.width;
-        const h = canvas.height;
-        canvas.width = 0;
-        canvas.height = 0;
-
-        const objectUrl = registerTrackedUrl(createSafeObjectURL(blob));
-
-        const item: RenderedPageItem = {
-          pageNum,
-          blob,
-          url: objectUrl,
-          width: w,
-          height: h,
-          size: blob.size,
-          format,
-        };
-
-        newRenderedItems.push(item);
-        // Incremental state update so user sees results in real-time as they render!
-        setRenderedPages([...newRenderedItems]);
 
         // Yield to browser main thread so UI stays fluid
         await new Promise((r) => setTimeout(r, 20));
@@ -519,6 +543,14 @@ export const PdfToImageTool: React.FC<PdfToImageToolProps> = ({ onNotify }) => {
       setErrorMessage(msg);
       onNotify?.('Conversion Failed', msg, 'error');
     } finally {
+      if (renderDoc) {
+        try {
+          await renderDoc.destroy?.();
+          await renderTask?.destroy?.();
+        } catch {
+          // ignore
+        }
+      }
       setIsRendering(false);
       setProgress(null);
     }

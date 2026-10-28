@@ -1175,7 +1175,7 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
   };
 
   const handleFitToScreen = useCallback(() => {
-    if (!viewportRef.current || !currentImage) return;
+    if (!viewportRef.current || !currentImage || !currentImage.width || !currentImage.height) return;
     const rect = viewportRef.current.getBoundingClientRect();
     const w = currentImage.width;
     const h = currentImage.height;

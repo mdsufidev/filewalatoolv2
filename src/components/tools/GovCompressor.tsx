@@ -238,38 +238,57 @@ export const GovCompressor: React.FC<GovCompressorProps> = ({ initialFile, onNot
 
     if (file.type === 'application/pdf') {
       setFileType('pdf');
+      let loadingTask: any = null;
+      let pdfDoc: any = null;
       try {
         const arrayBuf = await file.arrayBuffer();
-        const loadingTask = pdfjsLib.getDocument({
+        loadingTask = pdfjsLib.getDocument({
           data: new Uint8Array(arrayBuf),
-          cMapUrl: 'https://unpkg.com/pdfjs-dist@4.10.38/cmaps/',
+          cMapUrl: `https://unpkg.com/pdfjs-dist@${pdfjsLib.version || '6.4.299'}/cmaps/`,
           cMapPacked: true,
         });
-        const pdfDoc = await loadingTask.promise;
+        pdfDoc = await loadingTask.promise;
         setPdfPageCount(pdfDoc.numPages);
 
         // Generate immediate high-clarity preview of Page 1
         const firstPage = await pdfDoc.getPage(1);
-        const viewport = firstPage.getViewport({ scale: 1.0 });
-        const canvas = document.createElement('canvas');
-        canvas.width = Math.round(viewport.width);
-        canvas.height = Math.round(viewport.height);
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          ctx.fillStyle = '#FFFFFF';
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-          await firstPage.render({ canvasContext: ctx, viewport, canvas } as any).promise;
-          canvas.toBlob((blob) => {
-            canvas.width = 0;
-            canvas.height = 0;
-            if (blob) {
-              const url = createSafeObjectURL(blob);
-              setPreviewUrl(url);
-            }
-          }, 'image/jpeg', 0.85);
+        try {
+          const viewport = firstPage.getViewport({ scale: 1.0 });
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.round(viewport.width);
+          canvas.height = Math.round(viewport.height);
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            await firstPage.render({ canvasContext: ctx, viewport, canvas } as any).promise;
+            canvas.toBlob((blob) => {
+              canvas.width = 0;
+              canvas.height = 0;
+              if (blob) {
+                const url = createSafeObjectURL(blob);
+                setPreviewUrl(url);
+              }
+            }, 'image/jpeg', 0.85);
+          }
+        } finally {
+          try {
+            firstPage.cleanup?.();
+          } catch {
+            // ignore
+          }
         }
       } catch {
         setPdfPageCount(1);
+      } finally {
+        if (pdfDoc) {
+          try {
+            await pdfDoc.destroy?.();
+            await loadingTask?.destroy?.();
+          } catch {
+            // ignore
+          }
+        }
       }
       onNotify('PDF Document Loaded', `${file.name} (${formatBytes(file.size)}) ready for compression.`, 'info');
     } else if (file.type.startsWith('image/')) {
@@ -412,183 +431,204 @@ export const GovCompressor: React.FC<GovCompressorProps> = ({ initialFile, onNot
         // Step 2: Parse PDF with pdfjs for high-fidelity page rendering
         setProgressPercent(20);
         setProgressStage('Parsing document pages & fonts...');
-        const loadingTask = pdfjsLib.getDocument({
-          data: new Uint8Array(arrayBuf),
-          cMapUrl: 'https://unpkg.com/pdfjs-dist@4.10.38/cmaps/',
-          cMapPacked: true,
-        });
-        const pdfDoc = await loadingTask.promise;
-        const numPages = pdfDoc.numPages;
-
-        // Calculate available byte budget per page
-        const structuralOverhead = 4096;
-        const netBudget = Math.max(12 * 1024, maxBytes - structuralOverhead);
-        const targetPerPageBytes = Math.floor(netBudget / numPages);
-
-        const newDoc = await PDFDocument.create();
-        let firstPageThumbBlob: Blob | null = null;
-
-        for (let pageNum = 1; pageNum <= numPages; pageNum++) {
-          const pageProg = Math.round(20 + ((pageNum - 1) / numPages) * 70);
-          setProgressPercent(pageProg);
-          setProgressStage(
-            `Optimizing page ${pageNum} of ${numPages} (Keeping text sharp & readable)...`
-          );
-
-          const page = await pdfDoc.getPage(pageNum);
-          const originalViewport = page.getViewport({ scale: 1.0 });
-
-          // Scale resolution: 1.5 - 1.75 ensures small text and roll numbers remain razor-sharp
-          let scale = 1.6;
-          if (targetPerPageBytes < 35 * 1024) {
-            scale = 1.35;
-          } else if (targetPerPageBytes < 65 * 1024) {
-            scale = 1.5;
-          } else {
-            scale = 1.75;
-          }
-
-          const viewport = page.getViewport({ scale });
-          const canvas = document.createElement('canvas');
-          canvas.width = Math.round(viewport.width);
-          canvas.height = Math.round(viewport.height);
-          const ctx = canvas.getContext('2d', { alpha: false, willReadFrequently: true });
-          if (!ctx) throw new Error('Canvas 2D context unavailable');
-
-          ctx.fillStyle = '#FFFFFF';
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-          await page.render({ canvasContext: ctx, viewport, canvas } as any).promise;
-
-          // Apply Text Clarity & Background Cleaner filter
-          if (textClarityBoost) {
-            applyTextClarityFilter(ctx, canvas.width, canvas.height);
-          }
-
-          // Binary search for highest possible JPEG quality within targetPerPageBytes
-          let lowQ = 0.35;
-          let highQ = 0.94;
-          let bestPageBlob: Blob | null = null;
-
-          for (let iter = 0; iter < 5; iter++) {
-            const midQ = (lowQ + highQ) / 2;
-            const testBlob: Blob = await new Promise((resolve) => {
-              canvas.toBlob((b) => resolve(b || new Blob()), 'image/jpeg', midQ);
-            });
-
-            if (testBlob.size <= targetPerPageBytes) {
-              bestPageBlob = testBlob;
-              lowQ = midQ;
-            } else {
-              highQ = midQ;
-            }
-          }
-
-          if (!bestPageBlob) {
-            bestPageBlob = await new Promise((resolve) => {
-              canvas.toBlob((b) => resolve(b || new Blob()), 'image/jpeg', 0.32);
-            });
-          }
-
-          // Adaptive dimension downscaling for multi-page PDF pages if quota exceeded even at quality floor
-          let currentCanvas = canvas;
-          let downscaleLoops = 0;
-          while (
-            bestPageBlob &&
-            bestPageBlob.size > targetPerPageBytes &&
-            downscaleLoops < 4 &&
-            currentCanvas.width > 280 &&
-            currentCanvas.height > 280
-          ) {
-            downscaleLoops++;
-            const shrinkRatio = Math.sqrt(targetPerPageBytes / bestPageBlob.size) * 0.94;
-            const newW = Math.max(220, Math.round(currentCanvas.width * shrinkRatio));
-            const newH = Math.max(220, Math.round(currentCanvas.height * shrinkRatio));
-
-            const scaledCanvas = document.createElement('canvas');
-            scaledCanvas.width = newW;
-            scaledCanvas.height = newH;
-            const scaledCtx = scaledCanvas.getContext('2d');
-            if (!scaledCtx) break;
-
-            scaledCtx.fillStyle = '#FFFFFF';
-            scaledCtx.fillRect(0, 0, newW, newH);
-            scaledCtx.drawImage(currentCanvas, 0, 0, newW, newH);
-
-            if (currentCanvas !== canvas) {
-              currentCanvas.width = 0;
-              currentCanvas.height = 0;
-            }
-            currentCanvas = scaledCanvas;
-
-            bestPageBlob = await new Promise((resolve) => {
-              currentCanvas.toBlob((b) => resolve(b || new Blob()), 'image/jpeg', 0.65);
-            });
-          }
-
-          if (currentCanvas !== canvas) {
-            currentCanvas.width = 0;
-            currentCanvas.height = 0;
-          }
-
-          if (pageNum === 1) {
-            firstPageThumbBlob = bestPageBlob;
-          }
-
-          const pageJpgBytes = await bestPageBlob!.arrayBuffer();
-          const embeddedImg = await newDoc.embedJpg(pageJpgBytes);
-
-          const pdfPage = newDoc.addPage([originalViewport.width, originalViewport.height]);
-          pdfPage.drawImage(embeddedImg, {
-            x: 0,
-            y: 0,
-            width: originalViewport.width,
-            height: originalViewport.height,
+        let procTask: any = null;
+        let procDoc: any = null;
+        try {
+          procTask = pdfjsLib.getDocument({
+            data: new Uint8Array(arrayBuf),
+            cMapUrl: `https://unpkg.com/pdfjs-dist@${pdfjsLib.version || '6.4.299'}/cmaps/`,
+            cMapPacked: true,
           });
+          procDoc = await procTask.promise;
+          const numPages = procDoc.numPages;
 
-          // Free canvas memory immediately
-          canvas.width = 0;
-          canvas.height = 0;
-        }
+          // Calculate available byte budget per page
+          const structuralOverhead = 4096;
+          const netBudget = Math.max(12 * 1024, maxBytes - structuralOverhead);
+          const targetPerPageBytes = Math.floor(netBudget / numPages);
 
-        setProgressPercent(92);
-        setProgressStage('Finalizing optimized PDF streams...');
+          const newDoc = await PDFDocument.create();
+          let firstPageThumbBlob: Blob | null = null;
 
-        const optimizedBytes = await newDoc.save({ useObjectStreams: true });
-        let outBlob = new Blob([new Uint8Array(optimizedBytes).buffer as ArrayBuffer], { type: 'application/pdf' });
+          for (let pageNum = 1; pageNum <= numPages; pageNum++) {
+            const pageProg = Math.round(20 + ((pageNum - 1) / numPages) * 70);
+            setProgressPercent(pageProg);
+            setProgressStage(
+              `Optimizing page ${pageNum} of ${numPages} (Keeping text sharp & readable)...`
+            );
 
-        // Safe padding if file is below required portal minimum
-        if (minBytes > 0 && outBlob.size < minBytes) {
-          const needed = minBytes - outBlob.size + 1024;
-          if (needed > 0 && needed < 200 * 1024) {
-            newDoc.setTitle('Government Document - Form Compliant');
-            newDoc.setProducer(`FileWala-GovSafe-${'0'.repeat(needed)}`);
-            const paddedBytes = await newDoc.save({ useObjectStreams: true });
-            outBlob = new Blob([new Uint8Array(paddedBytes).buffer as ArrayBuffer], { type: 'application/pdf' });
+            const page = await procDoc.getPage(pageNum);
+            try {
+              const originalViewport = page.getViewport({ scale: 1.0 });
+
+              // Scale resolution: 1.5 - 1.75 ensures small text and roll numbers remain razor-sharp
+              let scale = 1.6;
+              if (targetPerPageBytes < 35 * 1024) {
+                scale = 1.35;
+              } else if (targetPerPageBytes < 65 * 1024) {
+                scale = 1.5;
+              } else {
+                scale = 1.75;
+              }
+
+              const viewport = page.getViewport({ scale });
+              const canvas = document.createElement('canvas');
+              canvas.width = Math.round(viewport.width);
+              canvas.height = Math.round(viewport.height);
+              const ctx = canvas.getContext('2d', { alpha: false, willReadFrequently: true });
+              if (!ctx) throw new Error('Canvas 2D context unavailable');
+
+              ctx.fillStyle = '#FFFFFF';
+              ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+              await page.render({ canvasContext: ctx, viewport, canvas } as any).promise;
+
+              // Apply Text Clarity & Background Cleaner filter
+              if (textClarityBoost) {
+                applyTextClarityFilter(ctx, canvas.width, canvas.height);
+              }
+
+              // Binary search for highest possible JPEG quality within targetPerPageBytes
+              let lowQ = 0.35;
+              let highQ = 0.94;
+              let bestPageBlob: Blob | null = null;
+
+              for (let iter = 0; iter < 5; iter++) {
+                const midQ = (lowQ + highQ) / 2;
+                const testBlob: Blob = await new Promise((resolve) => {
+                  canvas.toBlob((b) => resolve(b || new Blob()), 'image/jpeg', midQ);
+                });
+
+                if (testBlob.size <= targetPerPageBytes) {
+                  bestPageBlob = testBlob;
+                  lowQ = midQ;
+                } else {
+                  highQ = midQ;
+                }
+              }
+
+              if (!bestPageBlob) {
+                bestPageBlob = await new Promise((resolve) => {
+                  canvas.toBlob((b) => resolve(b || new Blob()), 'image/jpeg', 0.32);
+                });
+              }
+
+              // Adaptive dimension downscaling for multi-page PDF pages if quota exceeded even at quality floor
+              let currentCanvas = canvas;
+              let downscaleLoops = 0;
+              while (
+                bestPageBlob &&
+                bestPageBlob.size > targetPerPageBytes &&
+                downscaleLoops < 4 &&
+                currentCanvas.width > 280 &&
+                currentCanvas.height > 280
+              ) {
+                downscaleLoops++;
+                const shrinkRatio = Math.sqrt(targetPerPageBytes / bestPageBlob.size) * 0.94;
+                const newW = Math.max(220, Math.round(currentCanvas.width * shrinkRatio));
+                const newH = Math.max(220, Math.round(currentCanvas.height * shrinkRatio));
+
+                const scaledCanvas = document.createElement('canvas');
+                scaledCanvas.width = newW;
+                scaledCanvas.height = newH;
+                const scaledCtx = scaledCanvas.getContext('2d');
+                if (!scaledCtx) break;
+
+                scaledCtx.fillStyle = '#FFFFFF';
+                scaledCtx.fillRect(0, 0, newW, newH);
+                scaledCtx.drawImage(currentCanvas, 0, 0, newW, newH);
+
+                if (currentCanvas !== canvas) {
+                  currentCanvas.width = 0;
+                  currentCanvas.height = 0;
+                }
+                currentCanvas = scaledCanvas;
+
+                bestPageBlob = await new Promise((resolve) => {
+                  currentCanvas.toBlob((b) => resolve(b || new Blob()), 'image/jpeg', 0.65);
+                });
+              }
+
+              if (currentCanvas !== canvas) {
+                currentCanvas.width = 0;
+                currentCanvas.height = 0;
+              }
+
+              if (pageNum === 1) {
+                firstPageThumbBlob = bestPageBlob;
+              }
+
+              const pageJpgBytes = await bestPageBlob!.arrayBuffer();
+              const embeddedImg = await newDoc.embedJpg(pageJpgBytes);
+
+              const pdfPage = newDoc.addPage([originalViewport.width, originalViewport.height]);
+              pdfPage.drawImage(embeddedImg, {
+                x: 0,
+                y: 0,
+                width: originalViewport.width,
+                height: originalViewport.height,
+              });
+
+              // Free canvas memory immediately
+              canvas.width = 0;
+              canvas.height = 0;
+            } finally {
+              try {
+                page.cleanup?.();
+              } catch {
+                // ignore
+              }
+            }
+          }
+
+          setProgressPercent(92);
+          setProgressStage('Finalizing optimized PDF streams...');
+
+          const optimizedBytes = await newDoc.save({ useObjectStreams: true });
+          let outBlob = new Blob([new Uint8Array(optimizedBytes).buffer as ArrayBuffer], { type: 'application/pdf' });
+
+          // Safe padding if file is below required portal minimum
+          if (minBytes > 0 && outBlob.size < minBytes) {
+            const needed = minBytes - outBlob.size + 1024;
+            if (needed > 0 && needed < 200 * 1024) {
+              newDoc.setTitle('Government Document - Form Compliant');
+              newDoc.setProducer(`FileWala-GovSafe-${'0'.repeat(needed)}`);
+              const paddedBytes = await newDoc.save({ useObjectStreams: true });
+              outBlob = new Blob([new Uint8Array(paddedBytes).buffer as ArrayBuffer], { type: 'application/pdf' });
+            }
+          }
+
+          if (resultUrl) revokeSafeObjectURL(resultUrl);
+          if (resultThumbUrl) revokeSafeObjectURL(resultThumbUrl);
+
+          const outUrl = createSafeObjectURL(outBlob);
+          setResultBlob(outBlob);
+          setResultUrl(outUrl);
+          setResultSizeBytes(outBlob.size);
+
+          if (firstPageThumbBlob) {
+            const thumbUrl = createSafeObjectURL(firstPageThumbBlob);
+            setResultThumbUrl(thumbUrl);
+          }
+
+          setProgressPercent(100);
+          setProgressStage('PDF Compression complete!');
+
+          onNotify(
+            'PDF Document Compressed Successfully!',
+            `Original: ${formatBytes(sourceFile.size)} ➔ Optimized: ${formatBytes(outBlob.size)} (Under ${maxKb} KB with Sharp Text)`,
+            'success'
+          );
+        } finally {
+          if (procDoc) {
+            try {
+              await procDoc.destroy?.();
+              await procTask?.destroy?.();
+            } catch {
+              // ignore
+            }
           }
         }
-
-        if (resultUrl) revokeSafeObjectURL(resultUrl);
-        if (resultThumbUrl) revokeSafeObjectURL(resultThumbUrl);
-
-        const outUrl = createSafeObjectURL(outBlob);
-        setResultBlob(outBlob);
-        setResultUrl(outUrl);
-        setResultSizeBytes(outBlob.size);
-
-        if (firstPageThumbBlob) {
-          const thumbUrl = createSafeObjectURL(firstPageThumbBlob);
-          setResultThumbUrl(thumbUrl);
-        }
-
-        setProgressPercent(100);
-        setProgressStage('PDF Compression complete!');
-
-        onNotify(
-          'PDF Document Compressed Successfully!',
-          `Original: ${formatBytes(sourceFile.size)} ➔ Optimized: ${formatBytes(outBlob.size)} (Under ${maxKb} KB with Sharp Text)`,
-          'success'
-        );
       }
     } catch (err: any) {
       console.error(err);

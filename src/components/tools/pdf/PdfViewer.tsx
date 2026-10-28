@@ -63,6 +63,8 @@ export const PdfViewer: React.FC<PdfViewerProps> = ({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const pdfDocRef = useRef<any>(null);
   const renderTaskRef = useRef<any>(null);
+  const loadingTaskRef = useRef<any>(null);
+  const activePageRef = useRef<any>(null);
 
   // Sync external page if provided (useful for synchronized side-by-side comparison)
   useEffect(() => {
@@ -89,6 +91,24 @@ export const PdfViewer: React.FC<PdfViewerProps> = ({
 
   // Load PDF Document via native pdfjsLib
   const loadDocument = useCallback(async () => {
+    if (loadingTaskRef.current) {
+      try {
+        loadingTaskRef.current.destroy();
+      } catch {
+        // ignore
+      }
+      loadingTaskRef.current = null;
+    }
+
+    if (activePageRef.current) {
+      try {
+        activePageRef.current.cleanup();
+      } catch {
+        // ignore
+      }
+      activePageRef.current = null;
+    }
+
     if (pdfDocRef.current) {
       try {
         pdfDocRef.current.destroy();
@@ -128,8 +148,10 @@ export const PdfViewer: React.FC<PdfViewerProps> = ({
         cMapUrl: `https://unpkg.com/pdfjs-dist@${PDFJS_VERSION}/cmaps/`,
         cMapPacked: true,
       });
+      loadingTaskRef.current = loadingTask;
 
       const doc = await loadingTask.promise;
+      loadingTaskRef.current = null;
       pdfDocRef.current = doc;
       setNumPages(doc.numPages);
       setPageNumber(1);
@@ -138,6 +160,7 @@ export const PdfViewer: React.FC<PdfViewerProps> = ({
     } catch (err: any) {
       console.error('Failed to load PDF in preview:', err);
       setIsLoading(false);
+      loadingTaskRef.current = null;
       pdfDocRef.current = null;
       setLoadError(err?.message || 'Unable to render PDF document preview.');
     }
@@ -155,6 +178,22 @@ export const PdfViewer: React.FC<PdfViewerProps> = ({
         } catch {
           // ignore
         }
+      }
+      if (activePageRef.current) {
+        try {
+          activePageRef.current.cleanup();
+        } catch {
+          // ignore
+        }
+        activePageRef.current = null;
+      }
+      if (loadingTaskRef.current) {
+        try {
+          loadingTaskRef.current.destroy();
+        } catch {
+          // ignore
+        }
+        loadingTaskRef.current = null;
       }
       if (pdfDocRef.current) {
         try {
@@ -185,7 +224,17 @@ export const PdfViewer: React.FC<PdfViewerProps> = ({
         }
       }
 
+      if (activePageRef.current) {
+        try {
+          activePageRef.current.cleanup();
+        } catch {
+          // ignore
+        }
+        activePageRef.current = null;
+      }
+
       const page = await doc.getPage(pageNumber);
+      activePageRef.current = page;
       const unscaledViewport = page.getViewport({ scale: 1.0, rotation });
 
       // Determine proportional display width

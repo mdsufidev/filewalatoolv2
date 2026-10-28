@@ -122,6 +122,7 @@ export const PdfOcrTool: React.FC<PdfOcrToolProps> = ({ onNotify }) => {
   const [selectedPageDetail, setSelectedPageDetail] = useState<number>(1);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isCopied, setIsCopied] = useState<boolean>(false);
+  const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // DOM Refs
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -148,6 +149,7 @@ export const PdfOcrTool: React.FC<PdfOcrToolProps> = ({ onNotify }) => {
   useEffect(() => {
     const urls = activeUrlsRef.current;
     return () => {
+      if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
       urls.forEach((url) => {
         try {
           URL.revokeObjectURL(url);
@@ -578,7 +580,8 @@ export const PdfOcrTool: React.FC<PdfOcrToolProps> = ({ onNotify }) => {
     if (!textToCopy) return;
     navigator.clipboard.writeText(textToCopy);
     setIsCopied(true);
-    setTimeout(() => setIsCopied(false), 2000);
+    if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
+    copyTimeoutRef.current = setTimeout(() => setIsCopied(false), 2000);
     onNotify?.('Copied to Clipboard', 'Text copied successfully.', 'success');
   };
 

@@ -125,6 +125,7 @@ export const PdfToWordTool: React.FC<PdfToWordToolProps> = ({ onNotify }) => {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isPdfPreviewOpen, setIsPdfPreviewOpen] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
+  const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Refs
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -151,6 +152,7 @@ export const PdfToWordTool: React.FC<PdfToWordToolProps> = ({ onNotify }) => {
   useEffect(() => {
     const urls = activeUrlsRef.current;
     return () => {
+      if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
       urls.forEach((url) => {
         try {
           URL.revokeObjectURL(url);
@@ -889,7 +891,8 @@ export const PdfToWordTool: React.FC<PdfToWordToolProps> = ({ onNotify }) => {
     const allText = result.paragraphsPreview.map((p) => p.text).join('\n\n');
     navigator.clipboard.writeText(allText);
     setIsCopied(true);
-    setTimeout(() => setIsCopied(false), 2000);
+    if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
+    copyTimeoutRef.current = setTimeout(() => setIsCopied(false), 2000);
     onNotify?.('Copied to Clipboard', 'Extracted text copied.', 'success');
   };
 

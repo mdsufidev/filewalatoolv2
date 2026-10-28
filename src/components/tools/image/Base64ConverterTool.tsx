@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Copy, Check, Code, FileCode, CheckCircle2, RefreshCw, ShieldCheck } from 'lucide-react';
 import { ImageToolGuideSection } from './ImageToolGuideSection';
 import { Dropzone } from '../../ui/Dropzone';
@@ -16,6 +16,13 @@ export const Base64ConverterTool: React.FC<{
   const [base64String, setBase64String] = useState<string>('');
   const [format, setFormat] = useState<'raw' | 'data-uri' | 'html' | 'css' | 'markdown'>('data-uri');
   const [copied, setCopied] = useState<boolean>(false);
+  const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
+    };
+  }, []);
 
   const handleFile = (f: File) => {
     setFile(f);
@@ -54,7 +61,8 @@ export const Base64ConverterTool: React.FC<{
         .writeText(text)
         .then(() => {
           setCopied(true);
-          setTimeout(() => setCopied(false), 2000);
+          if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
+          copyTimeoutRef.current = setTimeout(() => setCopied(false), 2000);
           onNotify('Copied to Clipboard!', `${format.toUpperCase()} snippet copied.`, 'success');
         })
         .catch((err) => {

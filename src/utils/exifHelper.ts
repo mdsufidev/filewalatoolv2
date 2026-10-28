@@ -283,6 +283,10 @@ export async function loadOrientedImage(source: File | Blob | string): Promise<O
     );
   });
 
+  // Free canvas GPU memory immediately
+  uprightCanvas.width = 0;
+  uprightCanvas.height = 0;
+
   const uprightUrl = URL.createObjectURL(uprightBlob);
   const uprightImg = new Image();
   await new Promise<void>((resolve, reject) => {

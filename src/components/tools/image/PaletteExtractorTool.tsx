@@ -21,6 +21,13 @@ export const PaletteExtractorTool: React.FC<{
   const [palette, setPalette] = useState<ColorSwatch[]>([]);
   const [hoveredColor, setHoveredColor] = useState<{ hex: string; x: number; y: number } | null>(null);
   const [copiedHex, setCopiedHex] = useState<string | null>(null);
+  const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
+    };
+  }, []);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imageDisplayRef = useRef<HTMLImageElement>(null);
@@ -110,7 +117,8 @@ export const PaletteExtractorTool: React.FC<{
   const handleCopyHex = (hex: string) => {
     navigator.clipboard.writeText(hex);
     setCopiedHex(hex);
-    setTimeout(() => setCopiedHex(null), 2000);
+    if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
+    copyTimeoutRef.current = setTimeout(() => setCopiedHex(null), 2000);
     onNotify('Hex Code Copied!', hex, 'info');
   };
 

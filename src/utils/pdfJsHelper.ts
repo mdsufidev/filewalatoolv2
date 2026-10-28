@@ -17,15 +17,23 @@ export async function extractTextFromPdf(file: File): Promise<{ fullText: string
 
     for (let i = 1; i <= numPages; i++) {
       const page = await pdfDoc.getPage(i);
-      const textContent = await page.getTextContent();
-      const pageText = textContent.items
-        .map((item: any) => ('str' in item ? item.str : ''))
-        .join(' ')
-        .replace(/\s+/g, ' ')
-        .trim();
+      try {
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items
+          .map((item: any) => ('str' in item ? item.str : ''))
+          .join(' ')
+          .replace(/\s+/g, ' ')
+          .trim();
 
-      pagesData.push({ pageNum: i, text: pageText });
-      combined += `--- Page ${i} ---\n${pageText}\n\n`;
+        pagesData.push({ pageNum: i, text: pageText });
+        combined += `--- Page ${i} ---\n${pageText}\n\n`;
+      } finally {
+        try {
+          page.cleanup?.();
+        } catch {
+          // ignore
+        }
+      }
     }
 
     return {
@@ -61,44 +69,52 @@ export async function convertPdfToJpg(
 
     for (let i = 1; i <= numPages; i++) {
       const page = await pdfDoc.getPage(i);
-      const viewport = page.getViewport({ scale });
+      try {
+        const viewport = page.getViewport({ scale });
 
-      const canvas = document.createElement('canvas');
-      canvas.width = viewport.width;
-      canvas.height = viewport.height;
-      const ctx = canvas.getContext('2d');
+        const canvas = document.createElement('canvas');
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        const ctx = canvas.getContext('2d');
 
-      if (!ctx) throw new Error('Canvas 2D context unavailable');
+        if (!ctx) throw new Error('Canvas 2D context unavailable');
 
-      // Fill white background for JPG
-      ctx.fillStyle = '#FFFFFF';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+        // Fill white background for JPG
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Render page
-      const renderContext = {
-        canvasContext: ctx,
-        viewport,
-        canvas,
-      };
-      await page.render(renderContext as any).promise;
+        // Render page
+        const renderContext = {
+          canvasContext: ctx,
+          viewport,
+          canvas,
+        };
+        await page.render(renderContext as any).promise;
 
-      // Convert to JPG blob
-      const blob: Blob = await new Promise((res, rej) => {
-        canvas.toBlob(
-          (b) => (b ? res(b) : rej(new Error(`Failed to render page ${i}`))),
-          'image/jpeg',
-          quality
-        );
-      });
+        // Convert to JPG blob
+        const blob: Blob = await new Promise((res, rej) => {
+          canvas.toBlob(
+            (b) => (b ? res(b) : rej(new Error(`Failed to render page ${i}`))),
+            'image/jpeg',
+            quality
+          );
+        });
 
-      canvas.width = 0;
-      canvas.height = 0;
+        canvas.width = 0;
+        canvas.height = 0;
 
-      const url = URL.createObjectURL(blob);
-      results.push({ pageNum: i, blob, url });
+        const url = URL.createObjectURL(blob);
+        results.push({ pageNum: i, blob, url });
 
-      if (onProgress) {
-        onProgress(i, numPages);
+        if (onProgress) {
+          onProgress(i, numPages);
+        }
+      } finally {
+        try {
+          page.cleanup?.();
+        } catch {
+          // ignore
+        }
       }
     }
 

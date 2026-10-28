@@ -1325,7 +1325,7 @@ export const CropRotateTool: React.FC<CropRotateToolProps> = ({ onNotify, initia
             <div className="flex items-center justify-between text-[11px]">
               <span className={isDark ? 'text-zinc-400' : 'text-zinc-500'}>Aspect Ratio:</span>
               <span className="font-mono text-zinc-400">
-                {(cropPixelW / cropPixelH).toFixed(2)}:1 ({aspectRatio.toUpperCase()})
+                {cropPixelH > 0 ? (cropPixelW / cropPixelH).toFixed(2) : '1.00'}:1 ({aspectRatio.toUpperCase()})
               </span>
             </div>
             <div className={`text-[10px] pt-1 border-t ${isDark ? 'border-zinc-700/60 text-zinc-400' : 'border-zinc-200 text-zinc-500'}`}>
