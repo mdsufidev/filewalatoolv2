@@ -646,23 +646,28 @@ export class CanvasEngine {
     return new Promise((resolve, reject) => {
       canvas.toBlob(
         (blob) => {
-          if (blob) {
-            resolve(blob);
-          } else {
-            // Fallback for uncommon mime types
-            try {
-              const dataUrl = canvas.toDataURL('image/png');
-              const arr = dataUrl.split(',');
-              const bstr = atob(arr[1]);
-              let n = bstr.length;
-              const u8arr = new Uint8Array(n);
-              while (n--) {
-                u8arr[n] = bstr.charCodeAt(n);
+          try {
+            if (blob) {
+              resolve(blob);
+            } else {
+              // Fallback for uncommon mime types
+              try {
+                const dataUrl = canvas.toDataURL('image/png');
+                const arr = dataUrl.split(',');
+                const bstr = atob(arr[1]);
+                let n = bstr.length;
+                const u8arr = new Uint8Array(n);
+                while (n--) {
+                  u8arr[n] = bstr.charCodeAt(n);
+                }
+                resolve(new Blob([u8arr], { type: 'image/png' }));
+              } catch {
+                reject(new Error('Failed to export canvas to blob'));
               }
-              resolve(new Blob([u8arr], { type: 'image/png' }));
-            } catch (err) {
-              reject(new Error('Failed to export canvas to blob'));
             }
+          } finally {
+            canvas.width = 0;
+            canvas.height = 0;
           }
         },
         format,

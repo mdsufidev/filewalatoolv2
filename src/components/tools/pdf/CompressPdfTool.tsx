@@ -242,6 +242,8 @@ export const CompressPdfTool: React.FC<CompressPdfToolProps> = ({ onNotify, init
                 const thumbUrl = registerTrackedUrl(URL.createObjectURL(blob));
                 setFileThumbnailUrl(thumbUrl);
               }
+              canvas.width = 0;
+              canvas.height = 0;
             }, 'image/jpeg', 0.8);
           }
         }

@@ -24,6 +24,7 @@ export const PaletteExtractorTool: React.FC<{
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imageDisplayRef = useRef<HTMLImageElement>(null);
+  const sampleCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
   // Extract dominant palette on image load using canvas sampling
   useEffect(() => {
@@ -40,6 +41,8 @@ export const PaletteExtractorTool: React.FC<{
 
     ctx.drawImage(img, 0, 0, sampleSize, sampleSize);
     const imgData = ctx.getImageData(0, 0, sampleSize, sampleSize).data;
+    canvas.width = 0;
+    canvas.height = 0;
 
     // Color quantization map (round to buckets of 16 to group similar shades)
     const colorCounts: { [key: string]: { r: number; g: number; b: number; count: number } } = {};
@@ -131,10 +134,14 @@ export const PaletteExtractorTool: React.FC<{
     const naturalX = Math.round((x / rect.width) * currentImage.width);
     const naturalY = Math.round((y / rect.height) * currentImage.height);
 
-    const canvas = document.createElement('canvas');
-    canvas.width = 1;
-    canvas.height = 1;
-    const ctx = canvas.getContext('2d');
+    if (!sampleCanvasRef.current) {
+      const c = document.createElement('canvas');
+      c.width = 1;
+      c.height = 1;
+      sampleCanvasRef.current = c;
+    }
+    const canvas = sampleCanvasRef.current;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
     if (!ctx) return;
 
     ctx.drawImage(currentImage.imageElement, naturalX, naturalY, 1, 1, 0, 0, 1, 1);

@@ -29,8 +29,9 @@ export async function copyImageToClipboard(
     }
 
     // Otherwise, load oriented image, paint to canvas and export as PNG blob
+    let oriented: any = null;
     try {
-      const oriented = await loadOrientedImage(imageSource);
+      oriented = await loadOrientedImage(imageSource);
       const img = oriented.img;
 
       const canvas = document.createElement('canvas');
@@ -61,6 +62,18 @@ export async function copyImageToClipboard(
       return { success: true };
     } finally {
       // Clean up object url if created
+      if (
+        oriented?.cleanObjectUrl &&
+        typeof oriented.cleanObjectUrl === 'string' &&
+        oriented.cleanObjectUrl.startsWith('blob:') &&
+        typeof imageSource !== 'string'
+      ) {
+        try {
+          URL.revokeObjectURL(oriented.cleanObjectUrl);
+        } catch {
+          // ignore
+        }
+      }
     }
   } catch (err: any) {
     return { success: false, error: err?.message || 'Failed to copy to clipboard' };

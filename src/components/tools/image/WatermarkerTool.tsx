@@ -154,6 +154,8 @@ export const WatermarkerTool: React.FC<{
       ctx.restore();
 
       canvas.toBlob((blob) => {
+        canvas.width = 0;
+        canvas.height = 0;
         if (blob) {
           if (resultUrl) URL.revokeObjectURL(resultUrl);
           const url = URL.createObjectURL(blob);
@@ -179,10 +181,10 @@ export const WatermarkerTool: React.FC<{
   const handleCopy = useCallback(async () => {
     if (!resultBlob) return;
     const ok = await copyImageToClipboard(resultBlob);
-    if (ok) {
+    if (ok.success) {
       onNotify('Copied to Clipboard', 'Watermarked photo copied. You can now paste (Ctrl+V) it anywhere.', 'success');
     } else {
-      onNotify('Copy Failed', 'Your browser could not copy image directly to clipboard.', 'error');
+      onNotify('Copy Failed', ok.error || 'Your browser could not copy image directly to clipboard.', 'error');
     }
   }, [resultBlob, onNotify]);
 
@@ -196,7 +198,7 @@ export const WatermarkerTool: React.FC<{
       title: 'Watermarked Photo',
       text: 'Photo protected with FileWala Watermarker.',
     });
-    if (shared) {
+    if (shared.shared) {
       onNotify('Shared', 'Photo shared successfully.', 'success');
     }
   }, [resultBlob, currentImage, onNotify]);

@@ -105,10 +105,10 @@ export const ConverterTool: React.FC<{
   const handleCopy = async () => {
     if (!result) return;
     const ok = await copyImageToClipboard(result.blob);
-    if (ok) {
+    if (ok.success) {
       onNotify('Copied to Clipboard', `${currentFormatMeta.name} image copied. You can now paste (Ctrl+V) it anywhere.`, 'success');
     } else {
-      onNotify('Copy Failed', 'Your browser could not copy image directly to clipboard.', 'error');
+      onNotify('Copy Failed', ok.error || 'Your browser could not copy image directly to clipboard.', 'error');
     }
   };
 
@@ -122,7 +122,7 @@ export const ConverterTool: React.FC<{
       title: 'Converted Image',
       text: `Converted to ${currentFormatMeta.name} with FileWala.`,
     });
-    if (shared) {
+    if (shared.shared) {
       onNotify('Shared', 'Image shared successfully.', 'success');
     }
   };

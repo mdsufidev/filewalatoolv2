@@ -167,7 +167,10 @@ export async function padJpegToMinBytes(blob: Blob, minBytes: number): Promise<B
   // If bytes[2] and bytes[3] are APP0 (0xFF, 0xE0), insert COM after APP0 so JFIF strictly stays directly after SOI
   if (bytes.length > 5 && bytes[2] === 0xFF && bytes[3] === 0xE0) {
     const app0Length = (bytes[4] << 8) | bytes[5];
-    insertPos = 4 + app0Length;
+    const candidatePos = 4 + app0Length;
+    if (candidatePos <= bytes.length) {
+      insertPos = candidatePos;
+    }
   }
 
   // Insert all COM segments right after APP0 (or SOI if no APP0)
@@ -256,6 +259,10 @@ export async function compressCanvasToPortalSpecs(
     scaledCtx.fillStyle = '#FFFFFF';
     scaledCtx.fillRect(0, 0, newW, newH);
     scaledCtx.drawImage(currentCanvas, 0, 0, newW, newH);
+    if (currentCanvas !== canvas) {
+      currentCanvas.width = 0;
+      currentCanvas.height = 0;
+    }
     currentCanvas = scaledCanvas;
 
     const rawBlob: Blob = await new Promise((resolve) =>
@@ -265,10 +272,16 @@ export async function compressCanvasToPortalSpecs(
     bestQuality = 0.65;
   }
 
+  if (currentCanvas !== canvas) {
+    currentCanvas.width = 0;
+    currentCanvas.height = 0;
+  }
+
   // If minKb is specified and file is below minimum, pad it safely
   if (minBytes > 0 && bestBlob.size < minBytes) {
-    // Add small buffer so it lands securely above minBytes (e.g., +1.5 KB)
-    const targetPaddedBytes = Math.min(maxBytes - 1024, minBytes + 2048);
+    // Add small buffer so it lands securely above minBytes without exceeding maxBytes
+    const safeMax = Math.max(minBytes, maxBytes - 128);
+    const targetPaddedBytes = Math.min(safeMax, Math.max(minBytes, minBytes + 1024));
     bestBlob = await padJpegToMinBytes(bestBlob, targetPaddedBytes);
   }
 

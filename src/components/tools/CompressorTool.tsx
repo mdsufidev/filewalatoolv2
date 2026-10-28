@@ -50,6 +50,7 @@ import { triggerFileDownload } from '../../utils/memory';
 import { convertHeicToJpeg } from '../../utils/heicHelper';
 import { embedJpegDpi } from '../../utils/jpegDpi';
 import { CanvasEngine } from '../../core/engine/CanvasEngine';
+import { copyImageToClipboard, shareFileOrBlob } from '../../utils/clipboardAndShare';
 
 interface CompressorToolProps {
   onNotify?: (title: string, desc?: string, type?: 'success' | 'error' | 'info') => void;
@@ -591,56 +592,32 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
   // Copy compressed image to clipboard
   const handleCopyToClipboard = useCallback(async () => {
     if (!compressedResult) return;
-    try {
-      // In browsers, clipboard API primarily supports PNG blobs
-      if (compressedResult.blob.type === 'image/png') {
-        await navigator.clipboard.write([
-          new ClipboardItem({ 'image/png': compressedResult.blob })
-        ]);
-        onNotify?.('Copied to Clipboard', 'Image copied to clipboard successfully!', 'success');
-      } else {
-        // Render directly onto canvas for universal PNG clipboard export
-        const canvas = document.createElement('canvas');
-        canvas.width = compressedResult.width;
-        canvas.height = compressedResult.height;
-        const ctx = canvas.getContext('2d');
-        if (!ctx || !imageElement) {
-          throw new Error('Canvas context not available');
-        }
-        ctx.fillStyle = '#FFFFFF';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(imageElement, 0, 0, canvas.width, canvas.height);
-        canvas.toBlob(async (pngBlob) => {
-          if (pngBlob) {
-            await navigator.clipboard.write([
-              new ClipboardItem({ 'image/png': pngBlob })
-            ]);
-            onNotify?.('Copied to Clipboard', 'Image copied to clipboard!', 'success');
-          }
-        }, 'image/png');
-      }
-    } catch {
-      onNotify?.('Copy Failed', 'Clipboard image copy is not supported in this browser.', 'error');
+    const res = await copyImageToClipboard(compressedResult.blob, {
+      width: compressedResult.width,
+      height: compressedResult.height,
+    });
+    if (res.success) {
+      onNotify?.('Copied to Clipboard', 'Compressed image copied to clipboard!', 'success');
+    } else {
+      onNotify?.('Copy Failed', res.error || 'Clipboard copy not supported in this browser.', 'error');
     }
-  }, [compressedResult, imageElement, onNotify]);
+  }, [compressedResult, onNotify]);
 
   // Mobile Web Share API
   const handleShare = useCallback(async () => {
-    if (!compressedResult || !sourceImage || !navigator.share) return;
-    try {
-      const ext = compressedResult.format === 'image/webp' ? 'webp' : compressedResult.format === 'image/png' ? 'png' : 'jpg';
-      const file = new File([compressedResult.blob], `compressed-${sourceImage.name.replace(/\.[^/.]+$/, '')}.${ext}`, {
-        type: compressedResult.format,
-      });
-      await navigator.share({
-        title: 'Compressed Image',
-        text: `Compressed image (${formatFileSize(compressedResult.size)}) via FileWala`,
-        files: [file],
-      });
-    } catch {
-      // User cancelled share or not supported
+    if (!compressedResult || !sourceImage) return;
+    const ext = compressedResult.format === 'image/webp' ? 'webp' : compressedResult.format === 'image/png' ? 'png' : 'jpg';
+    const filename = `compressed-${sourceImage.name.replace(/\.[^/.]+$/, '')}.${ext}`;
+    const shared = await shareFileOrBlob({
+      blob: compressedResult.blob,
+      filename,
+      title: 'Compressed Image',
+      text: `Compressed image (${formatFileSize(compressedResult.size)}) via FileWala`,
+    });
+    if (shared.shared) {
+      onNotify?.('Shared Successfully', '', 'success');
     }
-  }, [compressedResult, sourceImage]);
+  }, [compressedResult, sourceImage, onNotify]);
 
   // Load a crisp sample test image
   const handleLoadSample = useCallback(() => {

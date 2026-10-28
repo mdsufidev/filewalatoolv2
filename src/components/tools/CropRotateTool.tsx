@@ -890,10 +890,10 @@ export const CropRotateTool: React.FC<CropRotateToolProps> = ({ onNotify, initia
       return;
     }
     const ok = await copyImageToClipboard(blob);
-    if (ok) {
+    if (ok.success) {
       onNotify('Copied to Clipboard', 'Cropped image copied. You can now paste (Ctrl+V) it anywhere.', 'success');
     } else {
-      onNotify('Copy Failed', 'Your browser could not copy image directly to clipboard.', 'error');
+      onNotify('Copy Failed', ok.error || 'Your browser could not copy image directly to clipboard.', 'error');
     }
   };
 
@@ -916,7 +916,7 @@ export const CropRotateTool: React.FC<CropRotateToolProps> = ({ onNotify, initia
       title: 'Cropped Image',
       text: 'Cropped image created with FileWala.',
     });
-    if (shared) {
+    if (shared.shared) {
       onNotify('Shared', 'Image shared successfully.', 'success');
     }
   };

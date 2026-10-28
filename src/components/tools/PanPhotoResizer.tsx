@@ -443,6 +443,8 @@ export const PanPhotoResizer: React.FC<PanPhotoResizerProps> = ({ onNotify }) =>
           maxKb: targetMaxKb,
           dpi: targetDpi,
         });
+        canvas.width = 0;
+        canvas.height = 0;
 
         // Verify embedded DPI directly from output binary
         const dpiInfo = await readJpegDpi(compressionResult.blob);
@@ -547,13 +549,16 @@ export const PanPhotoResizer: React.FC<PanPhotoResizerProps> = ({ onNotify }) =>
       ? sourceFile.name.replace(/\.[^/.]+$/, '')
       : 'pan-photo';
     const filename = `${cleanName}-${targetWidth}x${targetHeight}.jpg`;
-    await shareFileOrBlob({
+    const shared = await shareFileOrBlob({
       blob: resultBlob,
       filename,
       title: 'PAN Card Photo',
       text: `PAN Card Photo (${targetWidth}×${targetHeight}px, ${formatBytes(resultSizeBytes)}) via FileWala`,
     });
-  }, [resultBlob, sourceFile, targetWidth, targetHeight, resultSizeBytes]);
+    if (shared.shared) {
+      onNotify('Shared Successfully', '', 'success');
+    }
+  }, [resultBlob, sourceFile, targetWidth, targetHeight, resultSizeBytes, onNotify]);
 
   const isSizeCompliant =
     resultSizeBytes >= targetMinKb * 1024 && resultSizeBytes <= targetMaxKb * 1024;

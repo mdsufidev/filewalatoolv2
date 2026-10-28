@@ -199,19 +199,28 @@ export const ImageToPdfTool: React.FC<ImageToPdfToolProps> = ({ onNotify }) => {
         ctx.rotate((item.rotation * Math.PI) / 180);
         ctx.drawImage(img, -img.naturalWidth / 2, -img.naturalHeight / 2);
 
-        canvas.toBlob((blob) => {
-          if (!blob) {
-            reject(new Error('Failed to encode image from canvas'));
-            return;
-          }
-          blob.arrayBuffer().then((buf) => {
+        canvas.toBlob(async (blob) => {
+          try {
+            if (!blob) {
+              canvas.width = 0;
+              canvas.height = 0;
+              reject(new Error('Failed to encode image from canvas'));
+              return;
+            }
+            const buf = await blob.arrayBuffer();
+            canvas.width = 0;
+            canvas.height = 0;
             resolve({
               bytes: new Uint8Array(buf),
               type: 'jpeg',
               width: drawWidth,
               height: drawHeight,
             });
-          });
+          } catch (err) {
+            canvas.width = 0;
+            canvas.height = 0;
+            reject(err);
+          }
         }, 'image/jpeg', 0.92);
       };
       img.onerror = () => reject(new Error('Failed to load image element'));

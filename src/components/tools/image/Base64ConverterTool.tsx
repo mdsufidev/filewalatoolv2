@@ -49,10 +49,20 @@ export const Base64ConverterTool: React.FC<{
   const handleCopy = useCallback(() => {
     const text = getFormattedOutput();
     if (!text) return;
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-    onNotify('Copied to Clipboard!', `${format.toUpperCase()} snippet copied.`, 'success');
+    if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard
+        .writeText(text)
+        .then(() => {
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2000);
+          onNotify('Copied to Clipboard!', `${format.toUpperCase()} snippet copied.`, 'success');
+        })
+        .catch((err) => {
+          onNotify('Copy Failed', err?.message || 'Clipboard access blocked by browser.', 'error');
+        });
+    } else {
+      onNotify('Copy Failed', 'Clipboard API not supported in this browser.', 'error');
+    }
   }, [getFormattedOutput, format, onNotify]);
 
   const handleReset = useCallback(() => {

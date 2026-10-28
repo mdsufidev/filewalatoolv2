@@ -41,6 +41,7 @@ import { useTheme } from '../../core/themeContext';
 import { ImageToolGuideSection } from './image/ImageToolGuideSection';
 import { formatBytes, triggerFileDownload, createSafeObjectURL, revokeSafeObjectURL } from '../../utils/memory';
 import { CanvasEngine, ImageFormat } from '../../core/engine/CanvasEngine';
+import { copyImageToClipboard, shareFileOrBlob } from '../../utils/clipboardAndShare';
 
 interface ResizerToolProps {
   onNotify: (title: string, desc?: string, type?: 'success' | 'error' | 'info') => void;
@@ -616,51 +617,30 @@ export const ResizerTool: React.FC<ResizerToolProps> = ({ onNotify, initialFile 
   // Copy to clipboard
   const handleCopyToClipboard = async () => {
     if (!resizedResult) return;
-    try {
-      if (resizedResult.blob.type === 'image/png') {
-        await navigator.clipboard.write([
-          new ClipboardItem({ 'image/png': resizedResult.blob })
-        ]);
-        onNotify('Copied to Clipboard', 'Resized image copied to clipboard!', 'success');
-      } else {
-        const canvas = document.createElement('canvas');
-        canvas.width = resizedResult.width;
-        canvas.height = resizedResult.height;
-        const ctx = canvas.getContext('2d');
-        const img = new Image();
-        img.onload = async () => {
-          ctx?.drawImage(img, 0, 0);
-          canvas.toBlob(async (pngBlob) => {
-            if (pngBlob) {
-              await navigator.clipboard.write([
-                new ClipboardItem({ 'image/png': pngBlob })
-              ]);
-              onNotify('Copied to Clipboard', 'Resized image copied to clipboard!', 'success');
-            }
-          }, 'image/png');
-        };
-        img.src = resizedResult.url;
-      }
-    } catch {
-      onNotify('Copy Failed', 'Clipboard image copy is not supported in this browser.', 'error');
+    const res = await copyImageToClipboard(resizedResult.blob, {
+      width: resizedResult.width,
+      height: resizedResult.height,
+    });
+    if (res.success) {
+      onNotify('Copied to Clipboard', 'Resized image copied to clipboard!', 'success');
+    } else {
+      onNotify('Copy Failed', res.error || 'Clipboard copy not supported in this browser.', 'error');
     }
   };
 
   // Share API
   const handleShare = async () => {
-    if (!resizedResult || !sourceImage || !navigator.share) return;
-    try {
-      const ext = resizedResult.format === 'image/webp' ? 'webp' : resizedResult.format === 'image/png' ? 'png' : 'jpg';
-      const file = new File([resizedResult.blob], `resized-${sourceImage.name.replace(/\.[^/.]+$/, '')}.${ext}`, {
-        type: resizedResult.format,
-      });
-      await navigator.share({
-        title: 'Resized Image',
-        text: `Resized to ${resizedResult.width}×${resizedResult.height}px via FileWala`,
-        files: [file],
-      });
-    } catch {
-      // Ignored
+    if (!resizedResult || !sourceImage) return;
+    const ext = resizedResult.format === 'image/webp' ? 'webp' : resizedResult.format === 'image/png' ? 'png' : 'jpg';
+    const filename = `resized-${sourceImage.name.replace(/\.[^/.]+$/, '')}.${ext}`;
+    const shared = await shareFileOrBlob({
+      blob: resizedResult.blob,
+      filename,
+      title: 'Resized Image',
+      text: `Resized to ${resizedResult.width}×${resizedResult.height}px via FileWala`,
+    });
+    if (shared.shared) {
+      onNotify('Shared Successfully', '', 'success');
     }
   };
 

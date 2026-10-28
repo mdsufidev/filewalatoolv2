@@ -153,10 +153,11 @@ export class NeuralFaceEnhancer {
           // 1. If BlazeFace keypoints are available:
           if (kps && kps.length >= 2 && kps[0] && kps[1]) {
             // MediaPipe: keypoint 0 = right eye, keypoint 1 = left eye
-            const eye0X = kps[0].x * w;
-            const eye0Y = kps[0].y * h;
-            const eye1X = kps[1].x * w;
-            const eye1Y = kps[1].y * h;
+            // Check if coordinates are normalized [0..1] or absolute pixel values
+            const eye0X = kps[0].x > 1.0 ? kps[0].x : kps[0].x * w;
+            const eye0Y = kps[0].y > 1.0 ? kps[0].y : kps[0].y * h;
+            const eye1X = kps[1].x > 1.0 ? kps[1].x : kps[1].x * w;
+            const eye1Y = kps[1].y > 1.0 ? kps[1].y : kps[1].y * h;
             const eyeCenterX = (eye0X + eye1X) / 2;
             const eyeCenterY = (eye0Y + eye1Y) / 2;
             const dx = eye1X - eye0X;
@@ -442,6 +443,9 @@ export class NeuralFaceEnhancer {
     const eyeCenterX = centerX;
     const eyeCenterY = centerY - headSize * 0.12;
     const eyeDist = Math.max(20, headSize * 0.34);
+
+    canvas.width = 0;
+    canvas.height = 0;
 
     return {
       x: Math.max(0, Math.round(centerX - headSize / 2)),
@@ -798,6 +802,20 @@ export class NeuralFaceEnhancer {
     octx.globalAlpha = Math.max(0, Math.min(1, blendStrength));
     octx.drawImage(featherCanvas, 0, 0);
     octx.restore();
+
+    // Clean up intermediate patch and mask canvases to prevent mobile memory leaks
+    try {
+      patchCanvas.width = 0;
+      patchCanvas.height = 0;
+      featherCanvas.width = 0;
+      featherCanvas.height = 0;
+      if (restoredPatchCanvas) {
+        restoredPatchCanvas.width = 0;
+        restoredPatchCanvas.height = 0;
+      }
+    } catch {
+      // ignore
+    }
 
     if (onProgress) onProgress(100, 'Studio-Grade Face Restoration Complete!');
 

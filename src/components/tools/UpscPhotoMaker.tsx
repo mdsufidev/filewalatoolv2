@@ -369,6 +369,8 @@ export const UpscPhotoMaker: React.FC<UpscPhotoMakerProps> = ({ onNotify }) => {
         maxKb: targetMaxKb,
         dpi: targetDpi,
       });
+      canvas.width = 0;
+      canvas.height = 0;
 
       const dpiInfo = await readJpegDpi(compressionResult.blob);
       setVerifiedDpi(dpiInfo?.dpiX || targetDpi);
@@ -432,10 +434,10 @@ export const UpscPhotoMaker: React.FC<UpscPhotoMakerProps> = ({ onNotify }) => {
   const handleCopyPhoto = useCallback(async () => {
     if (!resultBlob) return;
     const ok = await copyImageToClipboard(resultBlob);
-    if (ok) {
+    if (ok.success) {
       onNotify('Copied to Clipboard', 'UPSC photo copied as image. You can now paste (Ctrl+V) it anywhere.', 'success');
     } else {
-      onNotify('Copy Failed', 'Your browser could not copy image directly to clipboard.', 'error');
+      onNotify('Copy Failed', ok.error || 'Your browser could not copy image directly to clipboard.', 'error');
     }
   }, [resultBlob, onNotify]);
 
@@ -451,7 +453,7 @@ export const UpscPhotoMaker: React.FC<UpscPhotoMakerProps> = ({ onNotify }) => {
       title: 'UPSC Photo',
       text: 'UPSC photo created with FileWala Govt Resizer.',
     });
-    if (shared) {
+    if (shared.shared) {
       onNotify('Shared', 'Photo shared successfully.', 'success');
     }
   }, [resultBlob, candidateName, onNotify]);

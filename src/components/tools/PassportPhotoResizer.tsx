@@ -394,6 +394,8 @@ export const PassportPhotoResizer: React.FC<PassportPhotoResizerProps> = ({ onNo
           maxKb: targetMaxKb,
           dpi: targetDpi,
         });
+        canvas.width = 0;
+        canvas.height = 0;
 
         const dpiInfo = await readJpegDpi(compressionResult.blob);
         setVerifiedDpi(dpiInfo?.dpiX || targetDpi);
@@ -486,13 +488,16 @@ export const PassportPhotoResizer: React.FC<PassportPhotoResizerProps> = ({ onNo
   const handleSharePhoto = useCallback(async () => {
     if (!resultBlob) return;
     const filename = `Passport_Seva_Photo_35x45mm_${Date.now()}.jpg`;
-    await shareFileOrBlob({
+    const shared = await shareFileOrBlob({
       blob: resultBlob,
       filename,
       title: 'Passport Seva Photo',
       text: `Passport Photo (35x45mm / ${targetW}×${targetH}px, ${formatBytes(resultSizeBytes)}) via FileWala`,
     });
-  }, [resultBlob, targetW, targetH, resultSizeBytes]);
+    if (shared.shared) {
+      onNotify('Shared Successfully', '', 'success');
+    }
+  }, [resultBlob, targetW, targetH, resultSizeBytes, onNotify]);
 
   const currentSizeKb = resultSizeBytes ? (resultSizeBytes / 1024).toFixed(1) : null;
   const isSizeCompliant =

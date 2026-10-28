@@ -76,6 +76,8 @@ export const MemeGeneratorTool: React.FC<{
       }
 
       canvas.toBlob((blob) => {
+        canvas.width = 0;
+        canvas.height = 0;
         if (blob) {
           if (resultUrl) URL.revokeObjectURL(resultUrl);
           const url = URL.createObjectURL(blob);
@@ -107,10 +109,10 @@ export const MemeGeneratorTool: React.FC<{
   const handleCopy = useCallback(async () => {
     if (!resultBlob) return;
     const ok = await copyImageToClipboard(resultBlob);
-    if (ok) {
+    if (ok.success) {
       onNotify('Copied to Clipboard', 'Meme copied as image! You can now paste (Ctrl+V) directly into Twitter, Discord, WhatsApp, etc.', 'success');
     } else {
-      onNotify('Copy Failed', 'Your browser could not copy image directly to clipboard.', 'error');
+      onNotify('Copy Failed', ok.error || 'Your browser could not copy image directly to clipboard.', 'error');
     }
   }, [resultBlob, onNotify]);
 
@@ -124,7 +126,7 @@ export const MemeGeneratorTool: React.FC<{
       title: 'Meme',
       text: 'Created with FileWala Meme Generator.',
     });
-    if (shared) {
+    if (shared.shared) {
       onNotify('Shared', 'Meme shared successfully.', 'success');
     }
   }, [resultBlob, currentImage, onNotify]);

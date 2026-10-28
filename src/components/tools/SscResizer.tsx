@@ -364,6 +364,8 @@ export const SscResizer: React.FC<SscResizerProps> = ({
         maxKb: targetMaxKb,
         dpi: targetDpi,
       });
+      canvas.width = 0;
+      canvas.height = 0;
 
       const dpiInfo = await readJpegDpi(compressionResult.blob);
       setVerifiedDpi(dpiInfo?.dpiX || targetDpi);
@@ -446,10 +448,10 @@ export const SscResizer: React.FC<SscResizerProps> = ({
   const handleCopy = useCallback(async () => {
     if (!resultBlob) return;
     const ok = await copyImageToClipboard(resultBlob);
-    if (ok) {
+    if (ok.success) {
       onNotify('Copied to Clipboard', `SSC ${itemType} copied as image. You can now paste (Ctrl+V) it anywhere.`, 'success');
     } else {
-      onNotify('Copy Failed', 'Your browser could not copy image directly to clipboard.', 'error');
+      onNotify('Copy Failed', ok.error || 'Your browser could not copy image directly to clipboard.', 'error');
     }
   }, [itemType, onNotify, resultBlob]);
 
@@ -462,7 +464,7 @@ export const SscResizer: React.FC<SscResizerProps> = ({
       title: `SSC ${itemType.toUpperCase()}`,
       text: `SSC ${itemType} formatted with FileWala Govt Resizer.`,
     });
-    if (shared) {
+    if (shared.shared) {
       onNotify('Shared', `${itemType === 'photo' ? 'Photo' : 'Signature'} shared successfully.`, 'success');
     }
   }, [itemType, onNotify, resultBlob]);

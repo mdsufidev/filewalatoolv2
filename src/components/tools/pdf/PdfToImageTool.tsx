@@ -543,12 +543,12 @@ export const PdfToImageTool: React.FC<PdfToImageToolProps> = ({ onNotify }) => {
   // Copy image to clipboard
   const handleCopyImageToClipboard = async (item: RenderedPageItem) => {
     const ok = await copyImageToClipboard(item.blob);
-    if (ok) {
+    if (ok.success) {
       setCopiedPageNum(item.pageNum);
       setTimeout(() => setCopiedPageNum(null), 2500);
       onNotify?.('Copied to Clipboard', `Page ${item.pageNum} image copied to clipboard`, 'success');
     } else {
-      onNotify?.('Copy Failed', 'Your browser could not copy image directly to clipboard.', 'error');
+      onNotify?.('Copy Failed', ok.error || 'Your browser could not copy image directly to clipboard.', 'error');
     }
   };
 
@@ -563,7 +563,7 @@ export const PdfToImageTool: React.FC<PdfToImageToolProps> = ({ onNotify }) => {
       title: `Page ${item.pageNum}`,
       text: `Page ${item.pageNum} converted from PDF with FileWala.`,
     });
-    if (shared) {
+    if (shared.shared) {
       onNotify?.('Shared', `Page ${item.pageNum} shared successfully.`, 'success');
     }
   };

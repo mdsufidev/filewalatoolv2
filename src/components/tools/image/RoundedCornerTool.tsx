@@ -94,6 +94,8 @@ export const RoundedCornerTool: React.FC<{
       ctx.restore();
 
       canvas.toBlob((blob) => {
+        canvas.width = 0;
+        canvas.height = 0;
         if (blob) {
           if (resultUrl) URL.revokeObjectURL(resultUrl);
           const url = URL.createObjectURL(blob);
@@ -126,10 +128,10 @@ export const RoundedCornerTool: React.FC<{
   const handleCopy = useCallback(async () => {
     if (!resultBlob) return;
     const ok = await copyImageToClipboard(resultBlob);
-    if (ok) {
+    if (ok.success) {
       onNotify('Copied to Clipboard', 'Rounded image copied as transparent PNG. You can now paste (Ctrl+V) it anywhere.', 'success');
     } else {
-      onNotify('Copy Failed', 'Your browser could not copy image directly to clipboard.', 'error');
+      onNotify('Copy Failed', ok.error || 'Your browser could not copy image directly to clipboard.', 'error');
     }
   }, [resultBlob, onNotify]);
 
@@ -143,7 +145,7 @@ export const RoundedCornerTool: React.FC<{
       title: 'Rounded Image',
       text: 'Created with FileWala Rounded Corner Tool.',
     });
-    if (shared) {
+    if (shared.shared) {
       onNotify('Shared', 'Image shared successfully.', 'success');
     }
   }, [resultBlob, currentImage, onNotify]);

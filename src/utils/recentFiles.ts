@@ -225,16 +225,25 @@ export function blobToDataUrl(blob: Blob): Promise<string> {
  * Converts Base64 data URL to a binary Blob
  */
 export function dataUrlToBlob(dataUrl: string): Blob {
-  const parts = dataUrl.split(',');
-  const mimeMatch = parts[0]?.match(/:(.*?);/);
-  const mimeType = mimeMatch ? mimeMatch[1] : 'application/octet-stream';
-  const binaryString = atob(parts[1] || '');
-  const len = binaryString.length;
-  const bytes = new Uint8Array(len);
-  for (let i = 0; i < len; i++) {
-    bytes[i] = binaryString.charCodeAt(i);
+  try {
+    const parts = dataUrl.split(',');
+    const mimeMatch = parts[0]?.match(/:(.*?);/);
+    const mimeType = mimeMatch ? mimeMatch[1] : 'application/octet-stream';
+    const b64Data = (parts[1] || '').trim();
+    if (!b64Data) {
+      return new Blob([], { type: mimeType });
+    }
+    const binaryString = atob(b64Data);
+    const len = binaryString.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    return new Blob([bytes], { type: mimeType });
+  } catch (err) {
+    console.warn('[recentFiles] Failed to parse data URL into Blob:', err);
+    return new Blob([], { type: 'application/octet-stream' });
   }
-  return new Blob([bytes], { type: mimeType });
 }
 
 /**

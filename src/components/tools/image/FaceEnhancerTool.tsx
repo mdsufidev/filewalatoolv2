@@ -95,6 +95,7 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
   const debounceTimerRef = useRef<any>(null);
   const activeBlobUrlRef = useRef<string | null>(null);
   const neuralRestoredCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const lastProcessedCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const [hasNeuralRestoration, setHasNeuralRestoration] = useState<boolean>(false);
 
   // Check WebGPU availability
@@ -232,6 +233,8 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
         }
 
         const sourceImageData = canvas.getContext('2d')!.getImageData(0, 0, sourceW, sourceH);
+        canvas.width = 0;
+        canvas.height = 0;
 
         // When neural face is active, clamp deblur to max 25 so it doesn't over-deconvolve an already crisp AI face
         const sanitizedSettings = baseCanvas
@@ -269,6 +272,7 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
           outCtx.putImageData(finalImageData, 0, 0);
         }
 
+        lastProcessedCanvasRef.current = outputCanvas;
         setEnhancedDimensions({ width: finalImageData.width, height: finalImageData.height });
 
         // Convert to Blob
@@ -295,6 +299,30 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
       }
     },
     [currentImage, exportFormat, exportQuality, onNotify]
+  );
+
+  // Instant re-encode when changing format or quality without re-running heavy filters
+  const reencodeExportBlob = useCallback(
+    (targetFormat: OutputFormat, targetQuality: number) => {
+      const canvas = lastProcessedCanvasRef.current;
+      if (!canvas) return;
+      canvas.toBlob(
+        (blob) => {
+          if (blob) {
+            if (activeBlobUrlRef.current) {
+              URL.revokeObjectURL(activeBlobUrlRef.current);
+            }
+            const url = URL.createObjectURL(blob);
+            activeBlobUrlRef.current = url;
+            setPreviewSrc(url);
+            setProcessedBlob(blob);
+          }
+        },
+        targetFormat,
+        targetQuality / 100
+      );
+    },
+    []
   );
 
   // Studio-Grade Deep Neural Face Restoration
@@ -348,6 +376,7 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
 
       // Persist restored canvas as active working base so other tools/sliders build on it!
       neuralRestoredCanvasRef.current = restoredCanvas;
+      lastProcessedCanvasRef.current = restoredCanvas;
       setHasNeuralRestoration(true);
 
       setEnhancedDimensions({ width: restoredCanvas.width, height: restoredCanvas.height });
@@ -491,28 +520,26 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
   // Copy to clipboard
   const handleCopy = async () => {
     if (!processedBlob) return;
-    try {
-      await copyImageToClipboard(processedBlob);
+    const res = await copyImageToClipboard(processedBlob);
+    if (res.success) {
       onNotify('Copied to Clipboard', 'Portrait ready to paste anywhere', 'success');
-    } catch {
-      onNotify('Clipboard Error', 'Please use Direct Download instead', 'error');
+    } else {
+      onNotify('Clipboard Error', res.error || 'Please use Direct Download instead', 'error');
     }
   };
 
   // Share
   const handleShare = async () => {
     if (!processedBlob || !currentImage) return;
-    try {
-      const ext = exportFormat === 'image/jpeg' ? 'jpg' : 'png';
-      await shareFileOrBlob({
-        blob: processedBlob,
-        filename: `enhanced_portrait.${ext}`,
-        title: 'Enhanced Face Portrait',
-        text: 'Enhanced with FileWala AI Face Enhancer',
-      });
+    const ext = exportFormat === 'image/jpeg' ? 'jpg' : 'png';
+    const res = await shareFileOrBlob({
+      blob: processedBlob,
+      filename: `enhanced_portrait.${ext}`,
+      title: 'Enhanced Face Portrait',
+      text: 'Enhanced with FileWala AI Face Enhancer',
+    });
+    if (res.shared) {
       onNotify('Shared Successfully', '', 'success');
-    } catch {
-      // Ignored if user dismissed share sheet
     }
   };
 
@@ -909,7 +936,7 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
                           type="button"
                           onClick={() => {
                             setExportFormat(fmt);
-                            runEnhancement(settings, upscaleFactor);
+                            reencodeExportBlob(fmt, exportQuality);
                           }}
                           className={`py-1.5 rounded-lg text-xs font-semibold border transition cursor-pointer text-center ${
                             isSelected
@@ -937,7 +964,7 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
                       value={exportQuality}
                       onChange={(val) => {
                         setExportQuality(val);
-                        runEnhancement(settings, upscaleFactor);
+                        reencodeExportBlob(exportFormat, val);
                       }}
                     />
                   ) : (

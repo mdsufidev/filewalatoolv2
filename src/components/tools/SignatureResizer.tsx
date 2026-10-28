@@ -425,6 +425,8 @@ export const SignatureResizer: React.FC<SignatureResizerProps> = ({ onNotify }) 
           maxKb: targetMaxKb,
           dpi: targetDpi,
         });
+        canvas.width = 0;
+        canvas.height = 0;
 
         const dpiInfo = await readJpegDpi(compressionResult.blob);
         const verified = dpiInfo ? dpiInfo.dpiX : targetDpi;
@@ -527,13 +529,16 @@ export const SignatureResizer: React.FC<SignatureResizerProps> = ({ onNotify }) 
       ? sourceFile.name.replace(/\.[^/.]+$/, '')
       : 'pan-signature';
     const filename = `${cleanName}-${targetWidth}x${targetHeight}.jpg`;
-    await shareFileOrBlob({
+    const shared = await shareFileOrBlob({
       blob: resultBlob,
       filename,
       title: 'PAN Signature',
       text: `PAN Signature (${targetWidth}×${targetHeight}px, ${formatBytes(resultSizeBytes)}) via FileWala`,
     });
-  }, [resultBlob, sourceFile, targetWidth, targetHeight, resultSizeBytes]);
+    if (shared.shared) {
+      onNotify('Shared Successfully', '', 'success');
+    }
+  }, [resultBlob, sourceFile, targetWidth, targetHeight, resultSizeBytes, onNotify]);
 
   const isCompliant =
     resultBlob &&

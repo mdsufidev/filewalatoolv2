@@ -268,7 +268,16 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
     }
     ectx.drawImage(fgCanvas, 0, 0);
 
+    fgCanvas.width = 0;
+    fgCanvas.height = 0;
+    if (activeMask !== maskCanvasRef.current) {
+      activeMask.width = 0;
+      activeMask.height = 0;
+    }
+
     exportCanvas.toBlob((blob) => {
+      exportCanvas.width = 0;
+      exportCanvas.height = 0;
       if (blob) setResultBlob(blob);
     }, 'image/png');
   }, [
@@ -538,6 +547,7 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
 
     const visited = new Uint8Array(w * h);
     const maxDist = (tol / 100) * 441.67;
+    const maxDistSq = maxDist * maxDist;
 
     for (const [sx, sy] of seedPoints) {
       const startIdx = (sy * w + sx) * 4;
@@ -577,9 +587,9 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
               const dr = srcData[nIdx] - targetR;
               const dg = srcData[nIdx + 1] - targetG;
               const db = srcData[nIdx + 2] - targetB;
-              const dist = Math.hypot(dr, dg, db);
+              const distSq = dr * dr + dg * dg + db * db;
 
-              if (dist <= maxDist) {
+              if (distSq <= maxDistSq) {
                 queueX.push(nx);
                 queueY.push(ny);
               }
@@ -588,6 +598,9 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
         }
       }
     }
+
+    tempCanvas.width = 0;
+    tempCanvas.height = 0;
 
     mctx.putImageData(maskImgData, 0, 0);
     pushHistorySnapshot();
@@ -633,6 +646,8 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
       tctx.drawImage(img, 0, 0, INPUT_SIZE, INPUT_SIZE);
 
       const imgData = tctx.getImageData(0, 0, INPUT_SIZE, INPUT_SIZE);
+      tempCanvas.width = 0;
+      tempCanvas.height = 0;
 
       // 2. Offload to background worker for local WebGPU / WASM execution
       const result = await briaWorkerRef.current.removeBackground({
@@ -694,6 +709,8 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
       mctx.imageSmoothingEnabled = true;
       mctx.imageSmoothingQuality = 'high';
       mctx.drawImage(lowResMaskCanvas, 0, 0, w, h);
+      lowResMaskCanvas.width = 0;
+      lowResMaskCanvas.height = 0;
 
       pushHistorySnapshot();
       setAiProgress(100);
@@ -1343,10 +1360,10 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
   const handleCopy = useCallback(async () => {
     if (!resultBlob) return;
     const ok = await copyImageToClipboard(resultBlob);
-    if (ok) {
+    if (ok.success) {
       onNotify('Copied to Clipboard', 'Cutout image copied (Ctrl+V anywhere).', 'success');
     } else {
-      onNotify('Copy Failed', 'Clipboard access was blocked by browser permissions.', 'error');
+      onNotify('Copy Failed', ok.error || 'Clipboard access was blocked by browser permissions.', 'error');
     }
   }, [resultBlob, onNotify]);
 
@@ -1360,7 +1377,7 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
       title: 'Background Cutout',
       text: 'Background removed with FileWala BG Studio.',
     });
-    if (shared) {
+    if (shared.shared) {
       onNotify('Shared', 'Cutout shared successfully.', 'success');
     }
   }, [resultBlob, currentImage, onNotify]);

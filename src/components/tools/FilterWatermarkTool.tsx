@@ -100,10 +100,10 @@ export const FilterWatermarkTool: React.FC<{
   const handleCopy = useCallback(async () => {
     if (!result) return;
     const ok = await copyImageToClipboard(result.blob);
-    if (ok) {
+    if (ok.success) {
       onNotify('Copied to Clipboard', 'Adjusted image copied. You can now paste (Ctrl+V) it anywhere.', 'success');
     } else {
-      onNotify('Copy Failed', 'Your browser could not copy image directly to clipboard.', 'error');
+      onNotify('Copy Failed', ok.error || 'Your browser could not copy image directly to clipboard.', 'error');
     }
   }, [result, onNotify]);
 
@@ -117,7 +117,7 @@ export const FilterWatermarkTool: React.FC<{
       title: 'Adjusted Image',
       text: 'Image edited with FileWala Filters & Watermark.',
     });
-    if (shared) {
+    if (shared.shared) {
       onNotify('Shared', 'Image shared successfully.', 'success');
     }
   }, [result, currentImage, onNotify]);

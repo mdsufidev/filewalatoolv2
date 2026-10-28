@@ -260,6 +260,8 @@ export const GovCompressor: React.FC<GovCompressorProps> = ({ initialFile, onNot
           ctx.fillRect(0, 0, canvas.width, canvas.height);
           await firstPage.render({ canvasContext: ctx, viewport, canvas } as any).promise;
           canvas.toBlob((blob) => {
+            canvas.width = 0;
+            canvas.height = 0;
             if (blob) {
               const url = createSafeObjectURL(blob);
               setPreviewUrl(url);
@@ -357,6 +359,8 @@ export const GovCompressor: React.FC<GovCompressorProps> = ({ initialFile, onNot
           maxKb,
           dpi: 200,
         });
+        canvas.width = 0;
+        canvas.height = 0;
 
         if (resultUrl) revokeSafeObjectURL(resultUrl);
         if (resultThumbUrl) revokeSafeObjectURL(resultThumbUrl);
@@ -606,10 +610,10 @@ export const GovCompressor: React.FC<GovCompressorProps> = ({ initialFile, onNot
   const handleCopy = useCallback(async () => {
     if (!resultBlob) return;
     const ok = await copyImageToClipboard(resultBlob);
-    if (ok) {
+    if (ok.success) {
       onNotify('Copied to Clipboard', 'Compressed image copied. You can now paste (Ctrl+V) it anywhere.', 'success');
     } else {
-      onNotify('Copy Failed', 'Your browser could not copy image directly to clipboard.', 'error');
+      onNotify('Copy Failed', ok.error || 'Your browser could not copy image directly to clipboard.', 'error');
     }
   }, [onNotify, resultBlob]);
 
@@ -624,7 +628,7 @@ export const GovCompressor: React.FC<GovCompressorProps> = ({ initialFile, onNot
       title: 'Compressed Document',
       text: `Compressed ${fileType.toUpperCase()} file via FileWala.`,
     });
-    if (shared) {
+    if (shared.shared) {
       onNotify('Shared', 'File shared successfully.', 'success');
     }
   }, [fileType, maxKb, onNotify, resultBlob, sourceFile]);
