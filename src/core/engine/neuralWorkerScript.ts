@@ -154,21 +154,42 @@ self.onmessage = async function(e) {
     feeds[inputName] = inputTensor;
 
     // Handle extra inputs (e.g. CodeFormer fidelity weight w)
+    // CodeFormer PyTorch export requires tensor(double) [float64]
     if (session.inputNames.length > 1) {
       for (var k = 1; k < session.inputNames.length; k++) {
         var extraName = session.inputNames[k];
-        feeds[extraName] = new ort.Tensor('float32', new Float32Array([0.7]), [1]);
+        feeds[extraName] = new ort.Tensor('float64', new Float64Array([0.7]), [1]);
+      }
+    }
+
+    async function executeWorkerInference(targetSession, targetFeeds) {
+      try {
+        return await targetSession.run(targetFeeds);
+      } catch (runErr) {
+        var errMsg = (runErr && runErr.message) || String(runErr);
+        // Automatic type rectification if model expects float instead of double or vice versa
+        if (errMsg.indexOf('expected: (tensor(double))') !== -1 || errMsg.indexOf('expected: (tensor(float))') !== -1) {
+          var useDouble = errMsg.indexOf('expected: (tensor(double))') !== -1;
+          for (var j = 1; j < targetSession.inputNames.length; j++) {
+            var extraInput = targetSession.inputNames[j];
+            targetFeeds[extraInput] = useDouble
+              ? new ort.Tensor('float64', new Float64Array([0.7]), [1])
+              : new ort.Tensor('float32', new Float32Array([0.7]), [1]);
+          }
+          return await targetSession.run(targetFeeds);
+        }
+        throw runErr;
       }
     }
 
     var results = null;
     try {
-      results = await session.run(feeds);
+      results = await executeWorkerInference(session, feeds);
     } catch (runErr) {
       console.warn('Worker WebGPU run failed, falling back to CPU WASM:', runErr);
       sendProgress(75, 'Switching to CPU WebAssembly in background...');
       var wasmSession = await getSessionInWorker(modelKey, modelUrl, false, sendProgress);
-      results = await wasmSession.run(feeds);
+      results = await executeWorkerInference(wasmSession, feeds);
     }
 
     sendProgress(90, 'Unpacking photorealistic facial features...');

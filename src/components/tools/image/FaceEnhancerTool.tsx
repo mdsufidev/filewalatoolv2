@@ -266,7 +266,9 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
       });
 
       setEnhancedDimensions({ width: restoredCanvas.width, height: restoredCanvas.height });
-      setUpscaleFactor(4);
+      const origW = img.naturalWidth || img.width || 1;
+      const detectedScale = Math.max(1, Math.min(4, Math.round(restoredCanvas.width / origW))) as 1 | 2 | 4;
+      setUpscaleFactor(detectedScale);
 
       restoredCanvas.toBlob(
         (blob) => {

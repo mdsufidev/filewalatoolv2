@@ -60,6 +60,7 @@ export interface FacePatchBox {
   y: number;
   width: number;
   height: number;
+  isFullPortrait?: boolean;
 }
 
 export class NeuralFaceEnhancer {
@@ -123,6 +124,10 @@ export class NeuralFaceEnhancer {
     const w = 'naturalWidth' in source ? source.naturalWidth || source.width : source.width;
     const h = 'naturalHeight' in source ? source.naturalHeight || source.height : source.height;
 
+    // Detect if this image is already a close-up portrait, passport photo or selfie:
+    // If image is <= 1200px and vertical/square (w <= h * 1.15), it is overwhelmingly likely a portrait
+    const isNaturalPortraitFormat = Math.max(w, h) <= 1200 && (w <= h || (w - h) < 160);
+
     try {
       const detector = await this.getMediaPipeDetector();
       if (detector) {
@@ -131,20 +136,39 @@ export class NeuralFaceEnhancer {
           const primary = detections.detections[0];
           const bb = primary.boundingBox;
           if (bb && bb.width > 20 && bb.height > 20) {
-            // Expand by 35% margin for hair, forehead, ears, and chin
-            const centerX = bb.originX + bb.width / 2;
-            const centerY = bb.originY + bb.height * 0.55;
-            const faceSize = Math.min(Math.min(w, h), Math.max(bb.width, bb.height) * 1.6);
-            const halfSize = faceSize / 2;
+            const faceCoverageX = bb.width / w;
+            const faceCoverageY = bb.height / h;
 
-            const x = Math.max(0, Math.min(w - faceSize, Math.round(centerX - halfSize)));
-            const y = Math.max(0, Math.min(h - faceSize, Math.round(centerY - halfSize)));
+            // If the face occupies > 30% of image dimensions OR the photo is a close-up portrait format:
+            // Designate as full portrait mode! This preserves 1:1 facial alignment and prevents
+            // miniature face hallucination or double-face artifacts inside cheeks/nose.
+            if (isNaturalPortraitFormat || faceCoverageX > 0.30 || faceCoverageY > 0.30) {
+              return {
+                x: 0,
+                y: 0,
+                width: w,
+                height: h,
+                isFullPortrait: true,
+              };
+            }
+
+            // Wide / full-body image where face is small:
+            // Crop canonical 2.4x head square (matching FFHQ distribution)
+            const headSize = Math.round(Math.max(bb.width, bb.height) * 2.4);
+            const centerX = bb.originX + bb.width / 2;
+            const centerY = bb.originY + bb.height * 0.48;
+
+            const x = Math.max(0, Math.min(w - headSize, Math.round(centerX - headSize / 2)));
+            const y = Math.max(0, Math.min(h - headSize, Math.round(centerY - headSize / 2)));
+            const clampedW = Math.min(headSize, w);
+            const clampedH = Math.min(headSize, h);
 
             return {
               x: Math.round(x),
               y: Math.round(y),
-              width: Math.round(faceSize),
-              height: Math.round(faceSize),
+              width: Math.round(clampedW),
+              height: Math.round(clampedH),
+              isFullPortrait: false,
             };
           }
         }
@@ -327,6 +351,8 @@ export class NeuralFaceEnhancer {
     const w = 'naturalWidth' in img ? img.naturalWidth || img.width : img.width;
     const h = 'naturalHeight' in img ? img.naturalHeight || img.height : img.height;
 
+    const isNaturalPortraitFormat = Math.max(w, h) <= 1200 && (w <= h || (w - h) < 160);
+
     const sampleW = Math.min(256, w);
     const sampleH = Math.round((h * sampleW) / w);
     const canvas = document.createElement('canvas');
@@ -334,12 +360,12 @@ export class NeuralFaceEnhancer {
     canvas.height = sampleH;
     const ctx = canvas.getContext('2d');
     if (!ctx) {
-      const size = Math.round(Math.min(w, h) * 0.75);
       return {
-        x: Math.round((w - size) / 2),
-        y: Math.round(h * 0.05),
-        width: size,
-        height: size,
+        x: 0,
+        y: 0,
+        width: w,
+        height: h,
+        isFullPortrait: isNaturalPortraitFormat || Math.max(w, h) <= 1200,
       };
     }
 
@@ -369,6 +395,19 @@ export class NeuralFaceEnhancer {
       }
     }
 
+    const skinRatio = totalWeight / (sampleW * sampleH);
+
+    // If skin pixels occupy > 12% or it's portrait aspect ratio, treat entire frame as portrait
+    if (skinRatio > 0.12 || isNaturalPortraitFormat || Math.max(w, h) <= 1200) {
+      return {
+        x: 0,
+        y: 0,
+        width: w,
+        height: h,
+        isFullPortrait: true,
+      };
+    }
+
     let centerX = w / 2;
     let centerY = h * 0.4;
 
@@ -377,13 +416,11 @@ export class NeuralFaceEnhancer {
       centerY = (sumY / totalWeight) * (h / sampleH);
     }
 
-    const size = Math.min(w, h, Math.round(Math.min(w, h) * 0.75));
-    const halfSize = size / 2;
+    const headSize = Math.min(Math.min(w, h), Math.round(Math.min(w, h) * 0.6));
+    const x = Math.max(0, Math.min(w - headSize, Math.round(centerX - headSize / 2)));
+    const y = Math.max(0, Math.min(h - headSize, Math.round(centerY - headSize / 2)));
 
-    const x = Math.max(0, Math.min(w - size, Math.round(centerX - halfSize)));
-    const y = Math.max(0, Math.min(h - size, Math.round(centerY - halfSize)));
-
-    return { x, y, width: size, height: size };
+    return { x, y, width: headSize, height: headSize, isFullPortrait: false };
   }
 
   /**
@@ -415,9 +452,17 @@ export class NeuralFaceEnhancer {
     // 1. Detect face bounding box via MediaPipe (with Canvas fallback)
     if (onProgress) onProgress(5, 'Detecting facial features via MediaPipe...');
     const box = options.faceBox || (await this.detectFaceBox(source));
+    const isFullPortrait = !!box.isFullPortrait;
     const config = AI_MODEL_CONFIGS[modelKey];
 
-    if (onProgress) onProgress(8, 'Cropping 512×512 facial patch for RAM-safe processing...');
+    if (onProgress) {
+      onProgress(
+        8,
+        isFullPortrait
+          ? 'Preparing full portrait tensor with aspect-ratio preservation...'
+          : 'Cropping 512×512 facial patch for RAM-safe processing...'
+      );
+    }
 
     // Native resolution for GFPGAN and CodeFormer is 512x512
     const patchInputDim = 512;
@@ -429,17 +474,41 @@ export class NeuralFaceEnhancer {
 
     pctx.imageSmoothingEnabled = true;
     pctx.imageSmoothingQuality = 'high';
-    pctx.drawImage(
-      source,
-      box.x,
-      box.y,
-      box.width,
-      box.height,
-      0,
-      0,
-      patchInputDim,
-      patchInputDim
-    );
+
+    let letterboxOffsetX = 0;
+    let letterboxOffsetY = 0;
+    let letterboxDrawW = patchInputDim;
+    let letterboxDrawH = patchInputDim;
+
+    if (isFullPortrait) {
+      // 1. Full portrait letterbox with blurred background to preserve aspect ratio & FFHQ layout
+      const scale = Math.min(patchInputDim / w, patchInputDim / h);
+      letterboxDrawW = Math.round(w * scale);
+      letterboxDrawH = Math.round(h * scale);
+      letterboxOffsetX = Math.round((patchInputDim - letterboxDrawW) / 2);
+      letterboxOffsetY = Math.round((patchInputDim - letterboxDrawH) / 2);
+
+      // Blurred background fill for seamless neural margins
+      pctx.filter = 'blur(16px)';
+      pctx.drawImage(source, 0, 0, patchInputDim, patchInputDim);
+      pctx.filter = 'none';
+
+      // Draw aspect-ratio preserved portrait in center
+      pctx.drawImage(source, letterboxOffsetX, letterboxOffsetY, letterboxDrawW, letterboxDrawH);
+    } else {
+      // 2. Crop canonical 2.4x head patch for distant faces
+      pctx.drawImage(
+        source,
+        box.x,
+        box.y,
+        box.width,
+        box.height,
+        0,
+        0,
+        patchInputDim,
+        patchInputDim
+      );
+    }
 
     const patchData = pctx.getImageData(0, 0, patchInputDim, patchInputDim).data;
     let restoredPatchCanvas: HTMLCanvasElement | null = null;
@@ -508,20 +577,39 @@ export class NeuralFaceEnhancer {
 
       if (session.inputNames.length > 1) {
         for (let k = 1; k < session.inputNames.length; k++) {
-          feeds[session.inputNames[k]] = new ort.Tensor('float32', new Float32Array([0.7]), [1]);
+          feeds[session.inputNames[k]] = new ort.Tensor('float64', new Float64Array([0.7]), [1]);
         }
       }
 
+      const runWithTensorTypeFallback = async (sess: any, fds: any) => {
+        try {
+          return await sess.run(fds);
+        } catch (err: any) {
+          const errMsg = (err && err.message) || String(err);
+          if (errMsg.includes('expected: (tensor(double))') || errMsg.includes('expected: (tensor(float))')) {
+            const needDouble = errMsg.includes('expected: (tensor(double))');
+            for (let k = 1; k < sess.inputNames.length; k++) {
+              const name = sess.inputNames[k];
+              fds[name] = needDouble
+                ? new ort.Tensor('float64', new Float64Array([0.7]), [1])
+                : new ort.Tensor('float32', new Float32Array([0.7]), [1]);
+            }
+            return await sess.run(fds);
+          }
+          throw err;
+        }
+      };
+
       let results: any = null;
       try {
-        results = await session.run(feeds);
+        results = await runWithTensorTypeFallback(session, feeds);
       } catch (gpuErr: any) {
         console.warn('[NeuralFaceEnhancer] WebGPU run failed, falling back to WASM CPU:', gpuErr);
         if (onProgress) {
           onProgress(78, 'WebGPU limit reached, switching to CPU WebAssembly fallback...');
         }
         const wasmSession = await this.getSession(modelKey, false, onProgress);
-        results = await wasmSession.run(feeds);
+        results = await runWithTensorTypeFallback(wasmSession, feeds);
       }
 
       // Intelligently locate the face image tensor among all returned outputs
@@ -639,49 +727,74 @@ export class NeuralFaceEnhancer {
     octx.imageSmoothingQuality = 'high';
     octx.drawImage(source, 0, 0, finalW, finalH);
 
-    // Prepare feathered alpha mask for the face patch to eliminate boundary lines
-    const featherCanvas = document.createElement('canvas');
-    featherCanvas.width = outPatchW;
-    featherCanvas.height = outPatchH;
-    const fctx = featherCanvas.getContext('2d');
-    if (fctx) {
-      fctx.drawImage(restoredPatchCanvas, 0, 0);
+    if (isFullPortrait) {
+      // Map the restored letterboxed region 1:1 back onto the full output canvas
+      // This preserves exact facial geometry and completely prevents double faces or ghost eyes
+      const ratioW = outPatchW / patchInputDim;
+      const ratioH = outPatchH / patchInputDim;
+      const sx = Math.round(letterboxOffsetX * ratioW);
+      const sy = Math.round(letterboxOffsetY * ratioH);
+      const sw = Math.round(letterboxDrawW * ratioW);
+      const sh = Math.round(letterboxDrawH * ratioH);
 
-      // Create radial / elliptical feather gradient
-      const maskCanvas = document.createElement('canvas');
-      maskCanvas.width = outPatchW;
-      maskCanvas.height = outPatchH;
-      const mctx = maskCanvas.getContext('2d');
-      if (mctx) {
-        const radius = outPatchW / 2;
-        const grad = mctx.createRadialGradient(
-          radius,
-          radius,
-          radius * 0.72,
-          radius,
-          radius,
-          radius
-        );
-        grad.addColorStop(0, 'rgba(0,0,0,1)');
-        grad.addColorStop(1, 'rgba(0,0,0,0)');
-        mctx.fillStyle = grad;
-        mctx.fillRect(0, 0, outPatchW, outPatchH);
+      octx.globalAlpha = Math.max(0, Math.min(1, blendStrength));
+      octx.drawImage(
+        restoredPatchCanvas,
+        sx,
+        sy,
+        sw,
+        sh,
+        0,
+        0,
+        finalW,
+        finalH
+      );
+      octx.globalAlpha = 1.0;
+    } else {
+      // Prepare feathered alpha mask for the distant face patch to eliminate boundary lines
+      const featherCanvas = document.createElement('canvas');
+      featherCanvas.width = outPatchW;
+      featherCanvas.height = outPatchH;
+      const fctx = featherCanvas.getContext('2d');
+      if (fctx) {
+        fctx.drawImage(restoredPatchCanvas, 0, 0);
 
-        fctx.globalCompositeOperation = 'destination-in';
-        fctx.drawImage(maskCanvas, 0, 0);
-        fctx.globalCompositeOperation = 'source-over';
+        // Create radial feather gradient
+        const maskCanvas = document.createElement('canvas');
+        maskCanvas.width = outPatchW;
+        maskCanvas.height = outPatchH;
+        const mctx = maskCanvas.getContext('2d');
+        if (mctx) {
+          const radius = outPatchW / 2;
+          const grad = mctx.createRadialGradient(
+            radius,
+            radius,
+            radius * 0.70,
+            radius,
+            radius,
+            radius * 0.98
+          );
+          grad.addColorStop(0, 'rgba(0,0,0,1)');
+          grad.addColorStop(1, 'rgba(0,0,0,0)');
+          mctx.fillStyle = grad;
+          mctx.fillRect(0, 0, outPatchW, outPatchH);
+
+          fctx.globalCompositeOperation = 'destination-in';
+          fctx.drawImage(maskCanvas, 0, 0);
+          fctx.globalCompositeOperation = 'source-over';
+        }
       }
+
+      // Blend restored patch onto the exact face location in the canvas
+      const targetX = Math.round(box.x * targetScale);
+      const targetY = Math.round(box.y * targetScale);
+      const targetW = Math.round(box.width * targetScale);
+      const targetH = Math.round(box.height * targetScale);
+
+      octx.globalAlpha = Math.max(0, Math.min(1, blendStrength));
+      octx.drawImage(featherCanvas, targetX, targetY, targetW, targetH);
+      octx.globalAlpha = 1.0;
     }
-
-    // Blend restored patch onto the exact face location in the canvas
-    const targetX = Math.round(box.x * targetScale);
-    const targetY = Math.round(box.y * targetScale);
-    const targetW = Math.round(box.width * targetScale);
-    const targetH = Math.round(box.height * targetScale);
-
-    octx.globalAlpha = Math.max(0, Math.min(1, blendStrength));
-    octx.drawImage(featherCanvas, targetX, targetY, targetW, targetH);
-    octx.globalAlpha = 1.0;
 
     if (onProgress) onProgress(100, 'Remini-Grade Face Restoration Complete!');
 
