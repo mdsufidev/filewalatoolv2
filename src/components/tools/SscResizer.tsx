@@ -19,6 +19,8 @@ import {
   Check,
   Camera,
   PenTool,
+  Eye,
+  EyeOff,
   FlipHorizontal,
   Move,
   RefreshCw,
@@ -98,8 +100,8 @@ export const SscResizer: React.FC<SscResizerProps> = ({
 
   // Viewport Box Dimensions (Strictly proportional to targetW / targetH)
   const cropAspectRatio = targetW / targetH;
-  const BOX_MAX_W = itemType === 'photo' ? 240 : 350;
-  const BOX_MAX_H = itemType === 'photo' ? 300 : 160;
+  const BOX_MAX_W = itemType === 'photo' ? 180 : 260;
+  const BOX_MAX_H = itemType === 'photo' ? 220 : 120;
   let boxW = BOX_MAX_W;
   let boxH = Math.round(boxW / cropAspectRatio);
   if (boxH > BOX_MAX_H) {
@@ -626,89 +628,69 @@ export const SscResizer: React.FC<SscResizerProps> = ({
   ------------------------------------------------------------- */
   if (!imageElement) {
     return (
-      <div className="w-full max-w-7xl mx-auto space-y-8 animate-in fade-in duration-300">
-        {/* Single Authoritative Minimal Header Section */}
-        <div className="text-center space-y-3 max-w-2xl mx-auto">
-          <div
-            className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold ${
-              isDark ? 'bg-zinc-800/80 text-zinc-300' : 'bg-zinc-100 text-zinc-700'
-            }`}
-          >
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-            <span>
-              {language === 'hi'
-                ? 'कर्मचारी चयन आयोग (SSC.gov.in आधिकारिक पोर्टल)'
-                : 'Staff Selection Commission (SSC.gov.in Official Portal)'}
-            </span>
+      <div className="w-full max-w-6xl mx-auto space-y-2 sm:space-y-2.5 animate-in fade-in duration-200 select-none">
+        <div className="space-y-3 sm:space-y-3.5">
+          {/* Header Section */}
+          <div className="text-center space-y-1 max-w-lg mx-auto">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-medium uppercase tracking-wider text-zinc-600 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+              <span>SSC.gov.in Official Specs</span>
+            </div>
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-950 dark:text-zinc-50">
+              SSC Photo &amp; Signature Resizer
+            </h1>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 max-w-sm mx-auto leading-relaxed">
+              Format official SSC photos (20–50 KB) and signatures (10–20 KB) with guaranteed portal pass.
+            </p>
           </div>
 
-          <h1
-            className={`text-3xl sm:text-4xl font-extrabold tracking-tight ${
-              isDark ? 'text-zinc-100' : 'text-zinc-950'
-            }`}
-          >
-            {language === 'hi'
-              ? 'SSC फ़ोटो और हस्ताक्षर रिसाइज़र'
-              : 'SSC Photo & Signature Resizer'}
-          </h1>
-          <p className={`text-sm sm:text-base leading-relaxed ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>
-            {language === 'hi'
-              ? 'SSC CGL, CHSL, MTS, GD के लिए फ़ोटो (20–50 KB) और हस्ताक्षर (10–20 KB) तुरंत तैयार करें।'
-              : 'Format official SSC photos (20–50 KB) and signatures (10–20 KB) with guaranteed portal pass.'}
-          </p>
-        </div>
+          {/* Photo vs Signature Toggle Bar */}
+          <div className="flex justify-center">
+            <div className="inline-flex items-center gap-1 p-0.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 border border-zinc-200/90 dark:border-zinc-700">
+              <button
+                type="button"
+                onClick={() => handleSwitchType('photo')}
+                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5 cursor-pointer ${
+                  itemType === 'photo'
+                    ? 'bg-white dark:bg-zinc-900 text-zinc-950 dark:text-white font-semibold shadow-xs'
+                    : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+                }`}
+              >
+                <Camera className="w-3.5 h-3.5" />
+                <span>Photo (20–50 KB)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSwitchType('signature')}
+                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5 cursor-pointer ${
+                  itemType === 'signature'
+                    ? 'bg-white dark:bg-zinc-900 text-zinc-950 dark:text-white font-semibold shadow-xs'
+                    : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+                }`}
+              >
+                <PenTool className="w-3.5 h-3.5" />
+                <span>Signature (10–20 KB)</span>
+              </button>
+            </div>
+          </div>
 
-        {/* Photo vs Signature Toggle Bar (Clean Pill Selector) */}
-        <div className="flex justify-center">
-          <div className="inline-flex items-center gap-2 p-1 rounded-xl bg-zinc-100 dark:bg-zinc-850 border border-zinc-200/90 dark:border-zinc-750">
-            <button
-              onClick={() => handleSwitchType('photo')}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-2 cursor-pointer ${
-                itemType === 'photo'
-                  ? 'bg-white dark:bg-zinc-900 text-zinc-950 dark:text-white font-semibold shadow-xs border border-zinc-200/90 dark:border-zinc-700'
-                  : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-zinc-100'
-              }`}
-            >
-              <kbd className="px-1.5 py-0.2 rounded text-[10px] font-mono border bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700">1</kbd>
-              <Camera className="w-3.5 h-3.5" />
-              <span>SSC Photo (20–50 KB · 350×450 px)</span>
-            </button>
-            <button
-              onClick={() => handleSwitchType('signature')}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-2 cursor-pointer ${
-                itemType === 'signature'
-                  ? 'bg-white dark:bg-zinc-900 text-zinc-950 dark:text-white font-semibold shadow-xs border border-zinc-200/90 dark:border-zinc-700'
-                  : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-zinc-100'
-              }`}
-            >
-              <kbd className="px-1.5 py-0.2 rounded text-[10px] font-mono border bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700">2</kbd>
-              <PenTool className="w-3.5 h-3.5" />
-              <span>SSC Signature (10–20 KB · 140×60 px)</span>
-            </button>
+          {/* Direct Dropzone */}
+          <div className="max-w-[700px] mx-auto">
+            <Dropzone
+              onFilesSelected={handleFileSelected}
+              accept="image/*"
+              multiple={false}
+              title={`Upload SSC ${itemType === 'photo' ? 'Photograph' : 'Signature'}`}
+              description="Drag & drop or click to browse. Automatically formats to official SSC standards."
+              className="h-[230px] sm:h-[260px] lg:h-[280px]"
+            />
           </div>
         </div>
 
-        {/* Official SSC Portal Live Camera Notice */}
-        <div className="max-w-3xl mx-auto p-3.5 rounded-lg border border-amber-500/30 bg-amber-500/10 text-xs text-amber-900 dark:text-amber-300 flex items-start gap-2.5">
-          <Info className="w-4 h-4 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
-          <p className="leading-relaxed">
-            <strong>Official SSC Portal Notice (ssc.gov.in):</strong> For active SSC exams (CGL, CHSL, MTS, GD), candidate photos are captured <strong>Live via webcam or MySSC mobile app</strong>. Pre-scanned photo upload is strictly for state/legacy portals. <strong>Signature digital upload (140×60 px, strictly 10–20 KB)</strong> remains mandatory for all candidates.
-          </p>
+        {/* Verified Guide */}
+        <div className="pt-2">
+          <GovToolGuideSection toolId="ssc-photo-signature" />
         </div>
-
-        {/* Direct Dropzone (Centered, Max-w-3xl, Clean & Focused) */}
-        <div className="max-w-3xl mx-auto">
-          <Dropzone
-            onFilesSelected={handleFileSelected}
-            accept="image/*"
-            multiple={false}
-            title={`Upload SSC ${itemType === 'photo' ? 'Photograph' : 'Signature'}`}
-            description="Drag & drop or click to browse. Automatically formats to official SSC standards."
-          />
-        </div>
-
-        {/* Authoritative Verified Guide, Official Specifications & FAQs */}
-        <GovToolGuideSection toolId="ssc-photo-signature" />
       </div>
     );
   }
@@ -717,454 +699,366 @@ export const SscResizer: React.FC<SscResizerProps> = ({
      RENDER: ACTIVE WORKSPACE (FILE LOADED & READY)
   ------------------------------------------------------------- */
   return (
-    <div className="w-full max-w-7xl mx-auto space-y-6 animate-in fade-in duration-200">
-      {/* Pro Workspace Header Bar */}
-      <div className={`p-3.5 rounded-lg border flex flex-wrap items-center justify-between gap-3 ${
-        isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'
-      }`}>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded border border-zinc-200 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 overflow-hidden flex items-center justify-center shrink-0">
-              <img
-                src={imageSrc || imageElement.src}
-                alt="Thumbnail"
-                className="w-full h-full object-cover"
-              />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className={`text-xs font-semibold max-w-[200px] sm:max-w-xs truncate ${isDark ? 'text-zinc-100' : 'text-zinc-900'}`}>
-                  {sourceFile?.name || `SSC_${itemType.toUpperCase()}.jpg`}
-                </span>
-                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700">
-                  {imageNaturalSize.width}×{imageNaturalSize.height} px
-                </span>
-              </div>
-              <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-mono mt-0.5 flex items-center gap-1">
-                <CheckCircle2 className="w-3 h-3" />
-                <span>
-                  ✓ 100% SSC Compliant: {targetW}×{targetH} px · {targetMinKb}–{targetMaxKb} KB · {targetDpi} DPI
-                </span>
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleResetFile}
-              title="Reset Image (Esc or N)"
-              className="px-2.5 py-1.5 rounded-md text-xs font-medium border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 transition-colors flex items-center gap-1.5 cursor-pointer"
-            >
-              <span>New</span>
-              <kbd className="px-1 py-0.2 rounded text-[10px] font-mono bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-500">N</kbd>
-            </button>
-            {resultBlob && (
-              <button
-                onClick={handleCopy}
-                title="Copy Result (C or Ctrl+C)"
-                className="px-2.5 py-1.5 rounded-md text-xs font-medium border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 transition-colors flex items-center gap-1.5 cursor-pointer"
-              >
-                <Copy className="w-3.5 h-3.5" />
-                <span>Copy</span>
-                <kbd className="px-1 py-0.2 rounded text-[10px] font-mono bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-500">C</kbd>
-              </button>
-            )}
-            {resultBlob ? (
-              <button
-                onClick={handleDownload}
-                title="Download Result (D or Ctrl+S)"
-                className="px-3 py-1.5 rounded-md text-xs font-semibold bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors flex items-center gap-1.5 cursor-pointer"
-              >
-                <Download className="w-3.5 h-3.5" />
-                <span>Download</span>
-                <kbd className="px-1 py-0.2 rounded text-[10px] font-mono bg-zinc-700 dark:bg-zinc-300 text-zinc-200 dark:text-zinc-800">D</kbd>
-              </button>
+    <div className="w-full max-w-6xl mx-auto space-y-2 sm:space-y-2.5 animate-in fade-in duration-200 select-none">
+      {/* Top Inline Hero Row */}
+      <div className="flex items-center justify-between gap-2 px-1 py-0.5">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-xs sm:text-sm font-bold text-zinc-900 dark:text-zinc-100 truncate flex items-center gap-1.5">
+            {itemType === 'photo' ? (
+              <Camera className="w-3.5 h-3.5 text-zinc-500" />
             ) : (
-              <button
-                onClick={() => processImage()}
-                title="Format Result (Enter or Space)"
-                className="px-3 py-1.5 rounded-md text-xs font-semibold bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors flex items-center gap-1.5 cursor-pointer"
-              >
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>Format</span>
-                <kbd className="px-1 py-0.2 rounded text-[10px] font-mono bg-zinc-700 dark:bg-zinc-300 text-zinc-200 dark:text-zinc-800">↵</kbd>
-              </button>
+              <PenTool className="w-3.5 h-3.5 text-zinc-500" />
             )}
+            SSC {itemType === 'photo' ? 'Photo' : 'Signature'} Resizer
+          </span>
+          {/* Item Type Switch Pills */}
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => handleSwitchType('photo')}
+              className={`px-2 py-0.5 rounded text-[10px] font-mono transition-colors cursor-pointer ${
+                itemType === 'photo'
+                  ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 font-semibold'
+                  : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:text-zinc-900 dark:hover:text-white'
+              }`}
+            >
+              Photo 3.5×4.5cm
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSwitchType('signature')}
+              className={`px-2 py-0.5 rounded text-[10px] font-mono transition-colors cursor-pointer ${
+                itemType === 'signature'
+                  ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 font-semibold'
+                  : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:text-zinc-900 dark:hover:text-white'
+              }`}
+            >
+              Signature 4.0×2.0cm
+            </button>
           </div>
+          <span className="text-[10px] font-mono text-zinc-400 hidden md:inline-block truncate max-w-[120px]">
+            {sourceFile?.name}
+          </span>
         </div>
 
-      {/* Main Workspace Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left: Viewport Workspace (7 cols) */}
-        <div className="lg:col-span-7 space-y-4">
-          <div
-            className={`p-6 rounded-lg border ${
-              isDark
-                ? 'bg-zinc-900 border-zinc-800'
-                : 'bg-white border-zinc-200'
-            }`}
+        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+          {/* Live Compliance Pill */}
+          <div className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-medium border bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400">
+            <CheckCircle2 className="w-3 h-3" />
+            <span>
+              {resultBlob
+                ? `✓ ${currentSizeKb || (resultSizeBytes / 1024).toFixed(1)} KB · ${verifiedDpi || targetDpi} DPI`
+                : `${targetW}×${targetH}px · ${targetDpi} DPI`}
+            </span>
+          </div>
+
+          <button
+            onClick={handleResetFile}
+            className="inline-flex items-center gap-1 py-1 px-2 rounded-lg text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
           >
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-xs font-medium uppercase tracking-wider text-zinc-500 flex items-center gap-1.5">
-                {itemType === 'photo' ? (
-                  <Camera className="w-4 h-4 text-zinc-600 dark:text-zinc-400" />
-                ) : (
-                  <PenTool className="w-4 h-4 text-zinc-600 dark:text-zinc-400" />
-                )}
-                Interactive SSC {itemType === 'photo' ? 'Photo' : 'Signature'} Viewport
-              </span>
-              {imageElement && (
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={rotateCCW}
-                    title="Rotate 90° CCW"
-                    className="p-1.5 rounded border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 transition-colors"
-                  >
-                    <RotateCcw className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={rotateCW}
-                    title="Rotate 90° CW"
-                    className="p-1.5 rounded border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 transition-colors"
-                  >
-                    <RotateCw className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={resetTransform}
-                    title="Reset Alignment"
-                    className="px-2 py-1 text-xs font-medium rounded border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 transition-colors"
-                  >
-                    Reset
-                  </button>
+            <RefreshCw className="w-3 h-3" />
+            <span>New</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Main Workspace Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-2 sm:gap-2.5 items-start">
+        {/* Left Column: Interactive Crop Viewport (lg:col-span-7 xl:col-span-8) */}
+        <div className="lg:col-span-7 xl:col-span-8 space-y-1.5">
+          {/* Studio Canvas Viewport */}
+          <div
+            ref={canvasContainerRef}
+            tabIndex={0}
+            className="relative overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-950/80 flex items-center justify-center select-none cursor-grab active:cursor-grabbing focus:outline-none transition-colors touch-none h-[230px] sm:h-[260px] lg:h-[280px] xl:h-[300px]"
+            style={{
+              backgroundImage: isDark
+                ? 'radial-gradient(#27272a 1.2px, transparent 1.2px)'
+                : 'radial-gradient(#d4d4d8 1.2px, transparent 1.2px)',
+              backgroundSize: '16px 16px',
+            }}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+          >
+            {/* Fixed Aspect Ratio Crop Box */}
+            <div
+              ref={viewportRef}
+              className="relative overflow-hidden border-2 border-zinc-900/90 dark:border-white rounded-xs shadow-xl bg-white pointer-events-none ring-4 ring-zinc-950/5 dark:ring-white/10"
+              style={{
+                width: `${boxW}px`,
+                height: `${boxH}px`,
+              }}
+            >
+              {/* Viewport Image Canvas Rendering */}
+              <div
+                className="absolute inset-0 flex items-center justify-center origin-center pointer-events-none"
+                style={{
+                  transform: `translate(${pan.x}px, ${pan.y}px) rotate(${rotation}deg) scale(${zoom * (flipH ? -1 : 1)}, ${zoom})`,
+                  transformOrigin: 'center center',
+                  filter: `brightness(${brightness}%) contrast(${contrast}%)`,
+                  transition: isDragging ? 'none' : 'transform 0.05s ease-out',
+                }}
+              >
+                <img
+                  src={imageSrc || imageElement.src}
+                  alt="SSC Preview"
+                  className="max-w-none pointer-events-none select-none"
+                  style={{
+                    width: `${baseW}px`,
+                    height: `${baseH}px`,
+                  }}
+                  draggable={false}
+                />
+              </div>
+
+              {/* Viewfinder Corner L-Brackets */}
+              <div className="absolute -top-0.5 -left-0.5 w-3 h-3 border-t-2 border-l-2 border-zinc-900 dark:border-white pointer-events-none z-10" />
+              <div className="absolute -top-0.5 -right-0.5 w-3 h-3 border-t-2 border-r-2 border-zinc-900 dark:border-white pointer-events-none z-10" />
+              <div className="absolute -bottom-0.5 -left-0.5 w-3 h-3 border-b-2 border-l-2 border-zinc-900 dark:border-white pointer-events-none z-10" />
+              <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 border-b-2 border-r-2 border-zinc-900 dark:border-white pointer-events-none z-10" />
+
+              {/* Composition Grid Overlay */}
+              {showGuides && (
+                <div className="absolute inset-0 pointer-events-none border border-zinc-400/40 dark:border-white/30">
+                  <div className="absolute top-1/3 left-0 right-0 border-t border-dashed border-zinc-500/40 dark:border-white/30" />
+                  <div className="absolute top-2/3 left-0 right-0 border-t border-dashed border-zinc-500/40 dark:border-white/30" />
+                  <div className="absolute left-1/3 top-0 bottom-0 border-l border-dashed border-zinc-500/40 dark:border-white/30" />
+                  <div className="absolute left-2/3 top-0 bottom-0 border-l border-dashed border-zinc-500/40 dark:border-white/30" />
+                  <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-3 h-3 pointer-events-none opacity-60">
+                    <div className="absolute top-1/2 left-0 right-0 h-px bg-zinc-700 dark:bg-white" />
+                    <div className="absolute left-1/2 top-0 bottom-0 w-px bg-zinc-700 dark:bg-white" />
+                  </div>
                 </div>
               )}
             </div>
 
-            <div className="space-y-4">
-              {/* Viewport Frame with Pointer Capture */}
-                {/* Studio Canvas Viewport */}
-                <div
-                  ref={canvasContainerRef}
-                  className={`relative w-full flex items-center justify-center p-6 rounded-xl border select-none cursor-grab active:cursor-grabbing transition-colors overflow-hidden bg-zinc-50/80 dark:bg-zinc-950/80 touch-none ${
-                    isDragging
-                      ? 'border-zinc-400 dark:border-zinc-600'
-                      : isDark
-                        ? 'border-zinc-800'
-                        : 'border-zinc-200'
-                  }`}
-                  style={{
-                    minHeight: '380px',
-                    backgroundImage: isDark
-                      ? 'radial-gradient(#27272a 1.2px, transparent 1.2px)'
-                      : 'radial-gradient(#d4d4d8 1.2px, transparent 1.2px)',
-                    backgroundSize: '16px 16px',
-                  }}
-                  onMouseDown={handleMouseDown}
-                  onMouseMove={handleMouseMove}
-                  onMouseUp={handleMouseUp}
-                  onMouseLeave={handleMouseUp}
-                  onTouchStart={handleTouchStart}
-                  onTouchMove={handleTouchMove}
-                  onTouchEnd={handleTouchEnd}
-                >
-                  <div
-                    ref={viewportRef}
-                    style={{
-                      width: `${boxW}px`,
-                      height: `${boxH}px`,
-                    }}
-                    className="relative overflow-hidden border-2 border-zinc-900/90 dark:border-white rounded-xs shadow-xl bg-white pointer-events-none ring-4 ring-zinc-950/5 dark:ring-white/10"
-                  >
-                    <div
-                      style={{
-                        transform: `translate(${pan.x}px, ${pan.y}px) rotate(${rotation}deg) scale(${zoom * (flipH ? -1 : 1)}, ${zoom})`,
-                        transformOrigin: 'center center',
-                        transition: isDragging ? 'none' : 'transform 0.05s ease-out',
-                        filter: `brightness(${brightness}%) contrast(${contrast}%)`,
-                      }}
-                      className="w-full h-full flex items-center justify-center pointer-events-none"
-                    >
-                      <img
-                        src={imageSrc || imageElement.src}
-                        alt="SSC Preview"
-                        className="max-w-none pointer-events-none select-none"
-                        style={{
-                          width: `${baseW}px`,
-                          height: `${baseH}px`,
-                        }}
-                        draggable={false}
-                      />
-                    </div>
+            {/* Top-Left Live Metadata Pill */}
+            <div className="absolute top-2 left-2 flex items-center gap-1 pointer-events-none z-10">
+              <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-zinc-900/80 text-white border border-zinc-700/50 backdrop-blur-xs flex items-center gap-1">
+                <Maximize2 className="w-2.5 h-2.5 text-zinc-300" />
+                {targetW} × {targetH} px · {targetDpi} DPI
+              </span>
+              <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-zinc-900/80 text-zinc-200 border border-zinc-700/50 backdrop-blur-xs">
+                {Math.round(zoom * 100)}%
+              </span>
+            </div>
+          </div>
 
-                    {/* Studio Viewfinder Corner L-Brackets */}
-                    <div className="absolute -top-0.5 -left-0.5 w-3 h-3 border-t-2 border-l-2 border-zinc-900 dark:border-white pointer-events-none z-10" />
-                    <div className="absolute -top-0.5 -right-0.5 w-3 h-3 border-t-2 border-r-2 border-zinc-900 dark:border-white pointer-events-none z-10" />
-                    <div className="absolute -bottom-0.5 -left-0.5 w-3 h-3 border-b-2 border-l-2 border-zinc-900 dark:border-white pointer-events-none z-10" />
-                    <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 border-b-2 border-r-2 border-zinc-900 dark:border-white pointer-events-none z-10" />
-
-                    {/* Clean Minimalist Composition Grid Overlay */}
-                    {showGuides && (
-                      <div className="absolute inset-0 pointer-events-none border border-zinc-400/40 dark:border-white/30">
-                        {/* Rule of thirds grid lines */}
-                        <div className="absolute top-1/3 left-0 right-0 border-t border-dashed border-zinc-500/40 dark:border-white/30" />
-                        <div className="absolute top-2/3 left-0 right-0 border-t border-dashed border-zinc-500/40 dark:border-white/30" />
-                        <div className="absolute left-1/3 top-0 bottom-0 border-l border-dashed border-zinc-500/40 dark:border-white/30" />
-                        <div className="absolute left-2/3 top-0 bottom-0 border-l border-dashed border-zinc-500/40 dark:border-white/30" />
-
-                        {/* Subtle center alignment crosshair */}
-                        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none opacity-60">
-                          <div className="absolute top-1/2 left-0 right-0 h-px bg-zinc-700 dark:bg-white" />
-                          <div className="absolute left-1/2 top-0 bottom-0 w-px bg-zinc-700 dark:bg-white" />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Clean Non-Intrusive Top-Left Live Metadata Pill */}
-                  <div className="absolute top-3 left-3 flex items-center gap-1.5 pointer-events-none z-10">
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-900/80 text-white border border-zinc-700/50 backdrop-blur-xs flex items-center gap-1.5">
-                      <Maximize2 className="w-3 h-3 text-zinc-300" />
-                      {targetW} × {targetH} px · {targetDpi} DPI
-                    </span>
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-900/80 text-zinc-200 border border-zinc-700/50 backdrop-blur-xs">
-                      {Math.round(zoom * 100)}%
-                    </span>
-                    {rotation !== 0 && (
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-900/80 text-zinc-200 border border-zinc-700/50 backdrop-blur-xs">
-                        {rotation}°
-                      </span>
-                    )}
-                    {flipH && (
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-900/80 text-zinc-200 border border-zinc-700/50 backdrop-blur-xs">
-                        Flipped
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Controls */}
-                <div className="p-3.5 rounded-lg bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-200 dark:border-zinc-800 space-y-3">
-                  <div className="flex items-center gap-3">
-                    <ZoomOut className="w-4 h-4 text-zinc-400 shrink-0" />
-                    <Slider
-                      value={zoom}
-                      min={0.5}
-                      max={3}
-                      step={0.05}
-                      onChange={setZoom}
-                      label="Zoom Scale"
-                    />
-                    <ZoomIn className="w-4 h-4 text-zinc-400 shrink-0" />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3 pt-1 border-t border-zinc-200 dark:border-zinc-800">
-                    <Slider
-                      value={brightness}
-                      min={70}
-                      max={130}
-                      step={1}
-                      onChange={setBrightness}
-                      label="Brightness"
-                      unit="%"
-                    />
-                    <Slider
-                      value={contrast}
-                      min={70}
-                      max={150}
-                      step={1}
-                      onChange={setContrast}
-                      label="Contrast"
-                      unit="%"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between pt-1">
+          {/* Docked Precision Controls Strip */}
+          <div className="p-1.5 sm:p-2 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex items-center justify-between flex-wrap gap-1.5">
+            {/* Zoom Slider + Quick Pills */}
+            <div className="flex items-center gap-1.5 flex-1 min-w-[200px]">
+              <ZoomIn className="w-3 h-3 text-zinc-400 shrink-0" />
+              <input
+                type="range"
+                min="0.5"
+                max="3.5"
+                step="0.05"
+                value={zoom}
+                onChange={(e) => setZoom(parseFloat(e.target.value))}
+                className="w-24 sm:w-32 h-1 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-zinc-900 dark:accent-zinc-100"
+              />
+              <div className="flex items-center gap-1">
+                {[
+                  { label: 'Fit', val: 1 },
+                  { label: '125%', val: 1.25 },
+                  { label: '150%', val: 1.5 },
+                ].map((p) => (
                   <button
-                    onClick={() => {
-                      setImageElement(null);
-                      setSourceFile(null);
-                      if (resultUrl) revokeSafeObjectURL(resultUrl);
-                      setResultUrl(null);
-                      setResultBlob(null);
-                    }}
-                    className="text-xs text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors cursor-pointer"
+                    key={p.label}
+                    type="button"
+                    onClick={() => setZoom(p.val)}
+                    className={`px-1.5 py-0.5 text-[10px] font-mono rounded transition-colors cursor-pointer ${
+                      Math.abs(zoom - p.val) < 0.05
+                        ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 font-semibold'
+                        : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900'
+                    }`}
                   >
-                    Change Image
+                    {p.label}
                   </button>
-                  <Button
-                    onClick={() => processImage()}
-                    isLoading={isProcessing}
-                    className="bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:hover:bg-zinc-200 dark:text-zinc-900 px-4 py-2 font-medium rounded-md text-xs"
-                  >
-                    <Sparkles className="w-4 h-4 mr-1.5" />
-                    Format SSC {itemType === 'photo' ? 'Photo' : 'Signature'}
-                  </Button>
-                </div>
+                ))}
               </div>
+            </div>
+
+            {/* Quick Actions: Rotate, Center, Guides, Reset */}
+            <div className="flex items-center gap-1 shrink-0">
+              <button
+                type="button"
+                onClick={rotateCCW}
+                className="p-1 rounded text-zinc-500 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer"
+                title="Rotate -90°"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={rotateCW}
+                className="p-1 rounded text-zinc-500 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer"
+                title="Rotate +90°"
+              >
+                <RotateCw className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={handleCenter}
+                className="px-1.5 py-0.5 text-[10px] font-medium rounded border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-300 cursor-pointer"
+              >
+                Center
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowGuides((prev) => !prev)}
+                className={`p-1 rounded cursor-pointer ${
+                  showGuides
+                    ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-950'
+                    : 'text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+                }`}
+                title="Toggle Guides"
+              >
+                {showGuides ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+              </button>
+              <button
+                type="button"
+                onClick={resetTransform}
+                className="p-1 rounded text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer"
+                title="Reset Viewport"
+              >
+                <RefreshCw className="w-3 h-3" />
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Right: Verification & Download Card (5 cols) */}
-        <div className="lg:col-span-5 space-y-4">
-          <div
-            className={`p-6 rounded-lg border ${
-              isDark
-                ? 'bg-zinc-900 border-zinc-800'
-                : 'bg-white border-zinc-200'
-            }`}
-          >
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-xs font-medium uppercase tracking-wider text-zinc-500 flex items-center gap-1.5">
-                <ShieldCheck className="w-4 h-4 text-emerald-500" />
-                SSC Official Validation
+        {/* Right Column: Requirements & Download (lg:col-span-5 xl:col-span-4) */}
+        <div className="lg:col-span-5 xl:col-span-4 space-y-1.5">
+          <div className="p-2 sm:p-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 space-y-2">
+            {/* Header / Requirements Summary */}
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-1">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+                SSC Portal Compliance
               </span>
-              <div className="flex items-center gap-1.5">
-                {isLiveSyncing ? (
-                  <span className="inline-flex items-center gap-1.5 text-[10px] font-mono px-2 py-0.5 rounded border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400">
-                    <RefreshCw className="w-2.5 h-2.5 animate-spin" />
-                    Syncing...
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1.5 text-[10px] font-mono px-2 py-0.5 rounded border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                    Live Mirror
-                  </span>
-                )}
+              <span className="text-[10px] font-mono text-zinc-400">
+                {targetW}×{targetH} px
+              </span>
+            </div>
+
+            {/* Compact Requirements Check Rows */}
+            <div className="space-y-1 text-xs">
+              <div className="px-2 py-1 rounded border border-zinc-100 dark:border-zinc-800 bg-zinc-50/60 dark:bg-zinc-850/60 flex items-center justify-between">
+                <span className="text-[11px] text-zinc-600 dark:text-zinc-400">
+                  Dimensions: {targetW} × {targetH} px
+                </span>
+                <span className="font-mono text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                  {resultBlob ? 'PASS ✓' : 'Auto-format'}
+                </span>
+              </div>
+              <div className="px-2 py-1 rounded border border-zinc-100 dark:border-zinc-800 bg-zinc-50/60 dark:bg-zinc-850/60 flex items-center justify-between">
+                <span className="text-[11px] text-zinc-600 dark:text-zinc-400">
+                  Size: {targetMinKb}–{targetMaxKb} KB
+                </span>
+                <span className="font-mono text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                  {resultBlob ? `${currentSizeKb || (resultSizeBytes / 1024).toFixed(1)} KB ✓` : 'Auto-fit'}
+                </span>
+              </div>
+              <div className="px-2 py-1 rounded border border-zinc-100 dark:border-zinc-800 bg-zinc-50/60 dark:bg-zinc-850/60 flex items-center justify-between">
+                <span className="text-[11px] text-zinc-600 dark:text-zinc-400">
+                  DPI: {targetDpi} DPI JFIF
+                </span>
+                <span className="font-mono text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                  {resultBlob ? `${verifiedDpi || targetDpi} DPI ✓` : 'Pending'}
+                </span>
               </div>
             </div>
 
-            <div className={`space-y-2.5 p-3.5 rounded-lg border mb-5 text-xs ${isDark ? 'bg-zinc-950/60 border-zinc-800' : 'bg-zinc-50 border-zinc-200'}`}>
-              <div className="flex items-center justify-between">
-                <span className={`flex items-center gap-1.5 ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>
-                  <Check className="w-3.5 h-3.5 text-emerald-500" />
-                  Target Dimensions
-                </span>
-                <span className={`font-mono font-semibold ${isDark ? 'text-zinc-100' : 'text-zinc-900'}`}>
-                  {targetW} × {targetH} px
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <span className={`flex items-center gap-1.5 ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>
-                  <Check className="w-3.5 h-3.5 text-emerald-500" />
-                  Strict Byte Bound
-                </span>
-                <span className="font-mono text-zinc-900 dark:text-zinc-100 font-semibold">
-                  {targetMinKb} KB to {targetMaxKb} KB
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <span className={`flex items-center gap-1.5 ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>
-                  <Check className="w-3.5 h-3.5 text-emerald-500" />
-                  DPI Target
-                </span>
-                <span className={`font-mono font-semibold ${isDark ? 'text-zinc-100' : 'text-zinc-900'}`}>200 DPI Header</span>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <span className={`flex items-center gap-1.5 ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>
-                  <Check className="w-3.5 h-3.5 text-emerald-500" />
-                  Format
-                </span>
-                <span className={`font-mono font-semibold ${isDark ? 'text-zinc-100' : 'text-zinc-900'}`}>JPEG / JPG</span>
-              </div>
-            </div>
-
-            {resultUrl ? (
-              <div className="space-y-4">
-                <div className={`p-4 rounded-lg border text-center flex flex-col items-center ${isDark ? 'bg-zinc-950/60 border-zinc-800' : 'bg-zinc-50 border-zinc-200'}`}>
-                  <div
-                    style={{
-                      width: itemType === 'photo' ? '140px' : '220px',
-                      height: itemType === 'photo' ? '168px' : '95px',
-                    }}
-                    className="rounded overflow-hidden border border-zinc-200 dark:border-zinc-700 bg-white flex items-center justify-center p-1"
-                  >
-                    <img
-                      src={resultUrl}
-                      alt="Formatted SSC"
-                      className="max-w-full max-h-full object-contain"
-                    />
+            {/* Tone Balance Slider Compact Row */}
+            <div className="pt-1 border-t border-zinc-100 dark:border-zinc-800">
+              <div className="grid grid-cols-2 gap-2 text-[10px]">
+                <div>
+                  <div className="flex justify-between text-zinc-400 mb-0.5">
+                    <span>Brightness</span>
+                    <span className="font-mono">{brightness}%</span>
                   </div>
-                  <div className="mt-3 flex items-center gap-2 text-xs">
-                    <span className="font-mono text-emerald-600 dark:text-emerald-400 font-semibold">
-                      {currentSizeKb} KB
-                    </span>
-                    <span className="text-zinc-400">·</span>
-                    <span className="font-mono text-zinc-700 dark:text-zinc-300 font-semibold">
-                      {verifiedDpi} DPI
-                    </span>
-                    <span className="text-zinc-400">·</span>
-                    <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                      <CheckCircle2 className="w-3.5 h-3.5" /> SSC Ready
-                    </span>
-                  </div>
+                  <input
+                    type="range"
+                    min="70"
+                    max="130"
+                    step="1"
+                    value={brightness}
+                    onChange={(e) => setBrightness(parseInt(e.target.value))}
+                    className="w-full h-1 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-zinc-900 dark:accent-zinc-100"
+                  />
                 </div>
+                <div>
+                  <div className="flex justify-between text-zinc-400 mb-0.5">
+                    <span>Contrast</span>
+                    <span className="font-mono">{contrast}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="70"
+                    max="130"
+                    step="1"
+                    value={contrast}
+                    onChange={(e) => setContrast(parseInt(e.target.value))}
+                    className="w-full h-1 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-zinc-900 dark:accent-zinc-100"
+                  />
+                </div>
+              </div>
+            </div>
 
-                <Button
-                  onClick={handleDownload}
-                  className="w-full py-2.5 bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:hover:bg-zinc-200 dark:text-zinc-900 font-medium text-xs rounded-md flex items-center justify-center gap-2"
-                >
-                  <Download className="w-4 h-4" />
-                  Download SSC {itemType === 'photo' ? 'Photo' : 'Signature'}
-                </Button>
+            {/* Download CTA Button */}
+            <div className="pt-1">
+              <button
+                type="button"
+                onClick={handleDownload}
+                disabled={!resultBlob || isProcessing}
+                className="w-full py-2 px-3 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-500 active:scale-[0.99] text-white flex items-center justify-center gap-1.5 transition-all shadow-md shadow-emerald-600/20 cursor-pointer disabled:opacity-50"
+              >
+                <Download className="w-3.5 h-3.5 stroke-[2.5]" />
+                <span>
+                  {resultBlob
+                    ? `Download Compliant SSC ${itemType === 'photo' ? 'Photo' : 'Signature'} (${currentSizeKb || (resultSizeBytes / 1024).toFixed(1)} KB)`
+                    : 'Generate to Download'}
+                </span>
+              </button>
 
-                <div className="grid grid-cols-2 gap-2 mt-2">
+              {resultBlob && (
+                <div className="grid grid-cols-2 gap-1.5 pt-1.5">
                   <button
                     type="button"
                     onClick={handleCopy}
-                    className="py-2 px-3 rounded-md text-xs font-medium flex items-center justify-center gap-1.5 border border-zinc-200 dark:border-zinc-750 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 transition-colors cursor-pointer"
+                    className="py-1 px-2 rounded-lg text-[11px] font-medium flex items-center justify-center gap-1 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-zinc-700 dark:text-zinc-300 transition cursor-pointer"
                   >
-                    <Copy className="w-3.5 h-3.5 text-zinc-500" />
-                    <span>Copy Image</span>
+                    <Copy className="w-3.5 h-3.5 text-zinc-400" />
+                    <span>Copy</span>
                   </button>
                   {isShareSupported() && (
                     <button
                       type="button"
                       onClick={handleShare}
-                      className="py-2 px-3 rounded-md text-xs font-medium flex items-center justify-center gap-1.5 border border-zinc-200 dark:border-zinc-750 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 transition-colors cursor-pointer"
+                      className="py-1 px-2 rounded-lg text-[11px] font-medium flex items-center justify-center gap-1 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-zinc-700 dark:text-zinc-300 transition cursor-pointer"
                     >
-                      <Share2 className="w-3.5 h-3.5 text-zinc-500" />
+                      <Share2 className="w-3.5 h-3.5 text-zinc-400" />
                       <span>Share</span>
                     </button>
                   )}
                 </div>
-              </div>
-            ) : (
-              <div className={`p-8 text-center rounded-lg border border-dashed text-xs ${isDark ? 'bg-zinc-950/40 border-zinc-800 text-zinc-500' : 'bg-zinc-50 border-zinc-300 text-zinc-600'}`}>
-                <FileText className="w-8 h-8 mx-auto mb-2 opacity-30 text-zinc-400" />
-                Upload file to produce SSC portal-ready {itemType}.
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Keyboard Shortcuts Strip */}
-      <div className={`p-3 rounded-lg border text-xs flex flex-wrap items-center justify-between gap-3 ${
-        isDark ? 'bg-zinc-900/60 border-zinc-800 text-zinc-400' : 'bg-zinc-50 border-zinc-200 text-zinc-600'
-      }`}>
-        <div className="flex items-center gap-2">
-          <Keyboard className="w-4 h-4 text-zinc-500" />
-          <span className="font-semibold text-zinc-800 dark:text-zinc-200">Pro Keyboard Controls:</span>
-        </div>
-        <div className="flex flex-wrap items-center gap-3 font-mono text-[11px]">
-          <span><kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-300 dark:border-zinc-700">1</kbd> Photo</span>
-          <span><kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-300 dark:border-zinc-700">2</kbd> Signature</span>
-          <span><kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-300 dark:border-zinc-700">Arrows</kbd> Pan (Shift=10px)</span>
-          <span><kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-300 dark:border-zinc-700">+</kbd>/<kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-300 dark:border-zinc-700">-</kbd> Zoom</span>
-          <span><kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-300 dark:border-zinc-700">T</kbd> Rotate</span>
-          <span><kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-300 dark:border-zinc-700">H</kbd> Flip</span>
-          <span><kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-300 dark:border-zinc-700">G</kbd> Guides</span>
-          <span><kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-300 dark:border-zinc-700">↵</kbd> Format</span>
-          <span><kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-300 dark:border-zinc-700">D</kbd> Save</span>
-          <span><kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-300 dark:border-zinc-700">N</kbd> New</span>
-        </div>
+      {/* Guide Section */}
+      <div className="pt-2">
+        <GovToolGuideSection toolId="ssc-photo-signature" />
       </div>
-
-      {/* Authoritative Verified Guide, Official Specifications & FAQs */}
-      <GovToolGuideSection toolId="ssc-photo-signature" />
     </div>
   );
 };

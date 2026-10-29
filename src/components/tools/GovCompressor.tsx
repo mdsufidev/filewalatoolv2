@@ -22,6 +22,7 @@ import {
   ZoomIn,
   Loader2,
   Keyboard,
+  RefreshCw,
 } from 'lucide-react';
 import { Dropzone } from '../ui/Dropzone';
 import { Button } from '../ui/Button';
@@ -780,86 +781,61 @@ export const GovCompressor: React.FC<GovCompressorProps> = ({ initialFile, onNot
   ------------------------------------------------------------- */
   if (!sourceFile) {
     return (
-      <div className="w-full max-w-7xl mx-auto space-y-8 animate-in fade-in duration-300">
-        {/* Single Authoritative Minimal Header Section */}
-        <div className="text-center space-y-3 max-w-2xl mx-auto">
-          <div
-            className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold ${
-              isDark
-                ? 'bg-zinc-800/80 text-zinc-300'
-                : 'bg-zinc-100 text-zinc-700'
-            }`}
-          >
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-            <span>
-              {language === 'hi'
-                ? 'सार्वभौमिक भारतीय सरकारी दस्तावेज़ कंप्रेसर'
-                : 'Universal Indian Government Document Compressor'}
+      <div className="w-full max-w-6xl mx-auto space-y-3 sm:space-y-4 animate-in fade-in duration-200 select-none">
+        {/* Preset Target Tabs (Clean Pill Bar) */}
+        <div className="flex flex-wrap items-center justify-between gap-2 px-1">
+          <div className="flex items-center gap-2">
+            <h1 className="text-xs sm:text-sm font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+              General Gov Form Document Compressor
+            </h1>
+            <span className="text-[10px] font-mono text-zinc-400 hidden sm:inline-block">
+              PDF · JPG · PNG
             </span>
           </div>
 
-          <h1
-            className={`text-3xl sm:text-4xl font-extrabold tracking-tight ${
-              isDark ? 'text-zinc-100' : 'text-zinc-950'
-            }`}
-          >
-            {language === 'hi'
-              ? 'सरकारी फॉर्म दस्तावेज़ कंप्रेसर'
-              : 'General Gov Form Document Compressor'}
-          </h1>
-          <p className={`text-sm sm:text-base leading-relaxed ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>
-            {language === 'hi'
-              ? 'आधार कार्ड, मार्कशीट और प्रमाणपत्रों को 50 KB, 100 KB, 200 KB या 300 KB के भीतर कंप्रेस करें।'
-              : 'Shrink PDF proofs, certificates, and identity documents strictly under 50 KB, 100 KB, 200 KB, or 300 KB.'}
-          </p>
-        </div>
-
-        {/* Preset Target Tabs (Clean Pill Bar) */}
-        <div className="flex flex-wrap justify-center gap-2">
-          {(Object.keys(GOV_PRESETS) as GovPortalPreset[]).map((presetKey, idx) => {
-            const isSelected = selectedPreset === presetKey;
-            const config = GOV_PRESETS[presetKey];
-            const shortcutKey = idx < 5 ? idx + 1 : null;
-            return (
-              <button
-                key={presetKey}
-                onClick={() => setSelectedPreset(presetKey)}
-                className={`px-3 py-1.5 rounded-md text-xs font-medium border transition-colors cursor-pointer flex items-center gap-1.5 ${
-                  isSelected
-                    ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 border-zinc-900 dark:border-zinc-100'
-                    : isDark
-                      ? 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
-                      : 'bg-white border-zinc-200 text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50'
-                }`}
-              >
-                {shortcutKey && (
-                  <kbd className={`px-1.5 py-0.2 rounded text-[10px] font-mono border ${
+          <div className="flex flex-wrap items-center gap-1">
+            {(Object.keys(GOV_PRESETS) as GovPortalPreset[]).map((presetKey, idx) => {
+              const isSelected = selectedPreset === presetKey;
+              const config = GOV_PRESETS[presetKey];
+              const shortcutKey = idx < 5 ? idx + 1 : null;
+              return (
+                <button
+                  key={presetKey}
+                  type="button"
+                  onClick={() => setSelectedPreset(presetKey)}
+                  className={`px-2 py-0.5 rounded text-[10px] font-mono transition-colors cursor-pointer flex items-center gap-1 ${
                     isSelected
-                      ? 'bg-zinc-800 text-white dark:bg-zinc-200 dark:text-zinc-900 border-zinc-700 dark:border-zinc-300'
-                      : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 border-zinc-200 dark:border-zinc-700'
-                  }`}>
-                    {shortcutKey}
-                  </kbd>
-                )}
-                <span>{config.name}</span>
-              </button>
-            );
-          })}
+                      ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 font-semibold'
+                      : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:text-zinc-900 dark:hover:text-white'
+                  }`}
+                >
+                  {shortcutKey && (
+                    <kbd className="opacity-70">{shortcutKey}</kbd>
+                  )}
+                  <span>{config.name}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
-        {/* Direct Dropzone (Centered, Max-w-3xl, Clean & Focused) */}
-        <div className="max-w-3xl mx-auto">
+        {/* Clamped Direct Dropzone */}
+        <div className="max-w-[700px] mx-auto">
           <Dropzone
             onFilesSelected={handleFileSelected}
             accept="image/*,application/pdf"
             multiple={false}
             title={`Upload Document to Compress Under ${maxKb} KB`}
             description="Drag & drop PDF, JPG, or PNG. Processed 100% locally in browser RAM."
+            className="h-[230px] sm:h-[260px] lg:h-[280px]"
           />
         </div>
 
-        {/* Authoritative Verified Guide, Official Specifications & FAQs */}
-        <GovToolGuideSection toolId="kb-resizer" />
+        {/* Verified Guide */}
+        <div className="pt-2">
+          <GovToolGuideSection toolId="kb-resizer" />
+        </div>
       </div>
     );
   }
@@ -868,407 +844,285 @@ export const GovCompressor: React.FC<GovCompressorProps> = ({ initialFile, onNot
      RENDER: ACTIVE WORKSPACE (DOCUMENT LOADED & READY)
   ------------------------------------------------------------- */
   return (
-    <div className="w-full max-w-7xl mx-auto space-y-6 animate-in fade-in duration-200">
-      {/* Pro Workspace Header Bar */}
-      <div className={`p-3.5 rounded-xl border flex flex-wrap items-center justify-between gap-3 ${
-        isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'
-      }`}>
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 overflow-hidden flex items-center justify-center shrink-0">
-            {resultThumbUrl || previewUrl ? (
-              <img
-                src={resultThumbUrl || previewUrl || ''}
-                alt="Thumbnail"
-                className="w-full h-full object-cover"
-              />
-            ) : fileType === 'pdf' ? (
-              <FileText className="w-5 h-5 text-zinc-500" />
-            ) : (
-              <FileImage className="w-5 h-5 text-zinc-500" />
-            )}
+    <div className="w-full max-w-6xl mx-auto space-y-2 sm:space-y-2.5 animate-in fade-in duration-200 select-none">
+      {/* Top Inline Hero Row */}
+      <div className="flex items-center justify-between gap-2 px-1 py-0.5">
+        <div className="flex items-center gap-2 min-w-0">
+          <h1 className="text-xs sm:text-sm font-bold text-zinc-900 dark:text-zinc-100 truncate flex items-center gap-1.5">
+            <FileArchive className="w-3.5 h-3.5 text-zinc-500" />
+            General Gov Form Document Compressor
+          </h1>
+          {/* Preset switch pills */}
+          <div className="hidden sm:flex items-center gap-1">
+            {(Object.keys(GOV_PRESETS) as GovPortalPreset[]).map((presetKey, idx) => {
+              const isSelected = selectedPreset === presetKey;
+              const config = GOV_PRESETS[presetKey];
+              const shortcutKey = idx < 5 ? idx + 1 : null;
+              return (
+                <button
+                  key={presetKey}
+                  type="button"
+                  onClick={() => setSelectedPreset(presetKey)}
+                  className={`px-2 py-0.5 rounded text-[10px] font-mono transition-colors cursor-pointer flex items-center gap-1 ${
+                    isSelected
+                      ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 font-semibold'
+                      : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:text-zinc-900 dark:hover:text-white'
+                  }`}
+                >
+                  {shortcutKey && <kbd className="opacity-70">{shortcutKey}</kbd>}
+                  <span>{config.name}</span>
+                </button>
+              );
+            })}
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className={`text-xs font-semibold max-w-[200px] sm:max-w-xs truncate ${isDark ? 'text-zinc-100' : 'text-zinc-900'}`}>
-                {sourceFile.name}
-              </span>
-              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700">
-                {formatBytes(sourceFile.size)} · {fileType.toUpperCase()}
-              </span>
-            </div>
-            <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-mono mt-0.5 flex items-center gap-1">
-              <CheckCircle2 className="w-3 h-3" />
-              <span>
-                {resultBlob
-                  ? `✓ 100% Portal Compliant: ${formatBytes(resultSizeBytes)} (Target: < ${maxKb} KB)`
-                  : `✓ Target Goal: Strictly Under ${maxKb} KB (${minKb}–${maxKb} KB)`}
-              </span>
-            </p>
-          </div>
+          <span className="text-[10px] font-mono text-zinc-400 hidden md:inline-block truncate max-w-[120px]">
+            {sourceFile.name}
+          </span>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+          {/* Live Compliance Pill */}
+          <div className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-medium border bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400">
+            <CheckCircle2 className="w-3 h-3" />
+            <span>
+              {resultBlob
+                ? `✓ ${formatBytes(resultSizeBytes)} (${reductionPercent > 0 ? `-${reductionPercent}%` : 'Compliant'})`
+                : `Target: < ${maxKb} KB`}
+            </span>
+          </div>
+
           <button
             onClick={handleResetFile}
-            title="Reset / New Document (Esc or N)"
-            className="px-2.5 py-1.5 rounded-md text-xs font-medium border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 transition-colors flex items-center gap-1.5 cursor-pointer"
+            className="inline-flex items-center gap-1 py-1 px-2 rounded-lg text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
           >
+            <RefreshCw className="w-3 h-3" />
             <span>New</span>
-            <kbd className="px-1 py-0.2 rounded text-[10px] font-mono bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-500">N</kbd>
           </button>
-          {resultBlob && fileType === 'image' && (
-            <button
-              onClick={handleCopy}
-              title="Copy Image (C or Ctrl+C)"
-              className="px-2.5 py-1.5 rounded-md text-xs font-medium border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 transition-colors flex items-center gap-1.5 cursor-pointer"
-            >
-              <Copy className="w-3.5 h-3.5" />
-              <span>Copy</span>
-              <kbd className="px-1 py-0.2 rounded text-[10px] font-mono bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-500">C</kbd>
-            </button>
-          )}
-          {resultBlob ? (
-            <button
-              onClick={handleDownload}
-              title="Download Result (D or Ctrl+S)"
-              className="px-3 py-1.5 rounded-md text-xs font-semibold bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors flex items-center gap-1.5 cursor-pointer"
-            >
-              <Download className="w-3.5 h-3.5" />
-              <span>Download</span>
-              <kbd className="px-1 py-0.2 rounded text-[10px] font-mono bg-zinc-700 dark:bg-zinc-300 text-zinc-200 dark:text-zinc-800">D</kbd>
-            </button>
-          ) : (
-            <button
-              onClick={handleCompress}
-              disabled={isProcessing}
-              title="Compress Document (Enter or Space)"
-              className="px-3 py-1.5 rounded-md text-xs font-semibold bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Compress</span>
-              <kbd className="px-1 py-0.2 rounded text-[10px] font-mono bg-zinc-700 dark:bg-zinc-300 text-zinc-200 dark:text-zinc-800">↵</kbd>
-            </button>
-          )}
         </div>
       </div>
 
-      {/* Main Workspace (2 Columns) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Left Column (7 cols): Document Details & Optimization Settings */}
-        <div className="lg:col-span-7 space-y-4">
+      {/* Viewport & Controls Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-2 sm:gap-2.5 items-start">
+        {/* Left Column: Preview Canvas & Tuning (lg:col-span-7 xl:col-span-8) */}
+        <div className="lg:col-span-7 xl:col-span-8 space-y-1.5">
+          {/* Studio Canvas / Preview Card */}
           <div
-            className={`p-6 rounded-xl border space-y-4 ${
-              isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'
-            }`}
+            className="relative overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-950/80 flex items-center justify-center select-none transition-colors h-[230px] sm:h-[260px] lg:h-[280px] xl:h-[300px]"
+            style={{
+              backgroundImage: isDark
+                ? 'radial-gradient(#27272a 1.2px, transparent 1.2px)'
+                : 'radial-gradient(#d4d4d8 1.2px, transparent 1.2px)',
+              backgroundSize: '16px 16px',
+            }}
           >
-            <div className={`flex items-center justify-between pb-3 border-b ${isDark ? 'border-zinc-800' : 'border-zinc-200'}`}>
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span className={`text-xs font-semibold ${isDark ? 'text-zinc-200' : 'text-zinc-900'}`}>Active Document</span>
+            {resultThumbUrl || previewUrl ? (
+              <div className="relative group max-h-[90%] max-w-[90%] flex items-center justify-center">
+                <img
+                  src={resultThumbUrl || previewUrl || ''}
+                  alt="Document Preview"
+                  className="max-h-[210px] sm:max-h-[240px] lg:max-h-[260px] w-auto object-contain rounded-md shadow-md border border-zinc-200 dark:border-zinc-700 bg-white"
+                />
+                <button
+                  type="button"
+                  onClick={() => setIsPreviewModalOpen(true)}
+                  className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-md flex items-center justify-center text-white text-xs font-medium gap-1.5 cursor-pointer backdrop-blur-xs"
+                >
+                  <ZoomIn className="w-4 h-4" />
+                  <span>Inspect Clarity</span>
+                </button>
               </div>
-              <button
-                onClick={handleResetFile}
-                className="text-xs text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 cursor-pointer transition-colors"
-              >
-                Change Document
-              </button>
-            </div>
-
-            {/* Document Info Card */}
-            <div className={`p-4 rounded-xl flex items-center justify-between ${isDark ? 'bg-zinc-850/60' : 'bg-zinc-100/70'}`}>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 flex items-center justify-center text-zinc-700 dark:text-zinc-300 shrink-0 overflow-hidden">
-                  {previewUrl ? (
-                    <img
-                      src={previewUrl}
-                      alt="Document Preview"
-                      className="w-full h-full object-cover"
-                    />
-                  ) : fileType === 'pdf' ? (
-                    <FileText className="w-5 h-5 text-zinc-500" />
-                  ) : (
-                    <FileImage className="w-5 h-5 text-zinc-500" />
-                  )}
-                </div>
-                <div>
-                  <h3 className={`text-xs font-semibold max-w-[220px] sm:max-w-xs truncate ${isDark ? 'text-zinc-100' : 'text-zinc-900'}`}>
-                    {sourceFile.name}
-                  </h3>
-                  <p className={`text-[11px] ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
-                    Original Size: {formatBytes(sourceFile.size)} ·{' '}
-                    {fileType === 'pdf' ? `${pdfPageCount} Page(s) PDF` : 'Digital Image'}
-                  </p>
-                </div>
-              </div>
-              <span className={`text-[10px] font-mono px-2 py-0.5 rounded border ${isDark ? 'bg-zinc-800 text-zinc-300 border-zinc-700' : 'bg-white text-zinc-700 border-zinc-200'}`}>
-                {fileType.toUpperCase()}
-              </span>
-            </div>
-
-            {/* Target Preset Selector in Active Mode */}
-            <div className="space-y-2 pt-1">
-              <span className={`text-xs font-semibold block ${isDark ? 'text-zinc-300' : 'text-zinc-700'}`}>Target Size Goal:</span>
-              <div className="flex flex-wrap gap-1.5">
-                {(Object.keys(GOV_PRESETS) as GovPortalPreset[]).map((presetKey, idx) => {
-                  const isSelected = selectedPreset === presetKey;
-                  const config = GOV_PRESETS[presetKey];
-                  const shortcutKey = idx < 5 ? idx + 1 : null;
-                  return (
-                    <button
-                      key={presetKey}
-                      onClick={() => setSelectedPreset(presetKey)}
-                      className={`px-2.5 py-1 rounded-md text-xs font-medium border transition-colors cursor-pointer flex items-center gap-1.5 ${
-                        isSelected
-                          ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 border-zinc-900 dark:border-zinc-100'
-                          : isDark
-                            ? 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
-                            : 'bg-white border-zinc-200 text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50'
-                      }`}
-                    >
-                      {shortcutKey && (
-                        <kbd className={`px-1 py-0.1 rounded text-[9px] font-mono border ${
-                          isSelected
-                            ? 'bg-zinc-800 text-white dark:bg-zinc-200 dark:text-zinc-900 border-zinc-700 dark:border-zinc-300'
-                            : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 border-zinc-200 dark:border-zinc-700'
-                        }`}>
-                          {shortcutKey}
-                        </kbd>
-                      )}
-                      <span>{config.name}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Text Clarity & Legibility Protection Toggle (Default: Enabled) */}
-            <div
-              className={`p-3.5 rounded-xl flex items-center justify-between gap-3 ${
-                isDark ? 'bg-zinc-850/50' : 'bg-zinc-100/70'
-              }`}
-            >
-              <div className="space-y-0.5">
-                <div className="flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
-                  <span className={`text-xs font-semibold ${isDark ? 'text-zinc-200' : 'text-zinc-900'}`}>
-                    Text Clarity &amp; Legibility Protection
-                  </span>
-                  <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-medium">
-                    Recommended
-                  </span>
-                </div>
-                <p className={`text-[11px] ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
-                  Cleans paper grain to pure white and sharpens character strokes for 100% readability.
+            ) : (
+              <div className="text-center p-4">
+                <FileText className="w-12 h-12 mx-auto text-zinc-400 mb-2 opacity-50" />
+                <p className="text-xs text-zinc-500">
+                  {fileType === 'pdf' ? `${pdfPageCount} Page(s) Document` : 'Digital Image'}
                 </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setTextClarityBoost(!textClarityBoost)}
-                className={`w-9 h-5 flex items-center rounded-full p-0.5 transition-colors cursor-pointer shrink-0 ${
-                  textClarityBoost ? 'bg-zinc-900 dark:bg-zinc-100 justify-end' : 'bg-zinc-300 dark:bg-zinc-700 justify-start'
-                }`}
-                title="Toggle Text Clarity Protection"
-              >
-                <span className={`w-4 h-4 rounded-full bg-white dark:bg-zinc-900 shadow-sm`} />
-              </button>
-            </div>
-
-            {/* Custom Bounds Sliders if Selected */}
-            {selectedPreset === 'custom' && (
-              <div className={`p-4 rounded-xl space-y-4 ${isDark ? 'bg-zinc-850/50' : 'bg-zinc-100/70'}`}>
-                <span className={`text-xs font-semibold block ${isDark ? 'text-zinc-200' : 'text-zinc-900'}`}>Custom Size Bounds</span>
-                <Slider
-                  label="Maximum File Size (Target Upper Limit)"
-                  min={20}
-                  max={1000}
-                  step={10}
-                  unit=" KB"
-                  value={customMaxKb}
-                  onChange={(val) => setCustomMaxKb(val)}
-                />
-                <Slider
-                  label="Minimum File Size (Lower Threshold)"
-                  min={5}
-                  max={customMaxKb - 10}
-                  step={5}
-                  unit=" KB"
-                  value={customMinKb}
-                  onChange={(val) => setCustomMinKb(val)}
-                />
               </div>
             )}
 
-            {/* Progress Indicator during compression */}
+            {/* Top-Left Live Metadata Pill */}
+            <div className="absolute top-2 left-2 flex items-center gap-1 pointer-events-none z-10">
+              <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-zinc-900/80 text-white border border-zinc-700/50 backdrop-blur-xs flex items-center gap-1">
+                {fileType.toUpperCase()} · Original {formatBytes(sourceFile.size)}
+              </span>
+              {resultBlob && (
+                <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-emerald-950/80 text-emerald-300 border border-emerald-700/50 backdrop-blur-xs font-semibold">
+                  {formatBytes(resultSizeBytes)}
+                </span>
+              )}
+            </div>
+
+            {/* Inspect Button Top-Right if preview available */}
+            {(resultThumbUrl || previewUrl) && (
+              <button
+                type="button"
+                onClick={() => setIsPreviewModalOpen(true)}
+                className="absolute top-2 right-2 p-1.5 rounded-lg bg-zinc-900/80 hover:bg-zinc-900 text-white border border-zinc-700/50 backdrop-blur-xs text-[10px] font-medium flex items-center gap-1 cursor-pointer transition-colors z-10"
+                title="Inspect Text Clarity"
+              >
+                <ZoomIn className="w-3 h-3" />
+                <span className="hidden sm:inline">Inspect</span>
+              </button>
+            )}
+          </div>
+
+          {/* Docked Precision Controls Strip */}
+          <div className="p-1.5 sm:p-2 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex items-center justify-between flex-wrap gap-1.5">
+            {/* Text Clarity Toggle */}
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setTextClarityBoost(!textClarityBoost)}
+                className={`px-2 py-1 rounded-md text-[11px] font-medium transition-colors cursor-pointer flex items-center gap-1.5 ${
+                  textClarityBoost
+                    ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 font-semibold'
+                    : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 border border-transparent'
+                }`}
+                title="Sharpen characters and clean background grain"
+              >
+                <Sparkles className="w-3 h-3 text-emerald-500" />
+                <span>Text Clarity Boost</span>
+                <span className="text-[9px] font-mono opacity-70">
+                  {textClarityBoost ? 'ON' : 'OFF'}
+                </span>
+              </button>
+
+              {selectedPreset === 'custom' && (
+                <div className="flex items-center gap-1.5 text-[10px] font-mono text-zinc-500">
+                  <span>Max:</span>
+                  <input
+                    type="range"
+                    min={20}
+                    max={1000}
+                    step={10}
+                    value={customMaxKb}
+                    onChange={(e) => setCustomMaxKb(parseInt(e.target.value))}
+                    className="w-20 h-1 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-zinc-900 dark:accent-zinc-100"
+                  />
+                  <span>{customMaxKb} KB</span>
+                </div>
+              )}
+            </div>
+
+            {/* Compress Re-trigger Button */}
+            <div className="flex items-center gap-1.5 shrink-0">
+              <Button
+                variant="primary"
+                onClick={handleCompress}
+                isLoading={isProcessing}
+                className="py-1 px-3 text-xs font-semibold bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:hover:bg-zinc-200 dark:text-zinc-900 rounded-md cursor-pointer flex items-center gap-1"
+              >
+                <Sparkles className="w-3 h-3 mr-1" />
+                <span>Re-compress</span>
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column: Portal Compliance & Download (lg:col-span-5 xl:col-span-4) */}
+        <div className="lg:col-span-5 xl:col-span-4 space-y-1.5">
+          <div className="p-2 sm:p-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 space-y-2">
+            {/* Header / Requirements Summary */}
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-1">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+                Gov Portal Compliance
+              </span>
+              <span className="text-[10px] font-mono text-zinc-400">
+                &lt; {maxKb} KB
+              </span>
+            </div>
+
+            {/* Compact Requirements Check Rows */}
+            <div className="space-y-1 text-xs">
+              <div className="px-2 py-1 rounded border border-zinc-100 dark:border-zinc-800 bg-zinc-50/60 dark:bg-zinc-850/60 flex items-center justify-between">
+                <span className="text-[11px] text-zinc-600 dark:text-zinc-400">
+                  Target Size: &lt; {maxKb} KB
+                </span>
+                <span className="font-mono text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                  {resultBlob
+                    ? `${formatBytes(resultSizeBytes)} (${isCompliant ? 'PASS ✓' : 'OPTIMIZED'})`
+                    : 'Auto-compress'}
+                </span>
+              </div>
+              <div className="px-2 py-1 rounded border border-zinc-100 dark:border-zinc-800 bg-zinc-50/60 dark:bg-zinc-850/60 flex items-center justify-between">
+                <span className="text-[11px] text-zinc-600 dark:text-zinc-400">
+                  Text Clarity
+                </span>
+                <span className="font-mono text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                  {textClarityBoost ? '100% SHARP ✓' : 'Standard'}
+                </span>
+              </div>
+              <div className="px-2 py-1 rounded border border-zinc-100 dark:border-zinc-800 bg-zinc-50/60 dark:bg-zinc-850/60 flex items-center justify-between">
+                <span className="text-[11px] text-zinc-600 dark:text-zinc-400">
+                  Reduction
+                </span>
+                <span className="font-mono text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                  {reductionPercent > 0 ? `-${reductionPercent}% Saved` : 'Original Size'}
+                </span>
+              </div>
+            </div>
+
+            {/* Progress Bar during compression */}
             {isProcessing && (
-              <div className={`p-3.5 rounded-xl space-y-2 ${isDark ? 'bg-zinc-850/70' : 'bg-zinc-100/80'}`}>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="flex items-center gap-1.5 font-medium text-zinc-900 dark:text-zinc-100">
-                    <Loader2 className="w-3.5 h-3.5 animate-spin text-zinc-500" />
+              <div className="p-2 rounded-lg bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-200 dark:border-zinc-800 space-y-1">
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="flex items-center gap-1 text-zinc-600 dark:text-zinc-400 truncate">
+                    <Loader2 className="w-3 h-3 animate-spin text-zinc-500" />
                     <span>{progressStage || 'Compressing...'}</span>
                   </span>
-                  <span className="font-mono text-zinc-500">{progressPercent}%</span>
+                  <span className="font-mono font-semibold">{progressPercent}%</span>
                 </div>
-                <div className="w-full h-1.5 rounded-full bg-zinc-200 dark:bg-zinc-800 overflow-hidden">
+                <div className="w-full h-1 rounded-full bg-zinc-200 dark:bg-zinc-700 overflow-hidden">
                   <div
-                    className="h-full bg-zinc-900 dark:bg-zinc-100 transition-all duration-200"
+                    className="h-full bg-emerald-500 transition-all duration-200"
                     style={{ width: `${progressPercent}%` }}
                   />
                 </div>
               </div>
             )}
 
-            {/* Action Trigger */}
-            <Button
-              variant="primary"
-              onClick={handleCompress}
-              isLoading={isProcessing}
-              className="w-full py-2.5 font-medium text-xs bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:hover:bg-zinc-200 dark:text-zinc-900 rounded-md cursor-pointer"
-            >
-              <Sparkles className="w-4 h-4 mr-2" />
-              <span>Compress {fileType.toUpperCase()} Under {maxKb} KB</span>
-            </Button>
-          </div>
-        </div>
+            {/* Download CTA Button */}
+            <div className="pt-1">
+              <button
+                type="button"
+                onClick={handleDownload}
+                disabled={!resultBlob || isProcessing}
+                className="w-full py-2 px-3 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-500 active:scale-[0.99] text-white flex items-center justify-center gap-1.5 transition-all shadow-md shadow-emerald-600/20 cursor-pointer disabled:opacity-50"
+              >
+                <Download className="w-3.5 h-3.5 stroke-[2.5]" />
+                <span>
+                  {resultBlob
+                    ? `Download Compressed ${fileType.toUpperCase()} (${formatBytes(resultSizeBytes)})`
+                    : `Compress Under ${maxKb} KB`}
+                </span>
+              </button>
 
-        {/* Right Column (5 cols): Result & Download Card */}
-        <div className="lg:col-span-5 space-y-4">
-          <div
-            className={`p-6 rounded-xl border space-y-4 ${
-              isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'
-            }`}
-          >
-            <div className={`flex items-center justify-between pb-3 border-b ${isDark ? 'border-zinc-800' : 'border-zinc-200'}`}>
-              <span className={`text-xs font-semibold ${isDark ? 'text-zinc-200' : 'text-zinc-900'}`}>Portal Ready Output</span>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded border border-zinc-300 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100">
-                &lt; {maxKb} KB
-              </span>
-            </div>
-
-            {/* Preview Box */}
-            <div className={`flex flex-col items-center justify-center p-4 rounded-xl border border-dashed min-h-[160px] ${
-              isDark ? 'border-zinc-800 bg-zinc-950/40' : 'border-zinc-300 bg-zinc-50'
-            }`}>
-              {resultUrl ? (
-                <div className="text-center space-y-3 w-full">
-                  {resultThumbUrl ? (
-                    <div className="relative group max-h-[170px] overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 mx-auto max-w-xs shadow-xs">
-                      <img
-                        src={resultThumbUrl}
-                        alt="Compressed preview"
-                        className="w-full max-h-[170px] object-contain mx-auto"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setIsPreviewModalOpen(true)}
-                        className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-medium gap-1.5 cursor-pointer"
-                      >
-                        <ZoomIn className="w-4 h-4" />
-                        <span>Inspect Text Clarity</span>
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="inline-flex p-2.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                      <CheckCircle2 className="w-6 h-6" />
-                    </div>
+              {resultBlob && (
+                <div className={`grid ${fileType === 'image' && isShareSupported() ? 'grid-cols-2' : 'grid-cols-1'} gap-1.5 pt-1.5`}>
+                  {fileType === 'image' && (
+                    <button
+                      type="button"
+                      onClick={handleCopy}
+                      className="py-1 px-2 rounded-lg text-[11px] font-medium flex items-center justify-center gap-1 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-zinc-700 dark:text-zinc-300 transition cursor-pointer"
+                    >
+                      <Copy className="w-3 h-3 text-zinc-400" />
+                      <span>Copy</span>
+                    </button>
                   )}
-
-                  <div>
-                    <p className={`text-xs font-semibold ${isDark ? 'text-zinc-100' : 'text-zinc-900'}`}>
-                      Compressed to {formatBytes(resultSizeBytes)}
-                    </p>
-                    {reductionPercent > 0 && (
-                      <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-mono mt-0.5">
-                        Reduced file size by {reductionPercent}%
-                      </p>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center space-y-2 py-4">
-                  <div className={`w-9 h-9 rounded-full flex items-center justify-center mx-auto ${isDark ? 'bg-zinc-800 text-zinc-400' : 'bg-zinc-200 text-zinc-600'}`}>
-                    <Eye className="w-4 h-4" />
-                  </div>
-                  <p className={`text-xs ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>
-                    Click "Compress {fileType.toUpperCase()}" to produce portal file
-                  </p>
+                  {isShareSupported() && (
+                    <button
+                      type="button"
+                      onClick={handleShare}
+                      className="py-1 px-2 rounded-lg text-[11px] font-medium flex items-center justify-center gap-1 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-zinc-700 dark:text-zinc-300 transition cursor-pointer"
+                    >
+                      <Share2 className="w-3 h-3 text-zinc-400" />
+                      <span>Share</span>
+                    </button>
+                  )}
                 </div>
               )}
             </div>
-
-            {/* Checklist */}
-            <div className="space-y-2 text-xs">
-              <div
-                className={`p-2.5 rounded-lg flex items-center justify-between ${
-                  resultBlob && isCompliant
-                    ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-                    : isDark
-                      ? 'bg-zinc-850/60 text-zinc-400'
-                      : 'bg-zinc-100/70 text-zinc-600'
-                }`}
-              >
-                <span className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4" />
-                  Size Constraint (&lt; {maxKb} KB)
-                </span>
-                <span className="font-mono font-semibold">
-                  {resultBlob ? (isCompliant ? 'PASS' : 'OPTIMIZED') : 'Pending'}
-                </span>
-              </div>
-
-              <div
-                className={`p-2.5 rounded-lg flex items-center justify-between ${
-                  resultBlob
-                    ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-                    : isDark
-                      ? 'bg-zinc-850/60 text-zinc-400'
-                      : 'bg-zinc-100/70 text-zinc-600'
-                }`}
-              >
-                <span className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4" />
-                  Text Clarity &amp; Legibility
-                </span>
-                <span className="font-mono font-semibold text-emerald-600 dark:text-emerald-400">
-                  {resultBlob ? '100% SHARP' : 'Protected'}
-                </span>
-              </div>
-            </div>
-
-            {/* Download Button */}
-            <Button
-              variant="primary"
-              onClick={handleDownload}
-              disabled={!resultBlob}
-              className="w-full py-2.5 font-medium text-xs bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:hover:bg-zinc-200 dark:text-zinc-900 rounded-md cursor-pointer"
-            >
-              <Download className="w-4 h-4 mr-2" />
-              <span>Download Compressed {fileType.toUpperCase()}</span>
-            </Button>
-
-            {resultBlob && (
-              <div className={`grid ${fileType === 'image' && isShareSupported() ? 'grid-cols-2' : 'grid-cols-1'} gap-2 mt-2`}>
-                {fileType === 'image' && (
-                  <button
-                    type="button"
-                    onClick={handleCopy}
-                    className="py-2 px-3 rounded-md text-xs font-medium flex items-center justify-center gap-1.5 border border-zinc-200 dark:border-zinc-750 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 transition-colors cursor-pointer"
-                  >
-                    <Copy className="w-3.5 h-3.5 text-zinc-500" />
-                    <span>Copy Image</span>
-                  </button>
-                )}
-                {isShareSupported() && (
-                  <button
-                    type="button"
-                    onClick={handleShare}
-                    className="py-2 px-3 rounded-md text-xs font-medium flex items-center justify-center gap-1.5 border border-zinc-200 dark:border-zinc-750 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 transition-colors cursor-pointer"
-                  >
-                    <Share2 className="w-3.5 h-3.5 text-zinc-500" />
-                    <span>Share {fileType.toUpperCase()}</span>
-                  </button>
-                )}
-              </div>
-            )}
           </div>
         </div>
       </div>

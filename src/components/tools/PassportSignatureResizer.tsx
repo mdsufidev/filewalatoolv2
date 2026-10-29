@@ -91,8 +91,8 @@ export const PassportSignatureResizer: React.FC<PassportSignatureResizerProps> =
 
   // Viewport Box Dimensions (Strictly proportional to targetW / targetH)
   const cropAspectRatio = targetW / targetH;
-  const BOX_MAX_W = 380;
-  const BOX_MAX_H = 190;
+  const BOX_MAX_W = 280;
+  const BOX_MAX_H = 130;
   let boxW = BOX_MAX_W;
   let boxH = Math.round(boxW / cropAspectRatio);
   if (boxH > BOX_MAX_H) {
@@ -580,43 +580,39 @@ export const PassportSignatureResizer: React.FC<PassportSignatureResizerProps> =
   ------------------------------------------------------------- */
   if (!imageElement) {
     return (
-      <div className="w-full max-w-7xl mx-auto space-y-8 animate-in fade-in duration-300">
-        {/* Single Authoritative Minimal Header Section */}
-        <div className="text-center space-y-3 max-w-2xl mx-auto">
-          <div
-            className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold ${
-              isDark ? 'bg-zinc-800/80 text-zinc-300' : 'bg-zinc-100 text-zinc-700'
-            }`}
-          >
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-            <span>Ministry of External Affairs (MEA) Passport Seva Portal</span>
+      <div className="w-full max-w-6xl mx-auto space-y-2 sm:space-y-2.5 animate-in fade-in duration-200 select-none">
+        <div className="space-y-3 sm:space-y-3.5">
+          {/* Header Section */}
+          <div className="text-center space-y-1 max-w-lg mx-auto">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-medium uppercase tracking-wider text-zinc-600 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+              <span>Ministry of External Affairs (MEA) Specs</span>
+            </div>
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-950 dark:text-zinc-50">
+              Passport Seva Signature Resizer
+            </h1>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 max-w-sm mx-auto leading-relaxed">
+              Clean, whiten, and resize official passport signatures to strict 400×200 px (4×2 cm) and 300 DPI.
+            </p>
           </div>
 
-          <h1
-            className={`text-3xl sm:text-4xl font-extrabold tracking-tight ${
-              isDark ? 'text-zinc-100' : 'text-zinc-950'
-            }`}
-          >
-            Passport Seva Signature Resizer
-          </h1>
-          <p className={`text-sm sm:text-base leading-relaxed ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>
-            Clean, whiten, and resize official passport signatures to strict 400×200 px (4×2 cm) and 300 DPI.
-          </p>
+          {/* Direct Dropzone */}
+          <div className="max-w-[700px] mx-auto">
+            <Dropzone
+              onFilesSelected={handleFileSelected}
+              accept="image/*"
+              multiple={false}
+              title="Upload Physical Signature Scan"
+              description="Drag & drop or click to browse. Formatted under 100 KB with 300 DPI metadata."
+              className="h-[230px] sm:h-[260px] lg:h-[280px]"
+            />
+          </div>
         </div>
 
-        {/* Direct Dropzone (Centered, Max-w-3xl, Clean & Focused) */}
-        <div className="max-w-3xl mx-auto">
-          <Dropzone
-            onFilesSelected={handleFileSelected}
-            accept="image/*"
-            multiple={false}
-            title="Upload Physical Signature Scan"
-            description="Drag & drop or click to browse. Formatted under 100 KB with 300 DPI metadata."
-          />
+        {/* Verified Guide */}
+        <div className="pt-2">
+          <GovToolGuideSection toolId="passport-signature-resize" />
         </div>
-
-        {/* Authoritative Verified Guide, Official Specifications & FAQs */}
-        <GovToolGuideSection toolId="passport-signature-resize" />
       </div>
     );
   }
@@ -625,418 +621,318 @@ export const PassportSignatureResizer: React.FC<PassportSignatureResizerProps> =
      RENDER: ACTIVE WORKSPACE (SIGNATURE LOADED & READY)
   ------------------------------------------------------------- */
   return (
-    <div className="w-full max-w-7xl mx-auto space-y-6 animate-in fade-in duration-200">
-      {/* Pro Workspace Header Bar */}
-      <div
-        className={`p-3.5 sm:p-4 rounded-xl border flex flex-wrap items-center justify-between gap-3 ${
-          isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'
-        }`}
-      >
-          <div className="flex items-center gap-3 min-w-0">
-            {imageSrc && (
-              <img
-                src={imageSrc}
-                alt="Thumbnail"
-                className="w-10 h-10 rounded-lg object-cover border border-zinc-200 dark:border-zinc-700 shrink-0"
-              />
-            )}
-            <div className="min-w-0">
-              <h3 className={`text-sm font-bold truncate max-w-[180px] sm:max-w-xs ${isDark ? 'text-white' : 'text-zinc-900'}`}>
-                {sourceFile?.name}
-              </h3>
-              <div className="flex items-center gap-2 text-xs text-zinc-500 font-mono">
-                <span>{formatBytes(sourceFile?.size || 0)}</span>
-                <span>•</span>
-                <span>{imageNaturalSize.width} × {imageNaturalSize.height} px</span>
-              </div>
-            </div>
-          </div>
+    <div className="w-full max-w-6xl mx-auto space-y-2 sm:space-y-2.5 animate-in fade-in duration-200 select-none">
+      {/* Top Inline Hero Row */}
+      <div className="flex items-center justify-between gap-2 px-1 py-0.5">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-xs sm:text-sm font-bold text-zinc-900 dark:text-zinc-100 truncate">
+            Passport Signature Resizer
+          </span>
+          <span className="text-[10px] font-mono text-zinc-500 bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded">
+            400×200 px · 300 DPI
+          </span>
+          <span className="text-[10px] font-mono text-zinc-400 hidden md:inline-block truncate max-w-[120px]">
+            {sourceFile?.name}
+          </span>
+        </div>
 
-          {/* Center Live Compliance Pill */}
-          <div className="hidden md:flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-medium border bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400">
-            <CheckCircle2 className="w-3.5 h-3.5" />
+        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+          {/* Live Compliance Pill */}
+          <div className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-medium border bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400">
+            <CheckCircle2 className="w-3 h-3" />
             <span>
               {resultBlob
-                ? `✓ 100% MEA Compliant: ${currentSizeKb} KB · ${verifiedDpi || targetDpi} DPI`
-                : `${targetW}×${targetH} px · Strictly < ${targetMaxKb} KB · ${targetDpi} DPI`}
+                ? `✓ ${currentSizeKb || (resultSizeBytes / 1024).toFixed(1)} KB · ${verifiedDpi || 300} DPI`
+                : '400×200px · 300 DPI'}
             </span>
           </div>
 
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleResetFile}
-              leftIcon={<RefreshCw className="w-3.5 h-3.5" />}
-            >
-              <span>New</span>
-              <kbd className="ml-1.5 px-1.5 py-0.5 rounded text-[10px] font-mono bg-zinc-200/80 dark:bg-zinc-750 text-zinc-700 dark:text-zinc-300">
-                N
-              </kbd>
-            </Button>
-
-            {resultBlob && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleCopySignature}
-                leftIcon={<Copy className="w-3.5 h-3.5" />}
-              >
-                <span>Copy</span>
-                <kbd className="ml-1.5 px-1.5 py-0.5 rounded text-[10px] font-mono bg-zinc-200/80 dark:bg-zinc-750 text-zinc-700 dark:text-zinc-300">
-                  C
-                </kbd>
-              </Button>
-            )}
-
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={() => (resultBlob ? handleDownload() : processSignature())}
-              disabled={isProcessing}
-              leftIcon={
-                isProcessing ? (
-                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                ) : resultBlob ? (
-                  <Download className="w-3.5 h-3.5" />
-                ) : (
-                  <Sparkles className="w-3.5 h-3.5" />
-                )
-              }
-            >
-              <span>
-                {isProcessing
-                  ? 'Formatting...'
-                  : resultBlob
-                    ? `Download (${currentSizeKb} KB)`
-                    : 'Format Signature'}
-              </span>
-              <kbd className="ml-1.5 px-1.5 py-0.5 rounded text-[10px] font-mono bg-white/20 dark:bg-black/30 text-white">
-                {resultBlob ? 'D' : '↵'}
-              </kbd>
-            </Button>
-          </div>
-        </div>
-
-      {/* Main Workspace Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left: Viewport Workspace (7 cols) */}
-        <div className="lg:col-span-7 space-y-4">
-          <div
-            className={`p-5 rounded-lg border ${
-              isDark
-                ? 'bg-zinc-900/50 border-zinc-800'
-                : 'bg-white border-zinc-200'
-            }`}
+          <button
+            onClick={handleResetFile}
+            className="inline-flex items-center gap-1 py-1 px-2 rounded-lg text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
           >
-            <div className="flex items-center justify-between mb-4">
-              <span className={`text-xs font-medium flex items-center gap-1.5 ${isDark ? 'text-zinc-300' : 'text-zinc-700'}`}>
-                <PenTool className="w-3.5 h-3.5 text-zinc-500" />
-                Interactive Signature Alignment
-              </span>
-              {imageElement && (
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={rotateCCW}
-                    title="Rotate 90° CCW"
-                    className="p-1 rounded text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 transition-colors"
-                  >
-                    <RotateCcw className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    onClick={rotateCW}
-                    title="Rotate 90° CW"
-                    className="p-1 rounded text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 transition-colors"
-                  >
-                    <RotateCw className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    onClick={resetTransform}
-                    title="Reset Alignment"
-                    className="px-2 py-1 text-xs font-medium rounded text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 transition-colors"
-                  >
-                    Reset
-                  </button>
+            <RefreshCw className="w-3 h-3" />
+            <span>New</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Viewport & Controls Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-2 sm:gap-2.5 items-start">
+        {/* Left Column: Interactive Crop Viewport (lg:col-span-7 xl:col-span-8) */}
+        <div className="lg:col-span-7 xl:col-span-8 space-y-1.5">
+          {/* Studio Canvas Viewport */}
+          <div
+            ref={canvasContainerRef}
+            tabIndex={0}
+            className="relative overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-950/80 flex items-center justify-center select-none cursor-grab active:cursor-grabbing focus:outline-none transition-colors touch-none h-[230px] sm:h-[260px] lg:h-[280px] xl:h-[300px]"
+            style={{
+              backgroundImage: isDark
+                ? 'radial-gradient(#27272a 1.2px, transparent 1.2px)'
+                : 'radial-gradient(#d4d4d8 1.2px, transparent 1.2px)',
+              backgroundSize: '16px 16px',
+            }}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={handlePointerUp}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+          >
+            {/* Fixed Aspect Ratio Crop Box */}
+            <div
+              ref={viewportRef}
+              className="relative overflow-hidden border-2 border-zinc-900/90 dark:border-white rounded-xs shadow-xl bg-white pointer-events-none ring-4 ring-zinc-950/5 dark:ring-white/10"
+              style={{
+                width: `${boxW}px`,
+                height: `${boxH}px`,
+              }}
+            >
+              {/* Viewport Image Canvas Rendering */}
+              <div
+                className="absolute inset-0 flex items-center justify-center origin-center pointer-events-none"
+                style={{
+                  transform: `translate(${pan.x}px, ${pan.y}px) rotate(${rotation}deg) scale(${zoom * (flipH ? -1 : 1)}, ${zoom})`,
+                  transformOrigin: 'center center',
+                  filter: `brightness(${brightness}%) contrast(${contrast}%)`,
+                  transition: isDragging ? 'none' : 'transform 0.05s ease-out',
+                }}
+              >
+                <img
+                  src={imageSrc || imageElement.src}
+                  alt="Signature Preview"
+                  className="max-w-none pointer-events-none select-none"
+                  style={{
+                    width: `${baseW}px`,
+                    height: `${baseH}px`,
+                  }}
+                  draggable={false}
+                />
+              </div>
+
+              {/* Viewfinder Corner L-Brackets */}
+              <div className="absolute -top-0.5 -left-0.5 w-3 h-3 border-t-2 border-l-2 border-zinc-900 dark:border-white pointer-events-none z-10" />
+              <div className="absolute -top-0.5 -right-0.5 w-3 h-3 border-t-2 border-r-2 border-zinc-900 dark:border-white pointer-events-none z-10" />
+              <div className="absolute -bottom-0.5 -left-0.5 w-3 h-3 border-b-2 border-l-2 border-zinc-900 dark:border-white pointer-events-none z-10" />
+              <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 border-b-2 border-r-2 border-zinc-900 dark:border-white pointer-events-none z-10" />
+
+              {/* Composition Grid Overlay */}
+              {showGuides && (
+                <div className="absolute inset-0 pointer-events-none border border-zinc-400/40 dark:border-white/30">
+                  <div className="absolute top-1/2 left-0 right-0 border-t border-dashed border-zinc-500/40 dark:border-white/30" />
+                  <div className="absolute left-1/2 top-0 bottom-0 border-l border-dashed border-zinc-500/40 dark:border-white/30" />
                 </div>
               )}
             </div>
 
-            <div className="space-y-4">
-              {/* Viewport Frame */}
-                <div
-                  ref={canvasContainerRef}
-                  className="relative w-full flex items-center justify-center p-4 rounded-md bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 overflow-hidden select-none"
-                >
-                  <div
-                    ref={viewportRef}
-                    onPointerDown={handlePointerDown}
-                    onPointerMove={handlePointerMove}
-                    onPointerUp={handlePointerUp}
-                    onPointerCancel={handlePointerUp}
-                    onTouchStart={handleTouchStart}
-                    onTouchMove={handleTouchMove}
-                    onTouchEnd={handleTouchEnd}
-                    style={{
-                      width: `${boxW}px`,
-                      height: `${boxH}px`,
-                      cursor: isDragging ? 'grabbing' : 'grab',
-                    }}
-                    className="relative overflow-hidden border-2 border-dashed border-zinc-400 dark:border-zinc-600 rounded bg-white shadow-xs touch-none"
-                  >
-                    <div
-                      style={{
-                        transform: `translate(${pan.x}px, ${pan.y}px) rotate(${rotation}deg) scale(${zoom})`,
-                        transformOrigin: 'center center',
-                        transition: isDragging ? 'none' : 'transform 0.05s ease-out',
-                        filter: `brightness(${brightness}%) contrast(${contrast}%)`,
-                      }}
-                      className="w-full h-full flex items-center justify-center pointer-events-none"
-                    >
-                      <img
-                        src={imageSrc || imageElement.src}
-                        alt="Signature Preview"
-                        className="max-w-none pointer-events-none select-none"
-                        style={{
-                          width: `${baseW}px`,
-                          height: `${baseH}px`,
-                        }}
-                        draggable={false}
-                      />
-                    </div>
+            {/* Top-Left Live Metadata Pill */}
+            <div className="absolute top-2 left-2 flex items-center gap-1 pointer-events-none z-10">
+              <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-zinc-900/80 text-white border border-zinc-700/50 backdrop-blur-xs flex items-center gap-1">
+                <Maximize2 className="w-2.5 h-2.5 text-zinc-300" />
+                400 × 200 px · 300 DPI
+              </span>
+              <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-zinc-900/80 text-zinc-200 border border-zinc-700/50 backdrop-blur-xs">
+                {Math.round(zoom * 100)}%
+              </span>
+            </div>
+          </div>
 
-                    <div className="absolute bottom-1 right-2 text-[10px] font-mono px-1.5 py-0.5 rounded bg-zinc-900/80 text-zinc-200 pointer-events-none">
-                      400 × 200 px (4×2 cm)
-                    </div>
-                  </div>
-                </div>
-
-                {/* Viewport & Contrast Controls */}
-                <div className="p-3.5 rounded-lg bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 space-y-3">
-                  <div className="flex items-center gap-3">
-                    <ZoomOut className="w-4 h-4 text-zinc-400 shrink-0" />
-                    <Slider
-                      value={zoom}
-                      min={0.5}
-                      max={3}
-                      step={0.05}
-                      onChange={setZoom}
-                      label="Zoom Signature"
-                    />
-                    <ZoomIn className="w-4 h-4 text-zinc-400 shrink-0" />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3 pt-1 border-t border-zinc-200 dark:border-zinc-800">
-                    <Slider
-                      value={contrast}
-                      min={100}
-                      max={200}
-                      step={2}
-                      onChange={setContrast}
-                      label="Ink Contrast"
-                      unit="%"
-                    />
-                    <Slider
-                      value={whitenBgThreshold}
-                      min={150}
-                      max={255}
-                      step={5}
-                      onChange={setWhitenBgThreshold}
-                      label="Background Clean"
-                      helperText="Auto-Whitens paper"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between pt-1">
+          {/* Docked Precision Controls Strip */}
+          <div className="p-1.5 sm:p-2 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex items-center justify-between flex-wrap gap-1.5">
+            {/* Zoom Slider + Quick Pills */}
+            <div className="flex items-center gap-1.5 flex-1 min-w-[200px]">
+              <ZoomIn className="w-3 h-3 text-zinc-400 shrink-0" />
+              <input
+                type="range"
+                min="0.5"
+                max="3"
+                step="0.05"
+                value={zoom}
+                onChange={(e) => setZoom(parseFloat(e.target.value))}
+                className="w-24 sm:w-32 h-1 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-zinc-900 dark:accent-zinc-100"
+              />
+              <div className="flex items-center gap-1">
+                {[
+                  { label: 'Fit', val: 1 },
+                  { label: '125%', val: 1.25 },
+                  { label: '150%', val: 1.5 },
+                ].map((p) => (
                   <button
-                    onClick={() => {
-                      setImageElement(null);
-                      setSourceFile(null);
-                      if (resultUrl) revokeSafeObjectURL(resultUrl);
-                      setResultUrl(null);
-                      setResultBlob(null);
-                    }}
-                    className="text-xs text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors cursor-pointer"
+                    key={p.label}
+                    type="button"
+                    onClick={() => setZoom(p.val)}
+                    className={`px-1.5 py-0.5 text-[10px] font-mono rounded transition-colors cursor-pointer ${
+                      Math.abs(zoom - p.val) < 0.05
+                        ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 font-semibold'
+                        : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900'
+                    }`}
                   >
-                    Change Signature
+                    {p.label}
                   </button>
-                  <Button
-                    onClick={() => processSignature()}
-                    isLoading={isProcessing}
-                    variant="primary"
-                    size="sm"
-                    leftIcon={<Sparkles className="w-3.5 h-3.5" />}
-                  >
-                    Format Passport Signature
-                  </Button>
-                </div>
+                ))}
               </div>
+            </div>
+
+            {/* Quick Actions: Rotate, Center, Guides, Reset */}
+            <div className="flex items-center gap-1 shrink-0">
+              <button
+                type="button"
+                onClick={rotateCCW}
+                className="p-1 rounded text-zinc-500 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer"
+                title="Rotate -90°"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={rotateCW}
+                className="p-1 rounded text-zinc-500 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer"
+                title="Rotate +90°"
+              >
+                <RotateCw className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowGuides((prev) => !prev)}
+                className={`p-1 rounded cursor-pointer ${
+                  showGuides
+                    ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-950'
+                    : 'text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+                }`}
+                title="Toggle Guides"
+              >
+                {showGuides ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+              </button>
+              <button
+                type="button"
+                onClick={resetTransform}
+                className="p-1 rounded text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer"
+                title="Reset Viewport"
+              >
+                <RefreshCw className="w-3 h-3" />
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Right: Portal Verification & Download Card (5 cols) */}
-        <div className="lg:col-span-5 space-y-4">
-          <div
-            className={`p-5 rounded-lg border space-y-4 ${
-              isDark
-                ? 'bg-zinc-900/50 border-zinc-800'
-                : 'bg-white border-zinc-200'
-            }`}
-          >
-            <div className={`flex items-center justify-between border-b pb-3.5 ${isDark ? 'border-zinc-800' : 'border-zinc-200'}`}>
-              <span className={`text-xs font-semibold flex items-center gap-1.5 ${isDark ? 'text-zinc-200' : 'text-zinc-800'}`}>
-                <ShieldCheck className="w-4 h-4 text-zinc-500" />
+        {/* Right Column: Portal Requirements, Tone Balance & Download (lg:col-span-5 xl:col-span-4) */}
+        <div className="lg:col-span-5 xl:col-span-4 space-y-1.5">
+          <div className="p-2 sm:p-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 space-y-2">
+            {/* Header / Requirements Summary */}
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-1">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
                 MEA Signature Verification
               </span>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300">
-                Verified
+              <span className="text-[10px] font-mono text-zinc-400">
+                400×200 px
               </span>
             </div>
 
-            <div className={`space-y-2 p-3 rounded border text-xs ${isDark ? 'bg-zinc-900/40 border-zinc-800' : 'bg-zinc-50 border-zinc-200'}`}>
-              <div className="flex items-center justify-between">
-                <span className={`flex items-center gap-1.5 ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>
-                  <Check className="w-3.5 h-3.5 text-zinc-900 dark:text-zinc-100" />
-                  Aspect Ratio
+            {/* Compact Requirements Check Rows */}
+            <div className="space-y-1 text-xs">
+              <div className="px-2 py-1 rounded border border-zinc-100 dark:border-zinc-800 bg-zinc-50/60 dark:bg-zinc-850/60 flex items-center justify-between">
+                <span className="text-[11px] text-zinc-600 dark:text-zinc-400">
+                  Size: Under 100 KB (10–100 KB)
                 </span>
-                <span className={`font-mono font-medium ${isDark ? 'text-zinc-200' : 'text-zinc-800'}`}>400 × 200 px (4×2 cm)</span>
+                <span className="font-mono text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                  {resultBlob ? `${currentSizeKb || (resultSizeBytes / 1024).toFixed(1)} KB ✓` : 'Auto-compress'}
+                </span>
               </div>
-
-              <div className="flex items-center justify-between">
-                <span className={`flex items-center gap-1.5 ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>
-                  <Check className="w-3.5 h-3.5 text-zinc-900 dark:text-zinc-100" />
-                  Size Constraint
+              <div className="px-2 py-1 rounded border border-zinc-100 dark:border-zinc-800 bg-zinc-50/60 dark:bg-zinc-850/60 flex items-center justify-between">
+                <span className="text-[11px] text-zinc-600 dark:text-zinc-400">
+                  DPI: 300 DPI Embedded
                 </span>
-                <span className={`font-mono font-medium ${isDark ? 'text-zinc-200' : 'text-zinc-800'}`}>Under 100 KB (10–100 KB)</span>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <span className={`flex items-center gap-1.5 ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>
-                  <Check className="w-3.5 h-3.5 text-zinc-900 dark:text-zinc-100" />
-                  Resolution Header
+                <span className="font-mono text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                  {resultBlob ? `${verifiedDpi || 300} DPI ✓` : 'Pending'}
                 </span>
-                <span className={`font-mono font-medium ${isDark ? 'text-zinc-200' : 'text-zinc-800'}`}>300 DPI Embedded</span>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <span className={`flex items-center gap-1.5 ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>
-                  <Check className="w-3.5 h-3.5 text-zinc-900 dark:text-zinc-100" />
-                  Background Purity
-                </span>
-                <span className={`font-mono font-medium ${isDark ? 'text-zinc-200' : 'text-zinc-800'}`}>Pure White (#FFFFFF)</span>
               </div>
             </div>
 
-            {resultUrl ? (
-              <div className="space-y-3">
-                <div className={`p-3 rounded-md border text-center flex flex-col items-center ${isDark ? 'bg-zinc-950/60 border-zinc-800' : 'bg-zinc-50/60 border-zinc-200'}`}>
-                  <div className="w-[240px] h-[120px] rounded border border-zinc-200 dark:border-zinc-800 bg-white flex items-center justify-center p-2">
-                    <img
-                      src={resultUrl}
-                      alt="Formatted Signature"
-                      className="max-w-full max-h-full object-contain"
-                    />
+            {/* Contrast & Paper Whitening Slider Row */}
+            <div className="pt-1 border-t border-zinc-100 dark:border-zinc-800">
+              <div className="grid grid-cols-2 gap-2 text-[10px]">
+                <div>
+                  <div className="flex justify-between text-zinc-400 mb-0.5">
+                    <span>Ink Contrast</span>
+                    <span className="font-mono">{contrast}%</span>
                   </div>
-                  <div className="mt-2.5 flex items-center gap-2 text-xs">
-                    <span className="font-mono text-zinc-900 dark:text-white font-medium">
-                      {currentSizeKb} KB
-                    </span>
-                    <span className="text-zinc-400">·</span>
-                    <span className="font-mono text-zinc-700 dark:text-zinc-300 font-medium">
-                      {verifiedDpi} DPI
-                    </span>
-                    <span className="text-zinc-400">·</span>
-                    <span className="text-zinc-700 dark:text-zinc-300 flex items-center gap-1 text-[11px] font-mono">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-zinc-900 dark:text-white" /> Portal Ready
-                    </span>
-                  </div>
+                  <input
+                    type="range"
+                    min="100"
+                    max="200"
+                    step="2"
+                    value={contrast}
+                    onChange={(e) => setContrast(parseInt(e.target.value))}
+                    className="w-full h-1 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-zinc-900 dark:accent-zinc-100"
+                  />
                 </div>
+                <div>
+                  <div className="flex justify-between text-zinc-400 mb-0.5">
+                    <span>Paper Clean</span>
+                    <span className="font-mono">{whitenBgThreshold}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="150"
+                    max="255"
+                    step="5"
+                    value={whitenBgThreshold}
+                    onChange={(e) => setWhitenBgThreshold(parseInt(e.target.value))}
+                    className="w-full h-1 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-zinc-900 dark:accent-zinc-100"
+                  />
+                </div>
+              </div>
+            </div>
 
-                <Button
-                  onClick={handleDownload}
-                  variant="primary"
-                  size="lg"
-                  className="w-full"
-                  leftIcon={<Download className="w-4 h-4" />}
-                >
-                  Download Passport Signature
-                </Button>
+            {/* Download CTA Button */}
+            <div className="pt-1">
+              <button
+                type="button"
+                onClick={handleDownload}
+                disabled={!resultBlob || isProcessing}
+                className="w-full py-2 px-3 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-500 active:scale-[0.99] text-white flex items-center justify-center gap-1.5 transition-all shadow-md shadow-emerald-600/20 cursor-pointer disabled:opacity-50"
+              >
+                <Download className="w-3.5 h-3.5 stroke-[2.5]" />
+                <span>
+                  {resultBlob
+                    ? `Download Compliant Signature (${currentSizeKb || (resultSizeBytes / 1024).toFixed(1)} KB)`
+                    : 'Generate to Download'}
+                </span>
+              </button>
 
-                <div className="grid grid-cols-2 gap-2 mt-2">
+              {resultBlob && (
+                <div className="grid grid-cols-2 gap-1.5 pt-1.5">
                   <button
                     type="button"
                     onClick={handleCopySignature}
-                    className="py-2 px-3 rounded-md text-xs font-medium flex items-center justify-center gap-1.5 border border-zinc-200 dark:border-zinc-750 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 transition-colors cursor-pointer"
+                    className="py-1 px-2 rounded-lg text-[11px] font-medium flex items-center justify-center gap-1 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-zinc-700 dark:text-zinc-300 transition cursor-pointer"
                   >
-                    <Copy className="w-3.5 h-3.5 text-zinc-500" />
-                    <span>Copy Image</span>
+                    <Copy className="w-3 h-3 text-zinc-400" />
+                    <span>Copy</span>
                   </button>
                   {isShareSupported() && (
                     <button
                       type="button"
                       onClick={handleShareSignature}
-                      className="py-2 px-3 rounded-md text-xs font-medium flex items-center justify-center gap-1.5 border border-zinc-200 dark:border-zinc-750 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 transition-colors cursor-pointer"
+                      className="py-1 px-2 rounded-lg text-[11px] font-medium flex items-center justify-center gap-1 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-zinc-700 dark:text-zinc-300 transition cursor-pointer"
                     >
-                      <Share2 className="w-3.5 h-3.5 text-zinc-500" />
+                      <Share2 className="w-3 h-3 text-zinc-400" />
                       <span>Share</span>
                     </button>
                   )}
                 </div>
-              </div>
-            ) : (
-              <div className={`p-8 text-center rounded-md border border-dashed text-xs ${isDark ? 'bg-zinc-950/40 border-zinc-800 text-zinc-400' : 'bg-zinc-50 border-zinc-200 text-zinc-500'}`}>
-                <PenTool className="w-8 h-8 mx-auto mb-2 opacity-40 text-zinc-400" />
-                Upload physical signature photo to auto-whiten and format for Passport Seva upload.
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Bottom Keyboard Hotkey Helper Strip */}
-      <div className="flex flex-wrap items-center justify-between gap-2 px-3.5 py-2.5 rounded-lg border text-xs bg-zinc-50 dark:bg-zinc-850/60 border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 font-mono select-none">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
-            <Keyboard className="w-3.5 h-3.5 text-zinc-500" />
-            Hotkeys:
-          </span>
-          <span className="inline-flex items-center gap-1">
-            <kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-750 text-zinc-800 dark:text-zinc-200 font-semibold text-[10px]">Ctrl+V</kbd> Paste
-          </span>
-          <span className="opacity-40">·</span>
-          <span className="inline-flex items-center gap-1">
-            <kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-750 text-zinc-800 dark:text-zinc-200 font-semibold text-[10px]">↑↓←→</kbd> Pan
-          </span>
-          <span className="opacity-40">·</span>
-          <span className="inline-flex items-center gap-1">
-            <kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-750 text-zinc-800 dark:text-zinc-200 font-semibold text-[10px]">+/-</kbd> Zoom
-          </span>
-          <span className="opacity-40">·</span>
-          <span className="inline-flex items-center gap-1">
-            <kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-750 text-zinc-800 dark:text-zinc-200 font-semibold text-[10px]">T</kbd> Rotate
-          </span>
-          <span className="opacity-40">·</span>
-          <span className="inline-flex items-center gap-1">
-            <kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-750 text-zinc-800 dark:text-zinc-200 font-semibold text-[10px]">G</kbd> Guides
-          </span>
-          <span className="opacity-40">·</span>
-          <span className="inline-flex items-center gap-1">
-            <kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-750 text-zinc-800 dark:text-zinc-200 font-semibold text-[10px]">↵ Enter</kbd> Format
-          </span>
-          <span className="opacity-40">·</span>
-          <span className="inline-flex items-center gap-1">
-            <kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-750 text-zinc-800 dark:text-zinc-200 font-semibold text-[10px]">D</kbd> Download
-          </span>
-          <span className="opacity-40">·</span>
-          <span className="inline-flex items-center gap-1">
-            <kbd className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-750 text-zinc-800 dark:text-zinc-200 font-semibold text-[10px]">C</kbd> Copy
-          </span>
-        </div>
-        <span className="text-[11px] text-zinc-500 font-medium">Zero Mouse Latency</span>
+      {/* Guide Section */}
+      <div className="pt-2">
+        <GovToolGuideSection toolId="passport-signature-resize" />
       </div>
-
-      {/* Authoritative Verified Guide, Official Specifications & FAQs */}
-      <GovToolGuideSection toolId="passport-signature-resize" />
     </div>
   );
 };
