@@ -239,322 +239,292 @@ export const WatermarkerTool: React.FC<{
   }, [currentImage, resultBlob, handleDownload, resetImage, onNotify]);
 
   return (
-    <div className="w-full max-w-7xl mx-auto space-y-6 sm:space-y-8 animate-in fade-in duration-200 select-none">
-      {/* Header Section */}
-      <div className="text-center space-y-2.5 max-w-2xl mx-auto">
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-medium uppercase tracking-wider text-zinc-600 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-850">
-          <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-          <span>100% Client-Side Engine · Zero Uploads</span>
-        </div>
-        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-zinc-950 dark:text-zinc-50">
-          Image Watermarker
-        </h1>
-        <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 max-w-md mx-auto leading-relaxed">
-          Protect photos and artwork with custom copyright text, logo stamps, or repeating anti-theft diagonal tiles.
-        </p>
-      </div>
-
+    <div className="w-full max-w-6xl mx-auto space-y-2 sm:space-y-2.5 animate-in fade-in duration-200 select-none">
       {!currentImage ? (
-        <div className="max-w-3xl mx-auto">
-          <Dropzone
-            onFilesSelected={(files) => loadFile(files[0])}
-            title="Drop photo to watermark"
-            description="JPEG, PNG, WebP supported · 100% Client-Side"
-          />
+        <div className="space-y-3 sm:space-y-3.5">
+          {/* Header Section */}
+          <div className="text-center space-y-1 max-w-lg mx-auto">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-medium uppercase tracking-wider text-zinc-600 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+              <span>100% Client-Side Engine · Zero Uploads</span>
+            </div>
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-950 dark:text-zinc-50">
+              Image Watermarker
+            </h1>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 max-w-sm mx-auto leading-relaxed">
+              Protect photos and artwork with custom copyright text, logo stamps, or repeating anti-theft diagonal tiles.
+            </p>
+          </div>
+
+          <div className="max-w-[700px] mx-auto">
+            <Dropzone
+              onFilesSelected={(files) => loadFile(files[0])}
+              title="Drop photo to watermark"
+              description="JPEG, PNG, WebP supported · 100% Client-Side"
+              className="h-[230px] sm:h-[260px] lg:h-[280px]"
+            />
+          </div>
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-2 sm:space-y-2.5">
           {/* Active Workspace Top Header Bar */}
-          <div
-            className={`flex flex-wrap items-center justify-between gap-4 p-3.5 sm:p-4 border rounded-xl ${
-              isDark
-                ? 'bg-zinc-900 border-zinc-800 text-zinc-100'
-                : 'bg-white border-zinc-200 text-zinc-900'
-            }`}
-          >
-            <div className="flex items-center gap-3 min-w-0">
-              <div
-                className={`w-10 h-10 rounded-lg overflow-hidden shrink-0 flex items-center justify-center border ${
-                  isDark ? 'bg-zinc-950 border-zinc-800' : 'bg-zinc-100 border-zinc-200'
-                }`}
-              >
-                <img
-                  src={currentImage.previewUrl}
-                  alt="Source"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <div className="min-w-0">
-                <h3 className={`text-xs sm:text-sm font-semibold truncate ${isDark ? 'text-white' : 'text-zinc-900'}`}>
-                  {currentImage.name}
-                </h3>
-                <div className={`flex items-center gap-2 text-[11px] font-mono mt-0.5 ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
-                  <span>{currentImage.width} × {currentImage.height} px</span>
-                  {resultBlob && (
-                    <>
-                      <span>·</span>
-                      <span className="text-emerald-500 font-semibold">{formatBytes(resultBlob.size)}</span>
-                    </>
-                  )}
-                </div>
-              </div>
+          <div className="flex items-center justify-between gap-2 px-1 py-0.5">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="text-xs sm:text-sm font-bold text-zinc-900 dark:text-zinc-100 truncate">
+                Image Watermarker
+              </span>
+              <span className="hidden md:inline-block text-[11px] font-mono text-zinc-400 truncate max-w-[120px]">
+                {currentImage.name}
+              </span>
+              <span className="hidden sm:inline-block text-[10px] font-mono text-zinc-400">
+                ({currentImage.width}×{currentImage.height}px)
+              </span>
             </div>
 
-            <div className="flex items-center gap-2">
-              <button
-                onClick={resetImage}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
-                  isDark
-                    ? 'bg-zinc-800 hover:bg-zinc-750 text-zinc-200'
-                    : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700'
-                }`}
-              >
-                <RefreshCw className="w-3.5 h-3.5" />
-                <span>Change Photo</span>
-              </button>
-
-              <button
-                disabled={!resultBlob}
-                onClick={handleCopy}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer disabled:opacity-50 ${
-                  isDark
-                    ? 'bg-zinc-800 hover:bg-zinc-750 text-zinc-200'
-                    : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700'
-                }`}
-              >
-                <Copy className="w-3.5 h-3.5" />
-                <span>Copy</span>
-              </button>
-
-              {isShareSupported() && (
-                <button
-                  disabled={!resultBlob}
-                  onClick={handleShare}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer disabled:opacity-50 ${
-                    isDark
-                      ? 'bg-zinc-800 hover:bg-zinc-750 text-zinc-200'
-                      : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700'
-                  }`}
-                >
-                  <Share2 className="w-3.5 h-3.5" />
-                  <span>Share</span>
-                </button>
-              )}
-
-              <button
-                disabled={!resultBlob}
-                onClick={handleDownload}
-                className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
-                  isDark
-                    ? 'bg-zinc-100 hover:bg-zinc-200 text-zinc-900'
-                    : 'bg-zinc-900 hover:bg-zinc-800 text-white'
-                }`}
-              >
-                <Download className="w-3.5 h-3.5" />
-                <span>Download Photo</span>
-              </button>
-            </div>
+            <button
+              onClick={resetImage}
+              className="inline-flex items-center gap-1 py-1 px-2 rounded-lg text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+            >
+              <RefreshCw className="w-3 h-3" />
+              <span>Change Photo</span>
+            </button>
           </div>
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          {/* Controls */}
-          <div className="lg:col-span-5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 space-y-5">
-            <div className="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800">
-              {/* Type Switcher */}
-              <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1 rounded-lg text-xs">
-                <button
-                  onClick={() => setType('text')}
-                  className={`px-3 py-1.5 rounded-md font-semibold transition-colors cursor-pointer ${
-                    type === 'text'
-                      ? 'bg-white dark:bg-zinc-700 text-zinc-950 dark:text-white shadow-xs'
-                      : 'text-zinc-600 dark:text-zinc-400'
-                  }`}
-                >
-                  Text Watermark
-                </button>
-                <button
-                  onClick={() => setType('logo')}
-                  className={`px-3 py-1.5 rounded-md font-semibold transition-colors cursor-pointer ${
-                    type === 'logo'
-                      ? 'bg-white dark:bg-zinc-700 text-zinc-950 dark:text-white shadow-xs'
-                      : 'text-zinc-600 dark:text-zinc-400'
-                  }`}
-                >
-                  Logo Image
-                </button>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-2 sm:gap-2.5 items-start">
+            {/* Left Column: Live Preview Canvas (lg:col-span-7 xl:col-span-8) */}
+            <div className="lg:col-span-7 xl:col-span-8 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-2 sm:p-2.5 space-y-1.5">
+              <div className="flex items-center justify-between px-0.5">
+                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                  Live Stamped Output
+                </span>
+                {resultBlob && (
+                  <span className="text-[10px] font-mono text-emerald-500 font-semibold">
+                    {formatBytes(resultBlob.size)}
+                  </span>
+                )}
               </div>
 
-              <Button variant="outline" size="sm" onClick={resetImage} leftIcon={<RefreshCw className="w-3.5 h-3.5" />}>
-                Change Photo
-              </Button>
+              <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-100/60 dark:bg-zinc-950 p-2 flex items-center justify-center h-[230px] sm:h-[260px] lg:h-[280px] xl:h-[300px]">
+                {resultUrl && (
+                  <img
+                    src={resultUrl}
+                    alt="Watermarked Preview"
+                    className="max-h-[220px] sm:max-h-[250px] lg:max-h-[270px] xl:max-h-[290px] max-w-full object-contain rounded-md shadow-xs"
+                  />
+                )}
+              </div>
             </div>
 
-            {type === 'text' ? (
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">
-                    Watermark Text
-                  </label>
-                  <input
-                    type="text"
-                    value={text}
-                    onChange={(e) => setText(e.target.value)}
-                    placeholder="e.g. © 2026 Studio"
-                    className="w-full px-3 py-2 text-xs bg-zinc-50 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white rounded-lg focus:outline-none focus:ring-1 focus:ring-zinc-500"
-                  />
+            {/* Right Column: Controls & Download (lg:col-span-5 xl:col-span-4) */}
+            <div className="lg:col-span-5 xl:col-span-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-2 sm:p-2.5 space-y-2">
+              <div className="flex items-center justify-between pb-1.5 border-b border-zinc-100 dark:border-zinc-800">
+                {/* Type Switcher */}
+                <div className="flex bg-zinc-100 dark:bg-zinc-800 p-0.5 rounded-lg text-xs">
+                  <button
+                    onClick={() => setType('text')}
+                    className={`px-2.5 py-0.5 rounded-md text-[11px] font-semibold transition-colors cursor-pointer ${
+                      type === 'text'
+                        ? 'bg-white dark:bg-zinc-700 text-zinc-950 dark:text-white shadow-xs'
+                        : 'text-zinc-600 dark:text-zinc-400'
+                    }`}
+                  >
+                    Text
+                  </button>
+                  <button
+                    onClick={() => setType('logo')}
+                    className={`px-2.5 py-0.5 rounded-md text-[11px] font-semibold transition-colors cursor-pointer ${
+                      type === 'logo'
+                        ? 'bg-white dark:bg-zinc-700 text-zinc-950 dark:text-white shadow-xs'
+                        : 'text-zinc-600 dark:text-zinc-400'
+                    }`}
+                  >
+                    Logo
+                  </button>
                 </div>
 
-                <Slider
-                  label="Font Scale"
-                  value={fontSize}
-                  min={16}
-                  max={90}
-                  unit="px"
-                  onChange={setFontSize}
-                />
+                <span className="text-[10px] font-mono text-zinc-400">Opacity: {opacity}%</span>
+              </div>
 
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">Text Color</label>
-                  <div className="flex items-center gap-2">
+              {type === 'text' ? (
+                <div className="space-y-1.5">
+                  <div>
                     <input
-                      type="color"
-                      value={color}
-                      onChange={(e) => setColor(e.target.value)}
-                      className="w-7 h-7 rounded border-0 bg-transparent cursor-pointer p-0"
+                      type="text"
+                      value={text}
+                      onChange={(e) => setText(e.target.value)}
+                      placeholder="e.g. © 2026 Studio"
+                      className="w-full px-2.5 py-1 text-xs bg-zinc-50 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white rounded-lg focus:outline-none"
                     />
-                    {['#ffffff', '#000000', '#f59e0b', '#ef4444'].map((c) => (
-                      <button
-                        key={c}
-                        onClick={() => setColor(c)}
-                        className="w-6 h-6 rounded border border-zinc-300 dark:border-zinc-700 shadow-xs"
-                        style={{ backgroundColor: c }}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <div className="flex justify-between text-[10px] font-medium text-zinc-600 dark:text-zinc-400 mb-0.5">
+                        <span>Font Size</span>
+                        <span className="font-mono text-zinc-400">{fontSize}px</span>
+                      </div>
+                      <input
+                        type="range"
+                        min={16}
+                        max={90}
+                        value={fontSize}
+                        onChange={(e) => setFontSize(Number(e.target.value))}
+                        className="w-full h-1 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-zinc-900 dark:accent-zinc-100"
                       />
-                    ))}
+                    </div>
+                    <div>
+                      <div className="flex justify-between text-[10px] font-medium text-zinc-600 dark:text-zinc-400 mb-0.5">
+                        <span>Opacity</span>
+                        <span className="font-mono text-zinc-400">{opacity}%</span>
+                      </div>
+                      <input
+                        type="range"
+                        min={10}
+                        max={100}
+                        value={opacity}
+                        onChange={(e) => setOpacity(Number(e.target.value))}
+                        className="w-full h-1 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-zinc-900 dark:accent-zinc-100"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        type="color"
+                        value={color}
+                        onChange={(e) => setColor(e.target.value)}
+                        className="w-5 h-5 rounded border-0 bg-transparent cursor-pointer p-0"
+                      />
+                      {['#ffffff', '#000000', '#f59e0b', '#ef4444'].map((c) => (
+                        <button
+                          key={c}
+                          onClick={() => setColor(c)}
+                          className="w-4 h-4 rounded border border-zinc-300 dark:border-zinc-700 shadow-xs cursor-pointer"
+                          style={{ backgroundColor: c }}
+                        />
+                      ))}
+                    </div>
+
+                    <label className="flex items-center gap-1.5 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={tileRepeat}
+                        onChange={(e) => setTileRepeat(e.target.checked)}
+                        className="rounded border-zinc-300 text-zinc-900 focus:ring-zinc-900 w-3.5 h-3.5"
+                      />
+                      <span className="text-[11px] font-medium text-zinc-700 dark:text-zinc-300">
+                        Tile Repeat
+                      </span>
+                    </label>
                   </div>
                 </div>
-
-                <label className="flex items-center gap-2 cursor-pointer select-none pt-2 border-t border-zinc-100 dark:border-zinc-800">
-                  <input
-                    type="checkbox"
-                    checked={tileRepeat}
-                    onChange={(e) => setTileRepeat(e.target.checked)}
-                    className="rounded border-zinc-300 text-zinc-900 focus:ring-zinc-900 w-4 h-4"
-                  />
-                  <span className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">
-                    Repeat diagonally across entire image (Tile Mode)
-                  </span>
-                </label>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">
-                    Upload PNG Logo
-                  </label>
+              ) : (
+                <div className="space-y-1.5">
                   <input
                     type="file"
                     accept="image/png,image/svg+xml,image/jpeg"
                     onChange={handleLogoUpload}
-                    className="text-xs text-zinc-600 dark:text-zinc-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-zinc-900 file:text-white dark:file:bg-zinc-100 dark:file:text-zinc-900 hover:file:opacity-90 cursor-pointer"
+                    className="text-[11px] text-zinc-600 dark:text-zinc-400 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-[10px] file:font-semibold file:bg-zinc-900 file:text-white dark:file:bg-zinc-100 dark:file:text-zinc-900 cursor-pointer w-full"
                   />
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <div className="flex justify-between text-[10px] font-medium text-zinc-600 dark:text-zinc-400 mb-0.5">
+                        <span>Logo Scale</span>
+                        <span className="font-mono text-zinc-400">{logoScale}%</span>
+                      </div>
+                      <input
+                        type="range"
+                        min={5}
+                        max={60}
+                        value={logoScale}
+                        onChange={(e) => setLogoScale(Number(e.target.value))}
+                        className="w-full h-1 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-zinc-900 dark:accent-zinc-100"
+                      />
+                    </div>
+                    <div>
+                      <div className="flex justify-between text-[10px] font-medium text-zinc-600 dark:text-zinc-400 mb-0.5">
+                        <span>Opacity</span>
+                        <span className="font-mono text-zinc-400">{opacity}%</span>
+                      </div>
+                      <input
+                        type="range"
+                        min={10}
+                        max={100}
+                        value={opacity}
+                        onChange={(e) => setOpacity(Number(e.target.value))}
+                        className="w-full h-1 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-zinc-900 dark:accent-zinc-100"
+                      />
+                    </div>
+                  </div>
                 </div>
+              )}
 
-                <Slider
-                  label="Logo Width Scale"
-                  value={logoScale}
-                  min={5}
-                  max={60}
-                  unit="%"
-                  onChange={setLogoScale}
-                />
-              </div>
-            )}
-
-            <Slider
-              label="Opacity"
-              value={opacity}
-              min={10}
-              max={100}
-              unit="%"
-              onChange={setOpacity}
-            />
-
-            {!tileRepeat && (
-              <div className="space-y-1.5">
-                <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300">Anchor Position</label>
-                <div className="grid grid-cols-3 gap-1.5 max-w-[200px]">
-                  {(['top-left', 'top-center', 'top-right', 'center', 'bottom-left', 'bottom-center', 'bottom-right'] as Position[]).map((pos) => (
-                    <button
-                      key={pos}
-                      onClick={() => setPosition(pos)}
-                      className={`h-8 rounded-lg text-[10px] font-mono transition-colors cursor-pointer ${
-                        position === pos
-                          ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-xs'
-                          : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-750'
-                      }`}
-                    >
-                      {pos.replace('bottom-', 'b-').replace('top-', 't-')}
-                    </button>
-                  ))}
+              {!tileRepeat && (
+                <div className="space-y-1 pt-1 border-t border-zinc-100 dark:border-zinc-800">
+                  <span className="text-[10px] font-mono uppercase text-zinc-400 block">Position</span>
+                  <div className="grid grid-cols-7 gap-1">
+                    {(['top-left', 'top-center', 'top-right', 'center', 'bottom-left', 'bottom-center', 'bottom-right'] as Position[]).map((pos) => (
+                      <button
+                        key={pos}
+                        onClick={() => setPosition(pos)}
+                        className={`py-1 rounded text-[9px] font-mono transition-colors cursor-pointer text-center truncate ${
+                          position === pos
+                            ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-xs font-semibold'
+                            : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200'
+                        }`}
+                      >
+                        {pos.replace('bottom-', 'B-').replace('top-', 'T-').replace('center', 'CTR')}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {resultBlob && (
-              <div className="space-y-2">
-                <Button
-                  size="xl"
-                  variant="primary"
+              {/* Primary Download CTA Button */}
+              <div className="pt-1">
+                <button
+                  type="button"
+                  disabled={!resultBlob}
                   onClick={handleDownload}
-                  className="w-full bg-emerald-600 hover:bg-emerald-700 border-emerald-600 text-white"
-                  leftIcon={<Download className="w-5 h-5" />}
+                  className="w-full py-2 px-3 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-500 active:scale-[0.99] text-white flex items-center justify-center gap-1.5 transition-all shadow-md shadow-emerald-600/20 cursor-pointer disabled:opacity-50"
                 >
-                  Download Protected Photo ({formatBytes(resultBlob.size)})
-                </Button>
+                  <Download className="w-3.5 h-3.5 stroke-[2.5]" />
+                  <span>Download Watermarked Photo</span>
+                </button>
 
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 gap-1.5 pt-1.5">
                   <button
                     type="button"
+                    disabled={!resultBlob}
                     onClick={handleCopy}
-                    className="py-2 px-3 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-zinc-800 dark:text-zinc-200 transition-colors cursor-pointer"
+                    className="py-1 px-2 rounded-lg text-[11px] font-medium flex items-center justify-center gap-1 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-zinc-700 dark:text-zinc-300 transition cursor-pointer disabled:opacity-40"
                   >
-                    <Copy className="w-3.5 h-3.5 text-zinc-500" />
-                    <span>Copy Image</span>
+                    <Copy className="w-3 h-3 text-zinc-400" />
+                    <span>Copy</span>
                   </button>
                   {isShareSupported() && (
                     <button
                       type="button"
+                      disabled={!resultBlob}
                       onClick={handleShare}
-                      className="py-2 px-3 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-zinc-800 dark:text-zinc-200 transition-colors cursor-pointer"
+                      className="py-1 px-2 rounded-lg text-[11px] font-medium flex items-center justify-center gap-1 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-zinc-700 dark:text-zinc-300 transition cursor-pointer disabled:opacity-40"
                     >
-                      <Share2 className="w-3.5 h-3.5 text-zinc-500" />
+                      <Share2 className="w-3 h-3 text-zinc-400" />
                       <span>Share</span>
                     </button>
                   )}
                 </div>
               </div>
-            )}
-          </div>
-
-          {/* Preview */}
-          <div className="lg:col-span-7 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 space-y-4">
-            <span className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 uppercase tracking-wider block">
-              Live Stamped Output
-            </span>
-            <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-100/60 dark:bg-zinc-950 p-4 flex items-center justify-center min-h-[380px]">
-              {resultUrl && (
-                <img
-                  src={resultUrl}
-                  alt="Watermarked Preview"
-                  className="max-h-[380px] max-w-full object-contain rounded-lg shadow-sm"
-                />
-              )}
             </div>
           </div>
         </div>
-      </div>
       )}
       {/* Educational Guide, Specs, Pro Tips & Schema-Matched FAQs */}
-      <ImageToolGuideSection toolId="watermark-image" />
+      <div className="pt-2">
+        <ImageToolGuideSection toolId="watermark-image" />
+      </div>
     </div>
   );
 };
