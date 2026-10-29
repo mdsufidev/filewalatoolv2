@@ -751,32 +751,32 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
   ------------------------------------------------------------- */
   if (!sourceImage) {
     return (
-      <div className="w-full max-w-7xl mx-auto space-y-6 sm:space-y-8 animate-in fade-in duration-300 select-none">
+      <div className="w-full max-w-6xl mx-auto space-y-4 sm:space-y-5 animate-in fade-in duration-300 select-none">
         {/* Header Section */}
-        <div className="text-center space-y-2 max-w-2xl mx-auto">
+        <div className="text-center space-y-1.5 max-w-xl mx-auto">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-medium uppercase tracking-wider text-zinc-600 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-850">
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
             <span>100% Client-Side Engine · Zero Uploads</span>
           </div>
 
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-zinc-950 dark:text-zinc-50">
-            Image Compressor
+            Image Compressor to KB
           </h1>
-          <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 max-w-md mx-auto leading-relaxed">
+          <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 max-w-md mx-auto leading-relaxed">
             Reduce image file sizes directly in your browser without quality loss.
           </p>
         </div>
 
         {/* Error notification if any */}
         {errorMessage && (
-          <div className="max-w-xl mx-auto p-3.5 rounded-xl border border-rose-500/30 bg-rose-500/10 text-rose-500 text-xs flex items-center gap-2">
+          <div className="max-w-[740px] mx-auto p-3 rounded-xl border border-rose-500/30 bg-rose-500/10 text-rose-500 text-xs flex items-center gap-2">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{errorMessage}</span>
           </div>
         )}
 
-        {/* Minimalist 2D Flat Dropzone (Centered & Width-Constrained to max-w-xl) */}
-        <div className="w-full max-w-xl mx-auto">
+        {/* Minimalist 2D Flat Dropzone (Sized 1:1 to Canvas Workspace: 740px × 360px) */}
+        <div className="w-full max-w-[740px] mx-auto">
           <div
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
@@ -790,14 +790,14 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
               }
             }}
             aria-label="Upload image to compress"
-            className={`relative group border border-dashed rounded-xl p-6 sm:p-8 text-center cursor-pointer transition-colors duration-150 select-none outline-none ${
+            className={`relative group border border-dashed rounded-xl h-[300px] sm:h-[340px] lg:h-[360px] flex flex-col items-center justify-center p-6 text-center cursor-pointer transition-all duration-150 select-none outline-none ${
               isDragOver
                 ? isDark
-                  ? 'border-zinc-500 bg-zinc-850/50'
-                  : 'border-zinc-500 bg-zinc-50'
+                  ? 'border-red-500 bg-red-500/10'
+                  : 'border-red-500 bg-red-50/60'
                 : isDark
-                  ? 'border-zinc-800 bg-zinc-900/60 hover:border-zinc-700 hover:bg-zinc-900'
-                  : 'border-zinc-300 bg-white hover:border-zinc-400 hover:bg-zinc-50/60'
+                  ? 'border-zinc-800 bg-zinc-900/60 hover:border-zinc-700 hover:bg-zinc-900 shadow-xs'
+                  : 'border-zinc-300 bg-white hover:border-zinc-400 hover:bg-zinc-50/60 shadow-xs'
             }`}
           >
             <input
@@ -815,32 +815,38 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
               }}
             />
 
-            <div className="flex flex-col items-center justify-center space-y-2.5">
-              <div className="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 flex items-center justify-center shrink-0 transition-transform duration-200 ease-out group-hover:scale-110">
-                <UploadCloud className="w-5 h-5 stroke-[2]" />
+            <div className="flex flex-col items-center justify-center space-y-3 max-w-sm">
+              <div className="w-12 h-12 rounded-xl bg-zinc-100 dark:bg-zinc-850 text-zinc-600 dark:text-zinc-300 flex items-center justify-center shrink-0 transition-transform duration-200 ease-out group-hover:scale-110 border border-zinc-200/60 dark:border-zinc-800">
+                <UploadCloud className="w-6 h-6 stroke-[2]" />
               </div>
 
-              <div className="space-y-0.5">
+              <div className="space-y-1">
                 <h3 className="text-sm sm:text-base font-semibold text-zinc-900 dark:text-zinc-100">
                   Drop an image here or browse
                 </h3>
                 <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                  Supports PNG, JPG, WebP · Press Ctrl+V to paste
+                  Supports PNG, JPG, WebP, AVIF, HEIC · Press Ctrl+V to paste
                 </p>
               </div>
 
-              <div className="pt-1.5">
+              <div className="pt-1">
                 <button
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
                     handleLoadSample();
                   }}
-                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-zinc-700 dark:text-zinc-300 transition-colors cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-zinc-700 dark:text-zinc-300 transition-colors cursor-pointer border border-zinc-200/60 dark:border-zinc-700/60"
                 >
                   <Sparkles className="w-3.5 h-3.5 text-blue-500" />
                   <span>Try Sample Image</span>
                 </button>
+              </div>
+
+              <div className="pt-2 flex items-center gap-2 text-[11px] font-mono text-zinc-400">
+                <span>Max 50MB</span>
+                <span>·</span>
+                <span>Direct RAM Processing</span>
               </div>
             </div>
           </div>
@@ -864,7 +870,7 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
       onDragOver={handleWorkspaceDragOver}
       onDragLeave={handleWorkspaceDragLeave}
       onDrop={handleWorkspaceDrop}
-      className="w-full max-w-7xl mx-auto space-y-3.5 sm:space-y-4 animate-in fade-in duration-200 relative select-none"
+      className="w-full max-w-6xl mx-auto space-y-3.5 sm:space-y-4 animate-in fade-in duration-200 relative select-none"
     >
       {/* Hidden input for replacing image from workspace */}
       <input
@@ -965,8 +971,8 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
               </div>
             </div>
 
-            {/* Comparison Canvas Area (Height-Optimized to fit on 1080p/768p viewports) */}
-            <div className="relative rounded-xl overflow-hidden bg-black/15 h-[270px] sm:h-[330px] lg:h-[360px] flex items-center justify-center border border-zinc-200/50 dark:border-zinc-800/60">
+            {/* Comparison Canvas Area (Height-Optimized 1:1 matching Dropzone: 300px/340px/360px) */}
+            <div className="relative rounded-xl overflow-hidden bg-black/15 h-[300px] sm:h-[340px] lg:h-[360px] flex items-center justify-center border border-zinc-200/50 dark:border-zinc-800/60">
               {isProcessing && (
                 <div className="absolute inset-0 z-20 bg-zinc-950/60 backdrop-blur-xs flex flex-col items-center justify-center space-y-3">
                   <div className="w-8 h-8 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
@@ -982,8 +988,8 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
                   processedSrc={compressedResult.url}
                   originalLabel={`Original`}
                   processedLabel={`Compressed`}
-                  maxHeightClass="max-h-[250px] sm:max-h-[310px] lg:max-h-[340px]"
-                  className="max-h-[260px] sm:max-h-[320px] lg:max-h-[350px] w-full"
+                  maxHeightClass="max-h-[280px] sm:max-h-[320px] lg:max-h-[340px]"
+                  className="max-h-[290px] sm:max-h-[330px] lg:max-h-[350px] w-full"
                 />
               ) : (
                 <div className="relative max-h-full max-w-full flex items-center justify-center overflow-hidden">
@@ -991,7 +997,7 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
                     src={sourceImage.previewUrl}
                     alt="Original Preview"
                     draggable={false}
-                    className="max-h-[250px] sm:max-h-[310px] lg:max-h-[340px] max-w-full object-contain select-none"
+                    className="max-h-[280px] sm:max-h-[320px] lg:max-h-[340px] max-w-full object-contain select-none"
                   />
                 </div>
               )}
