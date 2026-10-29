@@ -32,6 +32,9 @@ export function useImageUpload() {
     setIsLoading(true);
     setError(null);
 
+    // Yield to the event loop so the browser renders the loading state before heavy image decoding
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
     try {
       const img = await CanvasEngine.loadImage(file);
       const url = img.src && img.src.startsWith('blob:') ? img.src : createSafeObjectURL(file);

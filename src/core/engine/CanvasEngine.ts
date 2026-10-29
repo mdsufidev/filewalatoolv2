@@ -111,7 +111,16 @@ export class CanvasEngine {
 
     return new Promise((resolve, reject) => {
       const img = new Image();
-      img.onload = () => resolve(img);
+      img.onload = async () => {
+        if ('decode' in img) {
+          try {
+            await img.decode();
+          } catch {
+            // fallback
+          }
+        }
+        resolve(img);
+      };
       img.onerror = () => reject(new Error('Failed to load image. File may be corrupted or unsupported format.'));
       img.crossOrigin = 'anonymous';
       img.src = source;

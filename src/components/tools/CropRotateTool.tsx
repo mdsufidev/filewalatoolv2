@@ -379,6 +379,8 @@ export const CropRotateTool: React.FC<CropRotateToolProps> = ({ onNotify, initia
 
       try {
         setIsProcessing(true);
+        // Yield to the event loop so loading state renders immediately
+        await new Promise((resolve) => setTimeout(resolve, 0));
         revokeAllTrackedUrls();
 
         const img = await CanvasEngine.loadImage(file);

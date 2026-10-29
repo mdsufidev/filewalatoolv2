@@ -227,6 +227,8 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
 
     // 4. Load Image safely with EXIF orientation correction
     setIsProcessing(true);
+    // Yield to let the loading spinner render before image decoding
+    await new Promise((resolve) => setTimeout(resolve, 0));
     try {
       const img = await CanvasEngine.loadImage(file);
       const objectUrl = img.src.startsWith('blob:') ? img.src : registerObjectUrl(URL.createObjectURL(file));
@@ -316,6 +318,9 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
 
     setIsProcessing(true);
     setErrorMessage(null);
+
+    // Yield to the event loop so the processing spinner and UI transitions render smoothly
+    await new Promise((resolve) => setTimeout(resolve, 0));
 
     try {
       // Determine target MIME type
@@ -564,7 +569,7 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
 
     const timer = setTimeout(() => {
       executeCompression();
-    }, 180);
+    }, 400);
 
     return () => clearTimeout(timer);
   }, [quality, targetKb, outputFormat, scalePercentage, mode, sourceImage, imageElement, executeCompression]);

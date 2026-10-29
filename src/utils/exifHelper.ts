@@ -12,7 +12,19 @@
  */
 export async function readExifOrientation(source: Blob | ArrayBuffer): Promise<number> {
   try {
-    const buffer = source instanceof ArrayBuffer ? source : await source.arrayBuffer();
+    let buffer: ArrayBuffer;
+    if (source instanceof ArrayBuffer) {
+      buffer = source;
+    } else {
+      // Non-JPEG files never contain JPEG APP1 EXIF data - return immediately without reading
+      if (source.type && !source.type.includes('jpeg') && !source.type.includes('jpg')) {
+        return 1;
+      }
+      // EXIF APP1 metadata is strictly located within the header (first 64KB).
+      // Slicing to 64KB prevents allocating entire 10-50MB files into heap memory.
+      const slice = source.slice(0, 65536);
+      buffer = await slice.arrayBuffer();
+    }
     const view = new DataView(buffer);
 
     // Verify JPEG SOI marker (0xFF, 0xD8)
@@ -179,6 +191,13 @@ export async function loadOrientedImage(source: File | Blob | string): Promise<O
       img.onerror = () => reject(new Error('Failed to load image from URL'));
       img.src = source;
     });
+    if ('decode' in img) {
+      try {
+        await img.decode();
+      } catch {
+        // Fallback if background decode fails
+      }
+    }
     return {
       img,
       width: img.naturalWidth || img.width,
@@ -189,8 +208,13 @@ export async function loadOrientedImage(source: File | Blob | string): Promise<O
     };
   }
 
-  // Parse EXIF orientation
-  const orientation = await readExifOrientation(source);
+  // Check if file is JPEG. Non-JPEGs (PNG, WebP, AVIF, GIF, SVG) don't need EXIF parsing
+  const isJpeg =
+    (source.type ? (source.type.includes('jpeg') || source.type.includes('jpg')) : false) ||
+    ('name' in source && typeof (source as File).name === 'string' && /\.(jpe?g)$/i.test((source as File).name));
+
+  // Parse EXIF orientation only for JPEGs
+  const orientation = isJpeg ? await readExifOrientation(source) : 1;
 
   // If orientation is 1 (standard) or not JPEG, load directly
   if (orientation <= 1) {
@@ -204,6 +228,14 @@ export async function loadOrientedImage(source: File | Blob | string): Promise<O
       };
       img.src = objectUrl;
     });
+
+    if ('decode' in img) {
+      try {
+        await img.decode();
+      } catch {
+        // Fallback
+      }
+    }
 
     return {
       img,
@@ -297,6 +329,14 @@ export async function loadOrientedImage(source: File | Blob | string): Promise<O
     };
     uprightImg.src = uprightUrl;
   });
+
+  if ('decode' in uprightImg) {
+    try {
+      await uprightImg.decode();
+    } catch {
+      // Fallback
+    }
+  }
 
   return {
     img: uprightImg,

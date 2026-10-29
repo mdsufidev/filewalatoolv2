@@ -295,6 +295,9 @@ export const FormatConverterSuite: React.FC<FormatConverterSuiteProps> = ({
     setConvertedPreviewUrl(null);
     setIsProcessing(true);
 
+    // Yield to the event loop so loading state renders immediately
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
     try {
       let img: HTMLImageElement;
       let preview: string;

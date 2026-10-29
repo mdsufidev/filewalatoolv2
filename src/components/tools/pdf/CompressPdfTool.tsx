@@ -218,6 +218,9 @@ export const CompressPdfTool: React.FC<CompressPdfToolProps> = ({ onNotify, init
       setFile(uploadedFile);
       setIsValidating(true);
 
+      // Yield to the event loop so the validating status renders before heavy PDF parsing
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
       let inspectDoc: any = null;
       try {
         const arrayBuffer = await uploadedFile.arrayBuffer();

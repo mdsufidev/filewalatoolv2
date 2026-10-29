@@ -228,12 +228,12 @@ function MainApp({ initialPath, toolComponents }: { initialPath?: string; toolCo
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
-  // Safe window scroll helper with fallback
+  // Instant window scroll helper to prevent layout thrashing and animation collision during tool mounting
   const safeScrollToTop = useCallback(() => {
     try {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    } catch {
       window.scrollTo(0, 0);
+    } catch {
+      // fallback
     }
   }, []);
 
@@ -483,6 +483,34 @@ function MainApp({ initialPath, toolComponents }: { initialPath?: string; toolCo
       window.removeEventListener('popstate', handleUrlRoute);
       window.removeEventListener('hashchange', handleUrlRoute);
     };
+  }, []);
+
+  // Preload heavy tool engine suites during idle time so tool workspace switches & drops are instantaneous
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const preloadSuites = () => {
+      import('./components/tools/ImageToolsWrapper').catch(() => {});
+      import('./components/tools/FormatConverterSuite').catch(() => {});
+      import('./components/tools/PdfTools').catch(() => {});
+      import('./components/tools/DocumentTools').catch(() => {});
+    };
+
+    if ('requestIdleCallback' in window) {
+      const winWithIdle = window as Window & {
+        requestIdleCallback: (cb: () => void, opts?: { timeout: number }) => number;
+        cancelIdleCallback: (id: number) => void;
+      };
+      const handle = winWithIdle.requestIdleCallback(preloadSuites, { timeout: 2500 });
+      return () => {
+        if ('cancelIdleCallback' in winWithIdle) {
+          winWithIdle.cancelIdleCallback(handle);
+        }
+      };
+    } else {
+      const timerId = setTimeout(preloadSuites, 1200);
+      return () => clearTimeout(timerId);
+    }
   }, []);
 
   // Subscribe to live Firebase Auth state
