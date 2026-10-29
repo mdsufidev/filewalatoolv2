@@ -1005,70 +1005,72 @@ export const CropRotateTool: React.FC<CropRotateToolProps> = ({ onNotify, initia
           </div>
         )}
 
-        {/* Large Dropzone */}
-        <div
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
-          onClick={() => fileInputRef.current?.click()}
-          className={`relative group border border-dashed rounded-lg p-10 sm:p-14 text-center cursor-pointer transition-colors duration-150 select-none ${
-            isDragOver
-              ? isDark
-                ? 'border-zinc-500 bg-zinc-800/40'
-                : 'border-zinc-500 bg-zinc-50'
-              : isDark
-                ? 'border-zinc-800 bg-zinc-900 hover:border-zinc-700'
-                : 'border-zinc-300 bg-white hover:border-zinc-400'
-          }`}
-        >
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp,image/avif,image/bmp"
-            className="hidden"
-            onChange={(e) => {
-              if (e.target.files && e.target.files[0]) {
-                validateAndLoadFile(e.target.files[0]);
-              }
-            }}
-          />
+        {/* Centered Width-Constrained Dropzone */}
+        <div className="w-full max-w-xl mx-auto">
+          <div
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            onClick={() => fileInputRef.current?.click()}
+            className={`relative group border border-dashed rounded-xl p-6 sm:p-8 text-center cursor-pointer transition-colors duration-150 select-none ${
+              isDragOver
+                ? isDark
+                  ? 'border-zinc-500 bg-zinc-800/40'
+                  : 'border-zinc-500 bg-zinc-50'
+                : isDark
+                  ? 'border-zinc-800 bg-zinc-900 hover:border-zinc-700'
+                  : 'border-zinc-300 bg-white hover:border-zinc-400'
+            }`}
+          >
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/avif,image/bmp"
+              className="hidden"
+              onChange={(e) => {
+                if (e.target.files && e.target.files[0]) {
+                  validateAndLoadFile(e.target.files[0]);
+                }
+              }}
+            />
 
-          <div className="flex flex-col items-center justify-center space-y-4">
-            <div
-              className={`w-12 h-12 rounded-md flex items-center justify-center transition-colors border ${
-                isDark
-                  ? 'bg-zinc-800 border-zinc-700 text-zinc-300'
-                  : 'bg-zinc-100 border-zinc-200 text-zinc-700'
-              }`}
-            >
-              <UploadCloud className="w-6 h-6" />
-            </div>
-
-            <div className="space-y-1">
-              <h3 className={`text-base sm:text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                Choose an image or drag & drop here
-              </h3>
-              <p className={`text-xs ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
-                Supports PNG, JPEG, WebP, AVIF · Press Ctrl+V to paste
-              </p>
-            </div>
-
-            <div className="pt-2">
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleLoadSample();
-                }}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors border cursor-pointer ${
+            <div className="flex flex-col items-center justify-center space-y-3">
+              <div
+                className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors border ${
                   isDark
-                    ? 'bg-zinc-800 border-zinc-700 text-zinc-300 hover:text-white'
-                    : 'bg-zinc-100 border-zinc-200 text-zinc-700 hover:text-zinc-900 hover:bg-zinc-200'
+                    ? 'bg-zinc-800 border-zinc-700 text-zinc-300'
+                    : 'bg-zinc-100 border-zinc-200 text-zinc-700'
                 }`}
               >
-                <Sparkles className="w-3.5 h-3.5 text-zinc-500" />
-                <span>Try with Sample Image</span>
-              </button>
+                <UploadCloud className="w-5 h-5" />
+              </div>
+
+              <div className="space-y-0.5">
+                <h3 className={`text-base font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                  Choose an image or drag & drop here
+                </h3>
+                <p className={`text-xs ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                  Supports PNG, JPEG, WebP, AVIF · Press Ctrl+V to paste
+                </p>
+              </div>
+
+              <div className="pt-1.5">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleLoadSample();
+                  }}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors border cursor-pointer ${
+                    isDark
+                      ? 'bg-zinc-800 border-zinc-700 text-zinc-300 hover:text-white'
+                      : 'bg-zinc-100 border-zinc-200 text-zinc-700 hover:text-zinc-900 hover:bg-zinc-200'
+                  }`}
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-zinc-500" />
+                  <span>Try with Sample Image</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>

@@ -116,7 +116,7 @@ export const Dropzone: React.FC<DropzoneProps> = ({
         onDrop={onDrop}
         onClick={() => fileInputRef.current?.click()}
         className={`group relative flex flex-col items-center justify-center border border-dashed rounded-lg transition-colors duration-150 cursor-pointer ${
-          compact ? 'p-6' : 'p-10 md:p-12'
+          compact ? 'p-5 sm:p-6' : 'p-6 sm:p-8'
         } ${
           isDragOver
             ? isDark

@@ -720,30 +720,31 @@ export const ResizerTool: React.FC<ResizerToolProps> = ({ onNotify, initialFile 
           </div>
         )}
 
-        {/* Fitts's Law Large Dropzone */}
-        <div
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
-          onClick={() => fileInputRef.current?.click()}
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              fileInputRef.current?.click();
-            }
-          }}
-          aria-label="Upload image to resize"
-          className={`relative group border border-dashed rounded-lg p-10 sm:p-14 text-center cursor-pointer transition-colors duration-150 select-none outline-none ${
-            isDragOver
-              ? isDark
-                ? 'border-zinc-500 bg-zinc-800/40'
-                : 'border-zinc-500 bg-zinc-50'
-              : isDark
-                ? 'border-zinc-800 bg-zinc-900 hover:border-zinc-700'
-                : 'border-zinc-300 bg-white hover:border-zinc-400'
-          }`}
-        >
+        {/* Centered Width-Constrained Dropzone */}
+        <div className="w-full max-w-xl mx-auto">
+          <div
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            onClick={() => fileInputRef.current?.click()}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                fileInputRef.current?.click();
+              }
+            }}
+            aria-label="Upload image to resize"
+            className={`relative group border border-dashed rounded-xl p-6 sm:p-8 text-center cursor-pointer transition-colors duration-150 select-none outline-none ${
+              isDragOver
+                ? isDark
+                  ? 'border-zinc-500 bg-zinc-800/40'
+                  : 'border-zinc-500 bg-zinc-50'
+                : isDark
+                  ? 'border-zinc-800 bg-zinc-900 hover:border-zinc-700'
+                  : 'border-zinc-300 bg-white hover:border-zinc-400'
+            }`}
+          >
           <input
             ref={fileInputRef}
             type="file"
@@ -795,6 +796,7 @@ export const ResizerTool: React.FC<ResizerToolProps> = ({ onNotify, initialFile 
             </div>
           </div>
         </div>
+      </div>
 
         {/* Popular Presets Showcase (Soft Unboxed Style) */}
         <div className={`p-6 rounded-xl ${isDark ? 'bg-zinc-900/60' : 'bg-zinc-100/70'}`}>
