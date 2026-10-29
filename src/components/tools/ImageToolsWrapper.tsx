@@ -182,9 +182,9 @@ export const ImageToolsWrapper: React.FC<{
   const primaryFile = initialFiles && initialFiles.length > 0 ? initialFiles[0] : null;
 
   return (
-    <div className="w-full max-w-7xl mx-auto space-y-12 animate-in fade-in duration-200 select-none">
+    <div className="w-full max-w-7xl mx-auto animate-in fade-in duration-200 select-none">
       {/* Render active tool */}
-      <div className="pt-2">
+      <div>
         {activeTool === 'compressor' && <CompressorTool onNotify={onNotify} initialFile={primaryFile} />}
         {activeTool === 'resizer' && <ResizerTool onNotify={onNotify} initialFile={primaryFile} />}
         {activeTool === 'cropper' && <CropRotateTool onNotify={onNotify} initialFile={primaryFile} />}

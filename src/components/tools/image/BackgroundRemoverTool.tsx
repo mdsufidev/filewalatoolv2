@@ -1383,366 +1383,265 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
   }, [resultBlob, currentImage, onNotify]);
 
   return (
-    <div className="w-full max-w-7xl mx-auto space-y-6 sm:space-y-8 animate-in fade-in duration-200 select-none">
-      {/* Header Section */}
-      <div className="text-center space-y-2.5 max-w-2xl mx-auto">
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-medium uppercase tracking-wider text-zinc-600 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800">
-          <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-          <span>100% Client-Side Engine · Zero Uploads</span>
-        </div>
-        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-zinc-950 dark:text-zinc-50">
-          Instant Background Remover
-        </h1>
-        <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 max-w-md mx-auto leading-relaxed">
-          Desktop-grade cutout studio with WebGPU AI, tactile Zoom &amp; Pan, undo history, and 8-bit soft alpha.
-        </p>
-      </div>
-
-      {/* Dual-Model Engine Mode Toggle */}
-      <div className="flex items-center justify-between flex-wrap gap-3 p-2 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
-        <div className="flex items-center gap-1.5 w-full sm:w-auto">
-          <button
-            type="button"
-            onClick={() => {
-              setEngineMode('ai');
-              if (currentImage) runAiInference();
-            }}
-            className={`flex-1 sm:flex-none py-1.5 px-3.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer ${
-              engineMode === 'ai'
-                ? 'bg-white dark:bg-zinc-800 text-zinc-950 dark:text-white shadow-xs'
-                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
-            }`}
-          >
-            <Sparkles className="w-3.5 h-3.5 text-blue-500" />
-            <span>BRIA RMBG-1.4 AI</span>
-            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400">
-              Studio Cutout
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              setEngineMode('fast');
-              if (currentImage && maskCanvasRef.current) {
-                runFastPerimeterClean(currentImage.imageElement, maskCanvasRef.current, tolerance);
-              }
-            }}
-            className={`flex-1 sm:flex-none py-1.5 px-3.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer ${
-              engineMode === 'fast'
-                ? 'bg-white dark:bg-zinc-800 text-zinc-950 dark:text-white shadow-xs'
-                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
-            }`}
-          >
-            <Zap className="w-3.5 h-3.5 text-amber-500" />
-            <span>Chroma / Flat Color Keyer</span>
-            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300">
-              Solid BG
-            </span>
-          </button>
-        </div>
-
-        <div className="flex items-center gap-2 text-xs font-mono text-zinc-500 px-2">
-          <Cpu className="w-3.5 h-3.5 text-emerald-500" />
-          <span>Hardware: {hasWebGPU ? 'WebGPU Accelerated ⚡' : 'WASM CPU Threads'}</span>
-        </div>
-      </div>
-
-      {/* Upload Zone (When no image is loaded) */}
+    <div className="w-full max-w-6xl mx-auto space-y-2 sm:space-y-2.5 animate-in fade-in duration-200 select-none">
       {!currentImage ? (
-        <div className="max-w-3xl mx-auto relative min-h-[220px]">
-          {isImageLoading ? (
-            <HumanLoadingOverlay
-              title="Loading"
-              stage="Reading image file..."
-              percent={20}
-              accentColor="blue"
-            />
-          ) : (
-            <Dropzone
-              onFilesSelected={(files) => {
-                if (files.length > 0) loadFile(files[0]);
-              }}
-              accept="image/*"
-              title="Drop image here for background removal"
-              description="100% In-Browser Engine · Zero Uploads · Supports PNG, JPG, WebP, HEIC"
-            />
-          )}
+        <div className="space-y-3 sm:space-y-3.5">
+          {/* Header Section */}
+          <div className="text-center space-y-1 max-w-lg mx-auto">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-medium uppercase tracking-wider text-zinc-600 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+              <span>100% Client-Side Engine · Zero Uploads</span>
+            </div>
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-950 dark:text-zinc-50">
+              Instant Background Remover
+            </h1>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 max-w-sm mx-auto leading-relaxed">
+              Desktop-grade cutout studio with WebGPU AI, tactile Zoom &amp; Pan, undo history, and 8-bit soft alpha.
+            </p>
+          </div>
+
+          {/* Dual-Model Engine Mode Toggle */}
+          <div className="max-w-[700px] mx-auto flex items-center justify-between flex-wrap gap-2 p-1.5 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
+            <div className="flex items-center gap-1 w-full sm:w-auto">
+              <button
+                type="button"
+                onClick={() => {
+                  setEngineMode('ai');
+                }}
+                className={`flex-1 sm:flex-none py-1 px-2.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  engineMode === 'ai'
+                    ? 'bg-white dark:bg-zinc-800 text-zinc-950 dark:text-white shadow-xs'
+                    : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+                }`}
+              >
+                <Sparkles className="w-3 h-3 text-blue-500" />
+                <span>BRIA RMBG-1.4 AI</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setEngineMode('fast');
+                }}
+                className={`flex-1 sm:flex-none py-1 px-2.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  engineMode === 'fast'
+                    ? 'bg-white dark:bg-zinc-800 text-zinc-950 dark:text-white shadow-xs'
+                    : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+                }`}
+              >
+                <Zap className="w-3 h-3 text-amber-500" />
+                <span>Flat Color Keyer</span>
+              </button>
+            </div>
+
+            <div className="flex items-center gap-1.5 text-[11px] font-mono text-zinc-500 px-1">
+              <Cpu className="w-3 h-3 text-emerald-500" />
+              <span>{hasWebGPU ? 'WebGPU ⚡' : 'WASM Threads'}</span>
+            </div>
+          </div>
+
+          {/* Upload Zone (When no image is loaded) */}
+          <div className="max-w-[700px] mx-auto relative">
+            {isImageLoading ? (
+              <HumanLoadingOverlay
+                title="Loading"
+                stage="Reading image file..."
+                percent={20}
+                accentColor="blue"
+              />
+            ) : (
+              <Dropzone
+                onFilesSelected={(files) => {
+                  if (files.length > 0) loadFile(files[0]);
+                }}
+                accept="image/*"
+                title="Drop image here for background removal"
+                description="100% In-Browser Engine · Zero Uploads · Supports PNG, JPG, WebP, HEIC"
+              />
+            )}
+          </div>
         </div>
       ) : (
         /* =========================================================================
            ACTIVE DESKTOP-GRADE WORKSPACE
         ========================================================================= */
-        <div className="space-y-4">
-          {/* Top Control Bar: File Details + Export Actions */}
-          <div
-            className={`flex flex-wrap items-center justify-between gap-3 p-3 sm:p-3.5 border rounded-xl ${
-              isDark ? 'bg-zinc-900 border-zinc-800 text-zinc-100' : 'bg-white border-zinc-200 text-zinc-900'
-            }`}
-          >
-            <div className="flex items-center gap-3 min-w-0">
-              <div
-                className={`w-9 h-9 rounded-lg overflow-hidden shrink-0 flex items-center justify-center border ${
-                  isDark ? 'bg-zinc-950 border-zinc-800' : 'bg-zinc-100 border-zinc-200'
-                }`}
-              >
-                <img src={currentImage.previewUrl} alt="Source" className="w-full h-full object-cover" />
-              </div>
-              <div className="min-w-0">
-                <h3 className="text-xs sm:text-sm font-semibold truncate max-w-[200px] sm:max-w-xs">
-                  {currentImage.name}
-                </h3>
-                <div className="flex items-center gap-2 text-[11px] font-mono text-zinc-500 mt-0.5">
-                  <span>
-                    {currentImage.width} × {currentImage.height} px
-                  </span>
-                  {aiInferenceTimeMs !== null && (
-                    <>
-                      <span>·</span>
-                      <span className="text-blue-500">Neural: {aiInferenceTimeMs}ms</span>
-                    </>
-                  )}
-                </div>
-              </div>
+        <div className="space-y-2 sm:space-y-2.5">
+          {/* Hero Title & Action Bar Row (Ultra-Compact Viewport-Safe) */}
+          <div className="flex items-center justify-between gap-3 pt-0 pb-0.5">
+            <div className="flex items-center gap-2">
+              <h1 className="text-base sm:text-lg font-bold tracking-tight text-zinc-950 dark:text-white leading-tight">
+                Instant Background Remover
+              </h1>
+              <span className="hidden sm:inline-block text-zinc-300 dark:text-zinc-700">·</span>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 hidden sm:inline-block">
+                {engineMode === 'ai' ? 'BRIA RMBG-1.4 Neural Engine' : 'Chroma Keyer'} · {hasWebGPU ? 'WebGPU ⚡' : 'WASM'}
+              </p>
             </div>
 
-            {/* Top Toolbar Actions */}
-            <div className="flex items-center gap-1.5 flex-wrap">
-              {/* Undo / Redo */}
-              <button
-                type="button"
-                disabled={!canUndo}
-                onClick={handleUndo}
-                className="p-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                title="Undo (Ctrl+Z)"
-              >
-                <Undo2 className="w-4 h-4" />
-              </button>
-
-              <button
-                type="button"
-                disabled={!canRedo}
-                onClick={handleRedo}
-                className="p-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                title="Redo (Ctrl+Y)"
-              >
-                <Redo2 className="w-4 h-4" />
-              </button>
-
-              <div className="h-5 w-[1px] bg-zinc-200 dark:bg-zinc-800 mx-1" />
-
-              {/* Reset Photo */}
-              <button
-                type="button"
-                onClick={resetImage}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
-              >
-                <RefreshCw className="w-3.5 h-3.5" />
-                <span>New Photo</span>
-              </button>
-
-              {/* Re-run AI Cutout */}
+            <div className="flex items-center gap-1.5 shrink-0">
               <button
                 type="button"
                 disabled={isAiProcessing}
                 onClick={runAiInference}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-blue-600 dark:text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 transition-colors cursor-pointer disabled:opacity-50"
-                title="Re-run BRIA RMBG-1.4 Neural Background Removal"
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold text-blue-600 dark:text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 transition-colors cursor-pointer disabled:opacity-50"
               >
-                <Sparkles className="w-3.5 h-3.5" />
+                <Sparkles className="w-3 h-3" />
                 <span>Re-run AI</span>
               </button>
 
-              {/* Copy */}
               <button
                 type="button"
-                disabled={!resultBlob}
-                onClick={handleCopy}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors cursor-pointer disabled:opacity-50"
+                onClick={resetImage}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md border border-zinc-200 dark:border-zinc-800 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-xs font-medium text-zinc-700 dark:text-zinc-300 transition-colors cursor-pointer"
               >
-                <Copy className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Copy</span>
-              </button>
-
-              {/* Share */}
-              {isShareSupported() && (
-                <button
-                  type="button"
-                  disabled={!resultBlob}
-                  onClick={handleShare}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors cursor-pointer disabled:opacity-50"
-                >
-                  <Share2 className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Share</span>
-                </button>
-              )}
-
-              {/* Download PNG */}
-              <button
-                type="button"
-                disabled={!resultBlob}
-                onClick={handleDownload}
-                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors cursor-pointer disabled:opacity-50"
-              >
-                <Download className="w-3.5 h-3.5" />
-                <span>Download Cutout</span>
+                <RefreshCw className="w-3 h-3 text-zinc-500" />
+                <span>New photo</span>
               </button>
             </div>
           </div>
 
           {/* Main Studio Layout: 8 cols Viewport + 4 cols Studio Tools */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-4 items-start">
             {/* ========================================================= */}
             {/* Left 8 Cols: Interactive Zoom & Pan Studio Viewport       */}
             {/* ========================================================= */}
-            <div className="lg:col-span-8 space-y-3">
-              <div className="p-3 sm:p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 space-y-3">
+            <div className="lg:col-span-8 space-y-2">
+              <div className="p-2.5 sm:p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 space-y-2">
                 {/* Viewport Control Bar */}
-                <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-zinc-100 dark:border-zinc-800 text-xs">
-                  {/* Tool Modes (Erase, Restore, Wand, Hand) */}
-                  <div className="flex items-center gap-1 p-1 rounded-lg bg-zinc-100 dark:bg-zinc-800">
+                <div className="flex flex-wrap items-center justify-between gap-2 pb-1.5 border-b border-zinc-100 dark:border-zinc-800 text-xs">
+                  {/* Tool Modes (Erase, Restore, Wand, Hand) + Undo/Redo */}
+                  <div className="flex items-center gap-1">
                     <button
                       type="button"
-                      onClick={() => setActiveToolMode('erase')}
-                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer ${
-                        activeToolMode === 'erase'
-                          ? 'bg-white dark:bg-zinc-900 text-rose-600 dark:text-rose-400 shadow-xs font-semibold'
-                          : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
-                      }`}
-                      title="Erase Brush (E)"
+                      disabled={!canUndo}
+                      onClick={handleUndo}
+                      className="p-1 rounded border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer disabled:opacity-40"
+                      title="Undo (Ctrl+Z)"
                     >
-                      <Eraser className="w-3.5 h-3.5" />
-                      <span>Erase</span>
+                      <Undo2 className="w-3 h-3" />
                     </button>
-
                     <button
                       type="button"
-                      onClick={() => setActiveToolMode('restore')}
-                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer ${
-                        activeToolMode === 'restore'
-                          ? 'bg-white dark:bg-zinc-900 text-blue-600 dark:text-blue-400 shadow-xs font-semibold'
-                          : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
-                      }`}
-                      title="Restore Subject Brush (R)"
+                      disabled={!canRedo}
+                      onClick={handleRedo}
+                      className="p-1 rounded border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer disabled:opacity-40"
+                      title="Redo (Ctrl+Y)"
                     >
-                      <Paintbrush className="w-3.5 h-3.5" />
-                      <span>Restore</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setActiveToolMode('wand')}
-                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer ${
-                        activeToolMode === 'wand'
-                          ? 'bg-white dark:bg-zinc-900 text-amber-600 dark:text-amber-400 shadow-xs font-semibold'
-                          : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
-                      }`}
-                      title="Magic Wand Flood Fill (W)"
-                    >
-                      <Wand2 className="w-3.5 h-3.5" />
-                      <span>Wand</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setActiveToolMode('hand')}
-                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer ${
-                        activeToolMode === 'hand'
-                          ? 'bg-white dark:bg-zinc-900 text-emerald-600 dark:text-emerald-400 shadow-xs font-semibold'
-                          : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
-                      }`}
-                      title="Hand Pan Tool (H / Hold Space)"
-                    >
-                      <Hand className="w-3.5 h-3.5" />
-                      <span>Pan</span>
-                    </button>
-                  </div>
-
-                  {/* Zoom Controls & Comparison View */}
-                  <div className="flex items-center gap-1.5">
-                    {/* Before / After Split Slider Toggle */}
-                    <button
-                      type="button"
-                      onClick={() => setIsSplitView((v) => !v)}
-                      className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
-                        isSplitView
-                          ? 'bg-blue-500 text-white font-semibold'
-                          : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200'
-                      }`}
-                      title="Toggle Before/After Split Comparison"
-                    >
-                      <Columns2 className="w-3.5 h-3.5" />
-                      <span className="hidden sm:inline">Split View</span>
-                    </button>
-
-                    {/* View Original */}
-                    <button
-                      type="button"
-                      onClick={() => setShowOriginal((v) => !v)}
-                      className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
-                        showOriginal
-                          ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 font-semibold'
-                          : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200'
-                      }`}
-                      title="View original unedited image"
-                    >
-                      <Eye className="w-3.5 h-3.5" />
-                      <span>Original</span>
+                      <Redo2 className="w-3 h-3" />
                     </button>
 
                     <div className="h-4 w-[1px] bg-zinc-200 dark:bg-zinc-800 mx-0.5" />
 
-                    {/* Zoom In / Out Buttons */}
+                    <div className="flex items-center gap-0.5 p-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-[11px]">
+                      <button
+                        type="button"
+                        onClick={() => setActiveToolMode('erase')}
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded font-medium transition-colors cursor-pointer ${
+                          activeToolMode === 'erase'
+                            ? 'bg-white dark:bg-zinc-900 text-rose-600 dark:text-rose-400 shadow-xs font-semibold'
+                            : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+                        }`}
+                        title="Erase Brush (E)"
+                      >
+                        <Eraser className="w-3 h-3" />
+                        <span>Erase</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setActiveToolMode('restore')}
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded font-medium transition-colors cursor-pointer ${
+                          activeToolMode === 'restore'
+                            ? 'bg-white dark:bg-zinc-900 text-blue-600 dark:text-blue-400 shadow-xs font-semibold'
+                            : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+                        }`}
+                        title="Restore Subject Brush (R)"
+                      >
+                        <Paintbrush className="w-3 h-3" />
+                        <span>Restore</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setActiveToolMode('wand')}
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded font-medium transition-colors cursor-pointer ${
+                          activeToolMode === 'wand'
+                            ? 'bg-white dark:bg-zinc-900 text-amber-600 dark:text-amber-400 shadow-xs font-semibold'
+                            : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+                        }`}
+                        title="Magic Wand Flood Fill (W)"
+                      >
+                        <Wand2 className="w-3 h-3" />
+                        <span>Wand</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setActiveToolMode('hand')}
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded font-medium transition-colors cursor-pointer ${
+                          activeToolMode === 'hand'
+                            ? 'bg-white dark:bg-zinc-900 text-emerald-600 dark:text-emerald-400 shadow-xs font-semibold'
+                            : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+                        }`}
+                        title="Hand Pan Tool (H / Hold Space)"
+                      >
+                        <Hand className="w-3 h-3" />
+                        <span>Pan</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Zoom Controls & Comparison View */}
+                  <div className="flex items-center gap-1 text-[11px]">
                     <button
                       type="button"
-                      onClick={() => handleZoomStep(-0.2)}
-                      className="p-1 rounded-md text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer"
-                      title="Zoom Out"
+                      onClick={() => setIsSplitView((v) => !v)}
+                      className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium transition-colors cursor-pointer ${
+                        isSplitView
+                          ? 'bg-blue-500 text-white font-semibold'
+                          : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200'
+                      }`}
                     >
-                      <ZoomOut className="w-3.5 h-3.5" />
+                      <Columns2 className="w-3 h-3" />
+                      <span>Split</span>
                     </button>
 
-                    <span className="text-[11px] font-mono text-zinc-500 w-10 text-center">
+                    <button
+                      type="button"
+                      onClick={() => setShowOriginal((v) => !v)}
+                      className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium transition-colors cursor-pointer ${
+                        showOriginal
+                          ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 font-semibold'
+                          : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200'
+                      }`}
+                    >
+                      <Eye className="w-3 h-3" />
+                      <span>Original</span>
+                    </button>
+
+                    <span className="font-mono text-zinc-400 text-[10px] pl-1">
                       {Math.round(zoom * 100)}%
                     </span>
-
-                    <button
-                      type="button"
-                      onClick={() => handleZoomStep(0.2)}
-                      className="p-1 rounded-md text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer"
-                      title="Zoom In"
-                    >
-                      <ZoomIn className="w-3.5 h-3.5" />
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={handleFitToScreen}
-                      className="p-1 rounded-md text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer"
-                      title="Fit to Screen (0)"
-                    >
-                      <Maximize2 className="w-3.5 h-3.5" />
-                    </button>
                   </div>
                 </div>
 
                 {/* AI Progress Banner */}
                 {engineMode === 'ai' && isAiProcessing && (
-                  <div className="space-y-1.5 p-2 rounded-lg bg-blue-500/10 border border-blue-500/20 text-xs text-blue-600 dark:text-blue-400">
-                    <div className="flex items-center justify-between font-mono text-[11px]">
-                      <div className="flex items-center gap-1.5">
-                        <RefreshCw className="w-3 h-3 animate-spin" />
+                  <div className="space-y-1 p-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20 text-xs text-blue-600 dark:text-blue-400">
+                    <div className="flex items-center justify-between font-mono text-[10px]">
+                      <div className="flex items-center gap-1">
+                        <RefreshCw className="w-2.5 h-2.5 animate-spin" />
                         <span>{aiStatus}</span>
                       </div>
                       <span>{aiProgress}%</span>
                     </div>
-                    <div className="w-full bg-blue-200 dark:bg-blue-950 h-1.5 rounded-full overflow-hidden">
+                    <div className="w-full bg-blue-200 dark:bg-blue-950 h-1 rounded-full overflow-hidden">
                       <div className="bg-blue-600 h-full transition-all duration-200" style={{ width: `${aiProgress}%` }} />
                     </div>
                   </div>
                 )}
 
-                {/* Interactive Zoom/Pan Canvas Viewport */}
+                {/* Interactive Zoom/Pan Canvas Viewport (clamped to 280px standard) */}
                 <div
                   ref={viewportRef}
                   onWheel={handleViewportWheel}
@@ -1754,7 +1653,7 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
                   onTouchMove={handleViewportTouchMove}
                   onTouchEnd={handleViewportTouchEnd}
                   onTouchCancel={handleViewportTouchEnd}
-                  className="relative rounded-xl border border-zinc-200 dark:border-zinc-800 overflow-hidden min-h-[380px] max-h-[580px] sm:min-h-[460px] h-[520px] select-none touch-none"
+                  className="relative rounded-xl border border-zinc-200 dark:border-zinc-800 overflow-hidden h-[230px] sm:h-[260px] lg:h-[280px] xl:h-[300px] select-none touch-none"
                   style={{
                     cursor: isPanning
                       ? 'grabbing'
@@ -1774,7 +1673,7 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
                     backgroundSize: '20px 20px',
                   }}
                 >
-                  {/* Human-type Animation: Friendly Retoucher with Loading ..... */}
+                  {/* Human-type Animation */}
                   {isAiProcessing && (
                     <HumanLoadingOverlay
                       title="Loading"
@@ -1838,47 +1737,51 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
                     </div>
                   </div>
 
-                  {/* Split View Floating Handle Indicator */}
-                  {isSplitView && (
-                    <div
-                      className="pointer-events-none absolute top-4 left-4 px-2.5 py-1 rounded-md bg-zinc-900/80 backdrop-blur-md text-white text-[11px] font-mono border border-zinc-700 z-20"
-                    >
-                      <span>Drag Divider: {splitPos}% Original / Cutout</span>
-                    </div>
-                  )}
-
                   {/* Viewport Floating Reset Fit Button */}
-                  <div className="absolute bottom-3 right-3 flex items-center gap-1.5 z-20">
+                  <div className="absolute bottom-2 right-2 flex items-center gap-1 z-20">
                     <button
                       type="button"
                       onClick={handleFitToScreen}
-                      className="px-2 py-1 rounded-md bg-zinc-900/80 hover:bg-zinc-900 text-white text-[11px] font-mono border border-zinc-700 backdrop-blur-md transition-colors cursor-pointer"
+                      className="px-1.5 py-0.5 rounded bg-zinc-900/80 hover:bg-zinc-900 text-white text-[10px] font-mono border border-zinc-700 backdrop-blur-md transition-colors cursor-pointer"
                     >
                       Reset Fit
                     </button>
                     <button
                       type="button"
                       onClick={handle100Percent}
-                      className="px-2 py-1 rounded-md bg-zinc-900/80 hover:bg-zinc-900 text-white text-[11px] font-mono border border-zinc-700 backdrop-blur-md transition-colors cursor-pointer"
+                      className="px-1.5 py-0.5 rounded bg-zinc-900/80 hover:bg-zinc-900 text-white text-[10px] font-mono border border-zinc-700 backdrop-blur-md transition-colors cursor-pointer"
                     >
                       1:1
                     </button>
                   </div>
                 </div>
 
-                {/* Viewport Bottom Hint Bar */}
-                <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-[11px] text-zinc-500 font-mono">
+                {/* Viewport Quick Action & Shortcuts */}
+                <div className="flex flex-wrap items-center justify-between gap-2 pt-0.5 text-[10px] text-zinc-500 font-mono">
+                  <span>Hold Space (Pan) · [ / ] (Size) · Ctrl+Z (Undo)</span>
                   <div className="flex items-center gap-1.5">
-                    <span className="font-semibold text-zinc-700 dark:text-zinc-300">Shortcuts:</span>
-                    <span>Space (Pan)</span>
-                    <span>·</span>
-                    <span>[ / ] (Size)</span>
-                    <span>·</span>
-                    <span>Ctrl+Z (Undo)</span>
+                    <button
+                      type="button"
+                      disabled={!resultBlob}
+                      onClick={handleCopy}
+                      className="text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white cursor-pointer"
+                    >
+                      Copy
+                    </button>
+                    {isShareSupported() && (
+                      <>
+                        <span>·</span>
+                        <button
+                          type="button"
+                          disabled={!resultBlob}
+                          onClick={handleShare}
+                          className="text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white cursor-pointer"
+                        >
+                          Share
+                        </button>
+                      </>
+                    )}
                   </div>
-                  <span>
-                    {engineMode === 'ai' ? 'RMBG-1.4 8-Bit Continuous Alpha' : 'BFS Perimeter Keyer (0ms)'}
-                  </span>
                 </div>
               </div>
             </div>
@@ -1886,18 +1789,19 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
             {/* ========================================================= */}
             {/* Right 4 Cols: Refinement Tools & Background Replacement   */}
             {/* ========================================================= */}
-            <div className="lg:col-span-4 space-y-4">
-              {/* 1. Brush Precision Controls */}
-              <div className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 space-y-3.5">
-                <div className="flex items-center justify-between pb-2 border-b border-zinc-100 dark:border-zinc-800">
-                  <span className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-white font-mono flex items-center gap-1.5">
-                    <Sliders className="w-3.5 h-3.5 text-blue-500" />
-                    <span>Brush Precision</span>
+            <div className="lg:col-span-4 space-y-2">
+              <div className="p-2 sm:p-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 space-y-2">
+                <div>
+                  <span className="text-[9px] font-mono font-bold tracking-wider uppercase text-zinc-400 dark:text-zinc-500 block">
+                    STUDIO TOOLS
                   </span>
-                  <span className="text-[11px] font-mono text-zinc-500">{brushSize}px</span>
+                  <h3 className={`text-xs font-bold ${isDark ? 'text-white' : 'text-zinc-950'}`}>
+                    Refinement & Backdrop
+                  </h3>
                 </div>
 
-                <div className="space-y-3">
+                {/* Brush Size & Hardness */}
+                <div className="space-y-1">
                   <Slider
                     label="Brush Size"
                     min={5}
@@ -1907,20 +1811,9 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
                     onChange={setBrushSize}
                     unit="px"
                   />
-
-                  <Slider
-                    label="Brush Hardness (Edge Softness)"
-                    min={0}
-                    max={100}
-                    step={5}
-                    value={brushHardness}
-                    onChange={setBrushHardness}
-                    unit="%"
-                  />
-
                   {activeToolMode === 'wand' && (
                     <Slider
-                      label="Magic Wand Tolerance"
+                      label="Wand Tolerance"
                       min={5}
                       max={75}
                       step={1}
@@ -1930,256 +1823,95 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
                     />
                   )}
                 </div>
-              </div>
 
-              {/* 2. Edge Refinement Suite */}
-              <div className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 space-y-3.5">
-                <div className="flex items-center justify-between pb-2 border-b border-zinc-100 dark:border-zinc-800">
-                  <span className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-white font-mono flex items-center gap-1.5">
-                    <SlidersHorizontal className="w-3.5 h-3.5 text-emerald-500" />
-                    <span>Edge Refinement</span>
+                {/* Background Replacement Options */}
+                <div className="space-y-1 pt-1 border-t border-zinc-100 dark:border-zinc-800">
+                  <span className={`text-[10px] font-semibold block ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>
+                    Replace Background
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setFeather(0);
-                      setShiftEdge(0);
-                    }}
-                    className="text-[10px] font-mono text-zinc-500 hover:text-zinc-900 dark:hover:text-white underline cursor-pointer"
-                  >
-                    Reset
-                  </button>
-                </div>
-
-                <div className="space-y-3">
-                  <Slider
-                    label="Feather (Smooth Edge)"
-                    min={0}
-                    max={8}
-                    step={1}
-                    value={feather}
-                    onChange={setFeather}
-                    unit="px"
-                  />
-
-                  <Slider
-                    label="Shift Edge (Defringe / Contract)"
-                    min={-5}
-                    max={5}
-                    step={1}
-                    value={shiftEdge}
-                    onChange={setShiftEdge}
-                    unit="px"
-                  />
-                  <p className="text-[10px] text-zinc-400 leading-relaxed">
-                    Shift negative (-1px) to cut border halos; positive to preserve faint hair.
-                  </p>
-                </div>
-              </div>
-
-              {/* 3. Background Replacement Options */}
-              <div className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 space-y-3.5">
-                <span className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-white font-mono block pb-2 border-b border-zinc-100 dark:border-zinc-800">
-                  Replace Background
-                </span>
-
-                <div className="grid grid-cols-2 gap-1.5 text-xs">
-                  {/* Transparent */}
-                  <button
-                    type="button"
-                    onClick={() => setBgMode('transparent')}
-                    className={`p-2 rounded-lg text-xs font-medium text-center transition-colors cursor-pointer ${
-                      bgMode === 'transparent'
-                        ? 'bg-zinc-900 text-white font-semibold dark:bg-zinc-100 dark:text-zinc-950 shadow-xs'
-                        : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200'
-                    }`}
-                  >
-                    Transparent PNG
-                  </button>
-
-                  {/* Solid White */}
-                  <button
-                    type="button"
-                    onClick={() => setBgMode('white')}
-                    className={`p-2 rounded-lg text-xs font-medium text-center transition-colors cursor-pointer ${
-                      bgMode === 'white'
-                        ? 'bg-zinc-900 text-white font-semibold dark:bg-zinc-100 dark:text-zinc-950 shadow-xs'
-                        : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200'
-                    }`}
-                  >
-                    Solid White
-                  </button>
-
-                  {/* Passport Blue */}
-                  <button
-                    type="button"
-                    onClick={() => setBgMode('passport-blue')}
-                    className={`p-2 rounded-lg text-xs font-medium text-center transition-colors cursor-pointer ${
-                      bgMode === 'passport-blue'
-                        ? 'bg-zinc-900 text-white font-semibold dark:bg-zinc-100 dark:text-zinc-950 shadow-xs'
-                        : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200'
-                    }`}
-                  >
-                    Passport Blue
-                  </button>
-
-                  {/* Visa Grey */}
-                  <button
-                    type="button"
-                    onClick={() => setBgMode('visa-grey')}
-                    className={`p-2 rounded-lg text-xs font-medium text-center transition-colors cursor-pointer ${
-                      bgMode === 'visa-grey'
-                        ? 'bg-zinc-900 text-white font-semibold dark:bg-zinc-100 dark:text-zinc-950 shadow-xs'
-                        : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200'
-                    }`}
-                  >
-                    Visa Light Grey
-                  </button>
-
-                  {/* Portrait Beige */}
-                  <button
-                    type="button"
-                    onClick={() => setBgMode('portrait-beige')}
-                    className={`p-2 rounded-lg text-xs font-medium text-center transition-colors cursor-pointer ${
-                      bgMode === 'portrait-beige'
-                        ? 'bg-zinc-900 text-white font-semibold dark:bg-zinc-100 dark:text-zinc-950 shadow-xs'
-                        : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200'
-                    }`}
-                  >
-                    Studio Beige
-                  </button>
-
-                  {/* Blur Bokeh BG */}
-                  <button
-                    type="button"
-                    onClick={() => setBgMode('blur')}
-                    className={`p-2 rounded-lg text-xs font-medium text-center transition-colors cursor-pointer ${
-                      bgMode === 'blur'
-                        ? 'bg-zinc-900 text-white font-semibold dark:bg-zinc-100 dark:text-zinc-950 shadow-xs'
-                        : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200'
-                    }`}
-                  >
-                    Blur Bokeh BG
-                  </button>
-
-                  {/* Studio Vignette Gradient */}
-                  <button
-                    type="button"
-                    onClick={() => setBgMode('gradient-vignette')}
-                    className={`p-2 rounded-lg text-xs font-medium text-center transition-colors cursor-pointer ${
-                      bgMode === 'gradient-vignette'
-                        ? 'bg-zinc-900 text-white font-semibold dark:bg-zinc-100 dark:text-zinc-950 shadow-xs'
-                        : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200'
-                    }`}
-                  >
-                    Dark Vignette
-                  </button>
-
-                  {/* Warm Sunset Gradient */}
-                  <button
-                    type="button"
-                    onClick={() => setBgMode('gradient-warm')}
-                    className={`p-2 rounded-lg text-xs font-medium text-center transition-colors cursor-pointer ${
-                      bgMode === 'gradient-warm'
-                        ? 'bg-zinc-900 text-white font-semibold dark:bg-zinc-100 dark:text-zinc-950 shadow-xs'
-                        : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200'
-                    }`}
-                  >
-                    Warm Sunset
-                  </button>
-
-                  {/* Custom Color Input */}
-                  <div className="flex items-center gap-1.5 p-1 rounded-lg bg-zinc-100 dark:bg-zinc-800">
-                    <input
-                      type="color"
-                      value={customBgColor}
-                      onChange={(e) => {
-                        setCustomBgColor(e.target.value);
-                        setBgMode('custom-color');
-                      }}
-                      className="w-7 h-7 rounded border border-zinc-300 dark:border-zinc-600 cursor-pointer p-0"
-                      title="Pick custom color"
-                    />
-                    <span className="text-[11px] font-mono text-zinc-600 dark:text-zinc-400">Custom HEX</span>
-                  </div>
-
-                  {/* Custom Image Backdrop Uploader */}
-                  <div>
-                    <input
-                      ref={backdropInputRef}
-                      type="file"
-                      accept="image/*"
-                      onChange={handleCustomBackdropSelected}
-                      className="hidden"
-                    />
+                  <div className="grid grid-cols-3 gap-1 text-[10px]">
                     <button
                       type="button"
-                      onClick={() => backdropInputRef.current?.click()}
-                      className={`w-full p-2 rounded-lg text-xs font-medium text-center flex items-center justify-center gap-1 transition-colors cursor-pointer ${
-                        bgMode === 'custom-image'
-                          ? 'bg-zinc-900 text-white font-semibold dark:bg-zinc-100 dark:text-zinc-950 shadow-xs'
-                          : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200'
+                      onClick={() => setBgMode('transparent')}
+                      className={`p-1 rounded font-medium text-center transition-colors cursor-pointer truncate ${
+                        bgMode === 'transparent'
+                          ? 'bg-zinc-900 text-white font-semibold dark:bg-zinc-100 dark:text-zinc-950'
+                          : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300'
                       }`}
                     >
-                      <Upload className="w-3.5 h-3.5" />
-                      <span>Custom Photo</span>
+                      Transparent
                     </button>
-                  </div>
-                </div>
-
-                {/* 4. Realistic Drop Shadow Settings */}
-                <div className="pt-2 border-t border-zinc-100 dark:border-zinc-800 space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5 cursor-pointer">
+                    <button
+                      type="button"
+                      onClick={() => setBgMode('white')}
+                      className={`p-1 rounded font-medium text-center transition-colors cursor-pointer truncate ${
+                        bgMode === 'white'
+                          ? 'bg-zinc-900 text-white font-semibold dark:bg-zinc-100 dark:text-zinc-950'
+                          : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300'
+                      }`}
+                    >
+                      White
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setBgMode('passport-blue')}
+                      className={`p-1 rounded font-medium text-center transition-colors cursor-pointer truncate ${
+                        bgMode === 'passport-blue'
+                          ? 'bg-zinc-900 text-white font-semibold dark:bg-zinc-100 dark:text-zinc-950'
+                          : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300'
+                      }`}
+                    >
+                      Passport Blue
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setBgMode('blur')}
+                      className={`p-1 rounded font-medium text-center transition-colors cursor-pointer truncate ${
+                        bgMode === 'blur'
+                          ? 'bg-zinc-900 text-white font-semibold dark:bg-zinc-100 dark:text-zinc-950'
+                          : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300'
+                      }`}
+                    >
+                      Blur Bokeh
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setBgMode('gradient-warm')}
+                      className={`p-1 rounded font-medium text-center transition-colors cursor-pointer truncate ${
+                        bgMode === 'gradient-warm'
+                          ? 'bg-zinc-900 text-white font-semibold dark:bg-zinc-100 dark:text-zinc-950'
+                          : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300'
+                      }`}
+                    >
+                      Warm Sunset
+                    </button>
+                    <div className="flex items-center gap-1 p-0.5 rounded bg-zinc-100 dark:bg-zinc-800">
                       <input
-                        type="checkbox"
-                        checked={dropShadow}
-                        onChange={(e) => setDropShadow(e.target.checked)}
-                        className="rounded text-blue-600 focus:ring-blue-500 cursor-pointer"
+                        type="color"
+                        value={customBgColor}
+                        onChange={(e) => {
+                          setCustomBgColor(e.target.value);
+                          setBgMode('custom-color');
+                        }}
+                        className="w-4 h-4 rounded cursor-pointer border-0 bg-transparent p-0"
                       />
-                      <span>Realistic Drop Shadow</span>
-                    </label>
-                    <span className="text-[10px] font-mono text-zinc-400">
-                      {dropShadow ? `${shadowBlur}px blur` : 'Disabled'}
-                    </span>
-                  </div>
-
-                  {dropShadow && (
-                    <div className="space-y-2 pt-1 animate-in fade-in duration-150">
-                      <Slider
-                        label="Shadow Blur"
-                        min={0}
-                        max={35}
-                        step={1}
-                        value={shadowBlur}
-                        onChange={setShadowBlur}
-                        unit="px"
-                      />
-                      <Slider
-                        label="Shadow Opacity"
-                        min={10}
-                        max={80}
-                        step={5}
-                        value={shadowOpacity}
-                        onChange={setShadowOpacity}
-                        unit="%"
-                      />
+                      <span className="text-[9px] font-mono text-zinc-500">Color</span>
                     </div>
-                  )}
+                  </div>
                 </div>
-              </div>
 
-              {/* Main Export Action Button */}
-              <div className="pt-1">
-                <Button
-                  variant="primary"
-                  onClick={handleDownload}
-                  disabled={!resultBlob}
-                  className="w-full justify-center py-2.5 text-xs font-semibold"
-                >
-                  <Download className="w-4 h-4 mr-1.5" />
-                  <span>Download High-Res Cutout</span>
-                </Button>
+                {/* Primary Action Button */}
+                <div className="pt-1">
+                  <button
+                    type="button"
+                    disabled={!resultBlob}
+                    onClick={handleDownload}
+                    className="w-full py-2 px-3 rounded-lg text-xs font-bold bg-blue-600 hover:bg-blue-500 active:scale-[0.99] text-white flex items-center justify-center gap-1.5 transition-all shadow-md shadow-blue-600/20 cursor-pointer disabled:opacity-50"
+                  >
+                    <Download className="w-3.5 h-3.5 stroke-[2.5]" />
+                    <span>Download Cutout (PNG)</span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
