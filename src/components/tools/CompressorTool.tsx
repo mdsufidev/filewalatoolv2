@@ -775,7 +775,7 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
           </div>
         )}
 
-        {/* Minimalist 2D Flat Dropzone (Sized 1:1 to Canvas Workspace: 700px × 280px) */}
+        {/* Minimalist 2D Flat Dropzone (Sized 1:1 to Canvas Workspace) */}
         <div className="w-full max-w-[700px] mx-auto">
           <div
             onDragOver={handleDragOver}
@@ -790,7 +790,7 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
               }
             }}
             aria-label="Upload image to compress"
-            className={`relative group border border-dashed rounded-xl h-[240px] sm:h-[260px] lg:h-[280px] flex flex-col items-center justify-center p-5 text-center cursor-pointer transition-all duration-150 select-none outline-none ${
+            className={`relative group border border-dashed rounded-xl h-[390px] sm:h-[410px] lg:h-[430px] flex flex-col items-center justify-center p-5 text-center cursor-pointer transition-all duration-150 select-none outline-none ${
               isDragOver
                 ? isDark
                   ? 'border-red-500 bg-red-500/10'
@@ -972,8 +972,8 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
               </div>
             </div>
 
-            {/* Comparison Canvas Area (Height-Optimized to fit perfectly on 1080p/768p viewports) */}
-            <div className="relative rounded-xl overflow-hidden bg-black/15 h-[230px] sm:h-[260px] lg:h-[280px] xl:h-[300px] flex items-center justify-center border border-zinc-200/50 dark:border-zinc-800/60">
+            {/* Comparison Canvas Area (Height adjusted by +150px for testing) */}
+            <div className="relative rounded-xl overflow-hidden bg-black/15 h-[380px] sm:h-[410px] lg:h-[430px] xl:h-[450px] flex items-center justify-center border border-zinc-200/50 dark:border-zinc-800/60">
               {isProcessing && (
                 <div className="absolute inset-0 z-20 bg-zinc-950/60 backdrop-blur-xs flex flex-col items-center justify-center space-y-3">
                   <div className="w-8 h-8 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
@@ -989,8 +989,8 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
                   processedSrc={compressedResult.url}
                   originalLabel={`Original`}
                   processedLabel={`Compressed`}
-                  maxHeightClass="max-h-[210px] sm:max-h-[240px] lg:max-h-[260px] xl:max-h-[280px]"
-                  className="max-h-[220px] sm:max-h-[250px] lg:max-h-[270px] xl:max-h-[290px] w-full"
+                  maxHeightClass="max-h-[360px] sm:max-h-[390px] lg:max-h-[410px] xl:max-h-[430px]"
+                  className="max-h-[370px] sm:max-h-[400px] lg:max-h-[420px] xl:max-h-[440px] w-full"
                 />
               ) : (
                 <div className="relative max-h-full max-w-full flex items-center justify-center overflow-hidden">
@@ -998,7 +998,7 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
                     src={sourceImage.previewUrl}
                     alt="Original Preview"
                     draggable={false}
-                    className="max-h-[210px] sm:max-h-[240px] lg:max-h-[260px] xl:max-h-[280px] max-w-full object-contain select-none"
+                    className="max-h-[360px] sm:max-h-[390px] lg:max-h-[410px] xl:max-h-[430px] max-w-full object-contain select-none"
                   />
                 </div>
               )}
