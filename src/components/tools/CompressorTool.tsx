@@ -1243,11 +1243,6 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
                   }}
                 />
 
-                <div className="flex items-center justify-between text-[10px] text-zinc-400">
-                  <span>Smaller</span>
-                  <span>Sharper</span>
-                </div>
-
                 {/* Quick Quality Presets */}
                 <div className="grid grid-cols-4 gap-1 pt-0.5">
                   {[
