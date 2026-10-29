@@ -66,10 +66,10 @@ export const ComparisonSlider: React.FC<ComparisonSliderProps> = ({
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
-        className={`relative inline-block max-w-full overflow-hidden rounded-2xl border transition-colors cursor-ew-resize select-none shadow-xl ${
+        className={`relative inline-block max-w-full overflow-hidden rounded-xl border transition-colors cursor-ew-resize select-none shadow-xs ${
           isDark
-            ? 'border-zinc-800 bg-zinc-950/80 shadow-black/50'
-            : 'border-zinc-200 bg-zinc-100/90 shadow-zinc-300/40'
+            ? 'border-zinc-800 bg-zinc-950/90'
+            : 'border-zinc-200 bg-zinc-50'
         } ${cleanClassName}`}
         style={{ touchAction: 'none' }}
       >
@@ -93,40 +93,28 @@ export const ComparisonSlider: React.FC<ComparisonSliderProps> = ({
           }}
         />
 
-        {/* Vertical Divider Line */}
+        {/* Vertical Divider Line (Clean 1.5px Minimalist Line) */}
         <div
-          className="absolute top-0 bottom-0 w-0.5 bg-blue-500 shadow-[0_0_8px_rgba(0,0,0,0.7)] z-20 pointer-events-none"
+          className="absolute top-0 bottom-0 w-[1.5px] bg-white drop-shadow-[0_0_2px_rgba(0,0,0,0.6)] z-20 pointer-events-none"
           style={{ left: `${position}%` }}
         >
-          {/* Circular Drag Handle */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white shadow-xl border border-zinc-300 dark:border-zinc-700 flex items-center justify-center text-zinc-800 pointer-events-none hover:scale-105 active:scale-95 transition-transform">
-            <svg className="w-4 h-4 text-zinc-800" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+          {/* Circular Drag Handle (Refined 24px UI/UX Designer Knob) */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-white dark:bg-zinc-900 shadow-sm border border-zinc-300 dark:border-zinc-700 flex items-center justify-center text-zinc-700 dark:text-zinc-200 pointer-events-none transition-transform">
+            <svg className="w-3 h-3 text-zinc-700 dark:text-zinc-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <path d="m9 18-6-6 6-6M15 6l6 6-6 6" />
             </svg>
           </div>
         </div>
 
-        {/* Labels */}
-        <div className="absolute bottom-3 left-3 z-20 pointer-events-none">
-          <span
-            className={`text-[10px] sm:text-[11px] font-bold uppercase tracking-wider backdrop-blur-md px-2.5 py-1 rounded-md shadow-sm border ${
-              isDark
-                ? 'text-white bg-zinc-900/85 border-zinc-700'
-                : 'text-zinc-900 bg-white/95 border-zinc-300'
-            }`}
-          >
+        {/* Clean Glassmorphic Floating Labels */}
+        <div className="absolute bottom-2.5 left-2.5 z-20 pointer-events-none">
+          <span className="text-[10px] font-semibold uppercase tracking-wider backdrop-blur-xs px-2 py-0.5 rounded-md shadow-2xs border border-white/10 bg-black/60 text-white/90">
             {originalLabel}
           </span>
         </div>
 
-        <div className="absolute bottom-3 right-3 z-20 pointer-events-none">
-          <span
-            className={`text-[10px] sm:text-[11px] font-bold uppercase tracking-wider backdrop-blur-md px-2.5 py-1 rounded-md shadow-sm border ${
-              isDark
-                ? 'text-white bg-zinc-900/85 border-zinc-700'
-                : 'text-zinc-900 bg-white/95 border-zinc-300'
-            }`}
-          >
+        <div className="absolute bottom-2.5 right-2.5 z-20 pointer-events-none">
+          <span className="text-[10px] font-semibold uppercase tracking-wider backdrop-blur-xs px-2 py-0.5 rounded-md shadow-2xs border border-white/10 bg-black/60 text-white/90">
             {processedLabel}
           </span>
         </div>
