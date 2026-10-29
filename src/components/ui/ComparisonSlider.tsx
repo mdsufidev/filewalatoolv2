@@ -7,6 +7,7 @@ interface ComparisonSliderProps {
   originalLabel?: string;
   processedLabel?: string;
   className?: string;
+  maxHeightClass?: string;
 }
 
 export const ComparisonSlider: React.FC<ComparisonSliderProps> = ({
@@ -15,6 +16,7 @@ export const ComparisonSlider: React.FC<ComparisonSliderProps> = ({
   originalLabel = 'Original',
   processedLabel = 'Compressed',
   className = '',
+  maxHeightClass,
 }) => {
   const [position, setPosition] = useState<number>(50); // percentage 0-100
   const containerRef = useRef<HTMLDivElement>(null);
@@ -76,7 +78,7 @@ export const ComparisonSlider: React.FC<ComparisonSliderProps> = ({
           src={processedSrc}
           alt={processedLabel}
           draggable={false}
-          className="block max-h-[600px] w-auto max-w-full object-contain pointer-events-none select-none mx-auto"
+          className={`block ${maxHeightClass || 'max-h-[500px]'} w-auto max-w-full object-contain pointer-events-none select-none mx-auto`}
         />
 
         {/* Foreground Image (Original) - 100% matched in size, clipped via CSS clip-path */}

@@ -884,7 +884,7 @@ function MainApp({ initialPath, toolComponents }: { initialPath?: string; toolCo
             /* =========================================================================
                TOOL WORKSPACE VIEW (Active Tool Suite)
             ========================================================================= */
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 sm:py-3.5 lg:py-4">
               {/* Active Tool Suite Component with Fault Isolation & Lazy Boundary */}
               <Suspense fallback={<PageSuspenseFallback />}>
                 <AppErrorBoundary
