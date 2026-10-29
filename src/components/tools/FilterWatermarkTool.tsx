@@ -159,22 +159,22 @@ export const FilterWatermarkTool: React.FC<{
 
   if (!currentImage) {
     return (
-      <div className="w-full max-w-7xl mx-auto space-y-8 animate-in fade-in duration-300 select-none">
+      <div className="w-full max-w-6xl mx-auto space-y-3 sm:space-y-3.5 animate-in fade-in duration-300 select-none">
         {/* Header Section */}
-        <div className="text-center space-y-2.5 max-w-2xl mx-auto">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-medium uppercase tracking-wider text-zinc-600 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-850">
+        <div className="text-center space-y-1 max-w-lg mx-auto">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-medium uppercase tracking-wider text-zinc-600 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-850">
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
             <span>100% Client-Side Engine · Zero Uploads</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-zinc-950 dark:text-zinc-50">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-950 dark:text-zinc-50">
             Filters & Watermark
           </h1>
-          <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 max-w-md mx-auto leading-relaxed">
+          <p className="text-xs text-zinc-500 dark:text-zinc-400 max-w-sm mx-auto leading-relaxed">
             Fine-tune exposure, contrast, saturation, and add custom copyright watermarks with instant client-side canvas processing.
           </p>
         </div>
 
-        <div className="max-w-3xl mx-auto">
+        <div className="max-w-[700px] mx-auto">
           <Dropzone
             onFilesSelected={(files) => loadFile(files[0])}
             title="Drop image to edit filters or watermark"
@@ -189,376 +189,397 @@ export const FilterWatermarkTool: React.FC<{
   }
 
   return (
-    <div className="w-full max-w-7xl mx-auto space-y-6 sm:space-y-8 animate-in fade-in duration-200 select-none">
-      {/* Active Workspace Top Header Bar */}
-      <div
-        className={`flex flex-wrap items-center justify-between gap-4 p-3.5 sm:p-4 border rounded-xl ${
-          isDark
-            ? 'bg-zinc-900 border-zinc-800 text-zinc-100'
-            : 'bg-white border-zinc-200 text-zinc-900'
-        }`}
-      >
-        <div className="flex items-center gap-3 min-w-0">
-          <div
-            className={`w-10 h-10 rounded-lg overflow-hidden shrink-0 flex items-center justify-center border ${
-              isDark ? 'bg-zinc-950 border-zinc-800' : 'bg-zinc-100 border-zinc-200'
-            }`}
-          >
-            <img
-              src={currentImage.previewUrl}
-              alt="Source"
-              className="w-full h-full object-cover"
-            />
-          </div>
-          <div className="min-w-0">
-            <h3 className={`text-xs sm:text-sm font-semibold truncate ${isDark ? 'text-white' : 'text-zinc-900'}`}>
-              {currentImage.name}
-            </h3>
-            <div className={`flex items-center gap-2 text-[11px] font-mono mt-0.5 ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
-              <span>{currentImage.width} × {currentImage.height} px</span>
-              <span>·</span>
-              <span>{formatBytes(currentImage.sizeBytes)}</span>
-            </div>
-          </div>
+    <div className="w-full max-w-6xl mx-auto space-y-2 sm:space-y-2.5 animate-in fade-in duration-200 select-none">
+      {/* Hero Title & Action Bar Row (Ultra-Compact Viewport-Safe) */}
+      <div className="flex items-center justify-between gap-3 pt-0 pb-0.5">
+        <div className="flex items-center gap-2">
+          <h1 className="text-base sm:text-lg font-bold tracking-tight text-zinc-950 dark:text-white leading-tight">
+            Filters & Watermark
+          </h1>
+          <span className="hidden sm:inline-block text-zinc-300 dark:text-zinc-700">·</span>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400 hidden sm:inline-block">
+            Tune contrast, exposure, and overlay watermarks directly in RAM.
+          </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 shrink-0">
           <button
+            type="button"
             onClick={resetImage}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
-              isDark
-                ? 'bg-zinc-800 hover:bg-zinc-750 text-zinc-200'
-                : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700'
-            }`}
+            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md border border-zinc-200 dark:border-zinc-800 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-xs font-medium text-zinc-700 dark:text-zinc-300 transition-colors cursor-pointer"
           >
-            <RefreshCw className="w-3.5 h-3.5" />
-            <span>Change Image</span>
-          </button>
-
-          <button
-            disabled={!result}
-            onClick={handleCopy}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer disabled:opacity-50 ${
-              isDark
-                ? 'bg-zinc-800 hover:bg-zinc-750 text-zinc-200'
-                : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700'
-            }`}
-          >
-            <Copy className="w-3.5 h-3.5" />
-            <span>Copy</span>
-          </button>
-
-          {isShareSupported() && (
-            <button
-              disabled={!result}
-              onClick={handleShare}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer disabled:opacity-50 ${
-                isDark
-                  ? 'bg-zinc-800 hover:bg-zinc-750 text-zinc-200'
-                  : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700'
-              }`}
-            >
-              <Share2 className="w-3.5 h-3.5" />
-              <span>Share</span>
-            </button>
-          )}
-
-          <button
-            disabled={!result}
-            onClick={handleDownload}
-            className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
-              isDark
-                ? 'bg-zinc-100 hover:bg-zinc-200 text-zinc-900'
-                : 'bg-zinc-900 hover:bg-zinc-800 text-white'
-            }`}
-          >
-            <Download className="w-3.5 h-3.5" />
-            <span>Download PNG</span>
+            <RefreshCw className="w-3 h-3 text-zinc-500" />
+            <span>Change image</span>
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Controls Column */}
-        <div className="lg:col-span-5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 space-y-6">
-          {/* Sub-tab Switcher (Soft Tabs) */}
-          <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1 rounded-lg text-xs">
-            <button
-              onClick={() => setActiveTab('filters')}
-              className={`flex-1 py-1.5 rounded-md font-medium transition-colors flex items-center justify-center gap-1.5 cursor-pointer ${
-                activeTab === 'filters'
-                  ? 'bg-white dark:bg-zinc-700 text-zinc-950 dark:text-white shadow-xs font-semibold'
-                  : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white'
-              }`}
-            >
-              <Sliders className="w-3.5 h-3.5" />
-              Color Adjustments
-            </button>
-            <button
-              onClick={() => setActiveTab('watermark')}
-              className={`flex-1 py-1.5 rounded-md font-medium transition-colors flex items-center justify-center gap-1.5 cursor-pointer ${
-                activeTab === 'watermark'
-                  ? 'bg-white dark:bg-zinc-700 text-zinc-950 dark:text-white shadow-xs font-semibold'
-                  : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white'
-              }`}
-            >
-              <Type className="w-3.5 h-3.5" />
-              Text Watermark
-            </button>
-          </div>
-
-          {activeTab === 'filters' ? (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
-                  Sliders
-                </span>
-                <button
-                  onClick={handleResetFilters}
-                  className="text-xs text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white flex items-center gap-1 cursor-pointer"
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-4 items-start">
+        {/* LEFT COLUMN: Live Preview Display (7 cols) */}
+        <div className="lg:col-span-7 xl:col-span-7">
+          <div
+            className={`border rounded-xl p-2.5 sm:p-3 space-y-2 transition-colors relative overflow-hidden ${
+              isDark
+                ? 'bg-zinc-900/90 border-zinc-800/80 shadow-xs'
+                : 'bg-white border-zinc-200 shadow-xs'
+            }`}
+          >
+            {/* Header bar inside left card */}
+            <div className="flex items-center justify-between gap-3 px-0.5">
+              <div className="flex items-center gap-2 min-w-0">
+                <div
+                  className={`w-6 h-6 rounded-md overflow-hidden shrink-0 flex items-center justify-center border ${
+                    isDark ? 'bg-zinc-850 border-zinc-800 text-zinc-400' : 'bg-zinc-100 border-zinc-200 text-zinc-600'
+                  }`}
                 >
-                  <Undo2 className="w-3 h-3" />
-                  Reset all
-                </button>
-              </div>
-
-              <Slider
-                label="Brightness"
-                value={filters.brightness}
-                min={0}
-                max={200}
-                unit="%"
-                onChange={(v) => handleFilterChange('brightness', v)}
-              />
-              <Slider
-                label="Contrast"
-                value={filters.contrast}
-                min={0}
-                max={200}
-                unit="%"
-                onChange={(v) => handleFilterChange('contrast', v)}
-              />
-              <Slider
-                label="Saturation"
-                value={filters.saturation}
-                min={0}
-                max={200}
-                unit="%"
-                onChange={(v) => handleFilterChange('saturation', v)}
-              />
-              <Slider
-                label="Blur"
-                value={filters.blur}
-                min={0}
-                max={20}
-                unit="px"
-                onChange={(v) => handleFilterChange('blur', v)}
-              />
-              <Slider
-                label="Grayscale"
-                value={filters.grayscale}
-                min={0}
-                max={100}
-                unit="%"
-                onChange={(v) => handleFilterChange('grayscale', v)}
-              />
-              <Slider
-                label="Sepia"
-                value={filters.sepia}
-                min={0}
-                max={100}
-                unit="%"
-                onChange={(v) => handleFilterChange('sepia', v)}
-              />
-
-              <label className="flex items-center gap-2 cursor-pointer select-none pt-2 border-t border-zinc-100 dark:border-zinc-800">
-                <input
-                  type="checkbox"
-                  checked={filters.sharpen}
-                  onChange={(e) => handleFilterChange('sharpen', e.target.checked)}
-                  className="rounded border-zinc-300 text-zinc-900 focus:ring-zinc-900 w-4 h-4"
-                />
-                <span className="text-xs font-medium text-zinc-800 dark:text-zinc-200">
-                  Enable High-Pass Sharpen Filter
-                </span>
-              </label>
-
-              <Button
-                size="lg"
-                variant="primary"
-                onClick={applyFilters}
-                isLoading={isProcessing}
-                className="w-full"
-                leftIcon={<Sparkles className="w-4 h-4" />}
-              >
-                Render Adjustments
-              </Button>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
-                  Watermark Text
-                </label>
-                <input
-                  type="text"
-                  value={watermarkText}
-                  onChange={(e) => setWatermarkText(e.target.value)}
-                  placeholder="e.g. © 2026 Your Studio"
-                  className="w-full px-3 py-2 text-sm bg-zinc-50 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white rounded-lg focus:outline-none focus:ring-1 focus:ring-zinc-500"
-                />
-              </div>
-
-              <Slider
-                label="Font Size"
-                value={watermarkSize}
-                min={16}
-                max={120}
-                unit="px"
-                onChange={setWatermarkSize}
-              />
-
-              <Slider
-                label="Opacity"
-                value={watermarkOpacity}
-                min={10}
-                max={100}
-                unit="%"
-                onChange={setWatermarkOpacity}
-              />
-
-              {/* Color Picker & Swatches */}
-              <div className="space-y-2">
-                <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300">
-                  Text Color
-                </label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="color"
-                    value={watermarkColor}
-                    onChange={(e) => setWatermarkColor(e.target.value)}
-                    className="w-8 h-8 rounded-lg cursor-pointer border-0 bg-transparent p-0"
+                  <img
+                    src={currentImage.previewUrl}
+                    alt="Thumbnail"
+                    className="w-full h-full object-cover select-none"
                   />
-                  <div className="flex gap-1.5">
-                    {['#ffffff', '#000000', '#f59e0b', '#ef4444', '#3b82f6'].map((c) => (
-                      <button
-                        key={c}
-                        type="button"
-                        onClick={() => setWatermarkColor(c)}
-                        className="w-7 h-7 rounded-lg border border-zinc-300 dark:border-zinc-700 shadow-xs"
-                        style={{ backgroundColor: c }}
-                      />
-                    ))}
+                </div>
+                <div className="min-w-0 flex items-center gap-2">
+                  <h3 className={`text-xs font-semibold truncate max-w-[150px] sm:max-w-xs ${isDark ? 'text-white' : 'text-zinc-900'}`}>
+                    {currentImage.name}
+                  </h3>
+                  <div className={`flex items-center gap-1 text-[10px] font-mono shrink-0 ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                    <span>{currentImage.width}×{currentImage.height}</span>
+                    <span>·</span>
+                    <span className="font-semibold">{formatBytes(currentImage.sizeBytes)}</span>
                   </div>
                 </div>
               </div>
 
-              {/* Position 3x3 Grid (Soft Tiles) */}
-              <div className="space-y-2">
-                <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300">
-                  Position Anchor
-                </label>
-                <div className="grid grid-cols-3 gap-1.5 max-w-[180px]">
-                  {(
-                    [
-                      'top-left',
-                      'top-center',
-                      'top-right',
-                      'center',
-                      'bottom-left',
-                      'bottom-center',
-                      'bottom-right',
-                    ] as WatermarkOptions['position'][]
-                  ).map((pos) => (
-                    <button
-                      key={pos}
-                      type="button"
-                      onClick={() => setWatermarkPosition(pos)}
-                      className={`h-9 rounded-lg text-[10px] font-mono transition-colors cursor-pointer ${
-                        watermarkPosition === pos
-                          ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-xs font-bold'
-                          : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-750'
-                      }`}
-                    >
-                      {pos.replace('bottom-', 'b-').replace('top-', 't-')}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <Button
-                size="lg"
-                variant="primary"
-                onClick={applyWatermark}
-                isLoading={isProcessing}
-                className="w-full"
-                leftIcon={<Type className="w-4 h-4" />}
-              >
-                Apply Watermark
-              </Button>
+              {result && (
+                <span className="text-[10px] font-mono font-semibold text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 px-2 py-0.5 rounded">
+                  Rendered Canvas
+                </span>
+              )}
             </div>
-          )}
 
-          {result && (
-            <div className="space-y-2">
-              <Button
-                size="xl"
-                variant="primary"
-                onClick={handleDownload}
-                className="w-full bg-emerald-600 hover:bg-emerald-700 border-emerald-600 text-white"
-                leftIcon={<Download className="w-5 h-5" />}
-              >
-                Download Result ({formatBytes(result.sizeBytes)})
-              </Button>
+            {/* Canvas Container (Clamped to 280px standard) */}
+            <div className="relative rounded-xl overflow-hidden bg-black/15 h-[230px] sm:h-[260px] lg:h-[280px] xl:h-[300px] flex items-center justify-center border border-zinc-200/50 dark:border-zinc-800/60 p-2">
+              <img
+                src={result ? result.url : currentImage.previewUrl}
+                alt="Filter Preview"
+                className="max-h-[210px] sm:max-h-[240px] lg:max-h-[260px] xl:max-h-[280px] max-w-full object-contain rounded-lg shadow-sm transition-all select-none"
+                style={{
+                  filter: result
+                    ? undefined
+                    : `brightness(${filters.brightness}%) contrast(${filters.contrast}%) saturate(${filters.saturation}%) blur(${filters.blur}px) grayscale(${filters.grayscale}%) sepia(${filters.sepia}%) invert(${filters.invert}%)`,
+                }}
+              />
+            </div>
 
-              <div className="grid grid-cols-2 gap-2">
+            {/* Quick Action footer inside left card */}
+            <div className="flex flex-wrap items-center justify-between text-xs text-zinc-500 px-0.5 pt-0.5 gap-2">
+              <span className="flex items-center gap-1 text-[10px] font-mono text-zinc-400">
+                <ShieldCheck className="w-3 h-3 text-emerald-500" />
+                <span>Zero Server Latency · 100% Client-Side</span>
+              </span>
+
+              <div className="flex items-center gap-1.5">
                 <button
                   type="button"
                   onClick={handleCopy}
-                  className="py-2 px-3 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-zinc-800 dark:text-zinc-200 transition-colors cursor-pointer"
+                  disabled={!result}
+                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium transition-colors cursor-pointer disabled:opacity-50 ${
+                    isDark
+                      ? 'bg-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-750'
+                      : 'bg-zinc-100 text-zinc-700 hover:text-zinc-900 hover:bg-zinc-200'
+                  }`}
                 >
-                  <Copy className="w-3.5 h-3.5 text-zinc-500" />
-                  <span>Copy Image</span>
+                  <Copy className="w-3 h-3 text-blue-500" />
+                  <span>Copy</span>
                 </button>
+
                 {isShareSupported() && (
                   <button
                     type="button"
                     onClick={handleShare}
-                    className="py-2 px-3 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-zinc-800 dark:text-zinc-200 transition-colors cursor-pointer"
+                    disabled={!result}
+                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium transition-colors cursor-pointer disabled:opacity-50 ${
+                      isDark
+                        ? 'bg-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-750'
+                        : 'bg-zinc-100 text-zinc-700 hover:text-zinc-900 hover:bg-zinc-200'
+                    }`}
                   >
-                    <Share2 className="w-3.5 h-3.5 text-zinc-500" />
+                    <Share2 className="w-3 h-3 text-indigo-500" />
                     <span>Share</span>
                   </button>
                 )}
               </div>
             </div>
-          )}
+
+            {/* Metrics Breakdown Bar */}
+            <div
+              className={`grid grid-cols-4 gap-2 p-2 rounded-lg text-xs ${
+                isDark ? 'bg-zinc-800/60' : 'bg-zinc-100/80'
+              }`}
+            >
+              <div>
+                <span className={`block text-[10px] ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                  Resolution
+                </span>
+                <span className={`font-mono font-bold text-[11px] truncate block ${isDark ? 'text-zinc-100' : 'text-zinc-900'}`}>
+                  {currentImage.width}×{currentImage.height}
+                </span>
+              </div>
+              <div>
+                <span className={`block text-[10px] ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                  Active Tool
+                </span>
+                <span className={`font-mono text-[11px] truncate block uppercase ${isDark ? 'text-zinc-200' : 'text-zinc-800'}`}>
+                  {activeTab}
+                </span>
+              </div>
+              <div>
+                <span className={`block text-[10px] ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                  State
+                </span>
+                <span className="font-semibold text-[11px] text-blue-500 dark:text-blue-400 block truncate">
+                  {result ? 'Export Ready' : 'Live Preview'}
+                </span>
+              </div>
+              <div>
+                <span className={`block text-[10px] ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                  Output Size
+                </span>
+                <span className={`font-mono font-bold text-[11px] block truncate ${result ? 'text-emerald-500' : isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>
+                  {result ? formatBytes(result.sizeBytes) : '—'}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Live Preview Display */}
-        <div className="lg:col-span-7 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 space-y-4">
-          <div className="flex items-center justify-between">
-            <h4 className="text-sm font-bold text-zinc-900 dark:text-white">
-              {result ? 'Rendered Image' : 'Live Filter Preview'}
-            </h4>
-            {result && (
-              <span className="text-xs font-mono font-semibold text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 px-2 py-0.5 rounded">
-                Rendered
-              </span>
-            )}
-          </div>
+        {/* RIGHT COLUMN: Controls Panel (5 cols) */}
+        <div className="lg:col-span-5 xl:col-span-5 space-y-2">
+          <div
+            className={`p-2 sm:p-2.5 rounded-xl border space-y-2 transition-colors ${
+              isDark ? 'bg-zinc-900/90 border-zinc-800/80 shadow-xs' : 'bg-white border-zinc-200 shadow-xs'
+            }`}
+          >
+            {/* Sub-tab Switcher (Soft Tabs) */}
+            <div className="flex bg-zinc-100 dark:bg-zinc-800 p-0.5 rounded-lg text-xs">
+              <button
+                onClick={() => setActiveTab('filters')}
+                className={`flex-1 py-1 rounded-md font-medium transition-colors flex items-center justify-center gap-1.5 cursor-pointer text-[11px] ${
+                  activeTab === 'filters'
+                    ? 'bg-white dark:bg-zinc-700 text-zinc-950 dark:text-white shadow-xs font-semibold'
+                    : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white'
+                }`}
+              >
+                <Sliders className="w-3 h-3" />
+                Color Adjustments
+              </button>
+              <button
+                onClick={() => setActiveTab('watermark')}
+                className={`flex-1 py-1 rounded-md font-medium transition-colors flex items-center justify-center gap-1.5 cursor-pointer text-[11px] ${
+                  activeTab === 'watermark'
+                    ? 'bg-white dark:bg-zinc-700 text-zinc-950 dark:text-white shadow-xs font-semibold'
+                    : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white'
+                }`}
+              >
+                <Type className="w-3 h-3" />
+                Text Watermark
+              </button>
+            </div>
 
-          <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-100/50 dark:bg-zinc-950 p-4 flex items-center justify-center min-h-[400px] overflow-hidden">
-            <img
-              src={result ? result.url : currentImage.previewUrl}
-              alt="Filter Preview"
-              className="max-h-[460px] max-w-full object-contain rounded-lg shadow-sm"
-              style={{
-                filter: result
-                  ? undefined
-                  : `brightness(${filters.brightness}%) contrast(${filters.contrast}%) saturate(${filters.saturation}%) blur(${filters.blur}px) grayscale(${filters.grayscale}%) sepia(${filters.sepia}%) invert(${filters.invert}%)`,
-              }}
-            />
+            {activeTab === 'filters' ? (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+                    Sliders
+                  </span>
+                  <button
+                    onClick={handleResetFilters}
+                    className="text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white flex items-center gap-1 cursor-pointer"
+                  >
+                    <Undo2 className="w-3 h-3" />
+                    Reset
+                  </button>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Slider
+                    label="Brightness"
+                    value={filters.brightness}
+                    min={0}
+                    max={200}
+                    unit="%"
+                    onChange={(v) => handleFilterChange('brightness', v)}
+                  />
+                  <Slider
+                    label="Contrast"
+                    value={filters.contrast}
+                    min={0}
+                    max={200}
+                    unit="%"
+                    onChange={(v) => handleFilterChange('contrast', v)}
+                  />
+                  <Slider
+                    label="Saturation"
+                    value={filters.saturation}
+                    min={0}
+                    max={200}
+                    unit="%"
+                    onChange={(v) => handleFilterChange('saturation', v)}
+                  />
+                  <Slider
+                    label="Blur"
+                    value={filters.blur}
+                    min={0}
+                    max={20}
+                    unit="px"
+                    onChange={(v) => handleFilterChange('blur', v)}
+                  />
+                </div>
+
+                <label className="flex items-center gap-2 cursor-pointer select-none pt-1 border-t border-zinc-100 dark:border-zinc-800">
+                  <input
+                    type="checkbox"
+                    checked={filters.sharpen}
+                    onChange={(e) => handleFilterChange('sharpen', e.target.checked)}
+                    className="rounded border-zinc-300 text-zinc-900 focus:ring-zinc-900 w-3.5 h-3.5"
+                  />
+                  <span className="text-[11px] font-medium text-zinc-800 dark:text-zinc-200">
+                    Enable High-Pass Sharpen Filter
+                  </span>
+                </label>
+
+                <Button
+                  size="sm"
+                  variant="primary"
+                  onClick={applyFilters}
+                  isLoading={isProcessing}
+                  className="w-full text-xs py-1.5"
+                  leftIcon={<Sparkles className="w-3.5 h-3.5" />}
+                >
+                  Render Adjustments
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <div>
+                  <label className="block text-[11px] font-medium text-zinc-700 dark:text-zinc-300 mb-0.5">
+                    Watermark Text
+                  </label>
+                  <input
+                    type="text"
+                    value={watermarkText}
+                    onChange={(e) => setWatermarkText(e.target.value)}
+                    placeholder="e.g. © 2026 Your Studio"
+                    className="w-full px-2 py-1 text-xs bg-zinc-50 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white rounded-md focus:outline-none focus:ring-1 focus:ring-zinc-500"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Slider
+                    label="Font Size"
+                    value={watermarkSize}
+                    min={16}
+                    max={120}
+                    unit="px"
+                    onChange={setWatermarkSize}
+                  />
+
+                  <Slider
+                    label="Opacity"
+                    value={watermarkOpacity}
+                    min={10}
+                    max={100}
+                    unit="%"
+                    onChange={setWatermarkOpacity}
+                  />
+                </div>
+
+                {/* Color Picker & Swatches */}
+                <div className="space-y-1">
+                  <label className="block text-[11px] font-medium text-zinc-700 dark:text-zinc-300">
+                    Text Color
+                  </label>
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      type="color"
+                      value={watermarkColor}
+                      onChange={(e) => setWatermarkColor(e.target.value)}
+                      className="w-6 h-6 rounded cursor-pointer border-0 bg-transparent p-0"
+                    />
+                    <div className="flex gap-1">
+                      {['#ffffff', '#000000', '#f59e0b', '#ef4444', '#3b82f6'].map((c) => (
+                        <button
+                          key={c}
+                          type="button"
+                          onClick={() => setWatermarkColor(c)}
+                          className="w-5 h-5 rounded border border-zinc-300 dark:border-zinc-700"
+                          style={{ backgroundColor: c }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Position 3x3 Grid */}
+                <div className="space-y-1">
+                  <label className="block text-[11px] font-medium text-zinc-700 dark:text-zinc-300">
+                    Position Anchor
+                  </label>
+                  <div className="grid grid-cols-4 gap-1">
+                    {(
+                      [
+                        'top-left',
+                        'top-center',
+                        'top-right',
+                        'center',
+                        'bottom-left',
+                        'bottom-center',
+                        'bottom-right',
+                      ] as WatermarkOptions['position'][]
+                    ).map((pos) => (
+                      <button
+                        key={pos}
+                        type="button"
+                        onClick={() => setWatermarkPosition(pos)}
+                        className={`h-6 rounded text-[9px] font-mono transition-colors cursor-pointer ${
+                          watermarkPosition === pos
+                            ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-xs font-bold'
+                            : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-750'
+                        }`}
+                      >
+                        {pos.replace('bottom-', 'b-').replace('top-', 't-')}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <Button
+                  size="sm"
+                  variant="primary"
+                  onClick={applyWatermark}
+                  isLoading={isProcessing}
+                  className="w-full text-xs py-1.5"
+                  leftIcon={<Type className="w-3.5 h-3.5" />}
+                >
+                  Apply Watermark
+                </Button>
+              </div>
+            )}
+
+            {/* Primary Action Button: Download CTA */}
+            <div className="pt-1">
+              <button
+                type="button"
+                disabled={!result || isProcessing}
+                onClick={handleDownload}
+                className="w-full py-2 px-3 rounded-lg text-xs font-bold bg-blue-600 hover:bg-blue-500 active:scale-[0.99] text-white flex items-center justify-center gap-1.5 transition-all shadow-md shadow-blue-600/20 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+              >
+                <Download className="w-3.5 h-3.5 stroke-[2.5]" />
+                <span>
+                  {result ? `Download PNG (${formatBytes(result.sizeBytes)})` : 'Render Canvas to Download'}
+                </span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
