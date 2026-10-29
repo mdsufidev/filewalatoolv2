@@ -548,9 +548,14 @@ export const ImageToPdfTool: React.FC<ImageToPdfToolProps> = ({ onNotify }) => {
                 >
                   <Eye className="w-3.5 h-3.5 mr-1.5" /> Preview PDF
                 </Button>
-                <Button size="sm" onClick={handleDownloadPdf} className="text-xs bg-emerald-600 hover:bg-emerald-500">
-                  <Download className="w-3.5 h-3.5 mr-1.5" /> Download PDF
-                </Button>
+                <button
+                  type="button"
+                  onClick={handleDownloadPdf}
+                  className="py-1.5 px-3 rounded-lg text-xs font-semibold bg-red-600 hover:bg-red-700 active:scale-[0.99] text-white flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Download PDF</span>
+                </button>
               </div>
             </div>
           )}

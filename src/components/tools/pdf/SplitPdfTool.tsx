@@ -308,14 +308,14 @@ export const SplitPdfTool: React.FC<SplitPdfToolProps> = ({ onNotify }) => {
             <Button variant="outline" size="sm" onClick={handleReset} className="text-xs py-1 px-2.5 h-auto">
               <span>Change PDF</span>
             </Button>
-            <Button
+            <button
               onClick={() => handleExecuteSplit(false)}
-              isLoading={isProcessing}
-              leftIcon={<Scissors className="w-3.5 h-3.5" />}
-              className="text-xs py-1 px-3 h-auto"
+              disabled={isProcessing}
+              className="py-1.5 px-3.5 rounded-xl text-xs font-semibold bg-red-600 hover:bg-red-700 active:scale-[0.99] text-white flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer disabled:opacity-50"
             >
+              <Scissors className="w-3.5 h-3.5" />
               <span>Extract {parsedPageIndices.length} Page{parsedPageIndices.length > 1 ? 's' : ''}</span>
-            </Button>
+            </button>
           </div>
         )}
       </div>
@@ -442,15 +442,15 @@ export const SplitPdfTool: React.FC<SplitPdfToolProps> = ({ onNotify }) => {
                 >
                   Download as ZIP
                 </Button>
-                <Button
-                  size="sm"
+                <button
+                  type="button"
                   onClick={() => handleExecuteSplit(false)}
-                  isLoading={isProcessing}
-                  leftIcon={<Download className="w-3.5 h-3.5" />}
-                  className="text-xs"
+                  disabled={isProcessing}
+                  className="py-1.5 px-3.5 rounded-xl text-xs font-semibold bg-red-600 hover:bg-red-700 active:scale-[0.99] text-white flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer disabled:opacity-50"
                 >
-                  Extract to Single PDF
-                </Button>
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Extract to Single PDF</span>
+                </button>
               </div>
             </div>
           )}
@@ -487,15 +487,15 @@ export const SplitPdfTool: React.FC<SplitPdfToolProps> = ({ onNotify }) => {
               <div className="text-xs">
                 Each of the <strong>{totalPages}</strong> pages will be saved as an independent single-page PDF and archived into a single .ZIP file.
               </div>
-              <Button
-                size="sm"
+              <button
+                type="button"
                 onClick={() => handleExecuteSplit(true)}
-                isLoading={isProcessing}
-                leftIcon={<Archive className="w-3.5 h-3.5" />}
-                className="text-xs"
+                disabled={isProcessing}
+                className="py-1.5 px-3.5 rounded-xl text-xs font-semibold bg-red-600 hover:bg-red-700 active:scale-[0.99] text-white flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer disabled:opacity-50"
               >
-                Extract All {totalPages} Pages (ZIP)
-              </Button>
+                <Archive className="w-3.5 h-3.5" />
+                <span>Extract All {totalPages} Pages (ZIP)</span>
+              </button>
             </div>
           )}
 

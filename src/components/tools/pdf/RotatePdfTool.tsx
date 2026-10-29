@@ -260,14 +260,14 @@ export const RotatePdfTool: React.FC<RotatePdfToolProps> = ({ onNotify }) => {
             <Button variant="outline" size="sm" onClick={handleReset} className="text-xs py-1 px-2.5 h-auto">
               <span>Change PDF</span>
             </Button>
-            <Button
+            <button
               onClick={handleSaveRotatedPdf}
-              isLoading={isSaving}
-              leftIcon={<RotateCw className="w-3.5 h-3.5" />}
-              className="text-xs py-1 px-3 h-auto"
+              disabled={isSaving}
+              className="py-1.5 px-3.5 rounded-xl text-xs font-semibold bg-red-600 hover:bg-red-700 active:scale-[0.99] text-white flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer disabled:opacity-50"
             >
+              <RotateCw className="w-3.5 h-3.5" />
               <span>Save Rotated PDF</span>
-            </Button>
+            </button>
           </div>
         )}
       </div>

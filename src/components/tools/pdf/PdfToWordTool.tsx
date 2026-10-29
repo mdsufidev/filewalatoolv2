@@ -1087,15 +1087,11 @@ export const PdfToWordTool: React.FC<PdfToWordToolProps> = ({ onNotify }) => {
             </div>
           </div>
 
-          {/* Action CTAs matching MergePdfTool */}
+          {/* Action CTAs */}
           <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
             <button
               onClick={handleDownloadDocx}
-              className={`w-full sm:flex-1 py-2.5 px-6 rounded-md text-xs font-semibold flex items-center justify-center gap-2 transition-colors cursor-pointer ${
-                isDark
-                  ? 'bg-zinc-100 hover:bg-zinc-200 text-zinc-900 border border-zinc-200'
-                  : 'bg-zinc-900 hover:bg-zinc-800 text-white border border-zinc-900'
-              }`}
+              className="w-full sm:flex-1 py-2.5 px-6 rounded-xl text-xs sm:text-sm font-semibold bg-red-600 hover:bg-red-700 active:scale-[0.99] text-white flex items-center justify-center gap-2 transition-all shadow-xs cursor-pointer"
             >
               <Download className="w-4 h-4" />
               <span>Download Word Document ({formatBytes(result.wordFileSize)})</span>
@@ -1432,17 +1428,13 @@ export const PdfToWordTool: React.FC<PdfToWordToolProps> = ({ onNotify }) => {
                 </div>
               )}
 
-              {/* Primary Action Button matching MergePdfTool */}
+              {/* Primary Action Button */}
               <div className="pt-2">
                 <button
                   type="button"
                   onClick={handleExecuteConvertToWord}
                   disabled={isConverting || isValidating}
-                  className={`w-full py-2.5 px-6 rounded-md text-xs font-semibold flex items-center justify-center gap-2 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
-                    isDark
-                      ? 'bg-zinc-100 hover:bg-zinc-200 text-zinc-900 border border-zinc-200'
-                      : 'bg-zinc-900 hover:bg-zinc-800 text-white border border-zinc-900'
-                  }`}
+                  className="w-full py-2.5 px-6 rounded-xl text-xs sm:text-sm font-semibold bg-red-600 hover:bg-red-700 active:scale-[0.99] text-white flex items-center justify-center gap-2 transition-all shadow-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isConverting ? (
                     <>
@@ -1527,7 +1519,7 @@ export const PdfToWordTool: React.FC<PdfToWordToolProps> = ({ onNotify }) => {
               </span>
               <button
                 onClick={handleDownloadDocx}
-                className="px-4 py-2 rounded-xl text-xs font-semibold bg-blue-600 hover:bg-blue-500 text-white cursor-pointer"
+                className="px-4 py-2 rounded-xl text-xs font-semibold bg-red-600 hover:bg-red-700 active:scale-[0.99] text-white cursor-pointer"
               >
                 Download .docx
               </button>

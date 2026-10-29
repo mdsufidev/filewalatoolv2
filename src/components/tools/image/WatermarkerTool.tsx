@@ -290,36 +290,48 @@ export const WatermarkerTool: React.FC<{
             </button>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-2 sm:gap-2.5 items-start">
-            {/* Left Column: Live Preview Canvas (lg:col-span-7 xl:col-span-8) */}
-            <div className="lg:col-span-7 xl:col-span-8 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-2 sm:p-2.5 space-y-1.5">
-              <div className="flex items-center justify-between px-0.5">
-                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-                  Live Stamped Output
-                </span>
-                {resultBlob && (
-                  <span className="text-[10px] font-mono text-emerald-500 font-semibold">
-                    {formatBytes(resultBlob.size)}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 sm:gap-4 items-stretch">
+            {/* Left Column: Live Preview Canvas (lg:col-span-7 xl:col-span-8) - Equal Height */}
+            <div className="lg:col-span-7 xl:col-span-8 flex flex-col h-full">
+              <div className="bg-white dark:bg-zinc-900/90 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-3 sm:p-3.5 flex flex-col justify-between h-full gap-2.5 shadow-xs">
+                <div className="flex items-center justify-between px-0.5 shrink-0">
+                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                    Live Stamped Output
                   </span>
-                )}
-              </div>
+                  {resultBlob && (
+                    <span className="text-[10px] font-mono text-emerald-500 font-semibold">
+                      {formatBytes(resultBlob.size)}
+                    </span>
+                  )}
+                </div>
 
-              <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-100/60 dark:bg-zinc-950 p-2 flex items-center justify-center h-[230px] sm:h-[260px] lg:h-[280px] xl:h-[300px]">
-                {resultUrl && (
-                  <img
-                    src={resultUrl}
-                    alt="Watermarked Preview"
-                    className="max-h-[220px] sm:max-h-[250px] lg:max-h-[270px] xl:max-h-[290px] max-w-full object-contain rounded-md shadow-xs"
-                  />
-                )}
+                <div
+                  className="rounded-xl border border-zinc-200/80 dark:border-zinc-800/80 bg-zinc-100/70 dark:bg-zinc-950/70 p-2 flex items-center justify-center h-[260px] sm:h-[300px] lg:h-auto flex-1 min-h-[220px]"
+                  style={{
+                    backgroundImage: isDark
+                      ? 'radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px)'
+                      : 'radial-gradient(circle, rgba(0,0,0,0.07) 1px, transparent 1px)',
+                    backgroundSize: '16px 16px',
+                  }}
+                >
+                  {resultUrl && (
+                    <img
+                      src={resultUrl}
+                      alt="Watermarked Preview"
+                      className="max-h-[250px] sm:max-h-[280px] lg:max-h-[300px] max-w-full object-contain rounded-md shadow-xs"
+                    />
+                  )}
+                </div>
               </div>
             </div>
 
-            {/* Right Column: Controls & Download (lg:col-span-5 xl:col-span-4) */}
-            <div className="lg:col-span-5 xl:col-span-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-2 sm:p-2.5 space-y-2">
-              <div className="flex items-center justify-between pb-1.5 border-b border-zinc-100 dark:border-zinc-800">
-                {/* Type Switcher */}
-                <div className="flex bg-zinc-100 dark:bg-zinc-800 p-0.5 rounded-lg text-xs">
+            {/* Right Column: Controls & Download (lg:col-span-5 xl:col-span-4) - Equal Height */}
+            <div className="lg:col-span-5 xl:col-span-4 flex flex-col gap-3 h-full">
+              <div className="bg-white dark:bg-zinc-900/90 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-3 sm:p-3.5 flex flex-col justify-between flex-1 space-y-3 shadow-xs">
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between pb-1.5 border-b border-zinc-100 dark:border-zinc-800">
+                    {/* Type Switcher */}
+                    <div className="flex bg-zinc-100 dark:bg-zinc-800 p-0.5 rounded-lg text-xs">
                   <button
                     onClick={() => setType('text')}
                     className={`px-2.5 py-0.5 rounded-md text-[11px] font-semibold transition-colors cursor-pointer ${
@@ -482,19 +494,21 @@ export const WatermarkerTool: React.FC<{
                 </div>
               )}
 
+              </div>{/* end space-y-2.5 */}
+
               {/* Primary Download CTA Button */}
-              <div className="pt-1">
+              <div className="pt-2 shrink-0">
                 <button
                   type="button"
                   disabled={!resultBlob}
                   onClick={handleDownload}
-                  className="w-full py-2 px-3 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-500 active:scale-[0.99] text-white flex items-center justify-center gap-1.5 transition-all shadow-md shadow-emerald-600/20 cursor-pointer disabled:opacity-50"
+                  className="w-full py-2.5 px-4 rounded-xl text-xs sm:text-sm font-semibold bg-red-600 hover:bg-red-700 active:scale-[0.99] text-white flex items-center justify-center gap-2 transition-all shadow-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <Download className="w-3.5 h-3.5 stroke-[2.5]" />
+                  <Download className="w-4 h-4 stroke-[2.5]" />
                   <span>Download Watermarked Photo</span>
                 </button>
 
-                <div className="grid grid-cols-2 gap-1.5 pt-1.5">
+                <div className="grid grid-cols-2 gap-1.5 pt-2">
                   <button
                     type="button"
                     disabled={!resultBlob}
@@ -520,6 +534,7 @@ export const WatermarkerTool: React.FC<{
             </div>
           </div>
         </div>
+      </div>
       )}
       {/* Educational Guide, Specs, Pro Tips & Schema-Matched FAQs */}
       <div className="pt-2">

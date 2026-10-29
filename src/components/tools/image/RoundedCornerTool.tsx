@@ -237,49 +237,53 @@ export const RoundedCornerTool: React.FC<{
             </button>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-2 sm:gap-2.5 items-start">
-            {/* Left Column: Canvas Preview (lg:col-span-7 xl:col-span-8) */}
-            <div className="lg:col-span-7 xl:col-span-8 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-2 sm:p-2.5 space-y-1.5">
-              <div className="flex items-center justify-between px-0.5">
-                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-                  Live Canvas Preview
-                </span>
-                <span className="text-[10px] font-mono text-zinc-400">
-                  Transparent PNG Alpha
-                </span>
-              </div>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 sm:gap-4 items-stretch">
+            {/* Left Column: Canvas Preview (lg:col-span-7 xl:col-span-8) - Equal Height */}
+            <div className="lg:col-span-7 xl:col-span-8 flex flex-col h-full">
+              <div className="bg-white dark:bg-zinc-900/90 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-3 sm:p-3.5 flex flex-col justify-between h-full gap-2.5 shadow-xs">
+                <div className="flex items-center justify-between px-0.5 shrink-0">
+                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                    Live Canvas Preview
+                  </span>
+                  <span className="text-[10px] font-mono text-zinc-400">
+                    Transparent PNG Alpha
+                  </span>
+                </div>
 
-              {/* Checkerboard background container */}
-              <div
-                className="rounded-lg border border-zinc-200 dark:border-zinc-800 p-2 flex items-center justify-center h-[230px] sm:h-[260px] lg:h-[280px] xl:h-[300px]"
-                style={{
-                  backgroundImage: `linear-gradient(45deg, #f0f0f0 25%, transparent 25%), linear-gradient(-45deg, #f0f0f0 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #f0f0f0 75%), linear-gradient(-45deg, transparent 75%, #f0f0f0 75%)`,
-                  backgroundSize: `16px 16px`,
-                  backgroundPosition: `0 0, 0 8px, 8px -8px, -8px 0px`,
-                }}
-              >
-                {resultUrl && (
-                  <img
-                    src={resultUrl}
-                    alt="Rounded preview"
-                    className="max-h-[220px] sm:max-h-[250px] lg:max-h-[270px] xl:max-h-[290px] max-w-full object-contain drop-shadow-sm"
-                  />
-                )}
+                {/* Checkerboard background container */}
+                <div
+                  className="rounded-xl border border-zinc-200/80 dark:border-zinc-800/80 p-2 flex items-center justify-center h-[260px] sm:h-[300px] lg:h-auto flex-1 min-h-[220px]"
+                  style={{
+                    backgroundImage: `linear-gradient(45deg, #f0f0f0 25%, transparent 25%), linear-gradient(-45deg, #f0f0f0 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #f0f0f0 75%), linear-gradient(-45deg, transparent 75%, #f0f0f0 75%)`,
+                    backgroundSize: `16px 16px`,
+                    backgroundPosition: `0 0, 0 8px, 8px -8px, -8px 0px`,
+                  }}
+                >
+                  {resultUrl && (
+                    <img
+                      src={resultUrl}
+                      alt="Rounded preview"
+                      className="max-h-[250px] sm:max-h-[280px] lg:max-h-[300px] max-w-full object-contain drop-shadow-sm"
+                    />
+                  )}
+                </div>
               </div>
             </div>
 
-            {/* Right Column: Controls & Download (lg:col-span-5 xl:col-span-4) */}
-            <div className="lg:col-span-5 xl:col-span-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-2 sm:p-2.5 space-y-2">
-              <div className="flex items-center justify-between pb-1.5 border-b border-zinc-100 dark:border-zinc-800">
-                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-                  Radius Settings
-                </span>
-                {resultBlob && (
-                  <span className="text-[10px] font-mono font-semibold text-emerald-500">
-                    {formatBytes(resultBlob.size)}
-                  </span>
-                )}
-              </div>
+            {/* Right Column: Controls & Download (lg:col-span-5 xl:col-span-4) - Equal Height */}
+            <div className="lg:col-span-5 xl:col-span-4 flex flex-col gap-3 h-full">
+              <div className="bg-white dark:bg-zinc-900/90 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-3 sm:p-3.5 flex flex-col justify-between flex-1 space-y-3 shadow-xs">
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between pb-1.5 border-b border-zinc-100 dark:border-zinc-800">
+                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                      Radius Settings
+                    </span>
+                    {resultBlob && (
+                      <span className="text-[10px] font-mono font-semibold text-emerald-500">
+                        {formatBytes(resultBlob.size)}
+                      </span>
+                    )}
+                  </div>
 
               {/* Radius slider & quick presets */}
               <div className="space-y-1.5">
@@ -359,16 +363,17 @@ export const RoundedCornerTool: React.FC<{
                   </div>
                 )}
               </div>
+              </div>
 
-              {/* Primary Download CTA Button */}
-              <div className="pt-1">
+              {/* Primary Download CTA Button (Red Brand CTA) */}
+              <div className="pt-2 shrink-0">
                 <button
                   type="button"
                   disabled={!resultBlob}
                   onClick={handleDownload}
-                  className="w-full py-2 px-3 rounded-lg text-xs font-bold bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:hover:bg-zinc-200 dark:text-zinc-900 active:scale-[0.99] flex items-center justify-center gap-1.5 transition-all shadow-md cursor-pointer disabled:opacity-50"
+                  className="w-full py-2.5 px-4 rounded-xl text-xs sm:text-sm font-semibold bg-red-600 hover:bg-red-700 active:scale-[0.99] text-white flex items-center justify-center gap-2 transition-all shadow-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <Download className="w-3.5 h-3.5 stroke-[2.5]" />
+                  <Download className="w-4 h-4 stroke-[2.5]" />
                   <span>Download Rounded PNG</span>
                 </button>
 
@@ -398,6 +403,7 @@ export const RoundedCornerTool: React.FC<{
             </div>
           </div>
         </div>
+      </div>
       )}
       {/* Educational Guide, Specs, Pro Tips & Schema-Matched FAQs */}
       <div className="pt-2">

@@ -214,152 +214,113 @@ export const FilterWatermarkTool: React.FC<{
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-4 items-start">
-        {/* LEFT COLUMN: Live Preview Display (7 cols) */}
-        <div className="lg:col-span-7 xl:col-span-7">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 sm:gap-4 items-stretch">
+        {/* LEFT COLUMN: Live Preview Display */}
+        <div className="lg:col-span-7 xl:col-span-8 flex flex-col justify-between h-full gap-2.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-3 sm:p-3.5 shadow-xs">
+          {/* Header bar inside left card */}
+          <div className="flex items-center justify-between gap-3 px-0.5">
+            <div className="flex items-center gap-2 min-w-0">
+              <div
+                className={`w-6 h-6 rounded-md overflow-hidden shrink-0 flex items-center justify-center border ${
+                  isDark ? 'bg-zinc-850 border-zinc-800 text-zinc-400' : 'bg-zinc-100 border-zinc-200 text-zinc-600'
+                }`}
+              >
+                <img
+                  src={currentImage.previewUrl}
+                  alt="Thumbnail"
+                  className="w-full h-full object-cover select-none"
+                />
+              </div>
+              <div className="min-w-0 flex items-center gap-2">
+                <h3 className={`text-xs font-semibold truncate max-w-[150px] sm:max-w-xs ${isDark ? 'text-white' : 'text-zinc-900'}`}>
+                  {currentImage.name}
+                </h3>
+                <div className={`flex items-center gap-1 text-[10px] font-mono shrink-0 ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                  <span>{currentImage.width}×{currentImage.height}</span>
+                  <span>·</span>
+                  <span className="font-semibold">{formatBytes(currentImage.sizeBytes)}</span>
+                </div>
+              </div>
+            </div>
+
+            {result && (
+              <span className="text-xs font-mono font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 px-2 py-0.5 rounded-md">
+                Rendered Canvas
+              </span>
+            )}
+          </div>
+
+          {/* Canvas Container */}
           <div
-            className={`border rounded-xl p-2.5 sm:p-3 space-y-2 transition-colors relative overflow-hidden ${
-              isDark
-                ? 'bg-zinc-900/90 border-zinc-800/80 shadow-xs'
-                : 'bg-white border-zinc-200 shadow-xs'
+            className="relative rounded-xl border border-zinc-200/80 dark:border-zinc-800/80 bg-zinc-100/70 dark:bg-zinc-950/70 h-[260px] sm:h-[300px] lg:h-auto flex-1 min-h-[220px] flex items-center justify-center p-2.5 overflow-hidden select-none"
+            style={{
+              backgroundImage: isDark
+                ? 'radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px)'
+                : 'radial-gradient(circle, rgba(0,0,0,0.07) 1px, transparent 1px)',
+              backgroundSize: '16px 16px',
+            }}
+          >
+            <img
+              src={result ? result.url : currentImage.previewUrl}
+              alt="Filter Preview"
+              className="max-h-[250px] sm:max-h-[280px] lg:max-h-[300px] max-w-full object-contain rounded-lg shadow-sm transition-all select-none"
+              style={{
+                filter: result
+                  ? undefined
+                  : `brightness(${filters.brightness}%) contrast(${filters.contrast}%) saturate(${filters.saturation}%) blur(${filters.blur}px) grayscale(${filters.grayscale}%) sepia(${filters.sepia}%) invert(${filters.invert}%)`,
+              }}
+            />
+          </div>
+
+          {/* Metrics Breakdown Bar */}
+          <div
+            className={`grid grid-cols-4 gap-2 p-2 rounded-lg text-xs ${
+              isDark ? 'bg-zinc-800/60' : 'bg-zinc-100/80'
             }`}
           >
-            {/* Header bar inside left card */}
-            <div className="flex items-center justify-between gap-3 px-0.5">
-              <div className="flex items-center gap-2 min-w-0">
-                <div
-                  className={`w-6 h-6 rounded-md overflow-hidden shrink-0 flex items-center justify-center border ${
-                    isDark ? 'bg-zinc-850 border-zinc-800 text-zinc-400' : 'bg-zinc-100 border-zinc-200 text-zinc-600'
-                  }`}
-                >
-                  <img
-                    src={currentImage.previewUrl}
-                    alt="Thumbnail"
-                    className="w-full h-full object-cover select-none"
-                  />
-                </div>
-                <div className="min-w-0 flex items-center gap-2">
-                  <h3 className={`text-xs font-semibold truncate max-w-[150px] sm:max-w-xs ${isDark ? 'text-white' : 'text-zinc-900'}`}>
-                    {currentImage.name}
-                  </h3>
-                  <div className={`flex items-center gap-1 text-[10px] font-mono shrink-0 ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
-                    <span>{currentImage.width}×{currentImage.height}</span>
-                    <span>·</span>
-                    <span className="font-semibold">{formatBytes(currentImage.sizeBytes)}</span>
-                  </div>
-                </div>
-              </div>
-
-              {result && (
-                <span className="text-[10px] font-mono font-semibold text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 px-2 py-0.5 rounded">
-                  Rendered Canvas
-                </span>
-              )}
-            </div>
-
-            {/* Canvas Container (Clamped to 280px standard) */}
-            <div className="relative rounded-xl overflow-hidden bg-black/15 h-[230px] sm:h-[260px] lg:h-[280px] xl:h-[300px] flex items-center justify-center border border-zinc-200/50 dark:border-zinc-800/60 p-2">
-              <img
-                src={result ? result.url : currentImage.previewUrl}
-                alt="Filter Preview"
-                className="max-h-[210px] sm:max-h-[240px] lg:max-h-[260px] xl:max-h-[280px] max-w-full object-contain rounded-lg shadow-sm transition-all select-none"
-                style={{
-                  filter: result
-                    ? undefined
-                    : `brightness(${filters.brightness}%) contrast(${filters.contrast}%) saturate(${filters.saturation}%) blur(${filters.blur}px) grayscale(${filters.grayscale}%) sepia(${filters.sepia}%) invert(${filters.invert}%)`,
-                }}
-              />
-            </div>
-
-            {/* Quick Action footer inside left card */}
-            <div className="flex flex-wrap items-center justify-between text-xs text-zinc-500 px-0.5 pt-0.5 gap-2">
-              <span className="flex items-center gap-1 text-[10px] font-mono text-zinc-400">
-                <ShieldCheck className="w-3 h-3 text-emerald-500" />
-                <span>Zero Server Latency · 100% Client-Side</span>
+            <div>
+              <span className={`block text-[10px] ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                Resolution
               </span>
-
-              <div className="flex items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={handleCopy}
-                  disabled={!result}
-                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium transition-colors cursor-pointer disabled:opacity-50 ${
-                    isDark
-                      ? 'bg-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-750'
-                      : 'bg-zinc-100 text-zinc-700 hover:text-zinc-900 hover:bg-zinc-200'
-                  }`}
-                >
-                  <Copy className="w-3 h-3 text-blue-500" />
-                  <span>Copy</span>
-                </button>
-
-                {isShareSupported() && (
-                  <button
-                    type="button"
-                    onClick={handleShare}
-                    disabled={!result}
-                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium transition-colors cursor-pointer disabled:opacity-50 ${
-                      isDark
-                        ? 'bg-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-750'
-                        : 'bg-zinc-100 text-zinc-700 hover:text-zinc-900 hover:bg-zinc-200'
-                    }`}
-                  >
-                    <Share2 className="w-3 h-3 text-indigo-500" />
-                    <span>Share</span>
-                  </button>
-                )}
-              </div>
+              <span className={`font-mono font-bold text-[11px] truncate block ${isDark ? 'text-zinc-100' : 'text-zinc-900'}`}>
+                {currentImage.width}×{currentImage.height}
+              </span>
             </div>
-
-            {/* Metrics Breakdown Bar */}
-            <div
-              className={`grid grid-cols-4 gap-2 p-2 rounded-lg text-xs ${
-                isDark ? 'bg-zinc-800/60' : 'bg-zinc-100/80'
-              }`}
-            >
-              <div>
-                <span className={`block text-[10px] ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
-                  Resolution
-                </span>
-                <span className={`font-mono font-bold text-[11px] truncate block ${isDark ? 'text-zinc-100' : 'text-zinc-900'}`}>
-                  {currentImage.width}×{currentImage.height}
-                </span>
-              </div>
-              <div>
-                <span className={`block text-[10px] ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
-                  Active Tool
-                </span>
-                <span className={`font-mono text-[11px] truncate block uppercase ${isDark ? 'text-zinc-200' : 'text-zinc-800'}`}>
-                  {activeTab}
-                </span>
-              </div>
-              <div>
-                <span className={`block text-[10px] ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
-                  State
-                </span>
-                <span className="font-semibold text-[11px] text-blue-500 dark:text-blue-400 block truncate">
-                  {result ? 'Export Ready' : 'Live Preview'}
-                </span>
-              </div>
-              <div>
-                <span className={`block text-[10px] ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
-                  Output Size
-                </span>
-                <span className={`font-mono font-bold text-[11px] block truncate ${result ? 'text-emerald-500' : isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>
-                  {result ? formatBytes(result.sizeBytes) : '—'}
-                </span>
-              </div>
+            <div>
+              <span className={`block text-[10px] ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                Active Tool
+              </span>
+              <span className={`font-mono text-[11px] truncate block uppercase ${isDark ? 'text-zinc-200' : 'text-zinc-800'}`}>
+                {activeTab}
+              </span>
+            </div>
+            <div>
+              <span className={`block text-[10px] ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                State
+              </span>
+              <span className="font-semibold text-[11px] text-blue-500 dark:text-blue-400 block truncate">
+                {result ? 'Export Ready' : 'Live Preview'}
+              </span>
+            </div>
+            <div>
+              <span className={`block text-[10px] ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                Output Size
+              </span>
+              <span className={`font-mono font-bold text-[11px] block truncate ${result ? 'text-emerald-500' : isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>
+                {result ? formatBytes(result.sizeBytes) : '—'}
+              </span>
             </div>
           </div>
         </div>
 
-        {/* RIGHT COLUMN: Controls Panel (5 cols) */}
-        <div className="lg:col-span-5 xl:col-span-5 space-y-2">
+        {/* RIGHT COLUMN: Controls Panel */}
+        <div className="lg:col-span-5 xl:col-span-4 flex flex-col gap-3 h-full">
           <div
-            className={`p-2 sm:p-2.5 rounded-xl border space-y-2 transition-colors ${
-              isDark ? 'bg-zinc-900/90 border-zinc-800/80 shadow-xs' : 'bg-white border-zinc-200 shadow-xs'
+            className={`p-3 sm:p-3.5 rounded-2xl border flex flex-col justify-between flex-1 space-y-3 transition-colors shadow-xs ${
+              isDark ? 'bg-zinc-900/90 border-zinc-800' : 'bg-white border-zinc-200'
             }`}
           >
+            <div className="space-y-2.5">
             {/* Sub-tab Switcher (Soft Tabs) */}
             <div className="flex bg-zinc-100 dark:bg-zinc-800 p-0.5 rounded-lg text-xs">
               <button
@@ -565,16 +526,17 @@ export const FilterWatermarkTool: React.FC<{
                 </Button>
               </div>
             )}
+            </div>{/* end space-y-2.5 */}
 
             {/* Primary Action Button: Download CTA */}
-            <div className="pt-1">
+            <div className="pt-2 shrink-0">
               <button
                 type="button"
                 disabled={!result || isProcessing}
                 onClick={handleDownload}
-                className="w-full py-2 px-3 rounded-lg text-xs font-bold bg-blue-600 hover:bg-blue-500 active:scale-[0.99] text-white flex items-center justify-center gap-1.5 transition-all shadow-md shadow-blue-600/20 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+                className="w-full py-2.5 px-4 rounded-xl text-xs sm:text-sm font-semibold bg-red-600 hover:bg-red-700 active:scale-[0.99] text-white flex items-center justify-center gap-2 transition-all shadow-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Download className="w-3.5 h-3.5 stroke-[2.5]" />
+                <Download className="w-4 h-4 stroke-[2.5]" />
                 <span>
                   {result ? `Download PNG (${formatBytes(result.sizeBytes)})` : 'Render Canvas to Download'}
                 </span>

@@ -725,16 +725,18 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-2 sm:gap-2.5 items-start">
-            {/* Left Column (Canvas & 1-line presets): lg:col-span-7 xl:col-span-8 */}
-            <div className="lg:col-span-7 xl:col-span-8 space-y-1.5">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 sm:gap-4 items-stretch">
+            {/* Left Column (Canvas & 1-line presets): lg:col-span-7 xl:col-span-8 - Equal Height */}
+            <div className="lg:col-span-7 xl:col-span-8 flex flex-col h-full space-y-2">
               {/* Viewport Clamped Canvas */}
               <div
-                className={`relative w-full h-[230px] sm:h-[260px] lg:h-[280px] xl:h-[300px] rounded-xl overflow-hidden border flex items-center justify-center transition-colors shadow-xs ${
-                  isDark
-                    ? 'border-zinc-800 bg-zinc-950/80 shadow-black/20'
-                    : 'border-zinc-200 bg-zinc-50 shadow-zinc-200/30'
-                }`}
+                className="relative w-full h-[260px] sm:h-[300px] lg:h-auto flex-1 min-h-[220px] rounded-xl overflow-hidden border border-zinc-200/80 dark:border-zinc-800/80 bg-zinc-100/70 dark:bg-zinc-950/70 flex items-center justify-center transition-colors shadow-xs"
+                style={{
+                  backgroundImage: isDark
+                    ? 'radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px)'
+                    : 'radial-gradient(circle, rgba(0,0,0,0.07) 1px, transparent 1px)',
+                  backgroundSize: '16px 16px',
+                }}
               >
                 {isProcessing && (
                   <HumanLoadingOverlay
@@ -840,36 +842,41 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
               </div>
             </div>
 
-            {/* Right Column: Controls & Export (lg:col-span-5 xl:col-span-4) */}
-            <div className="lg:col-span-5 xl:col-span-4 space-y-1.5 sm:space-y-2">
+            {/* Right Column: Controls & Export (lg:col-span-5 xl:col-span-4) - Equal Height */}
+            <div className="lg:col-span-5 xl:col-span-4 flex flex-col gap-3 h-full">
               {/* Retouch Controls Card */}
-              <div className="p-2 sm:p-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 flex items-center gap-1">
-                    <Sliders className="w-3 h-3 text-emerald-500" />
-                    <span>Facial Retouch</span>
-                  </span>
-                  <div className="flex items-center gap-1.5">
-                    {hasNeuralRestoration && (
+              <div
+                className={`p-3 sm:p-3.5 rounded-2xl border flex flex-col justify-between flex-1 space-y-3 transition-colors ${
+                  isDark ? 'bg-zinc-900/90 border-zinc-800 shadow-xs' : 'bg-white border-zinc-200 shadow-xs'
+                }`}
+              >
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 flex items-center gap-1">
+                      <Sliders className="w-3 h-3 text-emerald-500" />
+                      <span>Facial Retouch</span>
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      {hasNeuralRestoration && (
+                        <button
+                          type="button"
+                          onClick={handleRevertToOriginal}
+                          className="text-[10px] text-zinc-400 hover:text-rose-500 cursor-pointer"
+                          title="Revert neural face"
+                        >
+                          Revert AI
+                        </button>
+                      )}
                       <button
                         type="button"
-                        onClick={handleRevertToOriginal}
-                        className="text-[10px] text-zinc-400 hover:text-rose-500 cursor-pointer"
-                        title="Revert neural face"
+                        onClick={handleResetSettings}
+                        className="text-[10px] text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 cursor-pointer flex items-center gap-0.5"
                       >
-                        Revert AI
+                        <RotateCcw className="w-2.5 h-2.5" />
+                        <span>Reset</span>
                       </button>
-                    )}
-                    <button
-                      type="button"
-                      onClick={handleResetSettings}
-                      className="text-[10px] text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 cursor-pointer flex items-center gap-0.5"
-                    >
-                      <RotateCcw className="w-2.5 h-2.5" />
-                      <span>Reset</span>
-                    </button>
+                    </div>
                   </div>
-                </div>
 
                 {/* Compact Sliders Grid */}
                 <div className="grid grid-cols-2 gap-x-2 gap-y-1">
@@ -1009,17 +1016,20 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
                     </div>
                   )}
                 </div>
+                </div>
 
-                {/* Primary Download Button */}
-                <button
-                  type="button"
-                  onClick={handleDownload}
-                  disabled={!processedBlob || isProcessing}
-                  className="w-full py-2 px-3 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-500 active:scale-[0.99] text-white flex items-center justify-center gap-1.5 transition-all shadow-md shadow-emerald-600/20 cursor-pointer disabled:opacity-50"
-                >
-                  <Download className="w-3.5 h-3.5 stroke-[2.5]" />
-                  <span>Download Enhanced Portrait</span>
-                </button>
+                {/* Primary Download Button (Red Brand CTA) */}
+                <div className="pt-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={handleDownload}
+                    disabled={!processedBlob || isProcessing}
+                    className="w-full py-2.5 px-4 rounded-xl text-xs sm:text-sm font-semibold bg-red-600 hover:bg-red-700 active:scale-[0.99] text-white flex items-center justify-center gap-2 transition-all shadow-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Download className="w-4 h-4 stroke-[2.5]" />
+                    <span>Download Enhanced Portrait</span>
+                  </button>
+                </div>
 
                 {/* Secondary Copy / Share */}
                 <div className="grid grid-cols-2 gap-1.5 pt-0.5">

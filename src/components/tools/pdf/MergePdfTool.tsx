@@ -698,9 +698,9 @@ export const MergePdfTool: React.FC<MergePdfToolProps> = ({ onNotify, initialFil
           <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
             <button
               onClick={handleDownload}
-              className="w-full sm:flex-1 py-2.5 px-4 rounded-md text-xs font-semibold flex items-center justify-center gap-2 transition-colors cursor-pointer bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:hover:bg-zinc-200 dark:text-zinc-900"
+              className="w-full sm:flex-1 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 transition-all shadow-xs cursor-pointer bg-red-600 hover:bg-red-700 active:scale-[0.99] text-white"
             >
-              <Download className="w-3.5 h-3.5" />
+              <Download className="w-4 h-4" />
               <span>Download Merged PDF ({formatBytes(mergedResult.size)})</span>
             </button>
 
@@ -978,7 +978,7 @@ export const MergePdfTool: React.FC<MergePdfToolProps> = ({ onNotify, initialFil
                     <button
                       disabled={files.length < 2 || isMerging}
                       onClick={handleExecuteMerge}
-                      className="w-full py-2.5 px-4 rounded-md text-xs font-semibold flex items-center justify-center gap-2 transition-colors cursor-pointer bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:hover:bg-zinc-200 dark:text-zinc-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full py-2.5 px-4 rounded-xl text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 transition-all shadow-xs cursor-pointer bg-red-600 hover:bg-red-700 active:scale-[0.99] text-white disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {isMerging ? (
                         <>

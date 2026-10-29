@@ -1156,19 +1156,19 @@ export const CropRotateTool: React.FC<CropRotateToolProps> = ({ onNotify, initia
         </div>
       </div>
 
-      {/* Main Grid: Left Interactive Stage (7 cols) / Right Controls & Single CTA (5 cols) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-4 items-start">
+      {/* Main Grid: Left Interactive Stage (8 cols) / Right Controls & Single CTA (4 cols) - Equal Height */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 sm:gap-4 items-stretch">
         {/* LEFT COLUMN: Interactive Stage Viewport Card */}
-        <div className="lg:col-span-7 xl:col-span-7">
+        <div className="lg:col-span-7 xl:col-span-8 flex flex-col h-full">
           <div
-            className={`border rounded-xl p-2.5 sm:p-3 space-y-2 transition-colors relative overflow-hidden ${
+            className={`border rounded-2xl p-3 sm:p-3.5 flex flex-col justify-between h-full gap-2.5 transition-colors relative overflow-hidden ${
               isDark
-                ? 'bg-zinc-900/90 border-zinc-800/80 shadow-xs'
+                ? 'bg-zinc-900/90 border-zinc-800 shadow-xs'
                 : 'bg-white border-zinc-200 shadow-xs'
             }`}
           >
             {/* Header bar inside left card */}
-            <div className="flex items-center justify-between gap-3 px-0.5">
+            <div className="flex items-center justify-between gap-3 px-0.5 shrink-0">
               <div className="flex items-center gap-2 min-w-0">
                 <div
                   className={`w-6 h-6 rounded-md overflow-hidden shrink-0 flex items-center justify-center border ${
@@ -1209,13 +1209,15 @@ export const CropRotateTool: React.FC<CropRotateToolProps> = ({ onNotify, initia
               </div>
             </div>
 
-            {/* Canvas Interactive Viewport with Unified Virtual Stage */}
+            {/* Canvas Interactive Viewport with Unified Virtual Stage (Dot-Grid Background) */}
             <div
-              className={`relative select-none overflow-hidden rounded-xl border h-[230px] sm:h-[260px] lg:h-[280px] xl:h-[300px] flex items-center justify-center p-2.5 ${
-                isDark
-                  ? 'bg-zinc-950 border-zinc-800'
-                  : 'bg-zinc-100 border-zinc-200'
-              }`}
+              className="relative select-none overflow-hidden rounded-xl border border-zinc-200/80 dark:border-zinc-800/80 bg-zinc-100/70 dark:bg-zinc-950/70 h-[260px] sm:h-[300px] lg:h-auto flex-1 min-h-[220px] flex items-center justify-center p-2.5"
+              style={{
+                backgroundImage: isDark
+                  ? 'radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px)'
+                  : 'radial-gradient(circle, rgba(0,0,0,0.07) 1px, transparent 1px)',
+                backgroundSize: '16px 16px',
+              }}
             >
               {/* Virtual Stage Container: Exact Aspect Ratio of Transformed Image */}
               <div
@@ -1347,7 +1349,7 @@ export const CropRotateTool: React.FC<CropRotateToolProps> = ({ onNotify, initia
 
             {/* Metrics Breakdown Bar */}
             <div
-              className={`grid grid-cols-4 gap-2 p-2 rounded-lg text-xs ${
+              className={`grid grid-cols-4 gap-2 p-2 rounded-lg text-xs shrink-0 ${
                 isDark ? 'bg-zinc-800/60' : 'bg-zinc-100/80'
               }`}
             >
@@ -1371,7 +1373,7 @@ export const CropRotateTool: React.FC<CropRotateToolProps> = ({ onNotify, initia
                 <span className={`block text-[10px] ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
                   Orientation
                 </span>
-                <span className="font-semibold text-[11px] text-blue-500 dark:text-blue-400 block truncate">
+                <span className="font-semibold text-[11px] text-red-500 dark:text-red-400 block truncate">
                   {rotation}° {flipH ? '↔' : ''} {flipV ? '↕' : ''}
                 </span>
               </div>
@@ -1388,13 +1390,14 @@ export const CropRotateTool: React.FC<CropRotateToolProps> = ({ onNotify, initia
         </div>
 
         {/* RIGHT COLUMN: Crop & Transform Controls Panel */}
-        <div className="lg:col-span-5 xl:col-span-5 space-y-2">
+        <div className="lg:col-span-5 xl:col-span-4 flex flex-col gap-3 h-full">
           <div
-            className={`p-2 sm:p-2.5 rounded-xl border space-y-2 transition-colors ${
-              isDark ? 'bg-zinc-900/90 border-zinc-800/80 shadow-xs' : 'bg-white border-zinc-200 shadow-xs'
+            className={`p-3 sm:p-3.5 rounded-2xl border flex flex-col justify-between flex-1 space-y-3 transition-colors ${
+              isDark ? 'bg-zinc-900/90 border-zinc-800 shadow-xs' : 'bg-white border-zinc-200 shadow-xs'
             }`}
           >
-            {/* Header */}
+            <div className="space-y-2.5">
+              {/* Header */}
             <div className="flex items-center justify-between">
               <div>
                 <span className="text-[9px] font-mono font-bold tracking-wider uppercase text-zinc-400 dark:text-zinc-500 block">
@@ -1559,18 +1562,19 @@ export const CropRotateTool: React.FC<CropRotateToolProps> = ({ onNotify, initia
                   step="5"
                   value={quality}
                   onChange={(e) => setQuality(parseInt(e.target.value, 10))}
-                  className="w-full h-1.5 rounded-lg appearance-none cursor-pointer accent-blue-500 bg-zinc-800"
+                  className="w-full h-1.5 rounded-lg appearance-none cursor-pointer accent-red-600 bg-zinc-200 dark:bg-zinc-750"
                 />
               </div>
             )}
+            </div>
 
-            {/* Primary Action Button: Crop & Download */}
-            <div className="pt-1">
+            {/* Primary Action Button: Crop & Download (Red Brand CTA) */}
+            <div className="pt-2 shrink-0">
               <button
                 type="button"
                 disabled={isProcessing}
                 onClick={handleDownload}
-                className="w-full py-2 px-3 rounded-lg text-xs font-bold bg-blue-600 hover:bg-blue-500 active:scale-[0.99] text-white flex items-center justify-center gap-1.5 transition-all shadow-md shadow-blue-600/20 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+                className="w-full py-2.5 px-4 rounded-xl text-xs sm:text-sm font-semibold bg-red-600 hover:bg-red-700 active:scale-[0.99] text-white flex items-center justify-center gap-2 transition-all shadow-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isProcessing ? (
                   <>
@@ -1579,7 +1583,7 @@ export const CropRotateTool: React.FC<CropRotateToolProps> = ({ onNotify, initia
                   </>
                 ) : (
                   <>
-                    <Download className="w-3.5 h-3.5 stroke-[2.5]" />
+                    <Download className="w-4 h-4 stroke-[2.5]" />
                     <span>
                       Crop & Download ({cropPixelW}×{cropPixelH}
                       {previewSizeBytes ? ` · ${formatBytes(previewSizeBytes)}` : ''})

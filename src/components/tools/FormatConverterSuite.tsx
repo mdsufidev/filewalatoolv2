@@ -511,17 +511,17 @@ export const FormatConverterSuite: React.FC<FormatConverterSuiteProps> = ({
           </div>
         </div>
       ) : (
-        /* Active Workspace: 2-Column Zero-Scroll Layout */
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-2 sm:gap-2.5 items-start">
+        /* Active Workspace: 2-Column Equal Height Layout */
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 sm:gap-4 items-stretch">
           {/* Left Column: Canvas Preview & Tuning (lg:col-span-7 xl:col-span-8) */}
-          <div className="lg:col-span-7 xl:col-span-8 space-y-1.5">
+          <div className="lg:col-span-7 xl:col-span-8 flex flex-col h-full space-y-2">
             {/* Studio Canvas Preview */}
             <div
-              className="relative overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-950/80 flex items-center justify-center select-none transition-colors h-[230px] sm:h-[260px] lg:h-[280px] xl:h-[300px]"
+              className="relative overflow-hidden rounded-xl border border-zinc-200/80 dark:border-zinc-800/80 bg-zinc-100/70 dark:bg-zinc-950/70 h-[260px] sm:h-[300px] lg:h-auto flex-1 min-h-[220px] flex items-center justify-center select-none transition-colors"
               style={{
                 backgroundImage: isDark
-                  ? 'radial-gradient(#27272a 1.2px, transparent 1.2px)'
-                  : 'radial-gradient(#d4d4d8 1.2px, transparent 1.2px)',
+                  ? 'radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px)'
+                  : 'radial-gradient(circle, rgba(0,0,0,0.07) 1px, transparent 1px)',
                 backgroundSize: '16px 16px',
               }}
             >
@@ -529,7 +529,7 @@ export const FormatConverterSuite: React.FC<FormatConverterSuiteProps> = ({
                 <img
                   src={convertedPreviewUrl || sourcePreviewUrl || ''}
                   alt="Converted Output Preview"
-                  className="max-h-[210px] sm:max-h-[240px] lg:max-h-[260px] max-w-[90%] object-contain rounded-md shadow-md border border-zinc-200 dark:border-zinc-700 bg-white"
+                  className="max-h-[250px] sm:max-h-[280px] lg:max-h-[300px] max-w-[90%] object-contain rounded-md shadow-xs border border-zinc-200 dark:border-zinc-700 bg-white"
                 />
               ) : (
                 <div className="text-center p-4">
@@ -562,7 +562,7 @@ export const FormatConverterSuite: React.FC<FormatConverterSuiteProps> = ({
             </div>
 
             {/* Docked Controls Strip */}
-            <div className="p-1.5 sm:p-2 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex items-center justify-between flex-wrap gap-1.5">
+            <div className="p-2 sm:p-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex items-center justify-between flex-wrap gap-2 shrink-0">
               {/* Mode Toggle: Target KB vs Quality % */}
               <div className="flex items-center gap-1">
                 <div className="flex items-center bg-zinc-100 dark:bg-zinc-800 p-0.5 rounded-md">
@@ -661,59 +661,65 @@ export const FormatConverterSuite: React.FC<FormatConverterSuiteProps> = ({
             </div>
           </div>
 
-          {/* Right Column: Output Verification & Download (lg:col-span-5 xl:col-span-4) */}
-          <div className="lg:col-span-5 xl:col-span-4 space-y-1.5">
-            <div className="p-2 sm:p-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 space-y-2">
-              {/* Header / Requirements Summary */}
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-1">
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-                  Conversion Verification
-                </span>
-                <span className="text-[10px] font-mono text-zinc-400">
-                  {activeMeta.from} → {activeMeta.to}
-                </span>
-              </div>
+          {/* Right Column: Output Verification & Download (lg:col-span-5 xl:col-span-4) - Equal Height */}
+          <div className="lg:col-span-5 xl:col-span-4 flex flex-col gap-3 h-full">
+            <div
+              className={`p-3 sm:p-3.5 rounded-2xl border flex flex-col justify-between flex-1 space-y-3 transition-colors ${
+                isDark ? 'bg-zinc-900/90 border-zinc-800 shadow-xs' : 'bg-white border-zinc-200 shadow-xs'
+              }`}
+            >
+              <div className="space-y-2.5">
+                {/* Header / Requirements Summary */}
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-1">
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+                    Conversion Verification
+                  </span>
+                  <span className="text-[10px] font-mono text-zinc-400">
+                    {activeMeta.from} → {activeMeta.to}
+                  </span>
+                </div>
 
-              {/* Compact Check Rows */}
-              <div className="space-y-1 text-xs">
-                <div className="px-2 py-1 rounded border border-zinc-100 dark:border-zinc-800 bg-zinc-50/60 dark:bg-zinc-850/60 flex items-center justify-between">
-                  <span className="text-[11px] text-zinc-600 dark:text-zinc-400">Original Size</span>
-                  <span className="font-mono text-[10px] font-semibold text-zinc-900 dark:text-zinc-100">
-                    {formatBytes(sourceFile.size)}
-                  </span>
-                </div>
-                <div className="px-2 py-1 rounded border border-zinc-100 dark:border-zinc-800 bg-zinc-50/60 dark:bg-zinc-850/60 flex items-center justify-between">
-                  <span className="text-[11px] text-zinc-600 dark:text-zinc-400">Target Mode</span>
-                  <span className="font-mono text-[10px] font-semibold text-zinc-900 dark:text-zinc-100">
-                    {mode === 'target-size' ? `< ${targetKb} KB limit` : `${quality}% Quality`}
-                  </span>
-                </div>
-                <div className="px-2 py-1 rounded border border-zinc-100 dark:border-zinc-800 bg-zinc-50/60 dark:bg-zinc-850/60 flex items-center justify-between">
-                  <span className="text-[11px] text-zinc-600 dark:text-zinc-400">Output Size</span>
-                  <span className="font-mono text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
-                    {isProcessing ? 'Optimizing...' : convertedBlob ? `${formatBytes(convertedBlob.size)} ✓` : '...'}
-                  </span>
-                </div>
-                {savings > 0 && (
-                  <div className="px-2 py-1 rounded border border-emerald-500/20 bg-emerald-500/10 flex items-center justify-between">
-                    <span className="text-[11px] text-emerald-600 dark:text-emerald-400">Savings</span>
-                    <span className="font-mono text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
-                      -{savings}% Smaller
+                {/* Compact Check Rows */}
+                <div className="space-y-1 text-xs">
+                  <div className="px-2 py-1 rounded border border-zinc-100 dark:border-zinc-800 bg-zinc-50/60 dark:bg-zinc-850/60 flex items-center justify-between">
+                    <span className="text-[11px] text-zinc-600 dark:text-zinc-400">Original Size</span>
+                    <span className="font-mono text-[10px] font-semibold text-zinc-900 dark:text-zinc-100">
+                      {formatBytes(sourceFile.size)}
                     </span>
                   </div>
-                )}
+                  <div className="px-2 py-1 rounded border border-zinc-100 dark:border-zinc-800 bg-zinc-50/60 dark:bg-zinc-850/60 flex items-center justify-between">
+                    <span className="text-[11px] text-zinc-600 dark:text-zinc-400">Target Mode</span>
+                    <span className="font-mono text-[10px] font-semibold text-zinc-900 dark:text-zinc-100">
+                      {mode === 'target-size' ? `< ${targetKb} KB limit` : `${quality}% Quality`}
+                    </span>
+                  </div>
+                  <div className="px-2 py-1 rounded border border-zinc-100 dark:border-zinc-800 bg-zinc-50/60 dark:bg-zinc-850/60 flex items-center justify-between">
+                    <span className="text-[11px] text-zinc-600 dark:text-zinc-400">Output Size</span>
+                    <span className="font-mono text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                      {isProcessing ? 'Optimizing...' : convertedBlob ? `${formatBytes(convertedBlob.size)} ✓` : '...'}
+                    </span>
+                  </div>
+                  {savings > 0 && (
+                    <div className="px-2 py-1 rounded border border-emerald-500/20 bg-emerald-500/10 flex items-center justify-between">
+                      <span className="text-[11px] text-emerald-600 dark:text-emerald-400">Savings</span>
+                      <span className="font-mono text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+                        -{savings}% Smaller
+                      </span>
+                    </div>
+                  )}
+                </div>
               </div>
 
-              {/* Download CTA Button */}
-              <div className="pt-1">
+              {/* Download CTA Button (Red Brand CTA) */}
+              <div className="pt-2 shrink-0">
                 <button
                   type="button"
                   onClick={handleDownload}
                   disabled={!convertedBlob || isProcessing}
-                  className="w-full py-2 px-3 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-500 active:scale-[0.99] text-white flex items-center justify-center gap-1.5 transition-all shadow-md shadow-emerald-600/20 cursor-pointer disabled:opacity-50"
+                  className="w-full py-2.5 px-4 rounded-xl text-xs sm:text-sm font-semibold bg-red-600 hover:bg-red-700 active:scale-[0.99] text-white flex items-center justify-center gap-2 transition-all shadow-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <Download className="w-3.5 h-3.5 stroke-[2.5]" />
+                  <Download className="w-4 h-4 stroke-[2.5]" />
                   <span>
                     {convertedBlob
                       ? `Download ${activeMeta.to.toUpperCase()} (${formatBytes(convertedBlob.size)})`

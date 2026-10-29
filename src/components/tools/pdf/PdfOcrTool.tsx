@@ -1076,7 +1076,7 @@ export const PdfOcrTool: React.FC<PdfOcrToolProps> = ({ onNotify }) => {
                   type="button"
                   onClick={handleExecuteOcr}
                   disabled={isProcessing || isValidating}
-                  className="w-full sm:w-auto min-w-[240px] px-6 py-2.5 rounded-md font-semibold text-xs transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:hover:bg-zinc-200 dark:text-zinc-900"
+                  className="w-full sm:w-auto min-w-[240px] px-6 py-2.5 rounded-xl font-semibold text-xs transition-all shadow-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 active:scale-[0.99] text-white"
                 >
                   {isProcessing ? (
                     <>
@@ -1197,7 +1197,7 @@ export const PdfOcrTool: React.FC<PdfOcrToolProps> = ({ onNotify }) => {
                     <button
                       type="button"
                       onClick={handleDownloadTxt}
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:hover:bg-zinc-200 dark:text-zinc-900 transition-colors cursor-pointer"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-red-600 hover:bg-red-700 active:scale-[0.99] text-white transition-all shadow-xs cursor-pointer"
                     >
                       <Download className="w-3.5 h-3.5" />
                       <span>Download .TXT</span>

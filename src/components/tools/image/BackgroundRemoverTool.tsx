@@ -1500,13 +1500,13 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
             </div>
           </div>
 
-          {/* Main Studio Layout: 8 cols Viewport + 4 cols Studio Tools */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-4 items-start">
+          {/* Main Studio Layout: 8 cols Viewport + 4 cols Studio Tools - Equal Height */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 sm:gap-4 items-stretch">
             {/* ========================================================= */}
             {/* Left 8 Cols: Interactive Zoom & Pan Studio Viewport       */}
             {/* ========================================================= */}
-            <div className="lg:col-span-8 space-y-2">
-              <div className="p-2.5 sm:p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 space-y-2">
+            <div className="lg:col-span-8 flex flex-col h-full space-y-2">
+              <div className="p-3 sm:p-3.5 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/90 flex flex-col justify-between h-full gap-2 shadow-xs">
                 {/* Viewport Control Bar */}
                 <div className="flex flex-wrap items-center justify-between gap-2 pb-1.5 border-b border-zinc-100 dark:border-zinc-800 text-xs">
                   {/* Tool Modes (Erase, Restore, Wand, Hand) + Undo/Redo */}
@@ -1653,7 +1653,7 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
                   onTouchMove={handleViewportTouchMove}
                   onTouchEnd={handleViewportTouchEnd}
                   onTouchCancel={handleViewportTouchEnd}
-                  className="relative rounded-xl border border-zinc-200 dark:border-zinc-800 overflow-hidden h-[230px] sm:h-[260px] lg:h-[280px] xl:h-[300px] select-none touch-none"
+                  className="relative rounded-xl border border-zinc-200/80 dark:border-zinc-800/80 overflow-hidden h-[260px] sm:h-[300px] lg:h-auto flex-1 min-h-[220px] select-none touch-none"
                   style={{
                     cursor: isPanning
                       ? 'grabbing'
@@ -1789,16 +1789,21 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
             {/* ========================================================= */}
             {/* Right 4 Cols: Refinement Tools & Background Replacement   */}
             {/* ========================================================= */}
-            <div className="lg:col-span-4 space-y-2">
-              <div className="p-2 sm:p-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 space-y-2">
-                <div>
-                  <span className="text-[9px] font-mono font-bold tracking-wider uppercase text-zinc-400 dark:text-zinc-500 block">
-                    STUDIO TOOLS
-                  </span>
-                  <h3 className={`text-xs font-bold ${isDark ? 'text-white' : 'text-zinc-950'}`}>
-                    Refinement & Backdrop
-                  </h3>
-                </div>
+            <div className="lg:col-span-4 flex flex-col gap-3 h-full">
+              <div
+                className={`p-3 sm:p-3.5 rounded-2xl border flex flex-col justify-between flex-1 space-y-3 transition-colors ${
+                  isDark ? 'bg-zinc-900/90 border-zinc-800 shadow-xs' : 'bg-white border-zinc-200 shadow-xs'
+                }`}
+              >
+                <div className="space-y-2.5">
+                  <div>
+                    <span className="text-[9px] font-mono font-bold tracking-wider uppercase text-zinc-400 dark:text-zinc-500 block">
+                      STUDIO TOOLS
+                    </span>
+                    <h3 className={`text-xs font-bold ${isDark ? 'text-white' : 'text-zinc-950'}`}>
+                      Refinement & Backdrop
+                    </h3>
+                  </div>
 
                 {/* Brush Size & Hardness */}
                 <div className="space-y-1">
@@ -1899,16 +1904,17 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
                     </div>
                   </div>
                 </div>
+                </div>
 
-                {/* Primary Action Button */}
-                <div className="pt-1">
+                {/* Primary Action Button (Red Brand CTA) */}
+                <div className="pt-2 shrink-0">
                   <button
                     type="button"
                     disabled={!resultBlob}
                     onClick={handleDownload}
-                    className="w-full py-2 px-3 rounded-lg text-xs font-bold bg-blue-600 hover:bg-blue-500 active:scale-[0.99] text-white flex items-center justify-center gap-1.5 transition-all shadow-md shadow-blue-600/20 cursor-pointer disabled:opacity-50"
+                    className="w-full py-2.5 px-4 rounded-xl text-xs sm:text-sm font-semibold bg-red-600 hover:bg-red-700 active:scale-[0.99] text-white flex items-center justify-center gap-2 transition-all shadow-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <Download className="w-3.5 h-3.5 stroke-[2.5]" />
+                    <Download className="w-4 h-4 stroke-[2.5]" />
                     <span>Download Cutout (PNG)</span>
                   </button>
                 </div>

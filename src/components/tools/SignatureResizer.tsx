@@ -829,19 +829,19 @@ export const SignatureResizer: React.FC<SignatureResizerProps> = ({ onNotify }) 
         </div>
       </div>
 
-      {/* Viewport & Controls Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-2 sm:gap-2.5 items-start">
+      {/* Viewport & Controls Grid - Equal Height */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 sm:gap-4 items-stretch">
         {/* Left Column: Interactive Crop Viewport (lg:col-span-7 xl:col-span-8) */}
-        <div className="lg:col-span-7 xl:col-span-8 space-y-1.5">
+        <div className="lg:col-span-7 xl:col-span-8 flex flex-col h-full space-y-2">
           {/* Studio Canvas Viewport */}
           <div
             ref={canvasContainerRef}
             tabIndex={0}
-            className="relative overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-950/80 flex items-center justify-center select-none cursor-grab active:cursor-grabbing focus:outline-none transition-colors touch-none h-[230px] sm:h-[260px] lg:h-[280px] xl:h-[300px]"
+            className="relative overflow-hidden rounded-xl border border-zinc-200/80 dark:border-zinc-800/80 bg-zinc-100/70 dark:bg-zinc-950/70 flex items-center justify-center select-none cursor-grab active:cursor-grabbing focus:outline-none transition-colors touch-none h-[260px] sm:h-[300px] lg:h-auto flex-1 min-h-[220px]"
             style={{
               backgroundImage: isDark
-                ? 'radial-gradient(#27272a 1.2px, transparent 1.2px)'
-                : 'radial-gradient(#d4d4d8 1.2px, transparent 1.2px)',
+                ? 'radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px)'
+                : 'radial-gradient(circle, rgba(0,0,0,0.07) 1px, transparent 1px)',
               backgroundSize: '16px 16px',
             }}
             onPointerDown={handlePointerDown}
@@ -995,95 +995,101 @@ export const SignatureResizer: React.FC<SignatureResizerProps> = ({ onNotify }) 
           </div>
         </div>
 
-        {/* Right Column: Portal Requirements, Whitening Controls & Download (lg:col-span-5 xl:col-span-4) */}
-        <div className="lg:col-span-5 xl:col-span-4 space-y-1.5">
-          <div className="p-2 sm:p-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 space-y-2">
-            {/* Header / Requirements Summary */}
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-1">
-                <FileCheck2 className="w-3.5 h-3.5 text-emerald-500" />
-                Portal Specifications
-              </span>
-              <span className="text-[10px] font-mono text-zinc-400">
-                {targetWidth}×{targetHeight} px
-              </span>
-            </div>
-
-            {/* Compact Requirements Check Rows */}
-            <div className="space-y-1 text-xs">
-              <div className="px-2 py-1 rounded border border-zinc-100 dark:border-zinc-800 bg-zinc-50/60 dark:bg-zinc-850/60 flex items-center justify-between">
-                <span className="text-[11px] text-zinc-600 dark:text-zinc-400">
-                  Size: Strictly &lt; {targetMaxKb} KB
+        {/* Right Column: Portal Requirements, Whitening Controls & Download (lg:col-span-5 xl:col-span-4) - Equal Height */}
+        <div className="lg:col-span-5 xl:col-span-4 flex flex-col gap-3 h-full">
+          <div
+            className={`p-3 sm:p-3.5 rounded-2xl border flex flex-col justify-between flex-1 space-y-3 transition-colors ${
+              isDark ? 'bg-zinc-900/90 border-zinc-800 shadow-xs' : 'bg-white border-zinc-200 shadow-xs'
+            }`}
+          >
+            <div className="space-y-2.5">
+              {/* Header / Requirements Summary */}
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-1">
+                  <FileCheck2 className="w-3.5 h-3.5 text-emerald-500" />
+                  Portal Specifications
                 </span>
-                <span className="font-mono text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
-                  {resultBlob ? `${formatBytes(resultSizeBytes)} ✓` : 'Auto-compress'}
+                <span className="text-[10px] font-mono text-zinc-400">
+                  {targetWidth}×{targetHeight} px
                 </span>
               </div>
-              <div className="px-2 py-1 rounded border border-zinc-100 dark:border-zinc-800 bg-zinc-50/60 dark:bg-zinc-850/60 flex items-center justify-between">
-                <span className="text-[11px] text-zinc-600 dark:text-zinc-400">
-                  DPI: {targetDpi} DPI JFIF
-                </span>
-                <span className="font-mono text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
-                  {resultBlob ? `${verifiedDpi || targetDpi} DPI ✓` : 'Pending'}
-                </span>
-              </div>
-            </div>
 
-            {/* Whitening & Ink Contrast Sliders */}
-            <div className="pt-1 border-t border-zinc-100 dark:border-zinc-800 space-y-1.5">
-              <div className="grid grid-cols-2 gap-2 text-[10px]">
-                <div>
-                  <div className="flex justify-between text-zinc-400 mb-0.5">
-                    <span>Whitening</span>
-                    <span className="font-mono">{paperWhitening}%</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="80"
-                    max="160"
-                    step="2"
-                    value={paperWhitening}
-                    onChange={(e) => setPaperWhitening(parseInt(e.target.value))}
-                    className="w-full h-1 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-zinc-900 dark:accent-zinc-100"
-                  />
+              {/* Compact Requirements Check Rows */}
+              <div className="space-y-1 text-xs">
+                <div className="px-2 py-1 rounded border border-zinc-100 dark:border-zinc-800 bg-zinc-50/60 dark:bg-zinc-850/60 flex items-center justify-between">
+                  <span className="text-[11px] text-zinc-600 dark:text-zinc-400">
+                    Size: Strictly &lt; {targetMaxKb} KB
+                  </span>
+                  <span className="font-mono text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                    {resultBlob ? `${formatBytes(resultSizeBytes)} ✓` : 'Auto-compress'}
+                  </span>
                 </div>
-                <div>
-                  <div className="flex justify-between text-zinc-400 mb-0.5">
-                    <span>Ink Contrast</span>
-                    <span className="font-mono">{inkDarkness}%</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="100"
-                    max="220"
-                    step="5"
-                    value={inkDarkness}
-                    onChange={(e) => setInkDarkness(parseInt(e.target.value))}
-                    className="w-full h-1 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-zinc-900 dark:accent-zinc-100"
-                  />
+                <div className="px-2 py-1 rounded border border-zinc-100 dark:border-zinc-800 bg-zinc-50/60 dark:bg-zinc-850/60 flex items-center justify-between">
+                  <span className="text-[11px] text-zinc-600 dark:text-zinc-400">
+                    DPI: {targetDpi} DPI JFIF
+                  </span>
+                  <span className="font-mono text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                    {resultBlob ? `${verifiedDpi || targetDpi} DPI ✓` : 'Pending'}
+                  </span>
                 </div>
               </div>
 
-              <label className="flex items-center gap-1.5 cursor-pointer text-[10px] text-zinc-600 dark:text-zinc-400">
-                <input
-                  type="checkbox"
-                  checked={autoCleanPaper}
-                  onChange={(e) => setAutoCleanPaper(e.target.checked)}
-                  className="rounded accent-zinc-900 dark:accent-zinc-100 cursor-pointer w-3 h-3"
-                />
-                <span>Pure White Background Threshold Wash</span>
-              </label>
+              {/* Whitening & Ink Contrast Sliders */}
+              <div className="pt-1 border-t border-zinc-100 dark:border-zinc-800 space-y-1.5">
+                <div className="grid grid-cols-2 gap-2 text-[10px]">
+                  <div>
+                    <div className="flex justify-between text-zinc-400 mb-0.5">
+                      <span>Whitening</span>
+                      <span className="font-mono">{paperWhitening}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="80"
+                      max="160"
+                      step="2"
+                      value={paperWhitening}
+                      onChange={(e) => setPaperWhitening(parseInt(e.target.value))}
+                      className="w-full h-1 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-red-600"
+                    />
+                  </div>
+                  <div>
+                    <div className="flex justify-between text-zinc-400 mb-0.5">
+                      <span>Ink Contrast</span>
+                      <span className="font-mono">{inkDarkness}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="100"
+                      max="220"
+                      step="5"
+                      value={inkDarkness}
+                      onChange={(e) => setInkDarkness(parseInt(e.target.value))}
+                      className="w-full h-1 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-red-600"
+                    />
+                  </div>
+                </div>
+
+                <label className="flex items-center gap-1.5 cursor-pointer text-[10px] text-zinc-600 dark:text-zinc-400">
+                  <input
+                    type="checkbox"
+                    checked={autoCleanPaper}
+                    onChange={(e) => setAutoCleanPaper(e.target.checked)}
+                    className="rounded accent-red-600 cursor-pointer w-3 h-3"
+                  />
+                  <span>Pure White Background Threshold Wash</span>
+                </label>
+              </div>
             </div>
 
-            {/* Download CTA Button */}
-            <div className="pt-1">
+            {/* Download CTA Button (Red Brand CTA) */}
+            <div className="pt-2 shrink-0">
               <button
                 type="button"
                 onClick={handleDownload}
                 disabled={!resultBlob || isProcessing}
-                className="w-full py-2 px-3 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-500 active:scale-[0.99] text-white flex items-center justify-center gap-1.5 transition-all shadow-md shadow-emerald-600/20 cursor-pointer disabled:opacity-50"
+                className="w-full py-2.5 px-4 rounded-xl text-xs sm:text-sm font-semibold bg-red-600 hover:bg-red-700 active:scale-[0.99] text-white flex items-center justify-center gap-2 transition-all shadow-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Download className="w-3.5 h-3.5 stroke-[2.5]" />
+                <Download className="w-4 h-4 stroke-[2.5]" />
                 <span>
                   {resultBlob
                     ? `Download Compliant Signature (${formatBytes(resultSizeBytes)})`

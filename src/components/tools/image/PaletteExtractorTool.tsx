@@ -16,6 +16,8 @@ interface ColorSwatch {
 export const PaletteExtractorTool: React.FC<{
   onNotify: (title: string, desc?: string, type?: 'success' | 'error' | 'info') => void;
 }> = ({ onNotify }) => {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const { currentImage, loadFile, reset: resetImage } = useImageUpload();
 
   const [palette, setPalette] = useState<ColorSwatch[]>([]);
@@ -159,9 +161,6 @@ export const PaletteExtractorTool: React.FC<{
     setHoveredColor({ hex, x: e.clientX, y: e.clientY });
   };
 
-  const { theme } = useTheme();
-  const isDark = theme === 'dark';
-
   // Global Keyboard Navigation
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -241,86 +240,106 @@ export const PaletteExtractorTool: React.FC<{
             </button>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-2 sm:gap-2.5 items-start">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 sm:gap-4 items-stretch">
             {/* Left Column: Interactive Image & Eyedropper (lg:col-span-7 xl:col-span-8) */}
-            <div className="lg:col-span-7 xl:col-span-8 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-2 sm:p-2.5 space-y-1.5">
-              <div className="flex items-center justify-between px-0.5">
-                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 flex items-center gap-1">
-                  <Pipette className="w-3 h-3 text-blue-500" />
-                  <span>Hover Eyedropper</span>
+            <div className="lg:col-span-7 xl:col-span-8 flex flex-col justify-between h-full gap-2.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-3 sm:p-3.5 shadow-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                  <Pipette className="w-3.5 h-3.5 text-blue-500" />
+                  <span>Interactive Eyedropper</span>
                 </span>
                 {hoveredColor ? (
-                  <div className="flex items-center gap-1.5 bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded-md text-[10px] font-mono font-bold text-zinc-900 dark:text-white">
-                    <div className="w-2.5 h-2.5 rounded-full border border-zinc-300 dark:border-zinc-600" style={{ backgroundColor: hoveredColor.hex }} />
+                  <div className="flex items-center gap-1.5 bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded-md text-[10px] font-mono font-bold text-zinc-900 dark:text-white border border-zinc-200 dark:border-zinc-700">
+                    <div className="w-2.5 h-2.5 rounded-full border border-zinc-300 dark:border-zinc-600 shadow-xs" style={{ backgroundColor: hoveredColor.hex }} />
                     <span>{hoveredColor.hex}</span>
                   </div>
                 ) : (
-                  <span className="text-[10px] font-mono text-zinc-400">Hover to sample pixel color</span>
+                  <span className="text-xs font-mono text-zinc-400">Hover canvas to sample pixel color</span>
                 )}
               </div>
 
-              <div className="relative rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-100/50 dark:bg-zinc-950 p-2 flex items-center justify-center h-[230px] sm:h-[260px] lg:h-[280px] xl:h-[300px] overflow-hidden">
+              <div
+                className="relative rounded-xl border border-zinc-200/80 dark:border-zinc-800/80 bg-zinc-100/70 dark:bg-zinc-950/70 h-[260px] sm:h-[300px] lg:h-auto flex-1 min-h-[220px] flex items-center justify-center p-2.5 overflow-hidden select-none"
+                style={{
+                  backgroundImage: isDark
+                    ? 'radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px)'
+                    : 'radial-gradient(circle, rgba(0,0,0,0.07) 1px, transparent 1px)',
+                  backgroundSize: '16px 16px',
+                }}
+              >
                 <img
                   ref={imageDisplayRef}
                   src={currentImage.previewUrl}
                   alt="Source"
                   onMouseMove={handleMouseMove}
                   onMouseLeave={() => setHoveredColor(null)}
-                  className="max-h-[220px] sm:max-h-[250px] lg:max-h-[270px] xl:max-h-[290px] max-w-full object-contain rounded-md shadow-xs cursor-crosshair"
+                  className="max-h-[250px] sm:max-h-[280px] lg:max-h-[300px] max-w-full object-contain rounded-lg shadow-sm cursor-crosshair"
                 />
+              </div>
+
+              <div className="flex items-center justify-between pt-1 text-[11px] text-zinc-400">
+                <span className="flex items-center gap-1.5 font-medium">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  Client-side pixel sampling active
+                </span>
+                <span className="font-mono">{palette.length} dominant colors detected</span>
               </div>
             </div>
 
             {/* Right Column: Extracted Palette Swatches (lg:col-span-5 xl:col-span-4) */}
-            <div className="lg:col-span-5 xl:col-span-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-2 sm:p-2.5 space-y-2">
-              <div className="flex items-center justify-between pb-1.5 border-b border-zinc-100 dark:border-zinc-800">
-                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-                  Dominant Palette ({palette.length})
-                </span>
-                <span className="text-[10px] font-mono text-zinc-400">Click swatch to copy</span>
-              </div>
+            <div className="lg:col-span-5 xl:col-span-4 flex flex-col gap-3 h-full">
+              <div className="p-3 sm:p-3.5 rounded-2xl border flex flex-col justify-between flex-1 space-y-3 transition-colors bg-white dark:bg-zinc-900/90 border-zinc-200 dark:border-zinc-800 shadow-xs">
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between pb-1.5 border-b border-zinc-100 dark:border-zinc-800">
+                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                      Dominant Palette ({palette.length})
+                    </span>
+                    <span className="text-[10px] font-mono text-zinc-400">Click swatch to copy</span>
+                  </div>
 
-              {/* Swatches Grid */}
-              <div className="grid grid-cols-2 gap-1.5">
-                {palette.map((swatch, idx) => {
-                  const isCopied = copiedHex === swatch.hex;
-                  return (
-                    <button
-                      key={`${swatch.hex}-${idx}`}
-                      type="button"
-                      onClick={() => handleCopyHex(swatch.hex)}
-                      className="flex items-center justify-between p-1.5 rounded-lg bg-zinc-50 dark:bg-zinc-800/60 hover:bg-zinc-100 dark:hover:bg-zinc-800 border border-zinc-200/50 dark:border-zinc-750 transition-all cursor-pointer group text-left"
-                    >
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        <div
-                          className="w-5 h-5 rounded-md border border-zinc-300 dark:border-zinc-700 shadow-xs shrink-0"
-                          style={{ backgroundColor: swatch.hex }}
-                        />
-                        <div className="min-w-0">
-                          <span className="text-[11px] font-mono font-bold text-zinc-900 dark:text-white block truncate">
-                            {swatch.hex}
-                          </span>
-                        </div>
-                      </div>
+                  {/* Swatches Grid */}
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {palette.map((swatch, idx) => {
+                      const isCopied = copiedHex === swatch.hex;
+                      return (
+                        <button
+                          key={`${swatch.hex}-${idx}`}
+                          type="button"
+                          onClick={() => handleCopyHex(swatch.hex)}
+                          className="flex items-center justify-between p-1.5 rounded-lg bg-zinc-50 dark:bg-zinc-800/60 hover:bg-zinc-100 dark:hover:bg-zinc-800 border border-zinc-200/50 dark:border-zinc-750 transition-all cursor-pointer group text-left"
+                        >
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <div
+                              className="w-5 h-5 rounded-md border border-zinc-300 dark:border-zinc-700 shadow-xs shrink-0"
+                              style={{ backgroundColor: swatch.hex }}
+                            />
+                            <div className="min-w-0">
+                              <span className="text-[11px] font-mono font-bold text-zinc-900 dark:text-white block truncate">
+                                {swatch.hex}
+                              </span>
+                            </div>
+                          </div>
 
-                      <div className="shrink-0 text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-white ml-1">
-                        {isCopied ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
+                          <div className="shrink-0 text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-white ml-1">
+                            {isCopied ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
 
-              {/* Action Button: Copy CSS Variables */}
-              <div className="pt-1">
-                <button
-                  type="button"
-                  onClick={handleCopyCssVariables}
-                  className="w-full py-2 px-3 rounded-lg text-xs font-bold bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:hover:bg-zinc-200 dark:text-zinc-900 active:scale-[0.99] flex items-center justify-center gap-1.5 transition-all shadow-md cursor-pointer"
-                >
-                  <Palette className="w-3.5 h-3.5" />
-                  <span>Copy CSS Variables (:root)</span>
-                </button>
+                {/* Action Button: Copy CSS Variables */}
+                <div className="pt-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={handleCopyCssVariables}
+                    className="w-full py-2.5 px-4 rounded-xl text-xs sm:text-sm font-semibold bg-red-600 hover:bg-red-700 active:scale-[0.99] text-white flex items-center justify-center gap-2 transition-all shadow-xs cursor-pointer"
+                  >
+                    <Palette className="w-4 h-4" />
+                    <span>Copy CSS Variables (:root)</span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>

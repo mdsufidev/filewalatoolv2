@@ -889,19 +889,19 @@ export const ResizerTool: React.FC<ResizerToolProps> = ({ onNotify, initialFile 
         </div>
       </div>
 
-      {/* Main Grid: Left Preview Card (7 cols) / Right Parameters & CTA (5 cols) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-4 items-start">
+      {/* Main Grid: Left Preview Card (8 cols) / Right Parameters & CTA (4 cols) - Equal Height */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 sm:gap-4 items-stretch">
         {/* LEFT COLUMN: Real-Time Preview Card */}
-        <div className="lg:col-span-7 xl:col-span-7">
+        <div className="lg:col-span-7 xl:col-span-8 flex flex-col h-full">
           <div
-            className={`border rounded-xl p-2.5 sm:p-3 space-y-2 transition-colors relative overflow-hidden ${
+            className={`border rounded-2xl p-3 sm:p-3.5 flex flex-col justify-between h-full gap-2.5 transition-colors relative overflow-hidden ${
               isDark
-                ? 'bg-zinc-900/90 border-zinc-800/80 shadow-xs'
+                ? 'bg-zinc-900/90 border-zinc-800 shadow-xs'
                 : 'bg-white border-zinc-200 shadow-xs'
             }`}
           >
             {/* Header bar inside left card */}
-            <div className="flex items-center justify-between gap-3 px-0.5">
+            <div className="flex items-center justify-between gap-3 px-0.5 shrink-0">
               <div className="flex items-center gap-2 min-w-0">
                 <div
                   className={`w-6 h-6 rounded-md overflow-hidden shrink-0 flex items-center justify-center border ${
@@ -942,11 +942,19 @@ export const ResizerTool: React.FC<ResizerToolProps> = ({ onNotify, initialFile 
               </div>
             </div>
 
-            {/* Canvas Area (Height-Optimized to fit perfectly on 1080p/768p viewports) */}
-            <div className="relative rounded-xl overflow-hidden bg-black/15 h-[230px] sm:h-[260px] lg:h-[280px] xl:h-[300px] flex items-center justify-center border border-zinc-200/50 dark:border-zinc-800/60">
+            {/* Canvas Area (Designer Dot-Grid - Equalized Viewport Safe) */}
+            <div
+              className="relative rounded-xl overflow-hidden bg-zinc-100/70 dark:bg-zinc-950/70 h-[260px] sm:h-[300px] lg:h-auto flex-1 min-h-[220px] flex items-center justify-center border border-zinc-200/80 dark:border-zinc-800/80"
+              style={{
+                backgroundImage: isDark
+                  ? 'radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px)'
+                  : 'radial-gradient(circle, rgba(0,0,0,0.07) 1px, transparent 1px)',
+                backgroundSize: '16px 16px',
+              }}
+            >
               {isProcessing && (
                 <div className="absolute inset-0 z-20 bg-zinc-950/60 backdrop-blur-xs flex flex-col items-center justify-center space-y-2">
-                  <RefreshCw className="w-6 h-6 text-blue-500 animate-spin" />
+                  <RefreshCw className="w-6 h-6 text-red-500 animate-spin" />
                   <span className="text-xs font-mono font-medium text-zinc-200 bg-zinc-900 px-3 py-1 rounded">
                     Rendering canvas...
                   </span>
@@ -957,14 +965,14 @@ export const ResizerTool: React.FC<ResizerToolProps> = ({ onNotify, initialFile 
                 src={resizedResult ? resizedResult.url : sourceImage.previewUrl}
                 alt="Output preview"
                 draggable={false}
-                className="max-h-[210px] sm:max-h-[240px] lg:max-h-[260px] xl:max-h-[280px] max-w-full object-contain select-none transition-all"
+                className="max-h-[250px] sm:max-h-[280px] lg:max-h-[300px] max-w-full object-contain select-none transition-all"
               />
             </div>
 
             {/* Quick Action footer inside left card */}
-            <div className="flex flex-wrap items-center justify-between text-xs text-zinc-500 px-0.5 pt-0.5 gap-2">
+            <div className="flex flex-wrap items-center justify-between text-xs text-zinc-500 px-0.5 pt-0.5 gap-2 shrink-0">
               <span className="flex items-center gap-1 text-[10px] font-mono text-zinc-400">
-                <ShieldCheck className="w-3 h-3 text-emerald-500" />
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
                 <span>Zero Server Latency · 100% Client-Side</span>
               </span>
 
@@ -979,7 +987,7 @@ export const ResizerTool: React.FC<ResizerToolProps> = ({ onNotify, initialFile 
                       : 'bg-zinc-100 text-zinc-700 hover:text-zinc-900 hover:bg-zinc-200'
                   }`}
                 >
-                  <Copy className="w-3 h-3 text-blue-500" />
+                  <Copy className="w-3 h-3 text-zinc-500" />
                   <span>Copy</span>
                 </button>
 
@@ -994,7 +1002,7 @@ export const ResizerTool: React.FC<ResizerToolProps> = ({ onNotify, initialFile 
                         : 'bg-zinc-100 text-zinc-700 hover:text-zinc-900 hover:bg-zinc-200'
                     }`}
                   >
-                    <Share2 className="w-3 h-3 text-indigo-500" />
+                    <Share2 className="w-3 h-3 text-zinc-500" />
                     <span>Share</span>
                   </button>
                 )}
@@ -1003,7 +1011,7 @@ export const ResizerTool: React.FC<ResizerToolProps> = ({ onNotify, initialFile 
 
             {/* Metrics Breakdown Bar */}
             <div
-              className={`grid grid-cols-4 gap-2 p-2 rounded-lg text-xs ${
+              className={`grid grid-cols-4 gap-2 p-2 rounded-lg text-xs shrink-0 ${
                 isDark ? 'bg-zinc-800/60' : 'bg-zinc-100/80'
               }`}
             >
@@ -1027,7 +1035,7 @@ export const ResizerTool: React.FC<ResizerToolProps> = ({ onNotify, initialFile 
                 <span className={`block text-[10px] ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
                   Format
                 </span>
-                <span className="font-semibold text-[11px] uppercase text-blue-500 dark:text-blue-400 block truncate">
+                <span className="font-semibold text-[11px] uppercase text-red-500 dark:text-red-400 block truncate">
                   {getEffectiveFormat().replace('image/', '')}
                 </span>
               </div>
@@ -1044,13 +1052,14 @@ export const ResizerTool: React.FC<ResizerToolProps> = ({ onNotify, initialFile 
         </div>
 
         {/* RIGHT COLUMN: Controls & Single Download CTA */}
-        <div className="lg:col-span-5 xl:col-span-5 space-y-2">
+        <div className="lg:col-span-5 xl:col-span-4 flex flex-col gap-3 h-full">
           {/* Card: RESIZE PARAMETERS */}
           <div
-            className={`p-2 sm:p-2.5 rounded-xl border space-y-2 transition-colors ${
-              isDark ? 'bg-zinc-900/90 border-zinc-800/80 shadow-xs' : 'bg-white border-zinc-200 shadow-xs'
+            className={`p-3 sm:p-3.5 rounded-2xl border flex flex-col justify-between flex-1 space-y-3 transition-colors ${
+              isDark ? 'bg-zinc-900/90 border-zinc-800 shadow-xs' : 'bg-white border-zinc-200 shadow-xs'
             }`}
           >
+            <div className="space-y-2.5">
             {/* Header + Mode Switcher */}
             <div className="flex items-center justify-between">
               <div>
@@ -1292,7 +1301,7 @@ export const ResizerTool: React.FC<ResizerToolProps> = ({ onNotify, initialFile 
                   <span className={`font-semibold ${isDark ? 'text-zinc-300' : 'text-zinc-700'}`}>
                     Quality
                   </span>
-                  <span className="font-mono text-[11px] font-bold text-blue-500">
+                  <span className="font-mono text-[11px] font-bold text-red-500">
                     {quality}%
                   </span>
                 </div>
@@ -1303,18 +1312,19 @@ export const ResizerTool: React.FC<ResizerToolProps> = ({ onNotify, initialFile 
                   step="5"
                   value={quality}
                   onChange={(e) => setQuality(parseInt(e.target.value, 10))}
-                  className="w-full h-1.5 rounded-lg appearance-none cursor-pointer accent-blue-500 bg-zinc-800"
+                  className="w-full h-1.5 rounded-lg appearance-none cursor-pointer accent-red-600 bg-zinc-200 dark:bg-zinc-700"
                 />
               </div>
             )}
+            </div>
 
-            {/* Primary Action: Single Authoritative Download Button */}
-            <div className="pt-1">
+            {/* Primary Action: Single Authoritative Download Button (Red CTA) */}
+            <div className="pt-2 shrink-0">
               <button
                 type="button"
                 disabled={isProcessing}
                 onClick={handleDownload}
-                className="w-full py-2 px-3 rounded-lg text-xs font-bold bg-blue-600 hover:bg-blue-500 active:scale-[0.99] text-white flex items-center justify-center gap-1.5 transition-all shadow-md shadow-blue-600/20 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+                className="w-full py-2.5 px-4 rounded-xl text-xs sm:text-sm font-semibold bg-red-600 hover:bg-red-700 active:scale-[0.99] text-white flex items-center justify-center gap-2 transition-all shadow-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isProcessing ? (
                   <>
@@ -1323,7 +1333,7 @@ export const ResizerTool: React.FC<ResizerToolProps> = ({ onNotify, initialFile 
                   </>
                 ) : (
                   <>
-                    <Download className="w-3.5 h-3.5 stroke-[2.5]" />
+                    <Download className="w-4 h-4 stroke-[2.5]" />
                     <span>
                       Download Resized ({width}×{height}
                       {resizedResult ? ` · ${formatBytes(resizedResult.sizeBytes)}` : ''})

@@ -151,71 +151,110 @@ export const Base64ConverterTool: React.FC<{
               </span>
             </div>
 
-            <div className="flex items-center gap-1.5">
-              <button
-                onClick={handleReset}
-                className="inline-flex items-center gap-1 py-1 px-2 rounded-lg text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-              >
-                <RefreshCw className="w-3 h-3" />
-                <span>Change Image</span>
-              </button>
-
-              <button
-                onClick={handleCopy}
-                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white transition-all shadow-xs cursor-pointer"
-              >
-                {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                <span>{copied ? 'Copied!' : 'Copy Code'}</span>
-              </button>
-            </div>
+            <button
+              onClick={handleReset}
+              className="inline-flex items-center gap-1 py-1 px-2 rounded-lg text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+            >
+              <RefreshCw className="w-3 h-3" />
+              <span>Change Image</span>
+            </button>
           </div>
 
-          <div
-            className={`p-3 sm:p-4 rounded-xl border space-y-2.5 ${
-              isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'
-            }`}
-          >
-            {/* Format Selector Pills (Soft Tiles) */}
-            <div className="flex items-center justify-between flex-wrap gap-2">
-              <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-400">
-                Output Format
-              </span>
-              <div className="flex flex-wrap gap-1 text-xs">
-                {[
-                  { id: 'data-uri', label: 'Data URI' },
-                  { id: 'html', label: 'HTML <img>' },
-                  { id: 'css', label: 'CSS url()' },
-                  { id: 'markdown', label: 'Markdown' },
-                  { id: 'raw', label: 'Raw Base64' },
-                ].map((fmt) => (
-                  <button
-                    key={fmt.id}
-                    type="button"
-                    onClick={() => setFormat(fmt.id as any)}
-                    className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors cursor-pointer ${
-                      format === fmt.id
-                        ? isDark
-                          ? 'bg-zinc-800 text-white shadow-xs font-semibold'
-                          : 'bg-zinc-900 text-white shadow-xs font-semibold'
-                        : isDark
-                          ? 'bg-zinc-850 text-zinc-400 hover:text-white'
-                          : 'bg-zinc-100 text-zinc-600 hover:text-zinc-950'
-                    }`}
-                  >
-                    {fmt.label}
-                  </button>
-                ))}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 sm:gap-4 items-stretch">
+            {/* Left Column: Image Canvas Preview (lg:col-span-7 xl:col-span-8) */}
+            <div className="lg:col-span-7 xl:col-span-8 flex flex-col justify-between h-full gap-2.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-3 sm:p-3.5 shadow-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 truncate">
+                  {file.name}
+                </span>
+                <span className="text-xs font-mono font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800">
+                  {formatBytes(file.size)}
+                </span>
+              </div>
+
+              <div
+                className="relative rounded-xl border border-zinc-200/80 dark:border-zinc-800/80 bg-zinc-100/70 dark:bg-zinc-950/70 h-[260px] sm:h-[300px] lg:h-auto flex-1 min-h-[220px] flex items-center justify-center p-2.5 overflow-hidden select-none"
+                style={{
+                  backgroundImage: isDark
+                    ? 'radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px)'
+                    : 'radial-gradient(circle, rgba(0,0,0,0.07) 1px, transparent 1px)',
+                  backgroundSize: '16px 16px',
+                }}
+              >
+                <img
+                  src={base64String}
+                  alt={file.name}
+                  className="max-h-[250px] sm:max-h-[280px] lg:max-h-[300px] max-w-full object-contain rounded-lg shadow-sm"
+                />
+              </div>
+
+              <div className="flex items-center justify-between pt-1 text-[11px] text-zinc-400">
+                <span className="flex items-center gap-1.5 font-medium">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  Encoded locally in memory
+                </span>
+                <span className="font-mono">{formatBytes(base64Length)} Base64 payload</span>
               </div>
             </div>
 
-            {/* Text Area */}
-            <div className="relative">
-              <textarea
-                readOnly
-                rows={6}
-                value={outputText}
-                className="w-full max-h-[180px] sm:max-h-[220px] p-2.5 sm:p-3 font-mono text-[11px] bg-zinc-50 dark:bg-zinc-850 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 rounded-lg focus:outline-none select-all leading-relaxed"
-              />
+            {/* Right Column: Code Snippet & Actions (lg:col-span-5 xl:col-span-4) */}
+            <div className="lg:col-span-5 xl:col-span-4 flex flex-col gap-3 h-full">
+              <div className="p-3 sm:p-3.5 rounded-2xl border flex flex-col justify-between flex-1 space-y-3 transition-colors bg-white dark:bg-zinc-900/90 border-zinc-200 dark:border-zinc-800 shadow-xs">
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between pb-1.5 border-b border-zinc-100 dark:border-zinc-800">
+                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                      Output Format
+                    </span>
+                    <span className="text-[10px] font-mono text-zinc-400">~{formatBytes(base64Length)}</span>
+                  </div>
+
+                  {/* Format Selector Pills */}
+                  <div className="grid grid-cols-3 gap-1">
+                    {[
+                      { id: 'data-uri', label: 'Data URI' },
+                      { id: 'html', label: 'HTML <img>' },
+                      { id: 'css', label: 'CSS url()' },
+                      { id: 'markdown', label: 'Markdown' },
+                      { id: 'raw', label: 'Raw Base64' },
+                    ].map((fmt) => (
+                      <button
+                        key={fmt.id}
+                        type="button"
+                        onClick={() => setFormat(fmt.id as any)}
+                        className={`py-1.5 px-2 rounded-lg text-[11px] font-semibold transition-colors cursor-pointer text-center truncate ${
+                          format === fmt.id
+                            ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-xs'
+                            : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white'
+                        }`}
+                      >
+                        {fmt.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Text Area */}
+                  <div className="relative pt-1">
+                    <textarea
+                      readOnly
+                      rows={5}
+                      value={outputText}
+                      className="w-full h-[140px] p-2.5 font-mono text-[11px] bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-750 text-zinc-900 dark:text-zinc-100 rounded-xl focus:outline-none select-all leading-relaxed resize-none"
+                    />
+                  </div>
+                </div>
+
+                {/* Primary Action Button: Red CTA */}
+                <div className="pt-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={handleCopy}
+                    className="w-full py-2.5 px-4 rounded-xl text-xs sm:text-sm font-semibold bg-red-600 hover:bg-red-700 active:scale-[0.99] text-white flex items-center justify-center gap-2 transition-all shadow-xs cursor-pointer"
+                  >
+                    {copied ? <Check className="w-4 h-4 stroke-[2.5]" /> : <Copy className="w-4 h-4 stroke-[2.5]" />}
+                    <span>{copied ? 'Copied to Clipboard!' : 'Copy Snippet Code'}</span>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>

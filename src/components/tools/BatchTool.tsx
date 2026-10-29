@@ -247,234 +247,226 @@ export const BatchTool: React.FC<{
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-4 items-start">
-            {/* LEFT COLUMN: Files List Queue (7 cols) */}
-            <div className="lg:col-span-7 xl:col-span-7">
-              <div
-                className={`border rounded-xl p-2.5 sm:p-3 space-y-2 transition-colors relative overflow-hidden ${
-                  isDark
-                    ? 'bg-zinc-900/90 border-zinc-800/80 shadow-xs'
-                    : 'bg-white border-zinc-200 shadow-xs'
-                }`}
-              >
-                {/* Header bar inside left card */}
-                <div className="flex items-center justify-between gap-3 px-0.5">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <div
-                      className={`w-6 h-6 rounded-md overflow-hidden shrink-0 flex items-center justify-center border ${
-                        isDark ? 'bg-zinc-850 border-zinc-800 text-zinc-400' : 'bg-zinc-100 border-zinc-200 text-zinc-600'
-                      }`}
-                    >
-                      <Archive className="w-3.5 h-3.5 text-blue-500" />
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 sm:gap-4 items-stretch">
+            {/* LEFT COLUMN: Files List Queue (lg:col-span-7 xl:col-span-8) */}
+            <div className="lg:col-span-7 xl:col-span-8 flex flex-col justify-between h-full gap-2.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-3 sm:p-3.5 shadow-xs">
+              {/* Header bar inside left card */}
+              <div className="flex items-center justify-between gap-3 px-0.5">
+                <div className="flex items-center gap-2 min-w-0">
+                  <div
+                    className={`w-6 h-6 rounded-md overflow-hidden shrink-0 flex items-center justify-center border ${
+                      isDark ? 'bg-zinc-850 border-zinc-800 text-zinc-400' : 'bg-zinc-100 border-zinc-200 text-zinc-600'
+                    }`}
+                  >
+                    <Archive className="w-3.5 h-3.5 text-blue-500" />
+                  </div>
+                  <div className="min-w-0 flex items-center gap-2">
+                    <h3 className={`text-xs font-semibold truncate ${isDark ? 'text-white' : 'text-zinc-900'}`}>
+                      Image Queue ({items.length})
+                    </h3>
+                    <div className={`flex items-center gap-1 text-[10px] font-mono shrink-0 ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                      <span>Orig: {formatBytes(totalOriginal)}</span>
+                      {hasFinished && (
+                        <>
+                          <span>·</span>
+                          <span className="text-emerald-500 font-semibold">Done: {formatBytes(totalProcessed)}</span>
+                        </>
+                      )}
                     </div>
-                    <div className="min-w-0 flex items-center gap-2">
-                      <h3 className={`text-xs font-semibold truncate ${isDark ? 'text-white' : 'text-zinc-900'}`}>
-                        Image Queue ({items.length})
-                      </h3>
-                      <div className={`flex items-center gap-1 text-[10px] font-mono shrink-0 ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
-                        <span>Orig: {formatBytes(totalOriginal)}</span>
-                        {hasFinished && (
+                  </div>
+                </div>
+
+                <span className="text-[10px] font-mono text-zinc-400">
+                  {items.filter((i) => i.status === 'done').length}/{items.length} Ready
+                </span>
+              </div>
+
+              {/* Scrollable list */}
+              <div className="divide-y divide-zinc-100 dark:divide-zinc-800 h-[220px] sm:h-[240px] lg:h-auto flex-1 min-h-[180px] overflow-y-auto pr-1">
+                {items.map((item) => (
+                  <div
+                    key={item.id}
+                    className="py-1.5 flex items-center justify-between gap-2 text-xs"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-[11px] text-zinc-900 dark:text-white truncate">{item.file.name}</p>
+                      <div className="flex items-center gap-1.5 text-zinc-400 dark:text-zinc-500 text-[10px] mt-0.5">
+                        <span>{formatBytes(item.originalSize)}</span>
+                        {item.processedSize && (
                           <>
-                            <span>·</span>
-                            <span className="text-emerald-500 font-semibold">Done: {formatBytes(totalProcessed)}</span>
+                            <ArrowRight className="w-2.5 h-2.5 text-zinc-400" />
+                            <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                              {formatBytes(item.processedSize)}
+                            </span>
                           </>
                         )}
                       </div>
                     </div>
-                  </div>
 
-                  <span className="text-[10px] font-mono text-zinc-400">
-                    {items.filter((i) => i.status === 'done').length}/{items.length} Ready
-                  </span>
-                </div>
+                    {/* Status Indicator */}
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {item.status === 'processing' && (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin text-zinc-600 dark:text-zinc-400" />
+                      )}
+                      {item.status === 'done' && (
+                        <span className="flex items-center gap-0.5 text-emerald-600 dark:text-emerald-400 text-[10px] font-semibold bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.2 rounded">
+                          <CheckCircle2 className="w-3 h-3" />
+                          Done
+                        </span>
+                      )}
+                      {item.status === 'error' && (
+                        <span className="text-rose-600 dark:text-rose-400 text-[10px] font-medium bg-rose-50 dark:bg-rose-950/40 px-1.5 py-0.2 rounded">
+                          Failed
+                        </span>
+                      )}
+                      {item.status === 'pending' && (
+                        <span className="text-zinc-400 text-[10px] font-medium">Ready</span>
+                      )}
 
-                {/* Scrollable list (clamped to 230px standard) */}
-                <div className="divide-y divide-zinc-100 dark:divide-zinc-800 h-[210px] sm:h-[230px] lg:h-[250px] overflow-y-auto pr-1">
-                  {items.map((item) => (
-                    <div
-                      key={item.id}
-                      className="py-1.5 flex items-center justify-between gap-2 text-xs"
-                    >
-                      <div className="min-w-0 flex-1">
-                        <p className="font-medium text-[11px] text-zinc-900 dark:text-white truncate">{item.file.name}</p>
-                        <div className="flex items-center gap-1.5 text-zinc-400 dark:text-zinc-500 text-[10px] mt-0.5">
-                          <span>{formatBytes(item.originalSize)}</span>
-                          {item.processedSize && (
-                            <>
-                              <ArrowRight className="w-2.5 h-2.5 text-zinc-400" />
-                              <span className="font-bold text-emerald-600 dark:text-emerald-400">
-                                {formatBytes(item.processedSize)}
-                              </span>
-                            </>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Status Indicator */}
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        {item.status === 'processing' && (
-                          <Loader2 className="w-3.5 h-3.5 animate-spin text-zinc-600 dark:text-zinc-400" />
-                        )}
-                        {item.status === 'done' && (
-                          <span className="flex items-center gap-0.5 text-emerald-600 dark:text-emerald-400 text-[10px] font-semibold bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.2 rounded">
-                            <CheckCircle2 className="w-3 h-3" />
-                            Done
-                          </span>
-                        )}
-                        {item.status === 'error' && (
-                          <span className="text-rose-600 dark:text-rose-400 text-[10px] font-medium bg-rose-50 dark:bg-rose-950/40 px-1.5 py-0.2 rounded">
-                            Failed
-                          </span>
-                        )}
-                        {item.status === 'pending' && (
-                          <span className="text-zinc-400 text-[10px] font-medium">Ready</span>
-                        )}
-
-                        <button
-                          onClick={() => handleRemoveItem(item.id)}
-                          className="text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 p-0.5 rounded cursor-pointer"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </button>
-                      </div>
+                      <button
+                        onClick={() => handleRemoveItem(item.id)}
+                        className="text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 p-0.5 rounded cursor-pointer"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
                     </div>
-                  ))}
-                </div>
+                  </div>
+                ))}
+              </div>
 
-                {/* Compact Add Files Bar */}
-                <div className="pt-0.5">
-                  <Dropzone
-                    multiple
-                    compact
-                    onFilesSelected={handleAddFiles}
-                    title="Add more images to queue"
-                    description="Click or drop additional files"
-                  />
-                </div>
+              {/* Compact Add Files Bar */}
+              <div className="pt-0.5 shrink-0">
+                <Dropzone
+                  multiple
+                  compact
+                  onFilesSelected={handleAddFiles}
+                  title="Add more images to queue"
+                  description="Click or drop additional files"
+                />
               </div>
             </div>
 
-            {/* RIGHT COLUMN: Configuration (5 cols) */}
-            <div className="lg:col-span-5 xl:col-span-5 space-y-2">
+            {/* RIGHT COLUMN: Configuration (lg:col-span-5 xl:col-span-4) */}
+            <div className="lg:col-span-5 xl:col-span-4 flex flex-col gap-3 h-full">
               <div
-                className={`p-2 sm:p-2.5 rounded-xl border space-y-2 transition-colors ${
-                  isDark ? 'bg-zinc-900/90 border-zinc-800/80 shadow-xs' : 'bg-white border-zinc-200 shadow-xs'
+                className={`p-3 sm:p-3.5 rounded-2xl border flex flex-col justify-between flex-1 space-y-3 transition-colors shadow-xs ${
+                  isDark ? 'bg-zinc-900/90 border-zinc-800' : 'bg-white border-zinc-200'
                 }`}
               >
-                <div>
-                  <span className="text-[9px] font-mono font-bold tracking-wider uppercase text-zinc-400 dark:text-zinc-500 block">
-                    BATCH CONFIG
-                  </span>
-                  <h3 className={`text-xs font-bold ${isDark ? 'text-white' : 'text-zinc-950'}`}>
-                    Operation Rule
-                  </h3>
-                </div>
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between pb-1 border-b border-zinc-100 dark:border-zinc-800">
+                    <span className="text-[10px] font-mono font-bold tracking-wider uppercase text-zinc-400 dark:text-zinc-500">
+                      Batch Rule
+                    </span>
+                    <span className="text-[10px] font-mono text-zinc-400">{items.length} files in queue</span>
+                  </div>
 
-                {/* Mode Switcher */}
-                <div className="grid grid-cols-3 gap-1 bg-zinc-100 dark:bg-zinc-800 p-0.5 rounded-lg text-xs">
-                  {(
-                    [
-                      { id: 'compress', label: 'Compress' },
-                      { id: 'convert', label: 'Convert' },
-                      { id: 'resize', label: 'Resize' },
-                    ] as const
-                  ).map((m) => (
-                    <button
-                      key={m.id}
-                      onClick={() => setMode(m.id)}
-                      className={`py-1 rounded-md text-[11px] font-medium transition-colors cursor-pointer ${
-                        mode === m.id
-                          ? 'bg-white dark:bg-zinc-700 text-zinc-950 dark:text-white shadow-xs font-semibold'
-                          : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white'
-                      }`}
-                    >
-                      {m.label}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Target Format */}
-                <div className="space-y-1">
-                  <span className={`text-[10px] font-semibold block ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>
-                    Output Format
-                  </span>
-                  <div className="grid grid-cols-3 gap-1">
+                  {/* Mode Switcher */}
+                  <div className="grid grid-cols-3 gap-1 bg-zinc-100 dark:bg-zinc-800 p-0.5 rounded-lg text-xs">
                     {(
                       [
-                        { id: 'image/webp', label: 'WebP' },
-                        { id: 'image/jpeg', label: 'JPEG' },
-                        { id: 'image/png', label: 'PNG' },
+                        { id: 'compress', label: 'Compress' },
+                        { id: 'convert', label: 'Convert' },
+                        { id: 'resize', label: 'Resize' },
                       ] as const
-                    ).map((fmt) => (
+                    ).map((m) => (
                       <button
-                        key={fmt.id}
-                        onClick={() => setTargetFormat(fmt.id)}
-                        className={`py-1 text-[10px] rounded font-medium text-center transition-colors cursor-pointer ${
-                          targetFormat === fmt.id
-                            ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-xs font-bold'
-                            : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-750'
+                        key={m.id}
+                        onClick={() => setMode(m.id)}
+                        className={`py-1 rounded-md text-[11px] font-medium transition-colors cursor-pointer ${
+                          mode === m.id
+                            ? 'bg-white dark:bg-zinc-700 text-zinc-950 dark:text-white shadow-xs font-semibold'
+                            : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white'
                         }`}
                       >
-                        {fmt.label}
+                        {m.label}
                       </button>
                     ))}
                   </div>
-                </div>
 
-                {/* Sliders depending on mode */}
-                {mode === 'compress' && (
-                  <div className="space-y-1 pt-0.5">
-                    <Slider
-                      label="Compression Quality"
-                      value={quality}
-                      min={20}
-                      max={95}
-                      step={5}
-                      unit="%"
-                      onChange={setQuality}
-                    />
-                  </div>
-                )}
-
-                {mode === 'resize' && (
-                  <div className="space-y-1 pt-0.5">
-                    <Slider
-                      label="Scale Factor"
-                      value={scalePct}
-                      min={10}
-                      max={100}
-                      step={5}
-                      unit="%"
-                      onChange={setScalePct}
-                    />
-                  </div>
-                )}
-
-                {/* Processing Progress Bar */}
-                {isProcessingAll && (
-                  <div className="space-y-1 p-2 rounded-lg bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700">
-                    <div className="flex justify-between text-[11px] font-medium text-zinc-700 dark:text-zinc-300">
-                      <span>Processing queue...</span>
-                      <span className="font-mono">{progress}%</span>
+                  {/* Target Format */}
+                  <div className="space-y-1">
+                    <span className={`text-[10px] font-semibold block ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>
+                      Output Format
+                    </span>
+                    <div className="grid grid-cols-3 gap-1">
+                      {(
+                        [
+                          { id: 'image/webp', label: 'WebP' },
+                          { id: 'image/jpeg', label: 'JPEG' },
+                          { id: 'image/png', label: 'PNG' },
+                        ] as const
+                      ).map((fmt) => (
+                        <button
+                          key={fmt.id}
+                          onClick={() => setTargetFormat(fmt.id)}
+                          className={`py-1 text-[10px] rounded font-medium text-center transition-colors cursor-pointer ${
+                            targetFormat === fmt.id
+                              ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-xs font-bold'
+                              : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-750'
+                          }`}
+                        >
+                          {fmt.label}
+                        </button>
+                      ))}
                     </div>
-                    <div className="w-full h-1.5 bg-zinc-200 dark:bg-zinc-700 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-blue-600 transition-all duration-200"
-                        style={{ width: `${progress}%` }}
+                  </div>
+
+                  {/* Sliders depending on mode */}
+                  {mode === 'compress' && (
+                    <div className="space-y-1 pt-0.5">
+                      <Slider
+                        label="Compression Quality"
+                        value={quality}
+                        min={20}
+                        max={95}
+                        step={5}
+                        unit="%"
+                        onChange={setQuality}
                       />
                     </div>
-                  </div>
-                )}
+                  )}
+
+                  {mode === 'resize' && (
+                    <div className="space-y-1 pt-0.5">
+                      <Slider
+                        label="Scale Factor"
+                        value={scalePct}
+                        min={10}
+                        max={100}
+                        step={5}
+                        unit="%"
+                        onChange={setScalePct}
+                      />
+                    </div>
+                  )}
+
+                  {/* Processing Progress Bar */}
+                  {isProcessingAll && (
+                    <div className="space-y-1 p-2 rounded-lg bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700">
+                      <div className="flex justify-between text-[11px] font-medium text-zinc-700 dark:text-zinc-300">
+                        <span>Processing queue...</span>
+                        <span className="font-mono">{progress}%</span>
+                      </div>
+                      <div className="w-full h-1.5 bg-zinc-200 dark:bg-zinc-700 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-red-600 transition-all duration-200"
+                          style={{ width: `${progress}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
 
                 {/* Primary Action Button */}
-                <div className="pt-1">
+                <div className="pt-2 shrink-0">
                   {hasFinished ? (
                     <button
                       type="button"
                       onClick={downloadAllAsZip}
-                      className="w-full py-2 px-3 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-500 active:scale-[0.99] text-white flex items-center justify-center gap-1.5 transition-all shadow-md shadow-emerald-600/20 cursor-pointer"
+                      className="w-full py-2.5 px-4 rounded-xl text-xs sm:text-sm font-semibold bg-red-600 hover:bg-red-700 active:scale-[0.99] text-white flex items-center justify-center gap-2 transition-all shadow-xs cursor-pointer"
                     >
-                      <Archive className="w-3.5 h-3.5 stroke-[2.5]" />
+                      <Archive className="w-4 h-4 stroke-[2.5]" />
                       <span>Download All as ZIP ({items.filter((i) => i.status === 'done').length})</span>
                     </button>
                   ) : (
@@ -482,16 +474,16 @@ export const BatchTool: React.FC<{
                       type="button"
                       disabled={isProcessingAll}
                       onClick={processAll}
-                      className="w-full py-2 px-3 rounded-lg text-xs font-bold bg-blue-600 hover:bg-blue-500 active:scale-[0.99] text-white flex items-center justify-center gap-1.5 transition-all shadow-md shadow-blue-600/20 cursor-pointer disabled:opacity-50"
+                      className="w-full py-2.5 px-4 rounded-xl text-xs sm:text-sm font-semibold bg-red-600 hover:bg-red-700 active:scale-[0.99] text-white flex items-center justify-center gap-2 transition-all shadow-xs cursor-pointer disabled:opacity-50"
                     >
                       {isProcessingAll ? (
                         <>
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          <Loader2 className="w-4 h-4 animate-spin" />
                           <span>Processing ({progress}%)...</span>
                         </>
                       ) : (
                         <>
-                          <Zap className="w-3.5 h-3.5 text-amber-300 fill-amber-300" />
+                          <Zap className="w-4 h-4 text-white fill-white" />
                           <span>Start Batch Processing ({items.length})</span>
                         </>
                       )}

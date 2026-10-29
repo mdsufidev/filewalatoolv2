@@ -1147,7 +1147,7 @@ export const PdfToImageTool: React.FC<PdfToImageToolProps> = ({ onNotify }) => {
                   type="button"
                   disabled={isRendering || !file || parsedTargetPages.length === 0}
                   onClick={handleExecuteConvert}
-                  className="w-full py-2.5 px-4 rounded-md text-xs font-semibold flex items-center justify-center gap-2 transition-colors cursor-pointer bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:hover:bg-zinc-200 dark:text-zinc-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full py-2.5 px-4 rounded-xl text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 transition-all shadow-xs cursor-pointer bg-red-600 hover:bg-red-700 active:scale-[0.99] text-white disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <FileImage className="w-3.5 h-3.5" />
                   <span>
@@ -1250,7 +1250,7 @@ export const PdfToImageTool: React.FC<PdfToImageToolProps> = ({ onNotify }) => {
                       type="button"
                       disabled={isZipping}
                       onClick={handleDownloadAllZip}
-                      className="px-4 py-2 rounded-md text-xs font-semibold flex items-center justify-center gap-2 transition-colors cursor-pointer bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:hover:bg-zinc-200 dark:text-zinc-900 disabled:opacity-50"
+                      className="px-4 py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-all shadow-xs cursor-pointer bg-red-600 hover:bg-red-700 active:scale-[0.99] text-white disabled:opacity-50"
                     >
                       <Download className="w-3.5 h-3.5" />
                       <span>
