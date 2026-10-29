@@ -9,10 +9,15 @@ import {
   Settings,
   LogOut,
   ShieldCheck,
+  Home,
+  ChevronRight,
+  ArrowLeft,
+  Grid,
 } from 'lucide-react';
 import { checkIsAdmin } from '../../core/firebase';
 import { UserAvatar } from '../ui/UserAvatar';
 import { useTheme } from '../../core/themeContext';
+import { useLanguage } from '../../core/languageContext';
 import { MasterDetailNavMenu } from '../navigation/MasterDetailNavMenu';
 
 export type MainNavSection =
@@ -20,6 +25,13 @@ export type MainNavSection =
   | 'pdf-tools'
   | 'convert'
   | 'document-tools';
+
+export interface BreadcrumbItem {
+  label: string;
+  href?: string;
+  onClick?: () => void;
+  isActive?: boolean;
+}
 
 export interface NavbarProps {
   activeSection: MainNavSection | null;
@@ -36,6 +48,9 @@ export interface NavbarProps {
   onOpenShortcutsHelp?: () => void;
   onOpenRecentFiles?: () => void;
   onNavigatePage?: (page: 'about' | 'disclaimer' | 'terms' | 'contact' | 'admin') => void;
+  breadcrumbs?: BreadcrumbItem[];
+  onBack?: () => void;
+  onAllTools?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -48,9 +63,13 @@ export const Navbar: React.FC<NavbarProps> = ({
   onSignOut,
   onOpenAccountSettings,
   onOpenAdmin,
+  breadcrumbs,
+  onBack,
+  onAllTools,
 }) => {
   const isAdmin = Boolean(currentUser && checkIsAdmin(currentUser.email, currentUser.role));
   const { theme, toggleTheme } = useTheme();
+  const { language } = useLanguage();
   const isDark = theme === 'dark';
   const [isMasterNavOpen, setIsMasterNavOpen] = useState(false);
   const [isMenuPinned, setIsMenuPinned] = useState(false);
@@ -450,6 +469,88 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
         )}
       </div>
+
+      {/* ========================================================= */}
+      {/* INTEGRATED SUB-TIER BREADCRUMB & WORKSPACE ACTION BAR     */}
+      {/* ========================================================= */}
+      {breadcrumbs && breadcrumbs.length > 0 && (
+        <div className="w-full border-t border-zinc-200/80 dark:border-zinc-800/80 bg-zinc-50/90 dark:bg-zinc-900/90 backdrop-blur-md">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-9 sm:h-10 flex items-center justify-between gap-3 text-xs">
+            {/* Left: Breadcrumbs Trail */}
+            <nav aria-label="Breadcrumb" className="flex items-center min-w-0 overflow-x-auto no-scrollbar py-0.5">
+              <ol className="flex items-center gap-1.5 sm:gap-2 min-w-0" role="list">
+                {breadcrumbs.map((crumb, idx) => {
+                  const isFirst = idx === 0;
+                  const isLast = idx === breadcrumbs.length - 1;
+                  return (
+                    <li key={idx} className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                      {!isFirst && (
+                        <ChevronRight className="w-3 h-3 text-zinc-400 dark:text-zinc-600 shrink-0" aria-hidden="true" />
+                      )}
+                      {isFirst && (
+                        <Home className="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500 mr-0.5 shrink-0" aria-hidden="true" />
+                      )}
+                      {isLast || crumb.isActive ? (
+                        <span
+                          className="font-semibold text-zinc-900 dark:text-zinc-100 truncate max-w-[150px] sm:max-w-[260px] md:max-w-none"
+                          aria-current="page"
+                          title={crumb.label}
+                        >
+                          {crumb.label}
+                        </span>
+                      ) : (
+                        <a
+                          href={crumb.href || '#'}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            if (crumb.onClick) crumb.onClick();
+                          }}
+                          className="font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white transition-colors cursor-pointer truncate max-w-[120px] sm:max-w-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950 dark:focus-visible:ring-zinc-100 rounded"
+                          title={crumb.label}
+                        >
+                          {crumb.label}
+                        </a>
+                      )}
+                    </li>
+                  );
+                })}
+              </ol>
+            </nav>
+
+            {/* Right: Back & All Tools Action Buttons */}
+            <div className="flex items-center gap-1.5 shrink-0">
+              {onBack && (
+                <button
+                  type="button"
+                  onClick={onBack}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer border bg-white dark:bg-zinc-850 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-200 border-zinc-200 dark:border-zinc-750 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950 dark:focus-visible:ring-zinc-100 shadow-2xs"
+                  title="Back (Esc)"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400 shrink-0" />
+                  <span>{language === 'hi' ? 'वापस' : 'Back'}</span>
+                  <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono border bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 border-zinc-200 dark:border-zinc-700 leading-none">
+                    Esc
+                  </kbd>
+                </button>
+              )}
+
+              {onAllTools && (
+                <button
+                  type="button"
+                  onClick={onAllTools}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer border bg-white dark:bg-zinc-850 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white border-zinc-200 dark:border-zinc-750 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950 dark:focus-visible:ring-zinc-100 shadow-2xs"
+                  title="View all tools"
+                >
+                  <Grid className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400 shrink-0" />
+                  <span className="hidden sm:inline">
+                    {language === 'hi' ? 'सभी टूल्स' : 'All Tools'}
+                  </span>
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </nav>
   );
 };

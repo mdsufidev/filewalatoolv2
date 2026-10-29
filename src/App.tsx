@@ -16,8 +16,8 @@ Bug Found: URL hash/pathname parsing lacked query parameter stripping and traili
 Bug Found: Missing accessibility landmarks and skip link for keyboard navigation -> Fix: Added skip-to-content anchor and wrapped breadcrumb navigation in semantic <nav aria-label="Breadcrumb">.
 */
 
-import React, { useState, useCallback, useEffect, useRef, Suspense, lazy } from 'react';
-import { Navbar, MainNavSection } from './components/layout/Navbar';
+import React, { useState, useCallback, useMemo, useEffect, useRef, Suspense, lazy } from 'react';
+import { Navbar, MainNavSection, BreadcrumbItem } from './components/layout/Navbar';
 import { HomePage } from './components/layout/HomePage';
 import { Footer } from './components/layout/Footer';
 import { AppErrorBoundary } from './components/ui/ErrorBoundary';
@@ -37,7 +37,7 @@ import {
 } from './core/urlRoutes';
 import { ThemeProvider } from './core/themeContext';
 import { LanguageProvider, useLanguage } from './core/languageContext';
-import { ArrowLeft, Home, Grid, ChevronRight, Loader2, Mail, X } from 'lucide-react';
+import { Loader2, Mail, X } from 'lucide-react';
 import { useGlobalShortcuts } from './hooks/useGlobalShortcuts';
 import { useGlobalFileDrop } from './hooks/useGlobalFileDrop';
 import { GlobalDropOverlay } from './components/navigation/GlobalDropOverlay';
@@ -608,6 +608,138 @@ function MainApp({ initialPath, toolComponents }: { initialPath?: string; toolCo
     (c) => c.id === (activeTool ? activeTool.section : selectedCategory)
   );
 
+  // Memoized breadcrumbs trail for top sticky navbar
+  const breadcrumbs = useMemo<BreadcrumbItem[]>(() => {
+    const homeLabel = language === 'hi' ? 'होम' : 'Home';
+
+    // 1. Tool Workspace View
+    if (activeTool) {
+      const categoryName = currentCategoryMeta
+        ? t(
+            'cat.' +
+              (currentCategoryMeta.id === 'all'
+                ? 'all'
+                : currentCategoryMeta.id === 'image-tools'
+                ? 'imageTools'
+                : currentCategoryMeta.id === 'pdf-tools'
+                ? 'pdfTools'
+                : currentCategoryMeta.id === 'convert'
+                ? 'convert'
+                : 'documentTools'),
+            currentCategoryMeta.name
+          )
+        : 'Category';
+      const categoryHref = getCategoryRouteUrl(activeTool.section);
+      const toolName = currentToolItem
+        ? tToolName(currentToolItem.id, currentToolItem.name)
+        : activeTool.subToolId;
+
+      return [
+        {
+          label: homeLabel,
+          href: '/',
+          onClick: () => handleGoHome('all'),
+        },
+        {
+          label: categoryName,
+          href: categoryHref,
+          onClick: () => handleGoHome(activeTool.section),
+        },
+        {
+          label: toolName,
+          isActive: true,
+        },
+      ];
+    }
+
+    // 2. Category Hub View
+    if (selectedCategory !== 'all') {
+      const categoryName = currentCategoryMeta
+        ? t(
+            'cat.' +
+              (currentCategoryMeta.id === 'image-tools'
+                ? 'imageTools'
+                : currentCategoryMeta.id === 'pdf-tools'
+                ? 'pdfTools'
+                : currentCategoryMeta.id === 'convert'
+                ? 'convert'
+                : 'documentTools'),
+            currentCategoryMeta.name
+          )
+        : selectedCategory;
+      const categoryHref = getCategoryRouteUrl(selectedCategory);
+
+      return [
+        {
+          label: homeLabel,
+          href: '/',
+          onClick: () => handleGoHome('all'),
+        },
+        {
+          label: categoryName,
+          href: categoryHref,
+          isActive: true,
+        },
+      ];
+    }
+
+    // 3. Informational or Admin Page View
+    if (activePage) {
+      const pageLabels: Record<string, { en: string; hi: string }> = {
+        about: { en: 'About Us', hi: 'हमारे बारे में' },
+        contact: { en: 'Contact Us', hi: 'संपर्क करें' },
+        terms: { en: 'Terms & Conditions', hi: 'नियम और शर्तें' },
+        privacy: { en: 'Privacy Policy', hi: 'गोपनीयता नीति' },
+        disclaimer: { en: 'Disclaimer', hi: 'अस्वीकरण' },
+        admin: { en: 'Admin Console', hi: 'एडमिन कंसोल' },
+      };
+      const pageName = pageLabels[activePage]
+        ? language === 'hi'
+          ? pageLabels[activePage].hi
+          : pageLabels[activePage].en
+        : activePage;
+      const pageHref = activePage === 'admin' ? '/admin' : getPageRouteUrl(activePage);
+
+      return [
+        {
+          label: homeLabel,
+          href: '/',
+          onClick: () => handleGoHome('all'),
+        },
+        {
+          label: pageName,
+          href: pageHref,
+          isActive: true,
+        },
+      ];
+    }
+
+    // 4. Default / Home
+    return [];
+  }, [
+    activeTool,
+    selectedCategory,
+    activePage,
+    currentCategoryMeta,
+    currentToolItem,
+    language,
+    t,
+    tToolName,
+    handleGoHome,
+  ]);
+
+  const handleNavbarBack = useCallback(() => {
+    if (activeTool) {
+      handleGoHome(activeTool.section);
+    } else if (selectedCategory !== 'all' || activePage) {
+      handleGoHome('all');
+    }
+  }, [activeTool, selectedCategory, activePage, handleGoHome]);
+
+  const handleNavbarAllTools = useCallback(() => {
+    handleGoHome('all');
+  }, [handleGoHome]);
+
   return (
     <div className="min-h-screen flex flex-col font-sans selection:bg-zinc-900 selection:text-white bg-white text-zinc-900 max-w-full overflow-x-clip">
       {/* Keyboard Accessibility: Skip to Main Content */}
@@ -648,6 +780,9 @@ function MainApp({ initialPath, toolComponents }: { initialPath?: string; toolCo
         onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
         onOpenShortcutsHelp={() => setIsShortcutsHelpOpen(true)}
         onNavigatePage={handleNavigatePage}
+        breadcrumbs={breadcrumbs}
+        onBack={breadcrumbs.length > 0 ? handleNavbarBack : undefined}
+        onAllTools={breadcrumbs.length > 0 ? handleNavbarAllTools : undefined}
       />
 
       {/* Unverified Email Alert Banner (Flat 2D Linear Style) */}
@@ -747,103 +882,9 @@ function MainApp({ initialPath, toolComponents }: { initialPath?: string; toolCo
             />
           ) : (
             /* =========================================================================
-               TOOL WORKSPACE VIEW (Active Tool + Interactive Breadcrumb Bar)
+               TOOL WORKSPACE VIEW (Active Tool Suite)
             ========================================================================= */
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-              {/* Breadcrumb Navigation Bar (Flat 2D Swiss Style) */}
-              <nav
-                aria-label="Breadcrumb"
-                className={`mb-6 flex flex-wrap items-center justify-between gap-3 pb-3 border-b ${
-                  isDark ? 'border-zinc-800' : 'border-zinc-200'
-                }`}
-              >
-                <div
-                  className={`flex items-center gap-2 text-xs ${
-                    isDark ? 'text-zinc-400' : 'text-zinc-600'
-                  }`}
-                >
-                  <button
-                    onClick={() => handleGoHome('all')}
-                    className={`flex items-center gap-1.5 transition-colors cursor-pointer ${
-                      isDark ? 'hover:text-white' : 'hover:text-zinc-950'
-                    }`}
-                  >
-                    <Home className="w-3.5 h-3.5" />
-                    <span>{language === 'hi' ? 'होम' : 'Home'}</span>
-                  </button>
-                  <ChevronRight className={`w-3 h-3 ${isDark ? 'text-zinc-600' : 'text-zinc-400'}`} />
-                  <button
-                    onClick={() => handleGoHome(activeTool.section)}
-                    className={`font-medium transition-colors cursor-pointer ${
-                      isDark ? 'text-zinc-300 hover:text-white' : 'text-zinc-700 hover:text-zinc-950'
-                    }`}
-                  >
-                    {currentCategoryMeta
-                      ? t(
-                          'cat.' +
-                            (currentCategoryMeta.id === 'all'
-                              ? 'all'
-                              : currentCategoryMeta.id === 'image-tools'
-                              ? 'imageTools'
-                              : currentCategoryMeta.id === 'pdf-tools'
-                              ? 'pdfTools'
-                              : currentCategoryMeta.id === 'convert'
-                              ? 'convert'
-                              : 'documentTools'),
-                          currentCategoryMeta.name
-                        )
-                      : 'Category'}
-                  </button>
-                  <ChevronRight className={`w-3 h-3 ${isDark ? 'text-zinc-600' : 'text-zinc-400'}`} />
-                  <span className={`font-semibold ${isDark ? 'text-white' : 'text-zinc-900'}`}>
-                    {currentToolItem
-                      ? tToolName(currentToolItem.id, currentToolItem.name)
-                      : activeTool.subToolId}
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-1.5">
-                  <button
-                    onClick={() => handleGoHome(activeTool.section)}
-                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer border ${
-                      isDark
-                        ? 'bg-zinc-900 hover:bg-zinc-800 text-zinc-200 border-zinc-800'
-                        : 'bg-white hover:bg-zinc-100 text-zinc-700 border-zinc-200'
-                    }`}
-                    title="Back to category (Esc)"
-                  >
-                    <ArrowLeft className="w-3.5 h-3.5" />
-                    <span>
-                      {language === 'hi' ? 'वापस' : 'Back'}
-                    </span>
-                    <kbd
-                      className={`px-1 py-0.2 rounded text-[10px] font-mono border ${
-                        isDark
-                          ? 'bg-zinc-800 text-zinc-400 border-zinc-700'
-                          : 'bg-zinc-100 text-zinc-500 border-zinc-200'
-                      }`}
-                    >
-                      Esc
-                    </kbd>
-                  </button>
-
-                  <button
-                    onClick={() => handleGoHome('all')}
-                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer border ${
-                      isDark
-                        ? 'bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white border-zinc-800'
-                        : 'bg-white hover:bg-zinc-100 text-zinc-600 hover:text-zinc-950 border-zinc-200'
-                    }`}
-                    title="View all tools"
-                  >
-                    <Grid className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">
-                      {language === 'hi' ? 'सभी टूल्स' : 'All Tools'}
-                    </span>
-                  </button>
-                </div>
-              </nav>
-
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
               {/* Active Tool Suite Component with Fault Isolation & Lazy Boundary */}
               <Suspense fallback={<PageSuspenseFallback />}>
                 <AppErrorBoundary
