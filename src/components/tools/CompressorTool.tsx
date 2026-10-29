@@ -840,33 +840,6 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
           </div>
         </div>
 
-        {/* Sleek Privacy Trust Banner */}
-        <div className="w-full max-w-[770px] mx-auto pt-3 border-t border-zinc-200/80 dark:border-zinc-800/80">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-zinc-500">
-            <div className="flex items-center gap-2.5">
-              <div className="w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/80 dark:border-emerald-800/60 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
-                <ShieldCheck className="w-4 h-4" />
-              </div>
-              <div>
-                <div className="flex items-center gap-1.5 font-semibold text-zinc-900 dark:text-zinc-100">
-                  <span>100% Client-Side Privacy & Zero Server Uploads</span>
-                  <span className="px-1.5 py-0.2 rounded text-[9px] font-mono font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400">
-                    Local RAM
-                  </span>
-                </div>
-                <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                  Your images never leave your device. All calculations run directly in your browser memory.
-                </p>
-              </div>
-            </div>
-
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-850 text-[10px] font-mono text-zinc-600 dark:text-zinc-400 shrink-0 shadow-2xs">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              <span>0 Bytes Transmitted</span>
-            </div>
-          </div>
-        </div>
-
         {/* Detailed Reference, Format Matrix, Presets Guide & FAQ */}
         <CompressionGuideAndFaq isDark={isDark} />
       </div>
@@ -943,19 +916,19 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
         </button>
       </div>
 
-      {/* Main Grid: Left Comparison Preview / Right Stacked Cards */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-4 items-start">
+      {/* Main Grid: Left Comparison Preview / Right Stacked Cards (Equal Height) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 sm:gap-4 items-stretch">
         {/* LEFT COLUMN: Before & After Comparison Preview Card */}
-        <div className="lg:col-span-7 xl:col-span-8">
+        <div className="lg:col-span-7 xl:col-span-8 flex flex-col h-full">
           <div
-            className={`border rounded-2xl p-3 sm:p-3.5 space-y-2.5 transition-colors relative overflow-hidden ${
+            className={`border rounded-2xl p-3 sm:p-3.5 flex flex-col justify-between h-full space-y-2.5 transition-colors relative overflow-hidden ${
               isDark
                 ? 'bg-zinc-900/90 border-zinc-800 shadow-xs'
                 : 'bg-white border-zinc-200 shadow-xs'
             }`}
           >
             {/* Header bar inside left card */}
-            <div className="flex items-center justify-between gap-3 px-0.5">
+            <div className="flex items-center justify-between gap-3 px-0.5 shrink-0">
               <div className="flex items-center gap-2.5 min-w-0">
                 <div
                   className={`w-7 h-7 rounded-lg shrink-0 flex items-center justify-center border ${
@@ -992,7 +965,7 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
 
             {/* Comparison Canvas Area (Designer Dot-Grid / Transparency Pattern) */}
             <div
-              className="relative rounded-xl overflow-hidden bg-zinc-100/70 dark:bg-zinc-950/70 h-[280px] sm:h-[310px] lg:h-[330px] flex items-center justify-center border border-zinc-200/80 dark:border-zinc-800/80"
+              className="relative rounded-xl overflow-hidden bg-zinc-100/70 dark:bg-zinc-950/70 h-[260px] sm:h-[300px] lg:h-auto flex-1 min-h-[220px] flex items-center justify-center border border-zinc-200/80 dark:border-zinc-800/80"
               style={{
                 backgroundImage: isDark
                   ? 'radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px)'
@@ -1015,8 +988,8 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
                   processedSrc={compressedResult.url}
                   originalLabel={`Original`}
                   processedLabel={`Compressed`}
-                  maxHeightClass="max-h-[260px] sm:max-h-[290px] lg:max-h-[310px]"
-                  className="max-h-[270px] sm:max-h-[300px] lg:max-h-[320px] w-full"
+                  maxHeightClass="max-h-[250px] sm:max-h-[280px] lg:max-h-[300px]"
+                  className="max-h-[260px] sm:max-h-[290px] lg:max-h-[310px] w-full"
                 />
               ) : (
                 <div className="relative max-h-full max-w-full flex items-center justify-center overflow-hidden">
@@ -1024,14 +997,14 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
                     src={sourceImage.previewUrl}
                     alt="Original Preview"
                     draggable={false}
-                    className="max-h-[260px] sm:max-h-[290px] lg:max-h-[310px] max-w-full object-contain select-none"
+                    className="max-h-[250px] sm:max-h-[280px] lg:max-h-[300px] max-w-full object-contain select-none"
                   />
                 </div>
               )}
             </div>
 
             {/* Quick Action footer inside left card */}
-            <div className="flex flex-wrap items-center justify-between text-xs text-zinc-500 px-0.5 pt-0.5 gap-2">
+            <div className="flex flex-wrap items-center justify-between text-xs text-zinc-500 px-0.5 pt-0.5 gap-2 shrink-0">
               <span className="flex items-center gap-1.5 text-[11px] text-zinc-400 dark:text-zinc-500">
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
                 <span>Processed locally in browser</span>
@@ -1073,10 +1046,10 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
         </div>
 
         {/* RIGHT COLUMN: Results & Fine Tune Stacked Cards */}
-        <div className="lg:col-span-5 xl:col-span-4 space-y-3">
+        <div className="lg:col-span-5 xl:col-span-4 flex flex-col gap-3 h-full">
           {/* Card 1: YOUR RESULTS */}
           <div
-            className={`p-3 sm:p-3.5 rounded-2xl border space-y-2.5 transition-colors ${
+            className={`p-3 sm:p-3.5 rounded-2xl border space-y-2.5 transition-colors shrink-0 ${
               isDark ? 'bg-zinc-900/90 border-zinc-800 shadow-xs' : 'bg-white border-zinc-200 shadow-xs'
             }`}
           >
@@ -1163,19 +1136,20 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
 
           {/* Card 2: FINE TUNE */}
           <div
-            className={`p-3 sm:p-3.5 rounded-2xl border space-y-3 transition-colors ${
+            className={`p-3 sm:p-3.5 rounded-2xl border flex flex-col justify-between flex-1 space-y-3 transition-colors ${
               isDark ? 'bg-zinc-900/90 border-zinc-800 shadow-xs' : 'bg-white border-zinc-200 shadow-xs'
             }`}
           >
-            <div className="flex items-center justify-between">
-              <div>
-                <span className="text-[10px] font-mono font-bold tracking-wider uppercase text-zinc-400 dark:text-zinc-500 block">
-                  FINE TUNE
-                </span>
-                <h3 className={`text-sm font-bold ${isDark ? 'text-white' : 'text-zinc-950'}`}>
-                  Compression
-                </h3>
-              </div>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] font-mono font-bold tracking-wider uppercase text-zinc-400 dark:text-zinc-500 block">
+                    FINE TUNE
+                  </span>
+                  <h3 className={`text-sm font-bold ${isDark ? 'text-white' : 'text-zinc-950'}`}>
+                    Compression
+                  </h3>
+                </div>
 
               {/* Mode switch: Quality slider vs Target KB (Sleek Segmented Switch) */}
               <div className={`inline-flex p-0.5 rounded-lg text-xs border ${
@@ -1386,9 +1360,10 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
                 ))}
               </div>
             </div>
+          </div>
 
-            {/* Primary Action: Download Button (Clean Flat UI/UX Designer CTA) */}
-            <div className="pt-2">
+          {/* Primary Action: Download Button (Clean Flat UI/UX Designer CTA) */}
+          <div className="pt-2 shrink-0">
               <button
                 type="button"
                 disabled={!compressedResult || isProcessing}
