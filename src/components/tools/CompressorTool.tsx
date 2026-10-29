@@ -846,39 +846,6 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
           </div>
         </div>
 
-        {/* Bottom Privacy & Trust Card */}
-        <div
-          className={`rounded-xl border p-3.5 sm:p-4 max-w-3xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition-colors ${
-            isDark
-              ? 'bg-zinc-900/60 border-zinc-800/70'
-              : 'bg-zinc-50 border-zinc-200'
-          }`}
-        >
-          <div className="flex items-start gap-3.5">
-            <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 flex items-center justify-center shrink-0 mt-0.5">
-              <ShieldCheck className="w-5 h-5 stroke-[2]" />
-            </div>
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <h4 className={`text-xs sm:text-sm font-bold ${isDark ? 'text-white' : 'text-zinc-900'}`}>
-                  100% Client-Side Privacy & Zero Server Uploads
-                </h4>
-                <span className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-medium ${isDark ? 'text-zinc-400 bg-zinc-800' : 'text-zinc-600 bg-zinc-200'}`}>
-                  Local RAM
-                </span>
-              </div>
-              <p className="text-[11px] sm:text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed max-w-2xl">
-                Your images and personal photographs never leave your device. All compression calculations
-                and canvas rendering run directly in local browser memory.
-              </p>
-            </div>
-          </div>
-
-          <div className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-mono font-medium ${isDark ? 'border-zinc-800 bg-zinc-850 text-zinc-400' : 'border-zinc-200 bg-white text-zinc-600'}`}>
-            <span>0 Bytes Transmitted</span>
-          </div>
-        </div>
-
         {/* Detailed Reference, Format Matrix, Presets Guide & FAQ */}
         <CompressionGuideAndFaq isDark={isDark} />
       </div>
@@ -1425,39 +1392,6 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
               </button>
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* Bottom Privacy & Trust Card */}
-      <div
-        className={`rounded-xl border p-3 sm:p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 transition-colors ${
-          isDark
-            ? 'bg-zinc-900/60 border-zinc-800/70'
-            : 'bg-zinc-50 border-zinc-200'
-        }`}
-      >
-        <div className="flex items-start gap-3">
-          <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 flex items-center justify-center shrink-0 mt-0.5">
-            <ShieldCheck className="w-4 h-4 stroke-[2]" />
-          </div>
-          <div className="space-y-0.5">
-            <div className="flex items-center gap-2">
-              <h4 className={`text-xs font-bold ${isDark ? 'text-white' : 'text-zinc-900'}`}>
-                100% Client-Side Privacy & Zero Server Uploads
-              </h4>
-              <span className={`px-1.5 py-0.2 rounded text-[10px] font-mono font-medium ${isDark ? 'text-zinc-400 bg-zinc-800' : 'text-zinc-600 bg-zinc-200'}`}>
-                Local RAM
-              </span>
-            </div>
-            <p className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-relaxed max-w-2xl">
-              Your images and personal photographs never leave your device. All compression calculations
-              and canvas rendering run directly in local browser memory.
-            </p>
-          </div>
-        </div>
-
-        <div className={`shrink-0 flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-[11px] font-mono font-medium ${isDark ? 'border-zinc-800 bg-zinc-850 text-zinc-400' : 'border-zinc-200 bg-white text-zinc-600'}`}>
-          <span>0 Bytes Transmitted</span>
         </div>
       </div>
 
