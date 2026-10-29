@@ -168,7 +168,7 @@ export const Navbar: React.FC<NavbarProps> = ({
       ref={navContainerRef}
       className="sticky top-0 z-50 w-full transition-colors duration-150 border-b border-zinc-200 dark:border-zinc-800 bg-white/95 dark:bg-zinc-950/95 text-zinc-900 dark:text-zinc-100 backdrop-blur-sm select-none"
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full flex items-center justify-between h-16 relative">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full flex items-center justify-between h-13 sm:h-14 relative">
         {/* ========================================================= */}
         {/* 1. LEFT: LOGO BRANDMARK ([F] Logo + ileWala TOOL)          */}
         {/* ========================================================= */}
@@ -475,7 +475,7 @@ export const Navbar: React.FC<NavbarProps> = ({
       {/* ========================================================= */}
       {breadcrumbs && breadcrumbs.length > 0 && (
         <div className="w-full border-t border-zinc-200/80 dark:border-zinc-800/80 bg-zinc-50/90 dark:bg-zinc-900/90 backdrop-blur-md">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-9 sm:h-10 flex items-center justify-between gap-3 text-xs">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-8 sm:h-8.5 flex items-center justify-between gap-3 text-xs">
             {/* Left: Breadcrumbs Trail */}
             <nav aria-label="Breadcrumb" className="flex items-center min-w-0 overflow-x-auto no-scrollbar py-0.5">
               <ol className="flex items-center gap-1.5 sm:gap-2 min-w-0" role="list">

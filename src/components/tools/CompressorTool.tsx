@@ -751,32 +751,32 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
   ------------------------------------------------------------- */
   if (!sourceImage) {
     return (
-      <div className="w-full max-w-6xl mx-auto space-y-4 sm:space-y-5 animate-in fade-in duration-300 select-none">
+      <div className="w-full max-w-6xl mx-auto space-y-3 sm:space-y-3.5 animate-in fade-in duration-300 select-none">
         {/* Header Section */}
-        <div className="text-center space-y-1.5 max-w-xl mx-auto">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-medium uppercase tracking-wider text-zinc-600 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-850">
+        <div className="text-center space-y-1 max-w-lg mx-auto">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-medium uppercase tracking-wider text-zinc-600 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-850">
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
             <span>100% Client-Side Engine · Zero Uploads</span>
           </div>
 
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-zinc-950 dark:text-zinc-50">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-950 dark:text-zinc-50">
             Image Compressor to KB
           </h1>
-          <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 max-w-md mx-auto leading-relaxed">
+          <p className="text-xs text-zinc-500 dark:text-zinc-400 max-w-sm mx-auto leading-relaxed">
             Reduce image file sizes directly in your browser without quality loss.
           </p>
         </div>
 
         {/* Error notification if any */}
         {errorMessage && (
-          <div className="max-w-[740px] mx-auto p-3 rounded-xl border border-rose-500/30 bg-rose-500/10 text-rose-500 text-xs flex items-center gap-2">
+          <div className="max-w-[700px] mx-auto p-2.5 rounded-lg border border-rose-500/30 bg-rose-500/10 text-rose-500 text-xs flex items-center gap-2">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{errorMessage}</span>
           </div>
         )}
 
-        {/* Minimalist 2D Flat Dropzone (Sized 1:1 to Canvas Workspace: 740px × 360px) */}
-        <div className="w-full max-w-[740px] mx-auto">
+        {/* Minimalist 2D Flat Dropzone (Sized 1:1 to Canvas Workspace: 700px × 280px) */}
+        <div className="w-full max-w-[700px] mx-auto">
           <div
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
@@ -790,7 +790,7 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
               }
             }}
             aria-label="Upload image to compress"
-            className={`relative group border border-dashed rounded-xl h-[300px] sm:h-[340px] lg:h-[360px] flex flex-col items-center justify-center p-6 text-center cursor-pointer transition-all duration-150 select-none outline-none ${
+            className={`relative group border border-dashed rounded-xl h-[240px] sm:h-[260px] lg:h-[280px] flex flex-col items-center justify-center p-5 text-center cursor-pointer transition-all duration-150 select-none outline-none ${
               isDragOver
                 ? isDark
                   ? 'border-red-500 bg-red-500/10'
@@ -815,12 +815,12 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
               }}
             />
 
-            <div className="flex flex-col items-center justify-center space-y-3 max-w-sm">
-              <div className="w-12 h-12 rounded-xl bg-zinc-100 dark:bg-zinc-850 text-zinc-600 dark:text-zinc-300 flex items-center justify-center shrink-0 transition-transform duration-200 ease-out group-hover:scale-110 border border-zinc-200/60 dark:border-zinc-800">
-                <UploadCloud className="w-6 h-6 stroke-[2]" />
+            <div className="flex flex-col items-center justify-center space-y-2.5 max-w-sm">
+              <div className="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-850 text-zinc-600 dark:text-zinc-300 flex items-center justify-center shrink-0 transition-transform duration-200 ease-out group-hover:scale-110 border border-zinc-200/60 dark:border-zinc-800">
+                <UploadCloud className="w-5 h-5 stroke-[2]" />
               </div>
 
-              <div className="space-y-1">
+              <div className="space-y-0.5">
                 <h3 className="text-sm sm:text-base font-semibold text-zinc-900 dark:text-zinc-100">
                   Drop an image here or browse
                 </h3>
@@ -829,21 +829,21 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
                 </p>
               </div>
 
-              <div className="pt-1">
+              <div className="pt-0.5">
                 <button
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
                     handleLoadSample();
                   }}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-zinc-700 dark:text-zinc-300 transition-colors cursor-pointer border border-zinc-200/60 dark:border-zinc-700/60"
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-zinc-700 dark:text-zinc-300 transition-colors cursor-pointer border border-zinc-200/60 dark:border-zinc-700/60"
                 >
                   <Sparkles className="w-3.5 h-3.5 text-blue-500" />
                   <span>Try Sample Image</span>
                 </button>
               </div>
 
-              <div className="pt-2 flex items-center gap-2 text-[11px] font-mono text-zinc-400">
+              <div className="pt-1 flex items-center gap-2 text-[10px] font-mono text-zinc-400">
                 <span>Max 50MB</span>
                 <span>·</span>
                 <span>Direct RAM Processing</span>
@@ -870,7 +870,7 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
       onDragOver={handleWorkspaceDragOver}
       onDragLeave={handleWorkspaceDragLeave}
       onDrop={handleWorkspaceDrop}
-      className="w-full max-w-6xl mx-auto space-y-3.5 sm:space-y-4 animate-in fade-in duration-200 relative select-none"
+      className="w-full max-w-6xl mx-auto space-y-2 sm:space-y-2.5 animate-in fade-in duration-200 relative select-none"
     >
       {/* Hidden input for replacing image from workspace */}
       <input
@@ -901,78 +901,79 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
         </div>
       )}
 
-      {/* Hero Title & Top Action Bar Row (Compact, Space-Optimized) */}
+      {/* Hero Title & Top Action Bar Row (Ultra-Compact Viewport-Safe) */}
       <div className="flex items-center justify-between gap-3 pt-0 pb-0.5">
-        <div>
-          <h1 className="text-lg sm:text-xl lg:text-2xl font-bold tracking-tight text-zinc-950 dark:text-white leading-tight">
+        <div className="flex items-center gap-2">
+          <h1 className="text-base sm:text-lg font-bold tracking-tight text-zinc-950 dark:text-white leading-tight">
             Image Compressor to KB
           </h1>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400 hidden sm:block mt-0.5">
-            Make your images lighter without losing the details that matter.
+          <span className="hidden sm:inline-block text-zinc-300 dark:text-zinc-700">·</span>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400 hidden sm:inline-block">
+            Make images lighter without losing quality.
           </p>
         </div>
 
         <button
           type="button"
           onClick={() => workspaceFileInputRef.current?.click()}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-750 text-xs font-semibold text-zinc-800 dark:text-zinc-200 transition-colors shadow-2xs shrink-0 cursor-pointer"
+          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-750 text-xs font-medium text-zinc-800 dark:text-zinc-200 transition-colors shadow-2xs shrink-0 cursor-pointer"
         >
           <UploadCloud className="w-3.5 h-3.5 text-zinc-500" />
-          <span>Choose image</span>
+          <span>Change image</span>
         </button>
       </div>
 
       {/* Main Grid: Left Comparison Preview / Right Stacked Cards */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-4 items-start">
         {/* LEFT COLUMN: Before & After Comparison Preview Card */}
         <div className="lg:col-span-7 xl:col-span-8">
           <div
-            className={`border rounded-xl p-3 sm:p-3.5 space-y-2.5 transition-colors relative overflow-hidden ${
+            className={`border rounded-xl p-2.5 sm:p-3 space-y-2 transition-colors relative overflow-hidden ${
               isDark
                 ? 'bg-zinc-900/90 border-zinc-800/80 shadow-xs'
                 : 'bg-white border-zinc-200 shadow-xs'
             }`}
           >
             {/* Header bar inside left card */}
-            <div className="flex items-center justify-between gap-3 px-1">
+            <div className="flex items-center justify-between gap-3 px-0.5">
               <div className="flex items-center gap-2 min-w-0">
                 <div
-                  className={`w-7 h-7 rounded-lg overflow-hidden shrink-0 flex items-center justify-center border ${
+                  className={`w-6 h-6 rounded-md overflow-hidden shrink-0 flex items-center justify-center border ${
                     isDark ? 'bg-zinc-850 border-zinc-800 text-zinc-400' : 'bg-zinc-100 border-zinc-200 text-zinc-600'
                   }`}
                 >
-                  <ImageIcon className="w-3.5 h-3.5" />
+                  <ImageIcon className="w-3 h-3" />
                 </div>
-                <div className="min-w-0">
-                  <h3 className={`text-xs font-semibold truncate ${isDark ? 'text-white' : 'text-zinc-900'}`}>
+                <div className="min-w-0 flex items-center gap-2">
+                  <h3 className={`text-xs font-semibold truncate max-w-[160px] sm:max-w-xs ${isDark ? 'text-white' : 'text-zinc-900'}`}>
                     {sourceImage.name}
                   </h3>
-                  <div className={`flex items-center gap-1.5 text-[10px] font-mono mt-0.2 ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
-                    <span>{sourceImage.width} × {sourceImage.height} px</span>
+                  <div className={`flex items-center gap-1 text-[10px] font-mono shrink-0 ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                    <span>{sourceImage.width}×{sourceImage.height}</span>
                     <span>·</span>
                     <span className="font-semibold">{formatFileSize(sourceImage.originalSize)}</span>
                   </div>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex items-center gap-1.5 shrink-0">
                 <button
                   type="button"
                   onClick={() => workspaceFileInputRef.current?.click()}
-                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium transition-colors cursor-pointer ${
+                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium transition-colors cursor-pointer border ${
                     isDark
                       ? 'border-zinc-700 bg-zinc-800 text-zinc-200 hover:bg-zinc-750'
                       : 'border-zinc-200 bg-zinc-50 text-zinc-700 hover:bg-zinc-100'
                   }`}
                 >
-                  <UploadCloud className="w-3.5 h-3.5" />
+                  <UploadCloud className="w-3 h-3" />
                   <span>Replace</span>
                 </button>
               </div>
             </div>
 
-            {/* Comparison Canvas Area (Height-Optimized 1:1 matching Dropzone: 300px/340px/360px) */}
-            <div className="relative rounded-xl overflow-hidden bg-black/15 h-[300px] sm:h-[340px] lg:h-[360px] flex items-center justify-center border border-zinc-200/50 dark:border-zinc-800/60">
+            {/* Comparison Canvas Area (Height-Optimized to fit perfectly on 1080p/768p viewports) */}
+            <div className="relative rounded-xl overflow-hidden bg-black/15 h-[230px] sm:h-[260px] lg:h-[280px] xl:h-[300px] flex items-center justify-center border border-zinc-200/50 dark:border-zinc-800/60">
               {isProcessing && (
                 <div className="absolute inset-0 z-20 bg-zinc-950/60 backdrop-blur-xs flex flex-col items-center justify-center space-y-3">
                   <div className="w-8 h-8 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
@@ -988,8 +989,8 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
                   processedSrc={compressedResult.url}
                   originalLabel={`Original`}
                   processedLabel={`Compressed`}
-                  maxHeightClass="max-h-[280px] sm:max-h-[320px] lg:max-h-[340px]"
-                  className="max-h-[290px] sm:max-h-[330px] lg:max-h-[350px] w-full"
+                  maxHeightClass="max-h-[210px] sm:max-h-[240px] lg:max-h-[260px] xl:max-h-[280px]"
+                  className="max-h-[220px] sm:max-h-[250px] lg:max-h-[270px] xl:max-h-[290px] w-full"
                 />
               ) : (
                 <div className="relative max-h-full max-w-full flex items-center justify-center overflow-hidden">
@@ -997,31 +998,31 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
                     src={sourceImage.previewUrl}
                     alt="Original Preview"
                     draggable={false}
-                    className="max-h-[280px] sm:max-h-[320px] lg:max-h-[340px] max-w-full object-contain select-none"
+                    className="max-h-[210px] sm:max-h-[240px] lg:max-h-[260px] xl:max-h-[280px] max-w-full object-contain select-none"
                   />
                 </div>
               )}
             </div>
 
             {/* Quick Action footer inside left card */}
-            <div className="flex flex-wrap items-center justify-between text-xs text-zinc-500 px-1 pt-0.5 gap-2">
-              <span className="flex items-center gap-1.5 text-[11px] font-mono">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+            <div className="flex flex-wrap items-center justify-between text-xs text-zinc-500 px-0.5 pt-0.5 gap-2">
+              <span className="flex items-center gap-1 text-[10px] font-mono text-zinc-400">
+                <ShieldCheck className="w-3 h-3 text-emerald-500" />
                 <span>100% In-Browser Engine · Zero Uploads</span>
               </span>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
                 <button
                   type="button"
                   onClick={handleCopyToClipboard}
                   disabled={!compressedResult}
-                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors cursor-pointer disabled:opacity-50 ${
+                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium transition-colors cursor-pointer disabled:opacity-50 ${
                     isDark
                       ? 'bg-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-750'
                       : 'bg-zinc-100 text-zinc-700 hover:text-zinc-900 hover:bg-zinc-200'
                   }`}
                 >
-                  <Copy className="w-3.5 h-3.5 text-blue-500" />
+                  <Copy className="w-3 h-3 text-blue-500" />
                   <span>Copy</span>
                 </button>
 
@@ -1030,13 +1031,13 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
                     type="button"
                     onClick={handleShare}
                     disabled={!compressedResult}
-                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors cursor-pointer disabled:opacity-50 ${
+                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium transition-colors cursor-pointer disabled:opacity-50 ${
                       isDark
                         ? 'bg-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-750'
                         : 'bg-zinc-100 text-zinc-700 hover:text-zinc-900 hover:bg-zinc-200'
                     }`}
                   >
-                    <Share2 className="w-3.5 h-3.5 text-indigo-500" />
+                    <Share2 className="w-3 h-3 text-indigo-500" />
                     <span>Share</span>
                   </button>
                 )}
@@ -1046,49 +1047,49 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
         </div>
 
         {/* RIGHT COLUMN: Results & Fine Tune Stacked Cards */}
-        <div className="lg:col-span-5 xl:col-span-4 space-y-3">
+        <div className="lg:col-span-5 xl:col-span-4 space-y-2">
           {/* Card 1: YOUR RESULTS */}
           <div
-            className={`p-3 sm:p-3.5 rounded-xl border space-y-2.5 transition-colors ${
+            className={`p-2 sm:p-2.5 rounded-xl border space-y-1.5 transition-colors ${
               isDark ? 'bg-zinc-900/90 border-zinc-800/80 shadow-xs' : 'bg-white border-zinc-200 shadow-xs'
             }`}
           >
             <div className="flex items-center justify-between">
               <div>
-                <span className="text-[10px] font-mono font-bold tracking-wider uppercase text-zinc-400 dark:text-zinc-500 block">
+                <span className="text-[9px] font-mono font-bold tracking-wider uppercase text-zinc-400 dark:text-zinc-500 block">
                   YOUR RESULTS
                 </span>
-                <h3 className={`text-sm font-bold mt-0.2 ${isDark ? 'text-white' : 'text-zinc-950'}`}>
+                <h3 className={`text-xs font-bold ${isDark ? 'text-white' : 'text-zinc-950'}`}>
                   File size
                 </h3>
               </div>
 
               {isReduced ? (
-                <span className="px-2 py-0.5 rounded-full text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/50">
+                <span className="px-1.5 py-0.2 rounded-full text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/50">
                   {savedPercentage}% smaller
                 </span>
               ) : isIncreased ? (
-                <span className="px-2 py-0.5 rounded-full text-xs font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800/50">
+                <span className="px-1.5 py-0.2 rounded-full text-[11px] font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800/50">
                   +{Math.abs(savedPercentage)}% larger
                 </span>
               ) : (
-                <span className="px-2 py-0.5 rounded-full text-xs font-bold text-zinc-600 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800">
+                <span className="px-1.5 py-0.2 rounded-full text-[11px] font-bold text-zinc-600 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800">
                   Optimized
                 </span>
               )}
             </div>
 
             {/* Stats Breakdown Rows */}
-            <div className="space-y-1.5 pt-1.5 border-t border-zinc-100 dark:border-zinc-800/80">
+            <div className="space-y-1 pt-1 border-t border-zinc-100 dark:border-zinc-800/80">
               {/* Row 1: Original */}
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-zinc-400 shrink-0" />
                   <div>
-                    <span className={`text-xs font-semibold block ${isDark ? 'text-zinc-200' : 'text-zinc-800'}`}>
+                    <span className={`text-[11px] font-semibold block leading-tight ${isDark ? 'text-zinc-200' : 'text-zinc-800'}`}>
                       Original
                     </span>
-                    <span className="text-[10px] text-zinc-500 block leading-tight">
+                    <span className="text-[9px] text-zinc-500 block leading-tight">
                       Before compression
                     </span>
                   </div>
@@ -1100,13 +1101,13 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
 
               {/* Row 2: Compressed */}
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
                   <div>
-                    <span className={`text-xs font-semibold block ${isDark ? 'text-white' : 'text-zinc-900'}`}>
+                    <span className={`text-[11px] font-semibold block leading-tight ${isDark ? 'text-white' : 'text-zinc-900'}`}>
                       Compressed
                     </span>
-                    <span className="text-[10px] text-zinc-500 block leading-tight">
+                    <span className="text-[9px] text-zinc-500 block leading-tight">
                       {outputFormat === 'original'
                         ? sourceImage.format.replace('image/', '').toUpperCase()
                         : outputFormat.replace('image/', '').toUpperCase()}{' '}
@@ -1122,40 +1123,40 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
 
             {/* Highlight Banner */}
             {isReduced && compressedResult ? (
-              <div className="p-2 sm:p-2.5 rounded-lg bg-zinc-100 dark:bg-zinc-800/80 border border-zinc-200/80 dark:border-zinc-700/50 text-[11px] font-medium text-zinc-800 dark:text-zinc-200 flex items-center gap-2">
-                <Sparkles className="w-3.5 h-3.5 text-red-500 shrink-0" />
+              <div className="p-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800/80 border border-zinc-200/80 dark:border-zinc-700/50 text-[10px] sm:text-[11px] font-medium text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5">
+                <Sparkles className="w-3 h-3 text-red-500 shrink-0" />
                 <span>+ You save <strong>{formatFileSize(compressedResult.savedBytes)}</strong> with this setting</span>
               </div>
             ) : isIncreased ? (
-              <div className="p-2 sm:p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-500 flex items-center gap-2">
-                <Info className="w-3.5 h-3.5 shrink-0" />
-                <span>Re-encoding produced a larger output. Lower quality or choose WebP format.</span>
+              <div className="p-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-[10px] text-amber-500 flex items-center gap-1.5">
+                <Info className="w-3 h-3 shrink-0" />
+                <span>Re-encoding produced a larger output. Lower quality or choose WebP.</span>
               </div>
             ) : null}
           </div>
 
           {/* Card 2: FINE TUNE */}
           <div
-            className={`p-3 sm:p-3.5 rounded-xl border space-y-2.5 transition-colors ${
+            className={`p-2 sm:p-2.5 rounded-xl border space-y-1.5 transition-colors ${
               isDark ? 'bg-zinc-900/90 border-zinc-800/80 shadow-xs' : 'bg-white border-zinc-200 shadow-xs'
             }`}
           >
             <div className="flex items-center justify-between">
               <div>
-                <span className="text-[10px] font-mono font-bold tracking-wider uppercase text-zinc-400 dark:text-zinc-500 block">
+                <span className="text-[9px] font-mono font-bold tracking-wider uppercase text-zinc-400 dark:text-zinc-500 block">
                   FINE TUNE
                 </span>
-                <h3 className={`text-sm font-bold mt-0.2 ${isDark ? 'text-white' : 'text-zinc-950'}`}>
+                <h3 className={`text-xs font-bold ${isDark ? 'text-white' : 'text-zinc-950'}`}>
                   Compression
                 </h3>
               </div>
 
               {/* Mode switch: Quality slider vs Target KB */}
-              <div className={`inline-flex p-0.5 rounded-lg text-xs ${isDark ? 'bg-zinc-800' : 'bg-zinc-100'}`}>
+              <div className={`inline-flex p-0.5 rounded-md text-[11px] ${isDark ? 'bg-zinc-800' : 'bg-zinc-100'}`}>
                 <button
                   type="button"
                   onClick={() => setMode('quality')}
-                  className={`px-2 py-0.5 rounded-md text-xs font-medium transition-colors cursor-pointer ${
+                  className={`px-2 py-0.5 rounded text-[11px] font-medium transition-colors cursor-pointer ${
                     mode === 'quality'
                       ? isDark
                         ? 'bg-zinc-700 text-white shadow-xs font-semibold'
@@ -1170,7 +1171,7 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
                 <button
                   type="button"
                   onClick={() => setMode('target-size')}
-                  className={`px-2 py-0.5 rounded-md text-xs font-medium transition-colors cursor-pointer ${
+                  className={`px-2 py-0.5 rounded text-[11px] font-medium transition-colors cursor-pointer ${
                     mode === 'target-size'
                       ? isDark
                         ? 'bg-zinc-700 text-white shadow-xs font-semibold'
@@ -1187,8 +1188,8 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
 
             {/* Quality Slider Controls */}
             {mode === 'quality' ? (
-              <div className="space-y-1.5 pt-1 border-t border-zinc-100 dark:border-zinc-800/80">
-                <div className="flex items-center justify-between text-xs">
+              <div className="space-y-1 pt-1 border-t border-zinc-100 dark:border-zinc-800/80">
+                <div className="flex items-center justify-between text-[11px]">
                   <span className={`font-semibold ${isDark ? 'text-zinc-300' : 'text-zinc-700'}`}>
                     Quality
                   </span>
@@ -1196,7 +1197,7 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
                     <span className="text-[10px] font-medium text-zinc-500">
                       {quality <= 40 ? 'Max Compression' : quality <= 65 ? 'High Savings' : quality <= 85 ? 'Balanced' : 'High Quality'}
                     </span>
-                    <span className={`font-mono text-[11px] font-bold px-1.5 py-0.2 rounded ${isDark ? 'text-white bg-zinc-800' : 'text-zinc-900 bg-zinc-100'}`}>
+                    <span className={`font-mono text-[10px] font-bold px-1.5 py-0.2 rounded ${isDark ? 'text-white bg-zinc-800' : 'text-zinc-900 bg-zinc-100'}`}>
                       {quality}%
                     </span>
                   </div>
@@ -1219,7 +1220,7 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
                 />
 
                 {/* Quick Quality Presets */}
-                <div className="grid grid-cols-4 gap-1 pt-0.5">
+                <div className="grid grid-cols-4 gap-1">
                   {[
                     { label: '35%', val: 35 },
                     { label: '60%', val: 60 },
@@ -1230,7 +1231,7 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
                       key={p.val}
                       type="button"
                       onClick={() => applyQualityPreset(p.val)}
-                      className={`text-[10px] px-1.5 py-0.5 rounded font-medium transition-colors cursor-pointer text-center ${
+                      className={`text-[10px] px-1 py-0.5 rounded font-medium transition-colors cursor-pointer text-center ${
                         quality === p.val
                           ? 'bg-red-500 text-white font-semibold'
                           : isDark
@@ -1245,17 +1246,17 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
               </div>
             ) : (
               /* Target KB Solver Mode */
-              <div className="space-y-2 pt-1 border-t border-zinc-100 dark:border-zinc-800/80">
-                <div className="flex items-center justify-between text-xs">
+              <div className="space-y-1.5 pt-1 border-t border-zinc-100 dark:border-zinc-800/80">
+                <div className="flex items-center justify-between text-[11px]">
                   <span className={`font-semibold ${isDark ? 'text-zinc-300' : 'text-zinc-700'}`}>
                     Target File Size
                   </span>
-                  <span className="font-mono text-xs font-bold text-red-500">
+                  <span className="font-mono text-[11px] font-bold text-red-500">
                     {targetKb} KB
                   </span>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
                   <input
                     type="number"
                     min={5}
@@ -1277,13 +1278,13 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
                         setTargetKb(20);
                       }
                     }}
-                    className={`w-full px-2.5 py-1 rounded-lg text-xs font-mono font-medium border focus:outline-none focus:ring-1 focus:ring-red-500 ${
+                    className={`w-full px-2 py-0.5 rounded-md text-xs font-mono font-medium border focus:outline-none focus:ring-1 focus:ring-red-500 ${
                       isDark
                         ? 'bg-zinc-850 border-zinc-750 text-white'
                         : 'bg-zinc-50 border-zinc-200 text-zinc-900'
                     }`}
                   />
-                  <span className="text-xs text-zinc-400 font-mono font-semibold">KB</span>
+                  <span className="text-[11px] text-zinc-400 font-mono font-semibold">KB</span>
                 </div>
 
                 {/* Indian Govt & Exam Portal Chips */}
@@ -1298,7 +1299,7 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
                       key={item.kb}
                       type="button"
                       onClick={() => applyTargetKbPreset(item.kb)}
-                      className={`text-[10px] py-0.5 px-1 rounded font-medium text-center transition-colors cursor-pointer ${
+                      className={`text-[10px] py-0.5 px-0.5 rounded font-medium text-center transition-colors cursor-pointer ${
                         targetKb === item.kb
                           ? 'bg-red-500 text-white font-semibold'
                           : isDark
@@ -1314,12 +1315,12 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
             )}
 
             {/* Output Format Selector */}
-            <div className="space-y-1.5 pt-1.5 border-t border-zinc-100 dark:border-zinc-800/80">
-              <div className="flex items-center justify-between text-xs">
+            <div className="space-y-1 pt-1 border-t border-zinc-100 dark:border-zinc-800/80">
+              <div className="flex items-center justify-between text-[11px]">
                 <span className={`font-semibold ${isDark ? 'text-zinc-300' : 'text-zinc-700'}`}>
                   Output format
                 </span>
-                <span className="text-[10px] text-zinc-500">
+                <span className="text-[9px] text-zinc-500">
                   Choose one
                 </span>
               </div>
@@ -1335,7 +1336,7 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
                     key={fmt.id}
                     type="button"
                     onClick={() => setOutputFormat(fmt.id as OutputFormat)}
-                    className={`py-1 px-1 rounded-md text-[11px] font-semibold text-center transition-all cursor-pointer flex items-center justify-center gap-0.5 ${
+                    className={`py-0.5 px-1 rounded-md text-[10px] font-semibold text-center transition-all cursor-pointer flex items-center justify-center gap-0.5 ${
                       outputFormat === fmt.id
                         ? 'border-2 border-red-500 bg-red-500/10 text-red-500 dark:text-red-400'
                         : isDark
@@ -1351,12 +1352,12 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
             </div>
 
             {/* Resolution Scaling Dropdown/Chips */}
-            <div className="space-y-1 pt-1.5 border-t border-zinc-100 dark:border-zinc-800/80">
-              <div className="flex items-center justify-between text-xs">
+            <div className="space-y-1 pt-1 border-t border-zinc-100 dark:border-zinc-800/80">
+              <div className="flex items-center justify-between text-[11px]">
                 <span className={`font-medium ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>
                   Resolution
                 </span>
-                <span className="font-mono text-zinc-400 text-[11px]">
+                <span className="font-mono text-zinc-400 text-[10px]">
                   {scalePercentage}%
                 </span>
               </div>
@@ -1367,7 +1368,7 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
                     key={pct}
                     type="button"
                     onClick={() => setScalePercentage(pct)}
-                    className={`py-0.5 rounded text-[11px] font-medium transition-colors cursor-pointer ${
+                    className={`py-0.5 rounded text-[10px] font-medium transition-colors cursor-pointer ${
                       scalePercentage === pct
                         ? isDark
                           ? 'bg-zinc-800 text-white font-semibold'
@@ -1384,14 +1385,14 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
             </div>
 
             {/* Primary Action: Download Button */}
-            <div className="pt-1">
+            <div className="pt-0.5">
               <button
                 type="button"
                 disabled={!compressedResult || isProcessing}
                 onClick={handleDownload}
-                className="w-full py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold bg-red-600 hover:bg-red-500 active:scale-[0.99] text-white flex items-center justify-center gap-2 transition-all shadow-md shadow-red-600/25 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+                className="w-full py-2 px-3 rounded-lg text-xs font-bold bg-red-600 hover:bg-red-500 active:scale-[0.99] text-white flex items-center justify-center gap-1.5 transition-all shadow-md shadow-red-600/20 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
               >
-                <Download className="w-4 h-4 stroke-[2.5]" />
+                <Download className="w-3.5 h-3.5 stroke-[2.5]" />
                 <span>
                   {compressedResult ? `Download (${formatFileSize(compressedResult.size)})` : 'Download Image'}
                 </span>
