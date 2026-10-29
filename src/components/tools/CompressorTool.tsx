@@ -734,12 +734,6 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
     }
   };
 
-  // Preset buttons
-  const applyQualityPreset = (q: number) => {
-    setMode('quality');
-    setQuality(q);
-  };
-
   const applyTargetKbPreset = (kb: number) => {
     setMode('target-size');
     setTargetKb(kb);
@@ -923,12 +917,12 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
         </button>
       </div>
 
-      {/* Main Grid: Left Comparison Preview / Right Stacked Cards (Equal Height) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-4 items-stretch">
+      {/* Main Grid: Left Comparison Preview / Right Stacked Cards */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-4 items-start">
         {/* LEFT COLUMN: Before & After Comparison Preview Card */}
-        <div className="lg:col-span-7 xl:col-span-8 flex flex-col h-full">
+        <div className="lg:col-span-7 xl:col-span-8">
           <div
-            className={`border rounded-xl p-2.5 sm:p-3 flex flex-col justify-between h-full transition-colors relative overflow-hidden ${
+            className={`border rounded-xl p-2.5 sm:p-3 space-y-2 transition-colors relative overflow-hidden ${
               isDark
                 ? 'bg-zinc-900/90 border-zinc-800/80 shadow-xs'
                 : 'bg-white border-zinc-200 shadow-xs'
@@ -1046,23 +1040,18 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
           </div>
         </div>
 
-        {/* RIGHT COLUMN: Results & Fine Tune Stacked Cards (Equal to Canvas Height) */}
-        <div className="lg:col-span-5 xl:col-span-4 flex flex-col justify-between h-full gap-2.5">
+        {/* RIGHT COLUMN: Results & Fine Tune Stacked Cards */}
+        <div className="lg:col-span-5 xl:col-span-4 space-y-2.5">
           {/* Card 1: YOUR RESULTS */}
           <div
-            className={`p-2.5 sm:p-3 rounded-xl border space-y-1.5 transition-colors shrink-0 ${
+            className={`p-2.5 sm:p-3 rounded-xl border space-y-1.5 transition-colors ${
               isDark ? 'bg-zinc-900/90 border-zinc-800/80 shadow-xs' : 'bg-white border-zinc-200 shadow-xs'
             }`}
           >
             <div className="flex items-center justify-between">
-              <div>
-                <span className="text-[9px] font-mono font-bold tracking-wider uppercase text-zinc-400 dark:text-zinc-500 block">
-                  YOUR RESULTS
-                </span>
-                <h3 className={`text-xs font-bold ${isDark ? 'text-white' : 'text-zinc-950'}`}>
-                  File size
-                </h3>
-              </div>
+              <h3 className={`text-xs font-bold leading-none ${isDark ? 'text-white' : 'text-zinc-950'}`}>
+                Your Results
+              </h3>
 
               {isReduced ? (
                 <span className="px-1.5 py-0.2 rounded-full text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/50">
@@ -1137,20 +1126,14 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
 
           {/* Card 2: FINE TUNE */}
           <div
-            className={`p-2.5 sm:p-3 rounded-xl border flex-1 flex flex-col justify-between transition-colors ${
+            className={`p-2.5 sm:p-3 rounded-xl border space-y-2.5 transition-colors ${
               isDark ? 'bg-zinc-900/90 border-zinc-800/80 shadow-xs' : 'bg-white border-zinc-200 shadow-xs'
             }`}
           >
-            <div className="space-y-2.5">
-              <div className="flex items-center justify-between">
-              <div>
-                <span className="text-[9px] font-mono font-bold tracking-wider uppercase text-zinc-400 dark:text-zinc-500 block">
-                  FINE TUNE
-                </span>
-                <h3 className={`text-xs font-bold ${isDark ? 'text-white' : 'text-zinc-950'}`}>
-                  Compression
-                </h3>
-              </div>
+            <div className="flex items-center justify-between">
+              <h3 className={`text-xs font-bold leading-none ${isDark ? 'text-white' : 'text-zinc-950'}`}>
+                Fine-Tune
+              </h3>
 
               {/* Mode switch: Quality slider vs Target KB */}
               <div className={`inline-flex p-0.5 rounded-md text-[11px] ${isDark ? 'bg-zinc-800' : 'bg-zinc-100'}`}>
@@ -1189,7 +1172,7 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
 
             {/* Quality Slider Controls */}
             {mode === 'quality' ? (
-              <div className="space-y-1 pt-1 border-t border-zinc-100 dark:border-zinc-800/80">
+              <div className="space-y-1.5 pt-1 border-t border-zinc-100 dark:border-zinc-800/80">
                 <div className="flex items-center justify-between text-[11px]">
                   <span className={`font-semibold ${isDark ? 'text-zinc-300' : 'text-zinc-700'}`}>
                     Quality
@@ -1219,31 +1202,6 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
                       : `linear-gradient(to right, #ef4444 ${(quality - 10) / 0.9}%, #e4e4e7 ${(quality - 10) / 0.9}%)`,
                   }}
                 />
-
-                {/* Quick Quality Presets */}
-                <div className="grid grid-cols-4 gap-1">
-                  {[
-                    { label: '35%', val: 35 },
-                    { label: '60%', val: 60 },
-                    { label: 'Balanced', val: 75 },
-                    { label: '90%', val: 90 },
-                  ].map((p) => (
-                    <button
-                      key={p.val}
-                      type="button"
-                      onClick={() => applyQualityPreset(p.val)}
-                      className={`text-[10px] px-1 py-0.5 rounded font-medium transition-colors cursor-pointer text-center ${
-                        quality === p.val
-                          ? 'bg-red-500 text-white font-semibold'
-                          : isDark
-                            ? 'bg-zinc-800 text-zinc-300 hover:text-white'
-                            : 'bg-zinc-100 text-zinc-700 hover:text-zinc-950'
-                      }`}
-                    >
-                      {p.label}
-                    </button>
-                  ))}
-                </div>
               </div>
             ) : (
               /* Target KB Solver Mode */
@@ -1384,25 +1342,24 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
                 ))}
               </div>
             </div>
-          </div>
 
-          {/* Primary Action: Download Button (Docked at bottom of Fine Tune card) */}
-          <div className="pt-2.5 mt-auto">
-            <button
-              type="button"
-              disabled={!compressedResult || isProcessing}
-              onClick={handleDownload}
-              className="w-full py-2.5 px-3 rounded-lg text-xs font-bold bg-red-600 hover:bg-red-500 active:scale-[0.99] text-white flex items-center justify-center gap-1.5 transition-all shadow-md shadow-red-600/20 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
-            >
-              <Download className="w-3.5 h-3.5 stroke-[2.5]" />
-              <span>
-                {compressedResult ? `Download (${formatFileSize(compressedResult.size)})` : 'Download Image'}
-              </span>
-            </button>
+            {/* Primary Action: Download Button */}
+            <div className="pt-1.5">
+              <button
+                type="button"
+                disabled={!compressedResult || isProcessing}
+                onClick={handleDownload}
+                className="w-full py-2.5 px-3 rounded-lg text-xs font-bold bg-red-600 hover:bg-red-500 active:scale-[0.99] text-white flex items-center justify-center gap-1.5 transition-all shadow-md shadow-red-600/20 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+              >
+                <Download className="w-3.5 h-3.5 stroke-[2.5]" />
+                <span>
+                  {compressedResult ? `Download (${formatFileSize(compressedResult.size)})` : 'Download Image'}
+                </span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
       {/* Detailed Reference, Format Matrix, Presets Guide & FAQ */}
       <CompressionGuideAndFaq isDark={isDark} />
