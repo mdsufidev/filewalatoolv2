@@ -693,41 +693,46 @@ export const PdfToImageTool: React.FC<PdfToImageToolProps> = ({ onNotify }) => {
   const totalRenderedSize = renderedPages.reduce((acc, curr) => acc + curr.size, 0);
 
   return (
-    <div className="w-full max-w-7xl mx-auto space-y-10 animate-in fade-in duration-200">
-      {/* HEADER SECTION */}
-      <div className="text-center space-y-3 max-w-2xl mx-auto">
-        <div
-          className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold border ${
-            isDark
-              ? 'bg-slate-900 border-slate-800 text-amber-400'
-              : 'bg-amber-50 border-amber-200 text-amber-700 shadow-xs'
-          }`}
-        >
-          <FileImage className="w-3.5 h-3.5" />
-          <span>100% Client-Side PDF to Image Engine</span>
+    <div className="w-full max-w-6xl mx-auto space-y-2 sm:space-y-2.5 animate-in fade-in duration-200 select-none">
+      {/* Header Info */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-1 py-0.5">
+        <div className="flex items-center gap-2">
+          <h1 className="text-xs sm:text-sm font-bold tracking-tight text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+            <FileImage className="w-3.5 h-3.5 text-blue-500" />
+            PDF to Image Converter
+          </h1>
+          <span className="text-[10px] font-mono text-zinc-400 hidden sm:inline-block">
+            Convert PDF pages to JPG, PNG, or WebP
+          </span>
         </div>
-
-        <h1
-          className={`text-3xl sm:text-4xl font-extrabold tracking-tight ${
-            isDark ? 'text-white' : 'text-slate-900'
-          }`}
-        >
-          PDF to Image Converter
-        </h1>
-
-        <p
-          className={`text-sm sm:text-base leading-relaxed ${
-            isDark ? 'text-slate-400' : 'text-slate-600'
-          }`}
-        >
-          Convert PDF pages into high-resolution JPG, lossless PNG, or WebP images in seconds.
-        </p>
+        {file && (
+          <div className="flex items-center gap-2">
+            {renderedPages.length > 0 && (
+              <button
+                type="button"
+                disabled={isZipping}
+                onClick={handleDownloadAllZip}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white cursor-pointer transition-colors disabled:opacity-50"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>{isZipping ? `ZIP (${zipProgress || 0}%)` : `Download All (${renderedPages.length})`}</span>
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={handleReset}
+              className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs text-rose-500 hover:text-rose-400 hover:bg-rose-500/10 cursor-pointer"
+            >
+              <X className="w-3.5 h-3.5" /> Clear
+            </button>
+          </div>
+        )}
       </div>
 
       {/* ERROR BANNER */}
       {errorMessage && (
         <div
-          className={`p-3.5 rounded-md border flex items-center justify-between gap-3 text-xs ${
+          className={`p-2.5 rounded-md border flex items-center justify-between gap-3 text-xs ${
             isDark
               ? 'bg-rose-500/10 border-rose-500/30 text-rose-300'
               : 'bg-rose-50 border-rose-200 text-rose-800'
@@ -747,23 +752,24 @@ export const PdfToImageTool: React.FC<PdfToImageToolProps> = ({ onNotify }) => {
       )}
 
       {/* MAIN WORKSPACE */}
-      <div className="space-y-6">
+      <div className="space-y-2 sm:space-y-3">
         {/* 1. SINGLE FILE DROPZONE (When no file is selected) */}
         {!file ? (
-          <div className="max-w-3xl mx-auto">
+          <div className="max-w-[700px] mx-auto">
             <Dropzone
               onFilesSelected={(files: File[]) => handleFileSelected(files[0])}
               accept="application/pdf,.pdf"
               title="Upload PDF to Convert to Images"
               description="Drag & drop or click to browse. Converts pages to JPG, PNG, or WebP."
+              className="h-[230px] sm:h-[260px] lg:h-[280px]"
             />
           </div>
         ) : (
           /* 2. ACTIVE FILE CARD & CONVERSION CONFIGURATION WORKSPACE */
-          <div className="space-y-6">
+          <div className="space-y-2 sm:space-y-2.5">
             {/* Active Document Card */}
             <div
-              className={`p-4 sm:p-5 rounded-lg border flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all ${
+              className={`p-2 sm:p-2.5 rounded-lg border flex flex-col md:flex-row md:items-center justify-between gap-3 transition-all ${
                 isDark
                   ? 'bg-zinc-900 border-zinc-800'
                   : 'bg-white border-zinc-200'
@@ -869,13 +875,13 @@ export const PdfToImageTool: React.FC<PdfToImageToolProps> = ({ onNotify }) => {
 
             {/* CONVERSION CONFIGURATION PANEL */}
             <div
-              className={`p-5 sm:p-6 rounded-lg border space-y-5 ${
+              className={`p-2.5 sm:p-3 rounded-lg border space-y-2.5 ${
                 isDark
                   ? 'bg-zinc-900 border-zinc-800'
                   : 'bg-white border-zinc-200'
               }`}
             >
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-zinc-200 dark:border-zinc-800">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-zinc-200 dark:border-zinc-800">
                 <div className="flex items-center gap-2">
                   <Settings2 className="w-4 h-4 text-zinc-500" />
                   <h3
@@ -891,7 +897,7 @@ export const PdfToImageTool: React.FC<PdfToImageToolProps> = ({ onNotify }) => {
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 sm:gap-3">
                 {/* 1. IMAGE FORMAT SELECTOR */}
                 <div className="space-y-2">
                   <label
@@ -907,7 +913,7 @@ export const PdfToImageTool: React.FC<PdfToImageToolProps> = ({ onNotify }) => {
                     <button
                       type="button"
                       onClick={() => setFormat('jpg')}
-                      className={`p-2.5 rounded-md border text-center transition-colors cursor-pointer flex flex-col items-center justify-center gap-0.5 ${
+                      className={`py-1.5 px-2 rounded-md border text-center transition-colors cursor-pointer flex flex-col items-center justify-center gap-0.5 ${
                         format === 'jpg'
                           ? isDark
                             ? 'bg-zinc-100 border-zinc-100 text-zinc-900 font-semibold'
@@ -925,7 +931,7 @@ export const PdfToImageTool: React.FC<PdfToImageToolProps> = ({ onNotify }) => {
                     <button
                       type="button"
                       onClick={() => setFormat('png')}
-                      className={`p-2.5 rounded-md border text-center transition-colors cursor-pointer flex flex-col items-center justify-center gap-0.5 ${
+                      className={`py-1.5 px-2 rounded-md border text-center transition-colors cursor-pointer flex flex-col items-center justify-center gap-0.5 ${
                         format === 'png'
                           ? isDark
                             ? 'bg-zinc-100 border-zinc-100 text-zinc-900 font-semibold'
@@ -943,7 +949,7 @@ export const PdfToImageTool: React.FC<PdfToImageToolProps> = ({ onNotify }) => {
                     <button
                       type="button"
                       onClick={() => setFormat('webp')}
-                      className={`p-2.5 rounded-md border text-center transition-colors cursor-pointer flex flex-col items-center justify-center gap-0.5 ${
+                      className={`py-1.5 px-2 rounded-md border text-center transition-colors cursor-pointer flex flex-col items-center justify-center gap-0.5 ${
                         format === 'webp'
                           ? isDark
                             ? 'bg-zinc-100 border-zinc-100 text-zinc-900 font-semibold'
@@ -985,7 +991,7 @@ export const PdfToImageTool: React.FC<PdfToImageToolProps> = ({ onNotify }) => {
                     <button
                       type="button"
                       onClick={() => setScale(1)}
-                      className={`p-2.5 rounded-md border text-center transition-colors cursor-pointer flex flex-col items-center justify-center gap-0.5 ${
+                      className={`py-1.5 px-2 rounded-md border text-center transition-colors cursor-pointer flex flex-col items-center justify-center gap-0.5 ${
                         scale === 1
                           ? isDark
                             ? 'bg-zinc-100 border-zinc-100 text-zinc-900 font-semibold'
@@ -1003,7 +1009,7 @@ export const PdfToImageTool: React.FC<PdfToImageToolProps> = ({ onNotify }) => {
                     <button
                       type="button"
                       onClick={() => setScale(2)}
-                      className={`p-2.5 rounded-md border text-center transition-colors cursor-pointer flex flex-col items-center justify-center gap-0.5 ${
+                      className={`py-1.5 px-2 rounded-md border text-center transition-colors cursor-pointer flex flex-col items-center justify-center gap-0.5 ${
                         scale === 2
                           ? isDark
                             ? 'bg-zinc-100 border-zinc-100 text-zinc-900 font-semibold'
@@ -1021,7 +1027,7 @@ export const PdfToImageTool: React.FC<PdfToImageToolProps> = ({ onNotify }) => {
                     <button
                       type="button"
                       onClick={() => setScale(3)}
-                      className={`p-2.5 rounded-md border text-center transition-colors cursor-pointer flex flex-col items-center justify-center gap-0.5 ${
+                      className={`py-1.5 px-2 rounded-md border text-center transition-colors cursor-pointer flex flex-col items-center justify-center gap-0.5 ${
                         scale === 3
                           ? isDark
                             ? 'bg-zinc-100 border-zinc-100 text-zinc-900 font-semibold'
@@ -1074,7 +1080,7 @@ export const PdfToImageTool: React.FC<PdfToImageToolProps> = ({ onNotify }) => {
                     <button
                       type="button"
                       onClick={() => setRangeMode('all')}
-                      className={`p-2.5 rounded-md border text-center transition-colors cursor-pointer flex flex-col items-center justify-center gap-0.5 ${
+                      className={`py-1.5 px-2 rounded-md border text-center transition-colors cursor-pointer flex flex-col items-center justify-center gap-0.5 ${
                         rangeMode === 'all'
                           ? isDark
                             ? 'bg-zinc-100 border-zinc-100 text-zinc-900 font-semibold'
@@ -1093,7 +1099,7 @@ export const PdfToImageTool: React.FC<PdfToImageToolProps> = ({ onNotify }) => {
                     <button
                       type="button"
                       onClick={() => setRangeMode('custom')}
-                      className={`p-2.5 rounded-md border text-center transition-colors cursor-pointer flex flex-col items-center justify-center gap-0.5 ${
+                      className={`py-1.5 px-2 rounded-md border text-center transition-colors cursor-pointer flex flex-col items-center justify-center gap-0.5 ${
                         rangeMode === 'custom'
                           ? isDark
                             ? 'bg-zinc-100 border-zinc-100 text-zinc-900 font-semibold'
@@ -1257,8 +1263,9 @@ export const PdfToImageTool: React.FC<PdfToImageToolProps> = ({ onNotify }) => {
                 </div>
 
                 {/* Page Cards Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5">
-                  {renderedPages.map((item) => (
+                <div className="max-h-[220px] sm:max-h-[260px] overflow-y-auto pr-1">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-3">
+                    {renderedPages.map((item) => (
                     <div
                       key={item.pageNum}
                       className={`group rounded-md border overflow-hidden flex flex-col justify-between transition-colors ${
@@ -1379,7 +1386,8 @@ export const PdfToImageTool: React.FC<PdfToImageToolProps> = ({ onNotify }) => {
                   ))}
                 </div>
               </div>
-            )}
+            </div>
+          )}
           </div>
         )}
       </div>

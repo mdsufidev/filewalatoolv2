@@ -644,67 +644,41 @@ export const CompressPdfTool: React.FC<CompressPdfToolProps> = ({ onNotify, init
       />
 
       {/* Tool Header */}
-      <div className="text-center space-y-2.5 max-w-2xl mx-auto">
-        <div
-          className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold border ${
-            isDark
-              ? 'bg-slate-900 border-slate-800 text-slate-300'
-              : 'bg-white border-slate-200 text-slate-700 shadow-xs'
-          }`}
-        >
-          <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-          <span>100% Client-Side · Zero Server Uploads · No File Caps</span>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-1">
+        <div className="flex items-center gap-2">
+          <h1 className="text-xs sm:text-sm font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+            <Minimize2 className="w-3.5 h-3.5 text-emerald-500" />
+            Compress PDF Files
+          </h1>
+          <span className="text-[10px] font-mono text-zinc-400 hidden sm:inline-block">
+            100% In-Browser · Fast & Private
+          </span>
         </div>
 
-        <h1
-          className={`text-3xl sm:text-4xl font-extrabold tracking-tight ${
-            isDark ? 'text-white' : 'text-slate-950'
-          }`}
-        >
-          Compress PDF Files
-        </h1>
-        <p
-          className={`text-xs sm:text-sm leading-relaxed ${
-            isDark ? 'text-slate-400' : 'text-slate-600'
-          }`}
-        >
-          Reduce PDF file size up to 85% while preserving sharp text and vector graphics.
-        </p>
-      </div>
-
-      {/* Preset Target Tabs (Clean Pill Bar) */}
-      <div className="flex flex-wrap justify-center gap-2">
-        {(['extreme', 'recommended', 'low'] as CompressionPreset[]).map((pKey, idx) => {
-          const p = PRESETS[pKey];
-          const isSelected = selectedPreset === pKey;
-          const shortcutNum = idx + 1;
-          return (
-            <button
-              key={pKey}
-              type="button"
-              onClick={() => setSelectedPreset(pKey)}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium border transition-colors cursor-pointer flex items-center gap-1.5 ${
-                isSelected
-                  ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 border-zinc-900 dark:border-zinc-100'
-                  : isDark
-                    ? 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
-                    : 'bg-white border-zinc-200 text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50'
-              }`}
-            >
-              <kbd
-                className={`px-1.5 py-0.2 rounded text-[10px] font-mono border ${
+        {/* Preset Target Tabs (Clean Pill Bar) */}
+        <div className="flex flex-wrap items-center gap-1">
+          {(['extreme', 'recommended', 'low'] as CompressionPreset[]).map((pKey, idx) => {
+            const p = PRESETS[pKey];
+            const isSelected = selectedPreset === pKey;
+            const shortcutNum = idx + 1;
+            return (
+              <button
+                key={pKey}
+                type="button"
+                onClick={() => setSelectedPreset(pKey)}
+                className={`px-2 py-0.5 rounded text-[10px] font-mono transition-colors cursor-pointer flex items-center gap-1 ${
                   isSelected
-                    ? 'bg-zinc-800 text-white dark:bg-zinc-200 dark:text-zinc-900 border-zinc-700 dark:border-zinc-300'
-                    : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 border-zinc-200 dark:border-zinc-700'
+                    ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 font-semibold'
+                    : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:text-zinc-900 dark:hover:text-white'
                 }`}
               >
-                {shortcutNum}
-              </kbd>
-              <span>{p.title}</span>
-              <span className="text-[10px] opacity-70">({p.estimatedReduction})</span>
-            </button>
-          );
-        })}
+                <kbd className="opacity-70">{shortcutNum}</kbd>
+                <span>{p.title.split(' ')[0]}</span>
+                <span className="opacity-60 hidden sm:inline">({p.estimatedReduction.split(' ')[0]})</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Error Banner */}
@@ -883,12 +857,13 @@ export const CompressPdfTool: React.FC<CompressPdfToolProps> = ({ onNotify, init
         /* WORKSPACE: DROPZONE & CONFIGURATION */
         <div className="space-y-6">
           {!file ? (
-            <div className="max-w-3xl mx-auto">
+            <div className="max-w-[700px] mx-auto">
               <Dropzone
                 onFilesSelected={(files: File[]) => handleProcessFile(files[0])}
                 accept="application/pdf,.pdf"
                 title="Upload PDF Document to Compress"
                 description={`Drag & drop or click to browse. Selected: ${PRESETS[selectedPreset].title}.`}
+                className="h-[230px] sm:h-[260px] lg:h-[280px]"
               />
             </div>
           ) : (

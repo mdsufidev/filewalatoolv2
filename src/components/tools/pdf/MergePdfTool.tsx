@@ -581,32 +581,28 @@ export const MergePdfTool: React.FC<MergePdfToolProps> = ({ onNotify, initialFil
   return (
     <div className="w-full max-w-7xl mx-auto space-y-8 animate-in fade-in duration-300">
       {/* Tool Header */}
-      <div className="text-center space-y-2.5 max-w-2xl mx-auto">
-        <div
-          className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold border ${
-            isDark
-              ? 'bg-slate-900 border-slate-800 text-slate-300'
-              : 'bg-white border-slate-200 text-slate-700 shadow-xs'
-          }`}
-        >
-          <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-          <span>100% Client-Side · Zero Server Uploads · No File Caps</span>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-1">
+        <div className="flex items-center gap-2">
+          <h1 className="text-xs sm:text-sm font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+            <Layers className="w-3.5 h-3.5 text-indigo-500" />
+            Merge PDF Files
+          </h1>
+          <span className="text-[10px] font-mono text-zinc-400 hidden sm:inline-block">
+            100% In-Browser · Fast & Private
+          </span>
         </div>
 
-        <h1
-          className={`text-3xl sm:text-4xl font-extrabold tracking-tight ${
-            isDark ? 'text-white' : 'text-slate-950'
-          }`}
-        >
-          Merge PDF Files
-        </h1>
-        <p
-          className={`text-xs sm:text-sm leading-relaxed ${
-            isDark ? 'text-slate-400' : 'text-slate-600'
-          }`}
-        >
-          Combine multiple PDF documents into a single organized file in seconds.
-        </p>
+        <div className="flex items-center gap-2">
+          {files.length > 0 && (
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded border bg-zinc-100 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400">
+              {files.length} Files · {allPagesResolved ? `${totalKnownPages} Pages` : 'Calculating...'}
+            </span>
+          )}
+          <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30">
+            <ShieldCheck className="w-3 h-3" />
+            <span>Zero Uploads</span>
+          </span>
+        </div>
       </div>
 
       {/* Error Banner */}
@@ -737,13 +733,14 @@ export const MergePdfTool: React.FC<MergePdfToolProps> = ({ onNotify, initialFil
         /* WORKSPACE: DROPZONE & QUEUE MANAGEMENT */
         <div className="space-y-6">
           {files.length === 0 ? (
-            <div className="max-w-3xl mx-auto">
+            <div className="max-w-[700px] mx-auto">
               <Dropzone
                 onFilesSelected={(files: File[]) => handleAddFiles(files)}
                 multiple
                 accept="application/pdf,.pdf"
                 title="Select PDF Files to Merge"
                 description="Drag & drop or click to browse. Select 2 or more PDF documents."
+                className="h-[230px] sm:h-[260px] lg:h-[280px]"
               />
             </div>
           ) : (
@@ -752,7 +749,7 @@ export const MergePdfTool: React.FC<MergePdfToolProps> = ({ onNotify, initialFil
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
               onClick={() => fileInputRef.current?.click()}
-              className={`border border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors duration-150 select-none ${
+              className={`border border-dashed rounded-lg p-2.5 sm:p-3 text-center cursor-pointer transition-colors duration-150 select-none ${
                 isDragOver
                   ? 'border-zinc-900 dark:border-zinc-100 bg-zinc-100/50 dark:bg-zinc-800/50'
                   : 'border-zinc-300 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-zinc-400 dark:hover:border-zinc-700 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30'
@@ -852,7 +849,7 @@ export const MergePdfTool: React.FC<MergePdfToolProps> = ({ onNotify, initialFil
               </div>
 
               {/* Items List */}
-              <div className="space-y-2">
+              <div className="space-y-1.5 max-h-[220px] sm:max-h-[260px] overflow-y-auto pr-1">
                 {files.map((item, index) => (
                   <div
                     key={item.id}

@@ -365,16 +365,17 @@ export const ImageToPdfTool: React.FC<ImageToPdfToolProps> = ({ onNotify }) => {
   }, [images.length, generatedPdfBlob, handleCompileToPdf, handleDownloadPdf, clearAllImages]);
 
   return (
-    <div className="w-full max-w-7xl mx-auto space-y-8 animate-in fade-in duration-200">
+    <div className="w-full max-w-6xl mx-auto space-y-2 sm:space-y-2.5 animate-in fade-in duration-200 select-none">
       {/* Header Info */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className={`text-xl font-bold tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-1 py-0.5">
+        <div className="flex items-center gap-2">
+          <h1 className="text-xs sm:text-sm font-bold tracking-tight text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+            <FilePlus className="w-3.5 h-3.5 text-blue-500" />
             Image to PDF Converter
           </h1>
-          <p className={`text-xs mt-1 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-            Convert JPG, PNG, and WebP photos into a clean, printable PDF document.
-          </p>
+          <span className="text-[10px] font-mono text-zinc-400 hidden sm:inline-block">
+            Convert JPG, PNG, and WebP photos into PDF
+          </span>
         </div>
         {images.length > 0 && (
           <div className="flex items-center gap-2">
@@ -382,40 +383,39 @@ export const ImageToPdfTool: React.FC<ImageToPdfToolProps> = ({ onNotify }) => {
               variant="outline"
               size="sm"
               onClick={clearAllImages}
-              className="text-xs text-rose-500 hover:text-rose-400"
+              className="text-xs text-rose-500 hover:text-rose-400 py-1 px-2.5 h-auto"
             >
-              <Trash2 className="w-3.5 h-3.5 mr-1.5" /> Clear All
+              <Trash2 className="w-3.5 h-3.5 mr-1" /> Clear
             </Button>
             <Button
               onClick={handleCompileToPdf}
               isLoading={isCompiling}
-              leftIcon={<FilePlus className="w-4 h-4" />}
+              leftIcon={<FilePlus className="w-3.5 h-3.5" />}
+              className="text-xs py-1 px-3 h-auto"
             >
               <span>Compile {images.length} Image{images.length > 1 ? 's' : ''} to PDF</span>
-              <kbd className="ml-1.5 px-1.5 py-0.2 rounded text-[10px] font-mono bg-white/20 text-white">
-                ↵
-              </kbd>
             </Button>
           </div>
         )}
       </div>
 
-      {/* Direct Clean Dropzone (Centered, Max-w-3xl, Zero Outer Wrapper Box!) */}
+      {/* Direct Clean Dropzone */}
       {images.length === 0 ? (
-        <div className="max-w-3xl mx-auto">
+        <div className="max-w-[700px] mx-auto">
           <Dropzone
             onFilesSelected={handleFilesAdded}
             multiple
             accept="image/png,image/jpeg,image/webp,.jpg,.jpeg,.png,.webp"
             title="Upload Images to Convert to PDF"
             description="Drag & drop or click to browse JPG, PNG, or WebP photos."
+            className="h-[230px] sm:h-[260px] lg:h-[280px]"
           />
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-2.5 sm:space-y-3">
           {/* Controls Bar */}
           <div
-            className={`p-4 rounded-xl border grid grid-cols-1 sm:grid-cols-3 gap-4 ${
+            className={`p-2.5 sm:p-3 rounded-xl border grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3 ${
               isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-slate-50 border-slate-200'
             }`}
           >
@@ -556,7 +556,7 @@ export const ImageToPdfTool: React.FC<ImageToPdfToolProps> = ({ onNotify }) => {
           )}
 
           {/* Image Thumbnails Grid */}
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <span className={`text-xs font-semibold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
                 Queue Sequence ({images.length} Image{images.length > 1 ? 's' : ''})
@@ -575,7 +575,8 @@ export const ImageToPdfTool: React.FC<ImageToPdfToolProps> = ({ onNotify }) => {
               </label>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3.5">
+            <div className="max-h-[220px] sm:max-h-[260px] overflow-y-auto pr-1">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-2.5">
               {images.map((item, idx) => (
                 <div
                   key={item.id}
@@ -659,6 +660,7 @@ export const ImageToPdfTool: React.FC<ImageToPdfToolProps> = ({ onNotify }) => {
             </div>
           </div>
         </div>
+      </div>
       )}
 
       {/* Comprehensive Educational & Technical Guide Section */}

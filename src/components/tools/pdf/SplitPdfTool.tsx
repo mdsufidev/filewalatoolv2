@@ -291,47 +291,44 @@ export const SplitPdfTool: React.FC<SplitPdfToolProps> = ({ onNotify }) => {
   }, [file, handleExecuteSplit]);
 
   return (
-    <div className="w-full max-w-7xl mx-auto space-y-8 animate-in fade-in duration-200">
+    <div className="w-full max-w-6xl mx-auto space-y-2 sm:space-y-2.5 animate-in fade-in duration-200 select-none">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className={`text-xl font-bold tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-1 py-0.5">
+        <div className="flex items-center gap-2">
+          <h1 className="text-xs sm:text-sm font-bold tracking-tight text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+            <Scissors className="w-3.5 h-3.5 text-rose-500" />
             Split PDF & Extract Pages
           </h1>
-          <p className={`text-xs mt-1 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-            Separate pages or extract custom page ranges into clean PDF documents.
-          </p>
+          <span className="text-[10px] font-mono text-zinc-400 hidden sm:inline-block">
+            Extract custom ranges or single pages
+          </span>
         </div>
         {file && (
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={handleReset} className="text-xs">
+            <Button variant="outline" size="sm" onClick={handleReset} className="text-xs py-1 px-2.5 h-auto">
               <span>Change PDF</span>
-              <kbd className="ml-1.5 px-1.5 py-0.2 rounded text-[10px] font-mono bg-zinc-100 dark:bg-zinc-800 text-zinc-500 border border-zinc-200 dark:border-zinc-700">
-                Esc
-              </kbd>
             </Button>
             <Button
               onClick={() => handleExecuteSplit(false)}
               isLoading={isProcessing}
-              leftIcon={<Scissors className="w-4 h-4" />}
+              leftIcon={<Scissors className="w-3.5 h-3.5" />}
+              className="text-xs py-1 px-3 h-auto"
             >
               <span>Extract {parsedPageIndices.length} Page{parsedPageIndices.length > 1 ? 's' : ''}</span>
-              <kbd className="ml-1.5 px-1.5 py-0.2 rounded text-[10px] font-mono bg-white/20 text-white">
-                ↵
-              </kbd>
             </Button>
           </div>
         )}
       </div>
 
-      {/* Direct Clean Dropzone (Centered, Max-w-3xl, Zero Outer Wrapper Box!) */}
+      {/* Direct Clean Dropzone */}
       {!file ? (
-        <div className="max-w-3xl mx-auto">
+        <div className="max-w-[700px] mx-auto">
           <Dropzone
             onFilesSelected={(files) => handlePdfLoaded(files[0])}
             accept="application/pdf,.pdf"
             title="Upload PDF to Split or Extract Pages"
             description="Drag & drop or click to browse. Supports multi-page documents."
+            className="h-[230px] sm:h-[260px] lg:h-[280px]"
           />
         </div>
       ) : (
@@ -525,7 +522,7 @@ export const SplitPdfTool: React.FC<SplitPdfToolProps> = ({ onNotify }) => {
           )}
 
           {/* Interactive Page Thumbnails Grid */}
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <span className={`text-xs font-semibold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
                 Document Page Grid ({totalPages} Pages)
@@ -537,7 +534,8 @@ export const SplitPdfTool: React.FC<SplitPdfToolProps> = ({ onNotify }) => {
               )}
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+            <div className="max-h-[220px] sm:max-h-[260px] overflow-y-auto pr-1">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-2.5">
               {pages.map((p) => {
                 const isSelected = parsedPageIndices.includes(p.pageNum - 1);
                 return (
@@ -591,6 +589,7 @@ export const SplitPdfTool: React.FC<SplitPdfToolProps> = ({ onNotify }) => {
                   </div>
                 );
               })}
+              </div>
             </div>
           </div>
         </div>

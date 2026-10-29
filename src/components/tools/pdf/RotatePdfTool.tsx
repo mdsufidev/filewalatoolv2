@@ -243,47 +243,44 @@ export const RotatePdfTool: React.FC<RotatePdfToolProps> = ({ onNotify }) => {
   }, [file, rotateAllPages, handleSaveRotatedPdf]);
 
   return (
-    <div className="w-full max-w-7xl mx-auto space-y-8 animate-in fade-in duration-200">
+    <div className="w-full max-w-6xl mx-auto space-y-2 sm:space-y-2.5 animate-in fade-in duration-200 select-none">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className={`text-xl font-bold tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-1 py-0.5">
+        <div className="flex items-center gap-2">
+          <h1 className="text-xs sm:text-sm font-bold tracking-tight text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+            <RotateCw className="w-3.5 h-3.5 text-purple-500" />
             Rotate PDF Pages
           </h1>
-          <p className={`text-xs mt-1 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-            Rotate individual or all pages 90°, 180°, or 270° with instant client-side preview.
-          </p>
+          <span className="text-[10px] font-mono text-zinc-400 hidden sm:inline-block">
+            Permanently reorient PDF pages
+          </span>
         </div>
         {file && (
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={handleReset} className="text-xs">
+            <Button variant="outline" size="sm" onClick={handleReset} className="text-xs py-1 px-2.5 h-auto">
               <span>Change PDF</span>
-              <kbd className="ml-1.5 px-1.5 py-0.2 rounded text-[10px] font-mono bg-zinc-100 dark:bg-zinc-800 text-zinc-500 border border-zinc-200 dark:border-zinc-700">
-                Esc
-              </kbd>
             </Button>
             <Button
               onClick={handleSaveRotatedPdf}
               isLoading={isSaving}
-              leftIcon={<RotateCw className="w-4 h-4" />}
+              leftIcon={<RotateCw className="w-3.5 h-3.5" />}
+              className="text-xs py-1 px-3 h-auto"
             >
               <span>Save Rotated PDF</span>
-              <kbd className="ml-1.5 px-1.5 py-0.2 rounded text-[10px] font-mono bg-white/20 text-white">
-                ↵
-              </kbd>
             </Button>
           </div>
         )}
       </div>
 
-      {/* Direct Clean Dropzone (Centered, Max-w-3xl, Zero Outer Wrapper Box!) */}
+      {/* Direct Clean Dropzone */}
       {!file ? (
-        <div className="max-w-3xl mx-auto">
+        <div className="max-w-[700px] mx-auto">
           <Dropzone
             onFilesSelected={(files) => handlePdfLoaded(files[0])}
             accept="application/pdf,.pdf"
             title="Upload PDF to Rotate Pages"
             description="Drag & drop or click to browse. Fix orientation 100% in browser RAM."
+            className="h-[230px] sm:h-[260px] lg:h-[280px]"
           />
         </div>
       ) : (
@@ -411,7 +408,7 @@ export const RotatePdfTool: React.FC<RotatePdfToolProps> = ({ onNotify }) => {
           )}
 
           {/* Visual Page Thumbnails Grid with Rotation Indicators */}
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <span className={`text-xs font-semibold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
                 Interactive Page Grid ({totalPages} Pages)
@@ -423,7 +420,8 @@ export const RotatePdfTool: React.FC<RotatePdfToolProps> = ({ onNotify }) => {
               )}
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3.5">
+            <div className="max-h-[220px] sm:max-h-[260px] overflow-y-auto pr-1">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-2.5">
               {pages.map((p) => {
                 const rotationDelta = (p.currentRotation - p.originalRotation + 360) % 360;
                 const isModified = rotationDelta !== 0;
@@ -506,6 +504,7 @@ export const RotatePdfTool: React.FC<RotatePdfToolProps> = ({ onNotify }) => {
                   </div>
                 );
               })}
+              </div>
             </div>
           </div>
         </div>

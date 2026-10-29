@@ -932,7 +932,7 @@ export const PdfToWordTool: React.FC<PdfToWordToolProps> = ({ onNotify }) => {
   }, [file, result, handleDownloadDocx, handleExecuteConvertToWord, handleReset, onNotify]);
 
   return (
-    <div className="w-full max-w-7xl mx-auto space-y-8 animate-in fade-in duration-300">
+    <div className="w-full max-w-6xl mx-auto space-y-2 sm:space-y-2.5 animate-in fade-in duration-200 select-none">
       {/* Hidden File Input */}
       <input
         ref={fileInputRef}
@@ -942,38 +942,43 @@ export const PdfToWordTool: React.FC<PdfToWordToolProps> = ({ onNotify }) => {
         onChange={handleFileInputChange}
       />
 
-      {/* Tool Header */}
-      <div className="text-center space-y-2.5 max-w-2xl mx-auto">
-        <div
-          className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold border ${
-            isDark
-              ? 'bg-slate-900 border-slate-800 text-slate-300'
-              : 'bg-white border-slate-200 text-slate-700 shadow-xs'
-          }`}
-        >
-          <ShieldCheck className="w-3.5 h-3.5 text-blue-500" />
-          <span>100% Client-Side · Zero Server Uploads · Real .DOCX Output</span>
+      {/* Header Info */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-1 py-0.5">
+        <div className="flex items-center gap-2">
+          <h1 className="text-xs sm:text-sm font-bold tracking-tight text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+            <FileText className="w-3.5 h-3.5 text-blue-500" />
+            Convert PDF to Word
+          </h1>
+          <span className="text-[10px] font-mono text-zinc-400 hidden sm:inline-block">
+            Convert PDF documents to editable Word (.docx)
+          </span>
         </div>
-
-        <h1
-          className={`text-3xl sm:text-4xl font-extrabold tracking-tight ${
-            isDark ? 'text-white' : 'text-slate-950'
-          }`}
-        >
-          Convert PDF to Word
-        </h1>
-        <p
-          className={`text-xs sm:text-sm leading-relaxed ${
-            isDark ? 'text-slate-400' : 'text-slate-600'
-          }`}
-        >
-          Transform PDF documents into editable Microsoft Word (.docx) files in seconds.
-        </p>
+        {(file || result) && (
+          <div className="flex items-center gap-2">
+            {result && (
+              <button
+                type="button"
+                onClick={handleDownloadDocx}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white cursor-pointer transition-colors"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Download .DOCX</span>
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={handleReset}
+              className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs text-rose-500 hover:text-rose-400 hover:bg-rose-500/10 cursor-pointer"
+            >
+              <RotateCcw className="w-3.5 h-3.5" /> Reset
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Error Banner */}
       {errorMessage && (
-        <div className="p-4 rounded-xl border border-rose-500/30 bg-rose-500/10 text-rose-500 text-xs sm:text-sm flex items-center justify-between gap-3">
+        <div className="p-2.5 rounded-md border border-rose-500/30 bg-rose-500/10 text-rose-500 text-xs flex items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{errorMessage}</span>
@@ -987,10 +992,10 @@ export const PdfToWordTool: React.FC<PdfToWordToolProps> = ({ onNotify }) => {
         </div>
       )}
 
-      {/* SUCCESS & DOWNLOAD DASHBOARD (Exact UI/UX matching MergePdfTool) */}
+      {/* SUCCESS & DOWNLOAD DASHBOARD */}
       {result ? (
         <div
-          className={`p-6 sm:p-8 rounded-lg border space-y-6 ${
+          className={`p-3 sm:p-4 rounded-lg border space-y-3 ${
             isDark
               ? 'bg-zinc-900 border-zinc-800 text-white'
               : 'bg-white border-zinc-200 text-zinc-900'
@@ -1135,85 +1140,86 @@ export const PdfToWordTool: React.FC<PdfToWordToolProps> = ({ onNotify }) => {
         </div>
       ) : (
         /* WORKSPACE: DROPZONE & CONFIGURATION */
-        <div className="space-y-6">
+        <div className="space-y-2 sm:space-y-2.5">
           {!file ? (
-            <div className="max-w-3xl mx-auto">
+            <div className="max-w-[700px] mx-auto">
               <Dropzone
                 onFilesSelected={(files: File[]) => handleProcessFile(files[0])}
                 accept="application/pdf,.pdf"
                 title="Upload PDF Document to Convert to Word"
                 description="Drag & drop or click to browse. Generates genuine editable .docx."
+                className="h-[230px] sm:h-[260px] lg:h-[280px]"
               />
             </div>
           ) : (
             /* Document Queue Card with Live Preview & Controls matching MergePdfTool */
             <div
-              className={`p-6 rounded-lg border space-y-6 ${
+              className={`p-2.5 sm:p-3 rounded-lg border space-y-2.5 sm:space-y-3 ${
                 isDark
                   ? 'bg-zinc-900 border-zinc-800'
                   : 'bg-white border-zinc-200'
               }`}
             >
               {/* Document Queue Header Bar */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-zinc-200 dark:border-zinc-800">
-                <div className="flex items-center gap-2.5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-zinc-200 dark:border-zinc-800">
+                <div className="flex items-center gap-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                  <h3 className={`text-sm font-semibold tracking-tight ${isDark ? 'text-zinc-100' : 'text-zinc-900'}`}>
+                  <h3 className={`text-xs sm:text-sm font-semibold tracking-tight ${isDark ? 'text-zinc-100' : 'text-zinc-900'}`}>
                     Active Document
                   </h3>
                   <span
-                    className={`text-[11px] font-mono px-2 py-0.5 rounded border ${
+                    className={`text-[10px] font-mono px-2 py-0.5 rounded border ${
                       isDark ? 'bg-zinc-800 border-zinc-700 text-zinc-400' : 'bg-zinc-100 border-zinc-200 text-zinc-600'
                     }`}
                   >
-                    {pageCount ? `${pageCount} Pages Total` : 'Analyzing Pages...'} · {formatBytes(file.size)}
+                    {pageCount ? `${pageCount} Pages` : 'Analyzing...'} · {formatBytes(file.size)}
                   </span>
                 </div>
 
                 <div className="flex items-center gap-1.5">
                   <button
                     onClick={handleReset}
-                    className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-medium border transition-colors cursor-pointer ${
+                    className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium border transition-colors cursor-pointer ${
                       isDark
                         ? 'bg-zinc-800 hover:bg-zinc-700 border-zinc-700 text-zinc-200'
                         : 'bg-zinc-100 hover:bg-zinc-200 border-zinc-200 text-zinc-800'
                     }`}
                   >
-                    <RotateCcw className="w-3.5 h-3.5" />
-                    <span>Choose Different File</span>
+                    <RotateCcw className="w-3 h-3" />
+                    <span>Change File</span>
                   </button>
                 </div>
               </div>
 
               {/* Document Card Item */}
               <div
-                className={`p-4 rounded-md border flex items-center justify-between gap-4 ${
+                className={`p-2 sm:p-2.5 rounded-md border flex items-center justify-between gap-3 ${
                   isDark ? 'bg-zinc-950/60 border-zinc-800' : 'bg-zinc-50 border-zinc-200'
                 }`}
               >
-                <div className="flex items-center gap-4 min-w-0">
+                <div className="flex items-center gap-2.5 min-w-0">
                   <div
-                    className={`w-12 h-14 rounded border flex items-center justify-center shrink-0 overflow-hidden ${
+                    className={`w-9 h-11 rounded border flex items-center justify-center shrink-0 overflow-hidden ${
                       isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'
                     }`}
                   >
                     {isValidating ? (
-                      <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />
+                      <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
                     ) : fileThumbnailUrl ? (
                       <img src={fileThumbnailUrl} alt="Page 1" className="w-full h-full object-cover object-top" />
                     ) : (
-                      <FileText className="w-6 h-6 text-blue-500" />
+                      <FileText className="w-5 h-5 text-blue-500" />
                     )}
                   </div>
 
                   <div className="min-w-0">
-                    <h4 className={`text-sm font-semibold truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                    <h4 className={`text-xs font-semibold truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>
                       {file.name}
                     </h4>
-                    <p className="text-xs text-slate-500 mt-0.5">
+                    <p className="text-[11px] text-slate-500 mt-0.5">
                       {formatBytes(file.size)} · {pageCount !== null ? `${pageCount} pages` : 'Reading...'}
                       {isScannedDetected && (
-                        <span className="ml-2 text-amber-500 font-medium">· Scanned PDF (OCR Ready)</span>
+                        <span className="ml-1 text-amber-500 font-medium">· Scanned PDF (OCR)</span>
                       )}
                     </p>
                   </div>
@@ -1223,45 +1229,42 @@ export const PdfToWordTool: React.FC<PdfToWordToolProps> = ({ onNotify }) => {
                   <button
                     type="button"
                     onClick={() => setIsPdfPreviewOpen(true)}
-                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
+                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${
                       isDark
                         ? 'bg-blue-600/10 hover:bg-blue-600/20 border-blue-500/30 text-blue-400'
                         : 'bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-700'
                     }`}
                   >
                     <Eye className="w-3.5 h-3.5" />
-                    <span>Preview PDF</span>
+                    <span>Preview</span>
                   </button>
 
                   <span
-                    className={`text-[10px] font-mono px-2 py-1 rounded-full border shrink-0 ${
+                    className={`text-[10px] font-mono px-2 py-0.5 rounded-full border shrink-0 ${
                       isDark ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' : 'bg-blue-50 border-blue-200 text-blue-700'
                     }`}
                   >
-                    Ready to Convert
+                    Ready
                   </span>
                 </div>
               </div>
 
               {/* CONVERSION OPTIONS: Color & Formatting Quality Controls */}
-              <div className="space-y-4 pt-2">
+              <div className="space-y-2 pt-1">
                 {/* 1. Color Harmony Control (fixes user's color mix match problem) */}
-                <div className="space-y-2.5">
+                <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
                     <label className={`text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
                       <Palette className="w-3.5 h-3.5 text-blue-400" />
-                      <span>Document Typography & Color Scheme</span>
+                      <span>Typography & Color</span>
                     </label>
-                    <span className={`text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                      Fixes mismatched or jittery colors in Word
-                    </span>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                     <button
                       type="button"
                       onClick={() => setColorTheme('clean')}
-                      className={`p-3.5 rounded-md border text-left transition-colors cursor-pointer flex flex-col justify-between ${
+                      className={`p-2 rounded-md border text-left transition-colors cursor-pointer flex flex-col justify-between ${
                         colorTheme === 'clean'
                           ? isDark
                             ? 'bg-zinc-800 border-zinc-500 text-zinc-100'
@@ -1271,25 +1274,23 @@ export const PdfToWordTool: React.FC<PdfToWordToolProps> = ({ onNotify }) => {
                           : 'bg-white border-zinc-200 hover:bg-zinc-50'
                       }`}
                     >
-                      <div>
-                        <div className="flex items-center justify-between mb-1.5">
-                          <span className={`text-xs font-semibold ${colorTheme === 'clean' ? 'text-zinc-900 dark:text-zinc-100' : isDark ? 'text-zinc-300' : 'text-zinc-700'}`}>
-                            Clean Professional
-                          </span>
-                          <span className="text-[9px] font-mono px-1.5 py-0.5 rounded border border-zinc-200 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400">
-                            Recommended
-                          </span>
-                        </div>
-                        <p className={`text-[11px] leading-relaxed ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
-                          Uniform dark text (#1E293B) and crisp headings. Zero mismatched colors or random subpixel noise.
-                        </p>
+                      <div className="flex items-center justify-between mb-0.5">
+                        <span className={`text-xs font-semibold ${colorTheme === 'clean' ? 'text-zinc-900 dark:text-zinc-100' : isDark ? 'text-zinc-300' : 'text-zinc-700'}`}>
+                          Clean Pro
+                        </span>
+                        <span className="text-[9px] font-mono px-1 py-0.2 rounded border border-zinc-200 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400">
+                          Recommended
+                        </span>
                       </div>
+                      <p className={`text-[10px] leading-tight ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                        Dark text (#1E293B) and crisp headings.
+                      </p>
                     </button>
 
                     <button
                       type="button"
                       onClick={() => setColorTheme('accent')}
-                      className={`p-3.5 rounded-md border text-left transition-colors cursor-pointer flex flex-col justify-between ${
+                      className={`p-2 rounded-md border text-left transition-colors cursor-pointer flex flex-col justify-between ${
                         colorTheme === 'accent'
                           ? isDark
                             ? 'bg-zinc-800 border-zinc-500 text-zinc-100'
@@ -1299,25 +1300,23 @@ export const PdfToWordTool: React.FC<PdfToWordToolProps> = ({ onNotify }) => {
                           : 'bg-white border-zinc-200 hover:bg-zinc-50'
                       }`}
                     >
-                      <div>
-                        <div className="flex items-center justify-between mb-1.5">
-                          <span className={`text-xs font-semibold ${colorTheme === 'accent' ? 'text-zinc-900 dark:text-zinc-100' : isDark ? 'text-zinc-300' : 'text-zinc-700'}`}>
-                            Preserve Accents
-                          </span>
-                          <span className="text-[9px] font-mono px-1.5 py-0.5 rounded border border-zinc-200 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400">
-                            Stylized
-                          </span>
-                        </div>
-                        <p className={`text-[11px] leading-relaxed ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
-                          Deep Navy headings (#1E40AF) with clean body typography. Preserves document structure.
-                        </p>
+                      <div className="flex items-center justify-between mb-0.5">
+                        <span className={`text-xs font-semibold ${colorTheme === 'accent' ? 'text-zinc-900 dark:text-zinc-100' : isDark ? 'text-zinc-300' : 'text-zinc-700'}`}>
+                          Preserve Accents
+                        </span>
+                        <span className="text-[9px] font-mono px-1 py-0.2 rounded border border-zinc-200 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400">
+                          Stylized
+                        </span>
                       </div>
+                      <p className={`text-[10px] leading-tight ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                        Deep Navy headings (#1E40AF).
+                      </p>
                     </button>
 
                     <button
                       type="button"
                       onClick={() => setColorTheme('monochrome')}
-                      className={`p-3.5 rounded-md border text-left transition-colors cursor-pointer flex flex-col justify-between ${
+                      className={`p-2 rounded-md border text-left transition-colors cursor-pointer flex flex-col justify-between ${
                         colorTheme === 'monochrome'
                           ? isDark
                             ? 'bg-zinc-800 border-zinc-500 text-zinc-100'
@@ -1327,35 +1326,33 @@ export const PdfToWordTool: React.FC<PdfToWordToolProps> = ({ onNotify }) => {
                           : 'bg-white border-zinc-200 hover:bg-zinc-50'
                       }`}
                     >
-                      <div>
-                        <div className="flex items-center justify-between mb-1.5">
-                          <span className={`text-xs font-semibold ${colorTheme === 'monochrome' ? 'text-zinc-900 dark:text-zinc-100' : isDark ? 'text-zinc-300' : 'text-zinc-700'}`}>
-                            Classic Monochrome
-                          </span>
-                          <span className="text-[9px] font-mono px-1.5 py-0.5 rounded border border-zinc-200 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400">
-                            Print
-                          </span>
-                        </div>
-                        <p className={`text-[11px] leading-relaxed ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
-                          Pure black (#000000) text throughout. Ideal for legal filings, academic papers, and print.
-                        </p>
+                      <div className="flex items-center justify-between mb-0.5">
+                        <span className={`text-xs font-semibold ${colorTheme === 'monochrome' ? 'text-zinc-900 dark:text-zinc-100' : isDark ? 'text-zinc-300' : 'text-zinc-700'}`}>
+                          Monochrome
+                        </span>
+                        <span className="text-[9px] font-mono px-1 py-0.2 rounded border border-zinc-200 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400">
+                          Print
+                        </span>
                       </div>
+                      <p className={`text-[10px] leading-tight ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                        Pure black (#000000) text throughout.
+                      </p>
                     </button>
                   </div>
                 </div>
 
                 {/* 2. Flow & Pagination Mode */}
-                <div className="space-y-2.5 pt-1">
+                <div className="space-y-1.5 pt-0.5">
                   <label className={`text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5 ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>
                     <BookOpen className="w-3.5 h-3.5 text-zinc-500" />
-                    <span>Document Flow & Layout</span>
+                    <span>Layout</span>
                   </label>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <button
                       type="button"
                       onClick={() => setConversionMode('flow')}
-                      className={`p-3.5 rounded-md border text-left transition-colors cursor-pointer flex items-center gap-3 ${
+                      className={`p-2 rounded-md border text-left transition-colors cursor-pointer flex items-center gap-2.5 ${
                         conversionMode === 'flow'
                           ? isDark
                             ? 'bg-zinc-800 border-zinc-500 text-zinc-100'
@@ -1365,17 +1362,17 @@ export const PdfToWordTool: React.FC<PdfToWordToolProps> = ({ onNotify }) => {
                           : 'bg-white border-zinc-200 hover:bg-zinc-50'
                       }`}
                     >
-                      <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center shrink-0 ${
+                      <div className={`w-3 h-3 rounded-full border flex items-center justify-center shrink-0 ${
                         conversionMode === 'flow' ? 'border-zinc-900 dark:border-zinc-100 bg-zinc-900 dark:bg-zinc-100' : 'border-zinc-400'
                       }`}>
-                        {conversionMode === 'flow' && <div className="w-1.5 h-1.5 rounded-full bg-white dark:bg-zinc-900" />}
+                        {conversionMode === 'flow' && <div className="w-1 rounded-full bg-white dark:bg-zinc-900" />}
                       </div>
                       <div>
                         <div className={`text-xs font-semibold ${conversionMode === 'flow' ? 'text-zinc-900 dark:text-zinc-100' : isDark ? 'text-zinc-300' : 'text-zinc-700'}`}>
-                          Continuous Flowing Paragraphs
+                          Flowing Paragraphs
                         </div>
-                        <p className={`text-[11px] mt-0.5 ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
-                          Fluid text with natural spacing. Best for editing and updating in Word.
+                        <p className={`text-[10px] ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                          Fluid text for easy editing.
                         </p>
                       </div>
                     </button>
@@ -1383,7 +1380,7 @@ export const PdfToWordTool: React.FC<PdfToWordToolProps> = ({ onNotify }) => {
                     <button
                       type="button"
                       onClick={() => setConversionMode('page-break')}
-                      className={`p-3.5 rounded-md border text-left transition-colors cursor-pointer flex items-center gap-3 ${
+                      className={`p-2 rounded-md border text-left transition-colors cursor-pointer flex items-center gap-2.5 ${
                         conversionMode === 'page-break'
                           ? isDark
                             ? 'bg-zinc-800 border-zinc-500 text-zinc-100'
@@ -1393,17 +1390,17 @@ export const PdfToWordTool: React.FC<PdfToWordToolProps> = ({ onNotify }) => {
                           : 'bg-white border-zinc-200 hover:bg-zinc-50'
                       }`}
                     >
-                      <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center shrink-0 ${
+                      <div className={`w-3 h-3 rounded-full border flex items-center justify-center shrink-0 ${
                         conversionMode === 'page-break' ? 'border-zinc-900 dark:border-zinc-100 bg-zinc-900 dark:bg-zinc-100' : 'border-zinc-400'
                       }`}>
-                        {conversionMode === 'page-break' && <div className="w-1.5 h-1.5 rounded-full bg-white dark:bg-zinc-900" />}
+                        {conversionMode === 'page-break' && <div className="w-1 rounded-full bg-white dark:bg-zinc-900" />}
                       </div>
                       <div>
                         <div className={`text-xs font-semibold ${conversionMode === 'page-break' ? 'text-zinc-900 dark:text-zinc-100' : isDark ? 'text-zinc-300' : 'text-zinc-700'}`}>
-                          Page-by-Page (With Page Breaks)
+                          Page-by-Page
                         </div>
-                        <p className={`text-[11px] mt-0.5 ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
-                          Maintains strict page partitions matching the original PDF document.
+                        <p className={`text-[10px] ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                          Page breaks match original PDF.
                         </p>
                       </div>
                     </button>
