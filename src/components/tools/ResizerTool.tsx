@@ -696,32 +696,32 @@ export const ResizerTool: React.FC<ResizerToolProps> = ({ onNotify, initialFile 
   ------------------------------------------------------------- */
   if (!sourceImage) {
     return (
-      <div className="w-full max-w-7xl mx-auto space-y-8 animate-in fade-in duration-300 select-none">
-        {/* Single Authoritative Header Section */}
-        <div className="text-center space-y-2.5 max-w-2xl mx-auto">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-medium uppercase tracking-wider text-zinc-600 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-850">
+      <div className="w-full max-w-6xl mx-auto space-y-3 sm:space-y-3.5 animate-in fade-in duration-300 select-none">
+        {/* Header Section */}
+        <div className="text-center space-y-1 max-w-lg mx-auto">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-medium uppercase tracking-wider text-zinc-600 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-850">
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
             <span>100% Client-Side Engine · Zero Uploads</span>
           </div>
 
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-zinc-950 dark:text-zinc-50">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-950 dark:text-zinc-50">
             Image Resizer
           </h1>
-          <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 max-w-md mx-auto leading-relaxed">
+          <p className="text-xs text-zinc-500 dark:text-zinc-400 max-w-sm mx-auto leading-relaxed">
             Scale and resize images by exact pixel dimensions or percentage with aspect ratio lock.
           </p>
         </div>
 
         {/* Error notification if any */}
         {errorMessage && (
-          <div className="p-4 rounded-xl border border-rose-500/30 bg-rose-500/10 text-rose-500 text-xs sm:text-sm flex items-center gap-2.5">
+          <div className="max-w-[700px] mx-auto p-2.5 rounded-lg border border-rose-500/30 bg-rose-500/10 text-rose-500 text-xs flex items-center gap-2">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{errorMessage}</span>
           </div>
         )}
 
-        {/* Centered Width-Constrained Dropzone */}
-        <div className="w-full max-w-xl mx-auto">
+        {/* Minimalist 2D Flat Dropzone (Sized 1:1 to Canvas Workspace: 700px × 280px) */}
+        <div className="w-full max-w-[700px] mx-auto">
           <div
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
@@ -735,105 +735,81 @@ export const ResizerTool: React.FC<ResizerToolProps> = ({ onNotify, initialFile 
               }
             }}
             aria-label="Upload image to resize"
-            className={`relative group border border-dashed rounded-xl p-6 sm:p-8 text-center cursor-pointer transition-colors duration-150 select-none outline-none ${
+            className={`relative group border border-dashed rounded-xl h-[240px] sm:h-[260px] lg:h-[280px] flex flex-col items-center justify-center p-5 text-center cursor-pointer transition-all duration-150 select-none outline-none ${
               isDragOver
                 ? isDark
-                  ? 'border-zinc-500 bg-zinc-800/40'
-                  : 'border-zinc-500 bg-zinc-50'
+                  ? 'border-blue-500 bg-blue-500/10'
+                  : 'border-blue-500 bg-blue-50/60'
                 : isDark
-                  ? 'border-zinc-800 bg-zinc-900 hover:border-zinc-700'
-                  : 'border-zinc-300 bg-white hover:border-zinc-400'
+                  ? 'border-zinc-800 bg-zinc-900/60 hover:border-zinc-700 hover:bg-zinc-900 shadow-xs'
+                  : 'border-zinc-300 bg-white hover:border-zinc-400 hover:bg-zinc-50/60 shadow-xs'
             }`}
           >
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp,image/avif,image/bmp"
-            className="hidden"
-            onChange={(e) => {
-              if (e.target.files && e.target.files[0]) {
-                validateAndLoadFile(e.target.files[0]);
-              }
-            }}
-          />
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/avif,image/bmp"
+              className="hidden"
+              onClick={(e) => {
+                (e.target as HTMLInputElement).value = '';
+              }}
+              onChange={(e) => {
+                if (e.target.files && e.target.files[0]) {
+                  validateAndLoadFile(e.target.files[0]);
+                }
+              }}
+            />
 
-          <div className="flex flex-col items-center justify-center space-y-4">
-            <div
-              className={`w-12 h-12 rounded-md flex items-center justify-center transition-colors border ${
-                isDark
-                  ? 'bg-zinc-800 border-zinc-700 text-zinc-300'
-                  : 'bg-zinc-100 border-zinc-200 text-zinc-700'
-              }`}
-            >
-              <UploadCloud className="w-6 h-6" />
-            </div>
+            <div className="flex flex-col items-center justify-center space-y-2.5 max-w-sm">
+              <div className="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-850 text-zinc-600 dark:text-zinc-300 flex items-center justify-center shrink-0 transition-transform duration-200 ease-out group-hover:scale-110 border border-zinc-200/60 dark:border-zinc-800">
+                <UploadCloud className="w-5 h-5 stroke-[2]" />
+              </div>
 
-            <div className="space-y-1">
-              <h3 className={`text-base sm:text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                Choose an image or drag & drop here
-              </h3>
-              <p className={`text-xs ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
-                Supports PNG, JPEG, WebP, AVIF · Press Ctrl+V to paste
-              </p>
-            </div>
+              <div className="space-y-0.5">
+                <h3 className="text-sm sm:text-base font-semibold text-zinc-900 dark:text-zinc-100">
+                  Drop an image here or browse
+                </h3>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                  Supports PNG, JPEG, WebP, AVIF · Press Ctrl+V to paste
+                </p>
+              </div>
 
-            <div className="pt-2">
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleLoadSample();
-                }}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors border cursor-pointer ${
-                  isDark
-                    ? 'bg-zinc-800 border-zinc-700 text-zinc-300 hover:text-white'
-                    : 'bg-zinc-100 border-zinc-200 text-zinc-700 hover:text-zinc-900 hover:bg-zinc-200'
-                }`}
-              >
-                <Sparkles className="w-3.5 h-3.5 text-zinc-500" />
-                <span>Try with Sample Benchmark Image</span>
-              </button>
+              <div className="pt-0.5">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleLoadSample();
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-zinc-700 dark:text-zinc-300 transition-colors cursor-pointer border border-zinc-200/60 dark:border-zinc-700/60"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-blue-500" />
+                  <span>Try Sample Image</span>
+                </button>
+              </div>
+
+              <div className="pt-1 flex items-center gap-2 text-[10px] font-mono text-zinc-400">
+                <span>Max 50MB</span>
+                <span>·</span>
+                <span>Direct RAM Processing</span>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-        {/* Popular Presets Showcase (Soft Unboxed Style) */}
-        <div className={`p-6 rounded-xl ${isDark ? 'bg-zinc-900/60' : 'bg-zinc-100/70'}`}>
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <Grid className="w-4 h-4 text-blue-500" />
-              <h4 className={`text-xs font-bold uppercase tracking-wider ${isDark ? 'text-zinc-300' : 'text-zinc-700'}`}>
-                Popular Target Resolutions
-              </h4>
-            </div>
-            <span className={`text-[11px] ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
-              One-click standard presets
+        {/* Compact Popular Resolutions Strip (Soft Chips) */}
+        <div className="w-full max-w-[700px] mx-auto flex flex-wrap items-center justify-center gap-1.5 text-[11px] text-zinc-500">
+          <span className="text-[10px] uppercase font-mono tracking-wider font-semibold mr-1">Popular Presets:</span>
+          {POPULAR_PRESETS.slice(0, 5).map((p) => (
+            <span
+              key={p.label}
+              className={`px-2 py-0.5 rounded-md border text-[11px] font-mono ${
+                isDark ? 'border-zinc-800 bg-zinc-900/60 text-zinc-300' : 'border-zinc-200 bg-zinc-50 text-zinc-700'
+              }`}
+            >
+              {p.label.split(' ')[0]} ({p.width}×{p.height})
             </span>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-            {POPULAR_PRESETS.slice(0, 8).map((p) => (
-              <div
-                key={p.label}
-                className={`p-3 rounded-xl text-center transition-colors ${
-                  isDark
-                    ? 'bg-zinc-800/60 hover:bg-zinc-800'
-                    : 'bg-white hover:bg-white/90 shadow-xs'
-                }`}
-              >
-                <div className={`font-semibold text-xs truncate ${isDark ? 'text-zinc-200' : 'text-zinc-800'}`}>
-                  {p.label}
-                </div>
-                <div className="text-[11px] font-mono text-blue-500 dark:text-blue-400 mt-1">
-                  {p.width} × {p.height}
-                </div>
-                <div className={`text-[10px] mt-0.5 ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
-                  {p.aspectRatioLabel}
-                </div>
-              </div>
-            ))}
-          </div>
+          ))}
         </div>
 
         {/* Detailed Reference, Format Matrix, Presets Guide & FAQ */}
@@ -850,7 +826,7 @@ export const ResizerTool: React.FC<ResizerToolProps> = ({ onNotify, initialFile 
       onDragOver={handleWorkspaceDragOver}
       onDragLeave={handleWorkspaceDragLeave}
       onDrop={handleWorkspaceDrop}
-      className="w-full max-w-7xl mx-auto space-y-6 animate-in fade-in duration-200 relative"
+      className="w-full max-w-6xl mx-auto space-y-2 sm:space-y-2.5 animate-in fade-in duration-200 relative select-none"
     >
       {/* Hidden input for replacing image from workspace */}
       <input
@@ -858,6 +834,9 @@ export const ResizerTool: React.FC<ResizerToolProps> = ({ onNotify, initialFile 
         type="file"
         accept="image/jpeg,image/png,image/webp,image/avif,image/bmp"
         className="hidden"
+        onClick={(e) => {
+          (e.target as HTMLInputElement).value = '';
+        }}
         onChange={(e) => {
           if (e.target.files && e.target.files[0]) {
             validateAndLoadFile(e.target.files[0]);
@@ -867,307 +846,348 @@ export const ResizerTool: React.FC<ResizerToolProps> = ({ onNotify, initialFile 
 
       {/* Visual Drop Overlay when dragging a new file over active workspace */}
       {isWorkspaceDragOver && (
-        <div className="absolute inset-0 z-50 rounded-lg border border-dashed border-zinc-400 bg-zinc-950/80 flex flex-col items-center justify-center space-y-3 pointer-events-none">
-          <div className="w-12 h-12 rounded-md bg-zinc-800 text-zinc-300 flex items-center justify-center border border-zinc-700">
-            <UploadCloud className="w-6 h-6" />
+        <div className="absolute inset-0 z-50 rounded-2xl border-2 border-dashed border-blue-500 bg-zinc-950/85 backdrop-blur-xs flex flex-col items-center justify-center space-y-3 pointer-events-none">
+          <div className="w-12 h-12 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center border border-blue-500/30">
+            <UploadCloud className="w-6 h-6 stroke-[2]" />
           </div>
-          <div className="text-center">
-            <h4 className="text-sm font-semibold text-white">Drop new image to resize</h4>
-            <p className="text-xs text-zinc-400">Replaces current image immediately</p>
+          <div className="text-center space-y-1">
+            <h4 className="text-sm font-bold text-white">Drop replacement image</h4>
+            <p className="text-xs text-zinc-400">Replaces current image immediately in local RAM</p>
           </div>
         </div>
       )}
 
-      {/* Top Header Bar with Source Info and Actions */}
-      <div
-        className={`flex flex-wrap items-center justify-between gap-4 p-4 rounded-xl border ${
-          isDark
-            ? 'bg-zinc-900 border-zinc-800 text-zinc-100'
-            : 'bg-white border-zinc-200 text-zinc-900'
-        }`}
-      >
-        <div className="flex items-center gap-3.5 min-w-0">
-          <div
-            className={`w-10 h-10 rounded border overflow-hidden shrink-0 flex items-center justify-center ${
-              isDark ? 'bg-zinc-950 border-zinc-800' : 'bg-zinc-100 border-zinc-200'
-            }`}
-          >
-            <img
-              src={sourceImage.previewUrl}
-              alt="Source Thumbnail"
-              draggable={false}
-              className="w-full h-full object-cover select-none"
-            />
-          </div>
-          <div className="min-w-0">
-            <h3 className={`text-sm font-semibold truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>
-              {sourceImage.name}
-            </h3>
-            <div className={`flex flex-wrap items-center gap-2 text-xs mt-0.5 ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
-              <span className="font-mono text-blue-500 dark:text-blue-400">
-                Original: {sourceImage.width} × {sourceImage.height} px
-              </span>
-              <span>·</span>
-              <span className="font-mono">
-                {getAspectRatioLabel(sourceImage.width, sourceImage.height)}
-              </span>
-              <span>·</span>
-              <span className={`font-semibold ${isDark ? 'text-zinc-200' : 'text-zinc-700'}`}>
-                {formatBytes(sourceImage.sizeBytes)}
-              </span>
-            </div>
-          </div>
+      {/* Hero Title & Top Action Bar Row (Ultra-Compact Viewport-Safe) */}
+      <div className="flex items-center justify-between gap-3 pt-0 pb-0.5">
+        <div className="flex items-center gap-2">
+          <h1 className="text-base sm:text-lg font-bold tracking-tight text-zinc-950 dark:text-white leading-tight">
+            Image Resizer
+          </h1>
+          <span className="hidden sm:inline-block text-zinc-300 dark:text-zinc-700">·</span>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400 hidden sm:inline-block">
+            Scale dimensions and change aspect ratios instantly in RAM.
+          </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          {/* Change File Button */}
+        <div className="flex items-center gap-1.5 shrink-0">
           <button
-            onClick={() => workspaceFileInputRef.current?.click()}
-            className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
-              isDark
-                ? 'bg-zinc-800 hover:bg-zinc-700 text-zinc-200'
-                : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-800'
-            }`}
-          >
-            <UploadCloud className="w-3.5 h-3.5" />
-            <span>Replace</span>
-          </button>
-
-          {/* Reset Button */}
-          <button
+            type="button"
             onClick={handleReset}
-            className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
-              isDark
-                ? 'bg-zinc-800 hover:bg-zinc-700 text-zinc-200'
-                : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-800'
-            }`}
+            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md border border-zinc-200 dark:border-zinc-800 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-xs font-medium text-zinc-700 dark:text-zinc-300 transition-colors cursor-pointer"
           >
-            <RefreshCw className="w-3.5 h-3.5" />
-            <span>New</span>
+            <RefreshCw className="w-3 h-3 text-zinc-500" />
+            <span>Reset</span>
           </button>
-
-          {/* Direct Download Button */}
           <button
-            disabled={!resizedResult || isProcessing}
-            onClick={handleDownload}
-            className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-bold shadow-xs transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
-              isDark
-                ? 'bg-blue-600 hover:bg-blue-500 text-white'
-                : 'bg-zinc-900 hover:bg-zinc-800 text-white'
-            }`}
+            type="button"
+            onClick={() => workspaceFileInputRef.current?.click()}
+            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-750 text-xs font-medium text-zinc-800 dark:text-zinc-200 transition-colors shadow-2xs cursor-pointer"
           >
-            <Download className="w-4 h-4" />
-            <span>Download ({resizedResult ? formatBytes(resizedResult.sizeBytes) : '...'})</span>
+            <UploadCloud className="w-3.5 h-3.5 text-zinc-500" />
+            <span>Change image</span>
           </button>
         </div>
       </div>
 
-      {/* Main Workspace: Controls + Real-Time Preview */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* ========================================================= */}
-        {/* Left Column: Resizing Controls Panel (5 Columns) */}
-        {/* ========================================================= */}
-        <div
-          className={`lg:col-span-5 p-5 rounded-lg border space-y-6 ${
-            isDark
-              ? 'bg-zinc-900 border-zinc-800 text-zinc-100'
-              : 'bg-white border-zinc-200 text-zinc-900'
-          }`}
-        >
-          <div>
-            <div className="flex items-center justify-between">
-              <h4 className={`text-sm font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                Resize Parameters
-              </h4>
-              <span
-                className={`text-[10px] font-mono px-2 py-0.5 rounded border ${
-                  lockRatio
-                    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                    : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
-                }`}
-              >
-                {lockRatio ? 'Ratio Locked' : 'Free Transform'}
-              </span>
-            </div>
-            <p className={`text-xs mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-              Customize dimensions, aspect ratio, and output format
-            </p>
-          </div>
-
-          {/* Unit Mode Switcher: Exact Pixels vs Percentage */}
+      {/* Main Grid: Left Preview Card (7 cols) / Right Parameters & CTA (5 cols) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-4 items-start">
+        {/* LEFT COLUMN: Real-Time Preview Card */}
+        <div className="lg:col-span-7 xl:col-span-7">
           <div
-            className={`flex p-1 rounded-lg text-xs ${
-              isDark ? 'bg-zinc-800/80' : 'bg-zinc-100'
+            className={`border rounded-xl p-2.5 sm:p-3 space-y-2 transition-colors relative overflow-hidden ${
+              isDark
+                ? 'bg-zinc-900/90 border-zinc-800/80 shadow-xs'
+                : 'bg-white border-zinc-200 shadow-xs'
             }`}
           >
-            <button
-              onClick={() => setUnitMode('pixels')}
-              className={`flex-1 py-1.5 rounded-md font-medium transition-all cursor-pointer ${
-                unitMode === 'pixels'
-                  ? isDark
-                    ? 'bg-zinc-700 text-white font-bold shadow-xs'
-                    : 'bg-white text-zinc-950 font-bold shadow-xs'
-                  : isDark
-                    ? 'text-zinc-400 hover:text-white'
-                    : 'text-zinc-600 hover:text-zinc-950'
-              }`}
-            >
-              Exact Pixels (px)
-            </button>
-            <button
-              onClick={() => setUnitMode('percentage')}
-              className={`flex-1 py-1.5 rounded-md font-medium transition-all cursor-pointer ${
-                unitMode === 'percentage'
-                  ? isDark
-                    ? 'bg-zinc-700 text-white font-bold shadow-xs'
-                    : 'bg-white text-zinc-950 font-bold shadow-xs'
-                  : isDark
-                    ? 'text-zinc-400 hover:text-white'
-                    : 'text-zinc-600 hover:text-zinc-950'
-              }`}
-            >
-              Scale by %
-            </button>
-          </div>
+            {/* Header bar inside left card */}
+            <div className="flex items-center justify-between gap-3 px-0.5">
+              <div className="flex items-center gap-2 min-w-0">
+                <div
+                  className={`w-6 h-6 rounded-md overflow-hidden shrink-0 flex items-center justify-center border ${
+                    isDark ? 'bg-zinc-850 border-zinc-800 text-zinc-400' : 'bg-zinc-100 border-zinc-200 text-zinc-600'
+                  }`}
+                >
+                  <img
+                    src={sourceImage.previewUrl}
+                    alt="Thumbnail"
+                    className="w-full h-full object-cover select-none"
+                  />
+                </div>
+                <div className="min-w-0 flex items-center gap-2">
+                  <h3 className={`text-xs font-semibold truncate max-w-[150px] sm:max-w-xs ${isDark ? 'text-white' : 'text-zinc-900'}`}>
+                    {sourceImage.name}
+                  </h3>
+                  <div className={`flex items-center gap-1 text-[10px] font-mono shrink-0 ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                    <span>{sourceImage.width}×{sourceImage.height}</span>
+                    <span>·</span>
+                    <span className="font-semibold">{formatBytes(sourceImage.sizeBytes)}</span>
+                  </div>
+                </div>
+              </div>
 
-          {/* Dimension Controls */}
-          {unitMode === 'pixels' ? (
-            <div className="space-y-4">
-              {/* Width / Link Icon / Height Row */}
-              <div>
-                <div className="flex items-center justify-between text-xs font-semibold mb-1.5">
-                  <span className={isDark ? 'text-zinc-300' : 'text-zinc-700'}>
-                    Target Dimensions
-                  </span>
-                  <span className="font-mono text-[11px] text-blue-500 dark:text-blue-400">
-                    {getAspectRatioLabel(width, height)}
+              <div className="flex items-center gap-1.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => workspaceFileInputRef.current?.click()}
+                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium transition-colors cursor-pointer border ${
+                    isDark
+                      ? 'border-zinc-700 bg-zinc-800 text-zinc-200 hover:bg-zinc-750'
+                      : 'border-zinc-200 bg-zinc-50 text-zinc-700 hover:bg-zinc-100'
+                  }`}
+                >
+                  <UploadCloud className="w-3 h-3" />
+                  <span>Replace</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Canvas Area (Height-Optimized to fit perfectly on 1080p/768p viewports) */}
+            <div className="relative rounded-xl overflow-hidden bg-black/15 h-[230px] sm:h-[260px] lg:h-[280px] xl:h-[300px] flex items-center justify-center border border-zinc-200/50 dark:border-zinc-800/60">
+              {isProcessing && (
+                <div className="absolute inset-0 z-20 bg-zinc-950/60 backdrop-blur-xs flex flex-col items-center justify-center space-y-2">
+                  <RefreshCw className="w-6 h-6 text-blue-500 animate-spin" />
+                  <span className="text-xs font-mono font-medium text-zinc-200 bg-zinc-900 px-3 py-1 rounded">
+                    Rendering canvas...
                   </span>
                 </div>
+              )}
 
-                <div className="flex items-center gap-2">
-                  {/* Width Input */}
-                  <div className="flex-1">
-                    <div className="relative">
-                      <input
-                        type="text"
-                        inputMode="numeric"
-                        pattern="[0-9]*"
-                        value={width || ''}
-                        onChange={(e) => handleWidthChange(e.target.value)}
-                        placeholder="Width"
-                        className={`w-full px-3 py-2.5 text-sm font-mono rounded-lg border focus:outline-none transition-all ${
-                          isDark
-                            ? 'bg-zinc-800/80 border-zinc-700 text-white focus:border-zinc-500'
-                            : 'bg-white border-zinc-300 text-zinc-900 focus:border-zinc-400'
-                        }`}
-                      />
-                      <span className={`absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-mono pointer-events-none ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`}>
-                        W (px)
-                      </span>
-                    </div>
+              <img
+                src={resizedResult ? resizedResult.url : sourceImage.previewUrl}
+                alt="Output preview"
+                draggable={false}
+                className="max-h-[210px] sm:max-h-[240px] lg:max-h-[260px] xl:max-h-[280px] max-w-full object-contain select-none transition-all"
+              />
+            </div>
+
+            {/* Quick Action footer inside left card */}
+            <div className="flex flex-wrap items-center justify-between text-xs text-zinc-500 px-0.5 pt-0.5 gap-2">
+              <span className="flex items-center gap-1 text-[10px] font-mono text-zinc-400">
+                <ShieldCheck className="w-3 h-3 text-emerald-500" />
+                <span>Zero Server Latency · 100% Client-Side</span>
+              </span>
+
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={handleCopyToClipboard}
+                  disabled={!resizedResult}
+                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium transition-colors cursor-pointer disabled:opacity-50 ${
+                    isDark
+                      ? 'bg-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-750'
+                      : 'bg-zinc-100 text-zinc-700 hover:text-zinc-900 hover:bg-zinc-200'
+                  }`}
+                >
+                  <Copy className="w-3 h-3 text-blue-500" />
+                  <span>Copy</span>
+                </button>
+
+                {typeof navigator !== 'undefined' && 'share' in navigator && (
+                  <button
+                    type="button"
+                    onClick={handleShare}
+                    disabled={!resizedResult}
+                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium transition-colors cursor-pointer disabled:opacity-50 ${
+                      isDark
+                        ? 'bg-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-750'
+                        : 'bg-zinc-100 text-zinc-700 hover:text-zinc-900 hover:bg-zinc-200'
+                    }`}
+                  >
+                    <Share2 className="w-3 h-3 text-indigo-500" />
+                    <span>Share</span>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Metrics Breakdown Bar */}
+            <div
+              className={`grid grid-cols-4 gap-2 p-2 rounded-lg text-xs ${
+                isDark ? 'bg-zinc-800/60' : 'bg-zinc-100/80'
+              }`}
+            >
+              <div>
+                <span className={`block text-[10px] ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                  Target Res
+                </span>
+                <span className={`font-mono font-bold text-[11px] truncate block ${isDark ? 'text-zinc-100' : 'text-zinc-900'}`}>
+                  {width}×{height}
+                </span>
+              </div>
+              <div>
+                <span className={`block text-[10px] ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                  Aspect Ratio
+                </span>
+                <span className={`font-mono text-[11px] truncate block ${isDark ? 'text-zinc-200' : 'text-zinc-800'}`}>
+                  {getAspectRatioLabel(width, height)}
+                </span>
+              </div>
+              <div>
+                <span className={`block text-[10px] ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                  Format
+                </span>
+                <span className="font-semibold text-[11px] uppercase text-blue-500 dark:text-blue-400 block truncate">
+                  {getEffectiveFormat().replace('image/', '')}
+                </span>
+              </div>
+              <div>
+                <span className={`block text-[10px] ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                  Estimated Size
+                </span>
+                <span className={`font-mono font-bold text-[11px] block truncate ${resizedResult ? 'text-emerald-500' : isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>
+                  {resizedResult ? formatBytes(resizedResult.sizeBytes) : '—'}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* RIGHT COLUMN: Controls & Single Download CTA */}
+        <div className="lg:col-span-5 xl:col-span-5 space-y-2">
+          {/* Card: RESIZE PARAMETERS */}
+          <div
+            className={`p-2 sm:p-2.5 rounded-xl border space-y-2 transition-colors ${
+              isDark ? 'bg-zinc-900/90 border-zinc-800/80 shadow-xs' : 'bg-white border-zinc-200 shadow-xs'
+            }`}
+          >
+            {/* Header + Mode Switcher */}
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-[9px] font-mono font-bold tracking-wider uppercase text-zinc-400 dark:text-zinc-500 block">
+                  RESIZE SETTINGS
+                </span>
+                <h3 className={`text-xs font-bold ${isDark ? 'text-white' : 'text-zinc-950'}`}>
+                  Dimensions
+                </h3>
+              </div>
+
+              {/* Mode Switcher */}
+              <div className={`inline-flex p-0.5 rounded-md text-[11px] ${isDark ? 'bg-zinc-800' : 'bg-zinc-100'}`}>
+                <button
+                  type="button"
+                  onClick={() => setUnitMode('pixels')}
+                  className={`px-2 py-0.5 rounded text-[11px] font-medium transition-colors cursor-pointer ${
+                    unitMode === 'pixels'
+                      ? isDark
+                        ? 'bg-zinc-700 text-white shadow-xs font-semibold'
+                        : 'bg-white text-zinc-900 shadow-xs font-semibold'
+                      : isDark
+                        ? 'text-zinc-400 hover:text-white'
+                        : 'text-zinc-600 hover:text-zinc-900'
+                  }`}
+                >
+                  Pixels
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setUnitMode('percentage')}
+                  className={`px-2 py-0.5 rounded text-[11px] font-medium transition-colors cursor-pointer ${
+                    unitMode === 'percentage'
+                      ? isDark
+                        ? 'bg-zinc-700 text-white shadow-xs font-semibold'
+                        : 'bg-white text-zinc-900 shadow-xs font-semibold'
+                      : isDark
+                        ? 'text-zinc-400 hover:text-white'
+                        : 'text-zinc-600 hover:text-zinc-900'
+                  }`}
+                >
+                  Scale %
+                </button>
+              </div>
+            </div>
+
+            {/* Inputs based on Unit Mode */}
+            {unitMode === 'pixels' ? (
+              <div className="space-y-2 pt-0.5">
+                {/* W & H Inputs with Chain Toggle */}
+                <div className="flex items-center gap-1.5">
+                  <div className="flex-1 relative">
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      value={width || ''}
+                      onChange={(e) => handleWidthChange(e.target.value)}
+                      placeholder="Width"
+                      className={`w-full px-2 py-1 text-xs font-mono rounded-md border focus:outline-none focus:ring-1 focus:ring-blue-500 ${
+                        isDark ? 'bg-zinc-850 border-zinc-750 text-white' : 'bg-zinc-50 border-zinc-200 text-zinc-900'
+                      }`}
+                    />
+                    <span className={`absolute right-2 top-1/2 -translate-y-1/2 text-[9px] font-mono pointer-events-none ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`}>
+                      W
+                    </span>
                   </div>
 
-                  {/* Prominent Chain Link Aspect Ratio Toggle */}
                   <button
                     type="button"
                     onClick={handleToggleLockRatio}
-                    title={lockRatio ? 'Aspect Ratio is Locked (Click to Unlock)' : 'Aspect Ratio is Unlocked (Click to Lock)'}
-                    className={`p-2.5 rounded-lg border transition-all cursor-pointer flex items-center justify-center shrink-0 ${
+                    title={lockRatio ? 'Ratio locked (maintain aspect ratio)' : 'Ratio unlocked (custom stretch)'}
+                    className={`p-1.5 rounded-md border transition-colors cursor-pointer shrink-0 ${
                       lockRatio
                         ? isDark
-                          ? 'bg-blue-600/20 text-blue-400 border-blue-500/40 hover:bg-blue-600/30 shadow-xs'
-                          : 'bg-blue-50 text-blue-600 border-blue-300 hover:bg-blue-100 shadow-xs'
+                          ? 'bg-blue-600/20 text-blue-400 border-blue-500/40'
+                          : 'bg-blue-50 text-blue-600 border-blue-200'
                         : isDark
-                          ? 'bg-zinc-800 text-zinc-400 border-zinc-700 hover:text-zinc-200'
-                          : 'bg-zinc-100 text-zinc-400 border-zinc-300 hover:text-zinc-700'
+                          ? 'bg-zinc-800 text-zinc-400 border-zinc-700'
+                          : 'bg-zinc-100 text-zinc-500 border-zinc-200'
                     }`}
                   >
-                    {lockRatio ? (
-                      <LinkIcon className="w-4 h-4 text-blue-400" />
-                    ) : (
-                      <Unlink className="w-4 h-4 text-zinc-400" />
-                    )}
+                    {lockRatio ? <LinkIcon className="w-3.5 h-3.5 text-blue-400" /> : <Unlink className="w-3.5 h-3.5 text-zinc-400" />}
                   </button>
 
-                  {/* Height Input */}
-                  <div className="flex-1">
-                    <div className="relative">
-                      <input
-                        type="text"
-                        inputMode="numeric"
-                        pattern="[0-9]*"
-                        value={height || ''}
-                        onChange={(e) => handleHeightChange(e.target.value)}
-                        placeholder="Height"
-                        className={`w-full px-3 py-2.5 text-sm font-mono rounded-lg border focus:outline-none transition-all ${
-                          isDark
-                            ? 'bg-zinc-800/80 border-zinc-700 text-white focus:border-zinc-500'
-                            : 'bg-white border-zinc-300 text-zinc-900 focus:border-zinc-400'
-                        }`}
-                      />
-                      <span className={`absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-mono pointer-events-none ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`}>
-                        H (px)
-                      </span>
-                    </div>
+                  <div className="flex-1 relative">
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      value={height || ''}
+                      onChange={(e) => handleHeightChange(e.target.value)}
+                      placeholder="Height"
+                      className={`w-full px-2 py-1 text-xs font-mono rounded-md border focus:outline-none focus:ring-1 focus:ring-blue-500 ${
+                        isDark ? 'bg-zinc-850 border-zinc-750 text-white' : 'bg-zinc-50 border-zinc-200 text-zinc-900'
+                      }`}
+                    />
+                    <span className={`absolute right-2 top-1/2 -translate-y-1/2 text-[9px] font-mono pointer-events-none ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`}>
+                      H
+                    </span>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between text-[11px] mt-1.5 px-0.5">
-                  <span className={isDark ? 'text-zinc-500' : 'text-zinc-400'}>
-                    Min: 1 px · Max: 16,000 px
+                {/* Quick Presets Pills */}
+                <div className="space-y-1">
+                  <span className={`text-[10px] font-semibold block ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>
+                    Presets
                   </span>
-                  <span className={`font-mono ${lockRatio ? 'text-emerald-500 dark:text-emerald-400' : 'text-zinc-400'}`}>
-                    {lockRatio ? '🔗 Proportional' : '🔓 Independent'}
-                  </span>
+                  <div className="grid grid-cols-3 gap-1">
+                    {POPULAR_PRESETS.slice(0, 6).map((p) => (
+                      <button
+                        key={p.label}
+                        type="button"
+                        onClick={() => applyPreset(p)}
+                        className={`text-[10px] py-1 px-1 rounded font-medium text-center transition-colors cursor-pointer truncate ${
+                          width === p.width && height === p.height
+                            ? 'bg-blue-600 text-white font-semibold'
+                            : isDark
+                              ? 'bg-zinc-800 text-zinc-300 hover:text-white'
+                              : 'bg-zinc-100 text-zinc-700 hover:text-zinc-950'
+                        }`}
+                      >
+                        {p.label.split(' ')[0]} ({p.width}×{p.height})
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
-
-              {/* Quick Presets Selection */}
-              <div className={`space-y-2 pt-3 border-t ${isDark ? 'border-zinc-800' : 'border-zinc-200'}`}>
-                <div className="flex items-center justify-between text-xs font-semibold">
-                  <span className={isDark ? 'text-zinc-300' : 'text-zinc-700'}>
-                    Popular Target Presets
-                  </span>
-                  <span className={`text-[10px] ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`}>
-                    Instant click to set
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-3 gap-1.5">
-                  {POPULAR_PRESETS.map((p) => (
-                    <button
-                      key={p.label}
-                      type="button"
-                      onClick={() => applyPreset(p)}
-                      className={`p-2 rounded-lg text-left transition-all cursor-pointer truncate ${
-                        width === p.width && height === p.height
-                          ? isDark
-                            ? 'bg-blue-600/20 text-blue-300 font-semibold'
-                            : 'bg-blue-50 text-blue-700 font-semibold'
-                          : isDark
-                            ? 'bg-zinc-800/60 text-zinc-300 hover:bg-zinc-800'
-                            : 'bg-zinc-100/70 text-zinc-700 hover:bg-zinc-100'
-                      }`}
-                    >
-                      <div className="text-[11px] font-medium truncate">{p.label}</div>
-                      <div className="text-[10px] font-mono text-zinc-400 dark:text-zinc-500 mt-0.5">
-                        {p.width}×{p.height}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          ) : (
-            /* Percentage Scaling Controls */
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-xs">
+            ) : (
+              /* Percentage Scaling */
+              <div className="space-y-2 pt-0.5">
+                <div className="flex items-center justify-between text-[11px]">
                   <span className={`font-semibold ${isDark ? 'text-zinc-300' : 'text-zinc-700'}`}>
-                    Scaling Factor
+                    Scale Factor
                   </span>
-                  <span className="font-mono text-sm font-bold text-blue-500 dark:text-blue-400">
-                    {percentage}%
+                  <span className="font-mono text-xs font-bold text-blue-500">
+                    {percentage}% ({width}×{height} px)
                   </span>
                 </div>
 
@@ -1178,143 +1198,101 @@ export const ResizerTool: React.FC<ResizerToolProps> = ({ onNotify, initialFile 
                   step="5"
                   value={percentage}
                   onChange={(e) => handlePercentageChange(parseInt(e.target.value, 10))}
-                  className="w-full h-2 rounded-lg appearance-none cursor-pointer accent-blue-500 bg-zinc-800"
+                  className="w-full h-1.5 rounded-lg appearance-none cursor-pointer accent-blue-500 bg-zinc-800"
                 />
 
-                <div className="flex items-center justify-between text-[11px] font-mono text-zinc-400">
-                  <span>10% (Mini)</span>
-                  <span>100% (Original)</span>
-                  <span>200% (2× HD)</span>
+                <div className="grid grid-cols-5 gap-1">
+                  {[25, 50, 75, 100, 150].map((pct) => (
+                    <button
+                      key={pct}
+                      type="button"
+                      onClick={() => handlePercentageChange(pct)}
+                      className={`py-0.5 rounded text-[10px] font-mono font-medium transition-colors cursor-pointer ${
+                        percentage === pct
+                          ? isDark
+                            ? 'bg-zinc-800 text-white font-bold'
+                            : 'bg-zinc-200 text-zinc-900 font-bold'
+                          : isDark
+                            ? 'bg-zinc-850 text-zinc-400'
+                            : 'bg-zinc-100 text-zinc-600'
+                      }`}
+                    >
+                      {pct}%
+                    </button>
+                  ))}
                 </div>
               </div>
+            )}
 
-              {/* Quick Percentage Chips (Soft Tiles) */}
-              <div className="grid grid-cols-5 gap-1.5">
-                {[25, 50, 75, 100, 150].map((pct) => (
-                  <button
-                    key={pct}
-                    type="button"
-                    onClick={() => handlePercentageChange(pct)}
-                    className={`py-1.5 rounded-lg text-xs font-mono font-medium transition-colors cursor-pointer ${
-                      percentage === pct
-                        ? isDark
-                          ? 'bg-zinc-100 text-zinc-900 font-bold'
-                          : 'bg-zinc-900 text-white font-bold'
-                        : isDark
-                          ? 'bg-zinc-800/80 text-zinc-300 hover:bg-zinc-800'
-                          : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200'
-                    }`}
-                  >
-                    {pct}%
-                  </button>
-                ))}
-              </div>
-
-              <div
-                className={`p-3 rounded-lg text-xs space-y-1 ${
-                  isDark ? 'bg-zinc-800/60' : 'bg-zinc-100/80'
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <span className={isDark ? 'text-zinc-400' : 'text-zinc-500'}>Result Dimensions:</span>
-                  <span className="font-mono font-semibold text-blue-500 dark:text-blue-400">
-                    {width} × {height} px
-                  </span>
-                </div>
-                <div className="flex items-center justify-between text-[11px]">
-                  <span className={isDark ? 'text-zinc-400' : 'text-zinc-500'}>Aspect Ratio:</span>
-                  <span className="font-mono text-zinc-400">
-                    {getAspectRatioLabel(width, height)}
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Fit Mode Options (When aspect ratio is custom) */}
-          {!lockRatio && (
-            <div className={`space-y-2 pt-3 border-t ${isDark ? 'border-zinc-800' : 'border-zinc-200'}`}>
-              <div className="flex items-center justify-between text-xs font-semibold">
-                <span className={isDark ? 'text-zinc-300' : 'text-zinc-700'}>Canvas Fit Mode</span>
-                <span className={`text-[10px] ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
-                  Custom ratio mapping
+            {/* Fit mode (if ratio unlocked) */}
+            {!lockRatio && (
+              <div className="space-y-1 pt-1 border-t border-zinc-100 dark:border-zinc-800/80">
+                <span className={`text-[10px] font-semibold block ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>
+                  Fit Mode
                 </span>
+                <div className="grid grid-cols-3 gap-1 text-[10px]">
+                  {(['stretch', 'contain', 'cover'] as const).map((mode) => (
+                    <button
+                      key={mode}
+                      type="button"
+                      onClick={() => setFitMode(mode)}
+                      className={`py-0.5 rounded font-medium text-center transition-colors cursor-pointer capitalize ${
+                        fitMode === mode
+                          ? 'bg-blue-600 text-white font-semibold'
+                          : isDark
+                            ? 'bg-zinc-800 text-zinc-400 hover:text-white'
+                            : 'bg-zinc-100 text-zinc-600 hover:text-zinc-900'
+                      }`}
+                    >
+                      {mode}
+                    </button>
+                  ))}
+                </div>
               </div>
+            )}
 
-              <div className="grid grid-cols-3 gap-1.5 text-xs">
+            {/* Output Format Selector */}
+            <div className="space-y-1 pt-1 border-t border-zinc-100 dark:border-zinc-800/80">
+              <span className={`text-[10px] font-semibold block ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>
+                Format
+              </span>
+              <div className="grid grid-cols-4 gap-1">
                 {(
                   [
-                    { id: 'stretch', name: 'Stretch' },
-                    { id: 'contain', name: 'Contain (Pad)' },
-                    { id: 'cover', name: 'Cover (Crop)' },
+                    { id: 'original', name: 'Match' },
+                    { id: 'image/webp', name: 'WEBP' },
+                    { id: 'image/jpeg', name: 'JPG' },
+                    { id: 'image/png', name: 'PNG' },
                   ] as const
-                ).map((mode) => (
+                ).map((fmt) => (
                   <button
-                    key={mode.id}
+                    key={fmt.id}
                     type="button"
-                    onClick={() => setFitMode(mode.id)}
-                    className={`py-2 px-1 rounded-lg font-medium text-center transition-all cursor-pointer ${
-                      fitMode === mode.id
+                    onClick={() => setOutputFormat(fmt.id)}
+                    className={`py-1 rounded text-[10px] font-medium text-center transition-colors cursor-pointer ${
+                      outputFormat === fmt.id
                         ? isDark
-                          ? 'bg-blue-600/20 text-blue-300 font-bold'
-                          : 'bg-blue-50 text-blue-700 font-bold'
+                          ? 'bg-zinc-800 text-white font-semibold'
+                          : 'bg-zinc-200 text-zinc-900 font-semibold'
                         : isDark
-                          ? 'bg-zinc-800/80 text-zinc-400 hover:text-white'
-                          : 'bg-zinc-100 text-zinc-600 hover:text-zinc-900'
+                          ? 'bg-zinc-850 text-zinc-400 hover:text-white'
+                          : 'bg-zinc-100 text-zinc-600 hover:text-zinc-950'
                     }`}
                   >
-                    {mode.name}
+                    {fmt.name}
                   </button>
                 ))}
               </div>
             </div>
-          )}
 
-          {/* Format Selector & Quality */}
-          <div className={`space-y-3 pt-3 border-t ${isDark ? 'border-zinc-800' : 'border-zinc-200'}`}>
-            <div className="flex items-center justify-between text-xs font-semibold">
-              <span className={isDark ? 'text-zinc-300' : 'text-zinc-700'}>Output Format</span>
-              <span className={`text-[10px] ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
-                Convert on resize
-              </span>
-            </div>
-
-            <div className="grid grid-cols-4 gap-1.5 text-xs">
-              {(
-                [
-                  { id: 'original', name: 'Match' },
-                  { id: 'image/webp', name: 'WebP' },
-                  { id: 'image/jpeg', name: 'JPEG' },
-                  { id: 'image/png', name: 'PNG' },
-                ] as const
-              ).map((fmt) => (
-                <button
-                  key={fmt.id}
-                  type="button"
-                  onClick={() => setOutputFormat(fmt.id)}
-                  className={`py-2 rounded-lg font-medium text-center transition-all cursor-pointer ${
-                    outputFormat === fmt.id
-                      ? isDark
-                        ? 'bg-zinc-100 text-zinc-900 font-bold shadow-xs'
-                        : 'bg-zinc-900 text-white font-bold shadow-xs'
-                      : isDark
-                        ? 'bg-zinc-800/80 text-zinc-400 hover:text-white'
-                        : 'bg-zinc-100 text-zinc-600 hover:text-zinc-950'
-                  }`}
-                >
-                  {fmt.name}
-                </button>
-              ))}
-            </div>
-
-            {/* Quality Slider (for JPEG / WebP) */}
+            {/* Quality Slider (when lossy format) */}
             {getEffectiveFormat() !== 'image/png' && (
-              <div className="space-y-1.5 pt-2">
-                <div className="flex items-center justify-between text-xs">
-                  <span className={`font-medium ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>
-                    Output Quality
+              <div className="space-y-1 pt-0.5">
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className={`font-semibold ${isDark ? 'text-zinc-300' : 'text-zinc-700'}`}>
+                    Quality
                   </span>
-                  <span className="font-mono text-xs font-semibold text-blue-500 dark:text-blue-400">
+                  <span className="font-mono text-[11px] font-bold text-blue-500">
                     {quality}%
                   </span>
                 </div>
@@ -1330,212 +1308,30 @@ export const ResizerTool: React.FC<ResizerToolProps> = ({ onNotify, initialFile 
               </div>
             )}
 
-            {/* Custom Output Filename */}
-            <div className="space-y-1.5 pt-2">
-              <label className={`block text-xs font-medium ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>
-                Filename Preview
-              </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  value={customFilename}
-                  onChange={(e) => setCustomFilename(e.target.value)}
-                  placeholder="Filename"
-                  className={`w-full px-3 py-2 text-xs font-mono rounded-lg border focus:outline-none ${
-                    isDark
-                      ? 'bg-zinc-800/80 border-zinc-700 text-white focus:border-zinc-500'
-                      : 'bg-white border-zinc-300 text-zinc-900 focus:border-zinc-400'
-                  }`}
-                />
-                <span className={`absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-mono pointer-events-none ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-                  -{width}x{height}.{getEffectiveFormat() === 'image/png' ? 'png' : getEffectiveFormat() === 'image/webp' ? 'webp' : 'jpg'}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Action Button: Resize & Download (Fitts's Law Large CTA) */}
-          <button
-            disabled={isProcessing}
-            onClick={handleDownload}
-            className={`w-full py-2.5 px-4 rounded-md text-xs font-semibold flex items-center justify-center gap-2 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
-              isDark
-                ? 'bg-zinc-100 hover:bg-zinc-200 text-zinc-900 border border-zinc-200'
-                : 'bg-zinc-900 hover:bg-zinc-800 text-white border border-zinc-900'
-            }`}
-          >
-            {isProcessing ? (
-              <>
-                <RefreshCw className="w-4 h-4 animate-spin" />
-                <span>Processing Canvas...</span>
-              </>
-            ) : (
-              <>
-                <Download className="w-4 h-4" />
-                <span>Resize & Download Image</span>
-              </>
-            )}
-          </button>
-        </div>
-
-        {/* ========================================================= */}
-        {/* Right Column: Real-Time Preview & Metrics (7 Columns) */}
-        {/* ========================================================= */}
-        <div className="lg:col-span-7 space-y-4">
-          <div
-            className={`p-5 rounded-lg border space-y-4 ${
-              isDark
-                ? 'bg-zinc-900 border-zinc-800 text-zinc-100'
-                : 'bg-white border-zinc-200 text-zinc-900'
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className={`text-sm font-semibold ${isDark ? 'text-zinc-100' : 'text-zinc-900'}`}>
-                  Real-Time Canvas Preview
-                </h4>
-                <p className={`text-xs ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
-                  Scaled visual simulation of your target output
-                </p>
-              </div>
-
-              {resizedResult && (
-                <span
-                  className={`text-xs font-mono font-semibold px-2 py-0.5 rounded border ${
-                    isDark
-                      ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                      : 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                  }`}
-                >
-                  {formatBytes(resizedResult.sizeBytes)}
-                </span>
-              )}
-            </div>
-
-            {/* Display Canvas or Image with Clean Flat Surface */}
-            <div
-              className={`relative rounded-md border p-4 flex items-center justify-center min-h-[380px] overflow-hidden select-none ${
-                isDark
-                  ? 'bg-zinc-950 border-zinc-800'
-                  : 'bg-zinc-100 border-zinc-200'
-              }`}
-            >
-              {isProcessing && (
-                <div className="absolute inset-0 z-10 bg-zinc-950/60 flex flex-col items-center justify-center gap-2">
-                  <RefreshCw className="w-5 h-5 text-zinc-400 animate-spin" />
-                  <span className="text-xs text-white font-medium">Updating preview...</span>
-                </div>
-              )}
-
-              <img
-                src={resizedResult ? resizedResult.url : sourceImage.previewUrl}
-                alt="Output preview"
-                draggable={false}
-                className="max-h-[440px] max-w-full object-contain rounded-lg shadow-sm transition-all select-none"
-              />
-            </div>
-
-            {/* Quick Action Bar under Preview (Copy to clipboard & Share) */}
-            <div className="flex flex-wrap items-center justify-between text-xs text-slate-400 px-1 gap-2">
-              <span className="flex items-center gap-1.5">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-                <span>Zero server latency · Client-side Canvas</span>
-              </span>
-
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={handleCopyToClipboard}
-                  disabled={!resizedResult}
-                  className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors cursor-pointer disabled:opacity-50 ${
-                    isDark
-                      ? 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white'
-                      : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700 hover:text-zinc-900'
-                  }`}
-                >
-                  <Copy className="w-3 h-3 text-blue-500" />
-                  <span>Copy Image</span>
-                </button>
-
-                {typeof navigator !== 'undefined' && 'share' in navigator && (
-                  <button
-                    type="button"
-                    onClick={handleShare}
-                    disabled={!resizedResult}
-                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors cursor-pointer disabled:opacity-50 ${
-                      isDark
-                        ? 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white'
-                        : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700 hover:text-zinc-900'
-                    }`}
-                  >
-                    <Share2 className="w-3 h-3 text-indigo-500" />
-                    <span>Share</span>
-                  </button>
+            {/* Primary Action: Single Authoritative Download Button */}
+            <div className="pt-1">
+              <button
+                type="button"
+                disabled={isProcessing}
+                onClick={handleDownload}
+                className="w-full py-2 px-3 rounded-lg text-xs font-bold bg-blue-600 hover:bg-blue-500 active:scale-[0.99] text-white flex items-center justify-center gap-1.5 transition-all shadow-md shadow-blue-600/20 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+              >
+                {isProcessing ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Processing Canvas...</span>
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-3.5 h-3.5 stroke-[2.5]" />
+                    <span>
+                      Download Resized ({width}×{height}
+                      {resizedResult ? ` · ${formatBytes(resizedResult.sizeBytes)}` : ''})
+                    </span>
+                  </>
                 )}
-              </div>
+              </button>
             </div>
-
-            {/* Metrics Breakdown Bar (Soft Unboxed Style) */}
-            <div
-              className={`grid grid-cols-2 sm:grid-cols-4 gap-3 p-3.5 rounded-xl text-xs ${
-                isDark
-                  ? 'bg-zinc-800/50'
-                  : 'bg-zinc-100/80'
-              }`}
-            >
-              <div>
-                <span className={`block text-[11px] ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
-                  Target Resolution
-                </span>
-                <span className={`font-mono font-bold ${isDark ? 'text-zinc-100' : 'text-zinc-900'}`}>
-                  {width} × {height} px
-                </span>
-              </div>
-
-              <div>
-                <span className={`block text-[11px] ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
-                  Aspect Ratio
-                </span>
-                <span className={`font-mono font-medium ${isDark ? 'text-zinc-200' : 'text-zinc-800'}`}>
-                  {getAspectRatioLabel(width, height)}
-                </span>
-              </div>
-
-              <div>
-                <span className={`block text-[11px] ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
-                  Format & Codec
-                </span>
-                <span className="font-semibold uppercase text-blue-500 dark:text-blue-400">
-                  {getEffectiveFormat().replace('image/', '')}
-                </span>
-              </div>
-
-              <div>
-                <span className={`block text-[11px] ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
-                  Estimated Size
-                </span>
-                <span className={`font-mono font-bold ${resizedResult ? 'text-emerald-500 dark:text-emerald-400' : isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>
-                  {resizedResult ? formatBytes(resizedResult.sizeBytes) : '—'}
-                </span>
-              </div>
-            </div>
-
-            {/* Download Button */}
-            <button
-              disabled={isProcessing}
-              onClick={handleDownload}
-              className={`w-full py-3 px-4 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs ${
-                isDark
-                  ? 'bg-emerald-600 hover:bg-emerald-500 text-white'
-                  : 'bg-emerald-600 hover:bg-emerald-700 text-white'
-              }`}
-            >
-              <Download className="w-4 h-4" />
-              <span>
-                Download Resized Image{' '}
-                {resizedResult ? `(${formatBytes(resizedResult.sizeBytes)})` : ''}
-              </span>
-            </button>
           </div>
         </div>
       </div>
