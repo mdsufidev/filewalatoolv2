@@ -17,7 +17,7 @@ Bug Found: Missing accessibility landmarks and skip link for keyboard navigation
 */
 
 import React, { useState, useCallback, useMemo, useEffect, useRef, Suspense, lazy } from 'react';
-import { Navbar, MainNavSection, BreadcrumbItem } from './components/layout/Navbar';
+import { Navbar, MainNavSection } from './components/layout/Navbar';
 import { HomePage } from './components/layout/HomePage';
 import { Footer } from './components/layout/Footer';
 import { AppErrorBoundary } from './components/ui/ErrorBoundary';
@@ -632,142 +632,6 @@ function MainApp({ initialPath, toolComponents }: { initialPath?: string; toolCo
       ) || ALL_TOOLS.find((t) => t.subToolId === activeTool.subToolId)
     : null;
 
-  const currentCategoryMeta = CATEGORIES_CONFIG.find(
-    (c) => c.id === (activeTool ? activeTool.section : selectedCategory)
-  );
-
-  // Memoized breadcrumbs trail for top sticky navbar
-  const breadcrumbs = useMemo<BreadcrumbItem[]>(() => {
-    const homeLabel = language === 'hi' ? 'होम' : 'Home';
-
-    // 1. Tool Workspace View
-    if (activeTool) {
-      const categoryName = currentCategoryMeta
-        ? t(
-            'cat.' +
-              (currentCategoryMeta.id === 'all'
-                ? 'all'
-                : currentCategoryMeta.id === 'image-tools'
-                ? 'imageTools'
-                : currentCategoryMeta.id === 'pdf-tools'
-                ? 'pdfTools'
-                : currentCategoryMeta.id === 'convert'
-                ? 'convert'
-                : 'documentTools'),
-            currentCategoryMeta.name
-          )
-        : 'Category';
-      const categoryHref = getCategoryRouteUrl(activeTool.section);
-      const toolName = currentToolItem
-        ? tToolName(currentToolItem.id, currentToolItem.name)
-        : activeTool.subToolId;
-
-      return [
-        {
-          label: homeLabel,
-          href: '/',
-          onClick: () => handleGoHome('all'),
-        },
-        {
-          label: categoryName,
-          href: categoryHref,
-          onClick: () => handleGoHome(activeTool.section),
-        },
-        {
-          label: toolName,
-          isActive: true,
-        },
-      ];
-    }
-
-    // 2. Category Hub View
-    if (selectedCategory !== 'all') {
-      const categoryName = currentCategoryMeta
-        ? t(
-            'cat.' +
-              (currentCategoryMeta.id === 'image-tools'
-                ? 'imageTools'
-                : currentCategoryMeta.id === 'pdf-tools'
-                ? 'pdfTools'
-                : currentCategoryMeta.id === 'convert'
-                ? 'convert'
-                : 'documentTools'),
-            currentCategoryMeta.name
-          )
-        : selectedCategory;
-      const categoryHref = getCategoryRouteUrl(selectedCategory);
-
-      return [
-        {
-          label: homeLabel,
-          href: '/',
-          onClick: () => handleGoHome('all'),
-        },
-        {
-          label: categoryName,
-          href: categoryHref,
-          isActive: true,
-        },
-      ];
-    }
-
-    // 3. Informational or Admin Page View
-    if (activePage) {
-      const pageLabels: Record<string, { en: string; hi: string }> = {
-        about: { en: 'About Us', hi: 'हमारे बारे में' },
-        contact: { en: 'Contact Us', hi: 'संपर्क करें' },
-        terms: { en: 'Terms & Conditions', hi: 'नियम और शर्तें' },
-        privacy: { en: 'Privacy Policy', hi: 'गोपनीयता नीति' },
-        disclaimer: { en: 'Disclaimer', hi: 'अस्वीकरण' },
-        admin: { en: 'Admin Console', hi: 'एडमिन कंसोल' },
-      };
-      const pageName = pageLabels[activePage]
-        ? language === 'hi'
-          ? pageLabels[activePage].hi
-          : pageLabels[activePage].en
-        : activePage;
-      const pageHref = activePage === 'admin' ? '/admin' : getPageRouteUrl(activePage);
-
-      return [
-        {
-          label: homeLabel,
-          href: '/',
-          onClick: () => handleGoHome('all'),
-        },
-        {
-          label: pageName,
-          href: pageHref,
-          isActive: true,
-        },
-      ];
-    }
-
-    // 4. Default / Home
-    return [];
-  }, [
-    activeTool,
-    selectedCategory,
-    activePage,
-    currentCategoryMeta,
-    currentToolItem,
-    language,
-    t,
-    tToolName,
-    handleGoHome,
-  ]);
-
-  const handleNavbarBack = useCallback(() => {
-    if (activeTool) {
-      handleGoHome(activeTool.section);
-    } else if (selectedCategory !== 'all' || activePage) {
-      handleGoHome('all');
-    }
-  }, [activeTool, selectedCategory, activePage, handleGoHome]);
-
-  const handleNavbarAllTools = useCallback(() => {
-    handleGoHome('all');
-  }, [handleGoHome]);
-
   return (
     <div className="min-h-screen flex flex-col font-sans selection:bg-zinc-900 selection:text-white bg-white text-zinc-900 max-w-full overflow-x-clip">
       {/* Keyboard Accessibility: Skip to Main Content */}
@@ -808,9 +672,6 @@ function MainApp({ initialPath, toolComponents }: { initialPath?: string; toolCo
         onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
         onOpenShortcutsHelp={() => setIsShortcutsHelpOpen(true)}
         onNavigatePage={handleNavigatePage}
-        breadcrumbs={breadcrumbs}
-        onBack={breadcrumbs.length > 0 ? handleNavbarBack : undefined}
-        onAllTools={breadcrumbs.length > 0 ? handleNavbarAllTools : undefined}
       />
 
       {/* Unverified Email Alert Banner (Flat 2D Linear Style) */}
