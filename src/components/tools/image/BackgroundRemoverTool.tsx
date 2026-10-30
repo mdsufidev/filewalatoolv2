@@ -1700,22 +1700,6 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
                   </div>
                 </div>
 
-                {/* AI Progress Banner */}
-                {engineMode === 'ai' && isAiProcessing && (
-                  <div className="space-y-1 p-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20 text-xs text-blue-600 dark:text-blue-400">
-                    <div className="flex items-center justify-between font-mono text-[10px]">
-                      <div className="flex items-center gap-1">
-                        <RefreshCw className="w-2.5 h-2.5 animate-spin" />
-                        <span>{aiStatus}</span>
-                      </div>
-                      <span>{aiProgress}%</span>
-                    </div>
-                    <div className="w-full bg-blue-200 dark:bg-blue-950 h-1 rounded-full overflow-hidden">
-                      <div className="bg-blue-600 h-full transition-all duration-200" style={{ width: `${aiProgress}%` }} />
-                    </div>
-                  </div>
-                )}
-
                 {/* Interactive Zoom/Pan Canvas Viewport (Viewport-filling height matching Compressor) */}
                 <div
                   ref={viewportRef}
