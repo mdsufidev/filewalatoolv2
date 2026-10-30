@@ -55,6 +55,7 @@ import {
   isShareSupported,
 } from '../../utils/clipboardAndShare';
 import { GovToolGuideSection } from './gov/GovToolGuideSection';
+import { CyberCafeAiStudio } from './gov/CyberCafeAiStudio';
 
 export type PassportUploadMode = 'digital-upload-630x810' | 'physical-print-350x450';
 
@@ -120,10 +121,21 @@ export const PassportPhotoResizer: React.FC<PassportPhotoResizerProps> = ({ onNo
   const [sourceFile, setSourceFile] = useState<File | null>(null);
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [imageElement, setImageElement] = useState<HTMLImageElement | null>(null);
+  const [rawImageElement, setRawImageElement] = useState<HTMLImageElement | null>(null);
   const [imageNaturalSize, setImageNaturalSize] = useState<{ width: number; height: number }>({
     width: 0,
     height: 0,
   });
+
+  const handleStudioProcessedImage = useCallback((processedImg: HTMLImageElement | null) => {
+    if (processedImg) {
+      setImageElement(processedImg);
+      setImageSrc(processedImg.src);
+    } else if (rawImageElement) {
+      setImageElement(rawImageElement);
+      setImageSrc(rawImageElement.src);
+    }
+  }, [rawImageElement]);
 
   // Viewport transforms
   const [zoom, setZoom] = useState<number>(1);
@@ -203,6 +215,7 @@ export const PassportPhotoResizer: React.FC<PassportPhotoResizerProps> = ({ onNo
 
     CanvasEngine.loadImage(file).then((img) => {
       setImageElement(img);
+      setRawImageElement(img);
       setImageSrc(img.src);
       setImageNaturalSize({ width: img.naturalWidth, height: img.naturalHeight });
       setSourceFile(file);
@@ -216,6 +229,31 @@ export const PassportPhotoResizer: React.FC<PassportPhotoResizerProps> = ({ onNo
       onNotify('Error Loading Image', 'Could not parse the selected image.', 'error');
     });
   }, [resultUrl, onNotify]);
+
+  // Global Keyboard Shortcuts for Zoom: '=' / '+' to Zoom In, '-' to Zoom Out, '0' to Reset
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement ||
+        (e.target as HTMLElement)?.isContentEditable
+      ) {
+        return;
+      }
+      if (e.key === '=' || e.key === '+' || e.code === 'NumpadAdd' || e.code === 'Equal') {
+        e.preventDefault();
+        setZoom((prev) => Math.min(3.5, parseFloat((prev + 0.1).toFixed(2))));
+      } else if (e.key === '-' || e.key === '_' || e.code === 'NumpadSubtract' || e.code === 'Minus') {
+        e.preventDefault();
+        setZoom((prev) => Math.max(0.6, parseFloat((prev - 0.1).toFixed(2))));
+      } else if (e.key === '0' || e.key === '/') {
+        e.preventDefault();
+        setZoom(1);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // Global Clipboard Paste Support (Ctrl+V / Cmd+V)
   useEffect(() => {
@@ -513,6 +551,7 @@ export const PassportPhotoResizer: React.FC<PassportPhotoResizerProps> = ({ onNo
     setResultUrl(null);
     setResultBlob(null);
     setImageElement(null);
+    setRawImageElement(null);
     setImageSrc(null);
     setSourceFile(null);
   }, [resultUrl]);
@@ -848,8 +887,16 @@ export const PassportPhotoResizer: React.FC<PassportPhotoResizerProps> = ({ onNo
           {/* Docked Precision Controls Strip */}
           <div className="p-1.5 sm:p-2 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex items-center justify-between flex-wrap gap-1.5">
             {/* Zoom Slider + Quick Pills */}
-            <div className="flex items-center gap-1.5 flex-1 min-w-[200px]">
-              <ZoomIn className="w-3 h-3 text-zinc-400 shrink-0" />
+            {/* Zoom Slider + Precision Buttons */}
+            <div className="flex items-center gap-1 flex-1 min-w-[200px]">
+              <button
+                type="button"
+                onClick={() => setZoom((prev) => Math.max(0.5, parseFloat((prev - 0.1).toFixed(2))))}
+                className="w-5 h-5 rounded flex items-center justify-center text-zinc-500 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition cursor-pointer"
+                title="Zoom Out [-]"
+              >
+                <ZoomOut className="w-3 h-3" />
+              </button>
               <input
                 type="range"
                 min="0.5"
@@ -857,8 +904,16 @@ export const PassportPhotoResizer: React.FC<PassportPhotoResizerProps> = ({ onNo
                 step="0.05"
                 value={zoom}
                 onChange={(e) => setZoom(parseFloat(e.target.value))}
-                className="w-24 sm:w-32 h-1 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-zinc-900 dark:accent-zinc-100"
+                className="w-20 sm:w-28 h-1 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-zinc-900 dark:accent-zinc-100"
               />
+              <button
+                type="button"
+                onClick={() => setZoom((prev) => Math.min(3.5, parseFloat((prev + 0.1).toFixed(2))))}
+                className="w-5 h-5 rounded flex items-center justify-center text-zinc-500 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition cursor-pointer"
+                title="Zoom In [= or +]"
+              >
+                <ZoomIn className="w-3 h-3" />
+              </button>
               <div className="flex items-center gap-1">
                 {[
                   { label: 'Fit', val: 1 },
@@ -937,7 +992,14 @@ export const PassportPhotoResizer: React.FC<PassportPhotoResizerProps> = ({ onNo
               isDark ? 'bg-zinc-900/90 border-zinc-800 shadow-xs' : 'bg-white border-zinc-200 shadow-xs'
             }`}
           >
-            <div className="space-y-2.5">
+            <div className="space-y-2">
+              {/* Cyber Cafe AI Studio: Face Enhancer + BG Remover + Colors */}
+              <CyberCafeAiStudio
+                rawImage={rawImageElement}
+                onProcessedImage={handleStudioProcessedImage}
+                onNotify={onNotify}
+              />
+
               {/* Header / Requirements Summary */}
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-1">

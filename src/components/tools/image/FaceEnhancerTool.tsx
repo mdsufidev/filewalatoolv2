@@ -136,6 +136,34 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
     };
   }, []);
 
+  // Global Keyboard Shortcuts for Zoom: '=' / '+' to Zoom In, '-' / '_' to Zoom Out, '0' / '/' to Reset
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger if user is typing in an input or textarea
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement ||
+        (e.target as HTMLElement)?.isContentEditable
+      ) {
+        return;
+      }
+
+      if (e.key === '=' || e.key === '+' || e.code === 'NumpadAdd' || e.code === 'Equal') {
+        e.preventDefault();
+        setZoomLevel((prev) => Math.min(3, +(prev + 0.25).toFixed(2)));
+      } else if (e.key === '-' || e.key === '_' || e.code === 'NumpadSubtract' || e.code === 'Minus') {
+        e.preventDefault();
+        setZoomLevel((prev) => Math.max(1, +(prev - 0.25).toFixed(2)));
+      } else if (e.key === '0' || e.key === '/' || e.code === 'Slash' || e.code === 'Numpad0') {
+        e.preventDefault();
+        setZoomLevel(1);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   // Load initial file if provided
   useEffect(() => {
     if (initialFiles && initialFiles.length > 0 && !currentImage) {
@@ -768,7 +796,7 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
                       type="button"
                       onClick={() => setZoomLevel((prev) => Math.min(3, +(prev + 0.25).toFixed(2)))}
                       className="w-6 h-6 rounded-full flex items-center justify-center text-white/90 hover:text-white hover:bg-white/20 transition cursor-pointer"
-                      title="Zoom In"
+                      title="Zoom In [= or +]"
                     >
                       <ZoomIn className="w-3 h-3" />
                     </button>
@@ -790,7 +818,7 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
                       type="button"
                       onClick={() => setZoomLevel((prev) => Math.max(1, +(prev - 0.25).toFixed(2)))}
                       className="w-6 h-6 rounded-full flex items-center justify-center text-white/90 hover:text-white hover:bg-white/20 transition cursor-pointer"
-                      title="Zoom Out"
+                      title="Zoom Out [-]"
                     >
                       <ZoomOut className="w-3 h-3" />
                     </button>
@@ -800,7 +828,7 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
                         type="button"
                         onClick={() => setZoomLevel(1)}
                         className="mt-1 px-1 py-0.5 text-[8px] font-mono font-bold text-rose-400 hover:text-rose-300 transition cursor-pointer rounded-full bg-rose-500/20"
-                        title="Reset 1x Zoom"
+                        title="Reset 1x Zoom [/ or 0]"
                       >
                         1x
                       </button>
