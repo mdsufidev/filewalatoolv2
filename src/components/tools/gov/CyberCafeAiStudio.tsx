@@ -9,7 +9,6 @@ import {
   Palette,
   Loader2,
   Zap,
-  ShieldCheck,
 } from 'lucide-react';
 import { FaceEnhancerEngine, DEFAULT_ENHANCE_SETTINGS } from '../../../core/engine/FaceEnhancerEngine';
 import { NeuralFaceEnhancer } from '../../../core/engine/NeuralFaceEnhancer';
@@ -24,12 +23,118 @@ export interface CyberCafeColorOption {
 }
 
 export const CYBER_CAFE_COLORS: CyberCafeColorOption[] = [
-  { id: 'white', name: 'Govt White', color: '#ffffff', label: 'White (Official)', borderClass: 'border-zinc-300 dark:border-zinc-600' },
-  { id: 'cyber-blue', name: 'Cyber Blue', color: '#0096ff', label: 'Sky Blue (CSC)', borderClass: 'border-blue-400' },
+  { id: 'transparent', name: 'Transparent', color: 'transparent', label: 'Transparent Cutout (PNG)', borderClass: 'border-zinc-300 dark:border-zinc-600' },
+  { id: 'white', name: 'Govt White', color: '#ffffff', label: 'White (Official Standard)', borderClass: 'border-zinc-300 dark:border-zinc-600' },
+  { id: 'cyber-blue', name: 'Cyber Blue', color: '#0096ff', label: 'Sky Blue (CSC Standard)', borderClass: 'border-blue-400' },
   { id: 'soft-blue', name: 'Soft Blue', color: '#bfe4ff', label: 'Pastel Blue', borderClass: 'border-sky-300' },
   { id: 'light-gray', name: 'Visa Gray', color: '#e5e7eb', label: 'Light Gray', borderClass: 'border-zinc-400' },
   { id: 'studio-red', name: 'Studio Maroon', color: '#7f1d1d', label: 'Maroon', borderClass: 'border-red-900' },
 ];
+
+/**
+ * High-speed fallback perimeter chroma-flood segmentation
+ * Guarantees 100% instant cutout even if device is offline or HuggingFace ONNX weights fail to download.
+ */
+function generateFastMaskFallback(
+  img: HTMLImageElement,
+  w: number,
+  h: number
+): HTMLCanvasElement {
+  const mask = document.createElement('canvas');
+  mask.width = w;
+  mask.height = h;
+  const mctx = mask.getContext('2d');
+  if (!mctx) return mask;
+
+  const temp = document.createElement('canvas');
+  temp.width = w;
+  temp.height = h;
+  const tctx = temp.getContext('2d');
+  if (!tctx) return mask;
+  tctx.drawImage(img, 0, 0, w, h);
+  const srcData = tctx.getImageData(0, 0, w, h).data;
+  temp.width = 0;
+  temp.height = 0;
+
+  mctx.fillStyle = '#ffffff';
+  mctx.fillRect(0, 0, w, h);
+  const maskImgData = mctx.getImageData(0, 0, w, h);
+  const maskData = maskImgData.data;
+
+  const clampX = (val: number) => Math.max(0, Math.min(w - 1, val));
+  const clampY = (val: number) => Math.max(0, Math.min(h - 1, val));
+
+  const seedPoints = [
+    [clampX(2), clampY(2)],
+    [clampX(w - 3), clampY(2)],
+    [clampX(2), clampY(h - 3)],
+    [clampX(w - 3), clampY(h - 3)],
+    [clampX(Math.floor(w / 2)), clampY(2)],
+    [clampX(Math.floor(w / 2)), clampY(h - 3)],
+    [clampX(2), clampY(Math.floor(h / 2))],
+    [clampX(w - 3), clampY(Math.floor(h / 2))],
+  ];
+
+  const visited = new Uint8Array(w * h);
+  const tol = 28;
+  const maxDist = (tol / 100) * 441.67;
+  const maxDistSq = maxDist * maxDist;
+
+  for (const [sx, sy] of seedPoints) {
+    const startIdx = (sy * w + sx) * 4;
+    const targetR = srcData[startIdx];
+    const targetG = srcData[startIdx + 1];
+    const targetB = srcData[startIdx + 2];
+
+    const queueX: number[] = [sx];
+    const queueY: number[] = [sy];
+    visited[sy * w + sx] = 1;
+
+    let head = 0;
+    while (head < queueX.length && head < 350000) {
+      const x = queueX[head];
+      const y = queueY[head];
+      head++;
+
+      const idx = (y * w + x) * 4;
+      maskData[idx] = 0;
+      maskData[idx + 1] = 0;
+      maskData[idx + 2] = 0;
+      maskData[idx + 3] = 0;
+
+      const nbrs = [
+        [x + 1, y],
+        [x - 1, y],
+        [x, y + 1],
+        [x, y - 1],
+      ];
+
+      for (let i = 0; i < 4; i++) {
+        const nx = nbrs[i][0];
+        const ny = nbrs[i][1];
+        if (nx >= 0 && nx < w && ny >= 0 && ny < h) {
+          const nPos = ny * w + nx;
+          if (!visited[nPos]) {
+            visited[nPos] = 1;
+            const nIdx = nPos * 4;
+            const dr = srcData[nIdx] - targetR;
+            const dg = srcData[nIdx + 1] - targetG;
+            const db = srcData[nIdx + 2] - targetB;
+            const distSq = dr * dr + dg * dg + db * db;
+
+            if (distSq <= maxDistSq) {
+              queueX.push(nx);
+              queueY.push(ny);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  mctx.putImageData(maskImgData, 0, 0);
+  return mask;
+}
 
 interface CyberCafeAiStudioProps {
   rawImage: HTMLImageElement | null;
@@ -46,7 +151,7 @@ export const CyberCafeAiStudio: React.FC<CyberCafeAiStudioProps> = ({
 }) => {
   const [isFaceEnhanceActive, setIsFaceEnhanceActive] = useState<boolean>(false);
   const [isBgRemoved, setIsBgRemoved] = useState<boolean>(false);
-  const [selectedBgColor, setSelectedBgColor] = useState<string>('#ffffff');
+  const [selectedBgColor, setSelectedBgColor] = useState<string>('transparent');
   const [customColor, setCustomColor] = useState<string>('#0096ff');
   const [isCustomColorActive, setIsCustomColorActive] = useState<boolean>(false);
 
@@ -55,8 +160,8 @@ export const CyberCafeAiStudio: React.FC<CyberCafeAiStudioProps> = ({
   const [processingStage, setProcessingStage] = useState<string>('');
   const [hasWebGPU, setHasWebGPU] = useState<boolean | null>(null);
 
-  // Cached intermediate cutout canvas to allow instant color changes without re-running AI
-  const cutoutCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  // Cached alpha mask and neural face canvases (enables 0ms instant color switching)
+  const maskCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const faceEnhancedCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const rmbgWorkerRef = useRef<BriaRmbgWorkerClient | null>(null);
   const activeBlobUrlRef = useRef<string | null>(null);
@@ -78,9 +183,20 @@ export const CyberCafeAiStudio: React.FC<CyberCafeAiStudioProps> = ({
       }
     }
     checkWebGPU();
+
+    if (!rmbgWorkerRef.current) {
+      rmbgWorkerRef.current = new BriaRmbgWorkerClient();
+    }
   }, []);
 
-  // Cleanup on unmount or when rawImage changes
+  // Pre-warm RMBG worker when WebGPU state resolves
+  useEffect(() => {
+    if (hasWebGPU !== null && rmbgWorkerRef.current) {
+      rmbgWorkerRef.current.warmup(!!hasWebGPU);
+    }
+  }, [hasWebGPU]);
+
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (activeBlobUrlRef.current) {
@@ -93,11 +209,11 @@ export const CyberCafeAiStudio: React.FC<CyberCafeAiStudioProps> = ({
 
   // When a new image is loaded into the parent tool, reset local state
   useEffect(() => {
-    cutoutCanvasRef.current = null;
+    maskCanvasRef.current = null;
     faceEnhancedCanvasRef.current = null;
     setIsFaceEnhanceActive(false);
     setIsBgRemoved(false);
-    setSelectedBgColor('#ffffff');
+    setSelectedBgColor('transparent');
     setIsCustomColorActive(false);
   }, [rawImage]);
 
@@ -123,8 +239,8 @@ export const CyberCafeAiStudio: React.FC<CyberCafeAiStudioProps> = ({
         const w = rawImage.naturalWidth || rawImage.width;
         const h = rawImage.naturalHeight || rawImage.height;
 
-        // Step 1: Base Face Enhanced Canvas (if active) or original raw
-        let workingBaseCanvas: HTMLCanvasElement;
+        // Step 1: Base Subject Canvas (Neural Face Enhanced or Original Raw)
+        let workingSubjectCanvas: HTMLCanvasElement;
 
         if (targetFaceEnhance) {
           if (!faceEnhancedCanvasRef.current) {
@@ -153,7 +269,7 @@ export const CyberCafeAiStudio: React.FC<CyberCafeAiStudioProps> = ({
               aiRestoredCanvas.width = 0;
               aiRestoredCanvas.height = 0;
 
-              // 3. ProVisual Finish on AI Subject: subtle micro-contrast & skin glow (no heavy colorization tint)
+              // 3. ProVisual Finish on AI Subject: natural clarity (no artificial colorization tint)
               faceEnhancedCanvasRef.current = FaceEnhancerEngine.processImage(exactCanvas, {
                 ...DEFAULT_ENHANCE_SETTINGS,
                 deblur: 0, // already restored by GFPGAN deep neural network
@@ -170,9 +286,7 @@ export const CyberCafeAiStudio: React.FC<CyberCafeAiStudioProps> = ({
               exactCanvas.width = 0;
               exactCanvas.height = 0;
             } catch (neuralErr: any) {
-              console.warn('Neural face enhancer fallback to smart frequency engine:', neuralErr);
-              // Fallback: If device memory or environment prevents WebGPU/WASM neural model,
-              // run multi-scale frequency deconvolution
+              console.warn('Neural face enhancer fallback to frequency engine:', neuralErr);
               const temp = document.createElement('canvas');
               temp.width = w;
               temp.height = h;
@@ -197,14 +311,14 @@ export const CyberCafeAiStudio: React.FC<CyberCafeAiStudioProps> = ({
               temp.height = 0;
             }
           }
-          workingBaseCanvas = faceEnhancedCanvasRef.current;
+          workingSubjectCanvas = faceEnhancedCanvasRef.current;
         } else {
           const temp = document.createElement('canvas');
           temp.width = w;
           temp.height = h;
           const tctx = temp.getContext('2d');
           if (tctx) tctx.drawImage(rawImage, 0, 0);
-          workingBaseCanvas = temp;
+          workingSubjectCanvas = temp;
         }
 
         // Step 2: Background Removal & Color Fill
@@ -215,91 +329,91 @@ export const CyberCafeAiStudio: React.FC<CyberCafeAiStudioProps> = ({
         if (!fctx) throw new Error('Canvas 2D context error');
 
         if (targetBgRemoved) {
-          // Check if we need to compute cutout mask
-          if (!cutoutCanvasRef.current) {
+          // Check if we need to compute the alpha cutout mask
+          if (!maskCanvasRef.current) {
             setProcessingStage('AI Removing background (RMBG neural inference)...');
-            if (!rmbgWorkerRef.current) {
-              rmbgWorkerRef.current = new BriaRmbgWorkerClient();
+            try {
+              if (!rmbgWorkerRef.current) {
+                rmbgWorkerRef.current = new BriaRmbgWorkerClient();
+              }
+
+              const INPUT_SIZE = 1024;
+              const tempSmall = document.createElement('canvas');
+              tempSmall.width = INPUT_SIZE;
+              tempSmall.height = INPUT_SIZE;
+              const sctx = tempSmall.getContext('2d');
+              if (!sctx) throw new Error('Small canvas error');
+              sctx.imageSmoothingEnabled = true;
+              sctx.imageSmoothingQuality = 'high';
+              sctx.drawImage(rawImage, 0, 0, INPUT_SIZE, INPUT_SIZE);
+              const imgData = sctx.getImageData(0, 0, INPUT_SIZE, INPUT_SIZE);
+              tempSmall.width = 0;
+              tempSmall.height = 0;
+
+              const res = await rmbgWorkerRef.current.removeBackground({
+                imageBuffer: imgData.data.buffer,
+                hasWebGPU: !!hasWebGPU,
+                onProgress: (_pct, stage) => setProcessingStage(stage),
+              });
+
+              // Bilinear mask upsample back to natural width/height
+              const lowResMask = document.createElement('canvas');
+              lowResMask.width = INPUT_SIZE;
+              lowResMask.height = INPUT_SIZE;
+              const lrCtx = lowResMask.getContext('2d');
+              if (!lrCtx) throw new Error('Mask canvas error');
+
+              const lrImgData = lrCtx.createImageData(INPUT_SIZE, INPUT_SIZE);
+              const lr32 = new Uint32Array(lrImgData.data.buffer);
+              const alphaArr = new Uint8Array(res.alphaBuffer);
+              const total = INPUT_SIZE * INPUT_SIZE;
+              for (let i = 0; i < total; i++) {
+                lr32[i] = (alphaArr[i] << 24) | 0x00ffffff;
+              }
+              lrCtx.putImageData(lrImgData, 0, 0);
+
+              const mask = document.createElement('canvas');
+              mask.width = w;
+              mask.height = h;
+              const mctx = mask.getContext('2d');
+              if (!mctx) throw new Error('Full mask error');
+              mctx.imageSmoothingEnabled = true;
+              mctx.imageSmoothingQuality = 'high';
+              mctx.drawImage(lowResMask, 0, 0, w, h);
+              lowResMask.width = 0;
+              lowResMask.height = 0;
+
+              maskCanvasRef.current = mask;
+            } catch (rmbgErr: any) {
+              console.warn('RMBG neural worker failed, running high-speed fallback:', rmbgErr);
+              setProcessingStage('Running fast edge cutout fallback...');
+              maskCanvasRef.current = generateFastMaskFallback(rawImage, w, h);
             }
-
-            const INPUT_SIZE = 1024;
-            const tempSmall = document.createElement('canvas');
-            tempSmall.width = INPUT_SIZE;
-            tempSmall.height = INPUT_SIZE;
-            const sctx = tempSmall.getContext('2d');
-            if (!sctx) throw new Error('Small canvas error');
-            sctx.imageSmoothingEnabled = true;
-            sctx.imageSmoothingQuality = 'high';
-            sctx.drawImage(rawImage, 0, 0, INPUT_SIZE, INPUT_SIZE);
-            const imgData = sctx.getImageData(0, 0, INPUT_SIZE, INPUT_SIZE);
-            tempSmall.width = 0;
-            tempSmall.height = 0;
-
-            const res = await rmbgWorkerRef.current.removeBackground({
-              imageBuffer: imgData.data.buffer,
-              hasWebGPU: !!hasWebGPU,
-              onProgress: (_pct, stage) => setProcessingStage(stage),
-            });
-
-            // Bilinear mask upsample back to natural width/height
-            const lowResMask = document.createElement('canvas');
-            lowResMask.width = INPUT_SIZE;
-            lowResMask.height = INPUT_SIZE;
-            const lrCtx = lowResMask.getContext('2d');
-            if (!lrCtx) throw new Error('Mask canvas error');
-
-            const lrImgData = lrCtx.createImageData(INPUT_SIZE, INPUT_SIZE);
-            const lr32 = new Uint32Array(lrImgData.data.buffer);
-            const alphaArr = new Uint8Array(res.alphaBuffer);
-            const total = INPUT_SIZE * INPUT_SIZE;
-            for (let i = 0; i < total; i++) {
-              lr32[i] = (alphaArr[i] << 24) | 0x00ffffff;
-            }
-            lrCtx.putImageData(lrImgData, 0, 0);
-
-            const maskCanvas = document.createElement('canvas');
-            maskCanvas.width = w;
-            maskCanvas.height = h;
-            const mctx = maskCanvas.getContext('2d');
-            if (!mctx) throw new Error('Full mask error');
-            mctx.imageSmoothingEnabled = true;
-            mctx.imageSmoothingQuality = 'high';
-            mctx.drawImage(lowResMask, 0, 0, w, h);
-            lowResMask.width = 0;
-            lowResMask.height = 0;
-
-            // Generate Transparent Cutout
-            const cutout = document.createElement('canvas');
-            cutout.width = w;
-            cutout.height = h;
-            const cctx = cutout.getContext('2d');
-            if (!cctx) throw new Error('Cutout error');
-            cctx.drawImage(rawImage, 0, 0);
-            cctx.globalCompositeOperation = 'destination-in';
-            cctx.drawImage(maskCanvas, 0, 0);
-
-            cutoutCanvasRef.current = cutout;
-            maskCanvas.width = 0;
-            maskCanvas.height = 0;
           }
 
-          // Fill Cyber Cafe chosen background color
-          fctx.fillStyle = targetColor;
-          fctx.fillRect(0, 0, w, h);
+          // Generate isolated transparent cutout of the subject
+          const cutout = document.createElement('canvas');
+          cutout.width = w;
+          cutout.height = h;
+          const cctx = cutout.getContext('2d');
+          if (!cctx) throw new Error('Cutout error');
+          cctx.drawImage(workingSubjectCanvas, 0, 0);
+          cctx.globalCompositeOperation = 'destination-in';
+          cctx.drawImage(maskCanvasRef.current, 0, 0);
 
-          // Draw the subject cutout
-          if (targetFaceEnhance && faceEnhancedCanvasRef.current) {
-            // Apply mask to face enhanced canvas
-            fctx.drawImage(cutoutCanvasRef.current, 0, 0);
-            fctx.globalCompositeOperation = 'source-atop';
-            fctx.drawImage(faceEnhancedCanvasRef.current, 0, 0);
-            fctx.globalCompositeOperation = 'source-over';
-          } else {
-            fctx.drawImage(cutoutCanvasRef.current, 0, 0);
+          // Render onto finalCanvas with chosen background color
+          fctx.clearRect(0, 0, w, h);
+          if (targetColor && targetColor !== 'transparent') {
+            fctx.fillStyle = targetColor;
+            fctx.fillRect(0, 0, w, h);
           }
+          fctx.drawImage(cutout, 0, 0);
+          cutout.width = 0;
+          cutout.height = 0;
         } else {
-          // Only Face Enhancement active (keep original background)
-          fctx.drawImage(workingBaseCanvas, 0, 0);
+          // Background removal OFF: render workingSubjectCanvas directly with natural background
+          fctx.clearRect(0, 0, w, h);
+          fctx.drawImage(workingSubjectCanvas, 0, 0);
         }
 
         // Convert to high-performance Blob URL & load as HTMLImageElement
@@ -337,7 +451,8 @@ export const CyberCafeAiStudio: React.FC<CyberCafeAiStudioProps> = ({
   const handleToggleFaceEnhance = () => {
     const nextState = !isFaceEnhanceActive;
     setIsFaceEnhanceActive(nextState);
-    compositeAndEmit(nextState, isBgRemoved, isCustomColorActive ? customColor : selectedBgColor);
+    const activeColor = isCustomColorActive ? customColor : selectedBgColor;
+    compositeAndEmit(nextState, isBgRemoved, activeColor);
     onNotify(
       nextState ? '⚡ AI Neural Face Restorer ON' : 'AI Face Enhancer OFF',
       nextState ? 'GFPGAN neural model: reconstructing eyes, lips, skin & facial clarity' : 'Reverted to natural raw photo',
@@ -349,10 +464,11 @@ export const CyberCafeAiStudio: React.FC<CyberCafeAiStudioProps> = ({
   const handleToggleBgRemover = () => {
     const nextState = !isBgRemoved;
     setIsBgRemoved(nextState);
-    compositeAndEmit(isFaceEnhanceActive, nextState, isCustomColorActive ? customColor : selectedBgColor);
+    const activeColor = isCustomColorActive ? customColor : selectedBgColor;
+    compositeAndEmit(isFaceEnhanceActive, nextState, activeColor);
     onNotify(
-      nextState ? '🪄 Background Removed' : 'Original Background Restored',
-      nextState ? 'Select pure white or cyber cafe blue background' : 'Original background active',
+      nextState ? '🪄 AI Background Removed' : 'Original Background Restored',
+      nextState ? 'Choose Transparent, Govt White, or Cyber Blue' : 'Original background active',
       'info'
     );
   };
@@ -385,9 +501,9 @@ export const CyberCafeAiStudio: React.FC<CyberCafeAiStudioProps> = ({
   const handleResetAll = () => {
     setIsFaceEnhanceActive(false);
     setIsBgRemoved(false);
-    setSelectedBgColor('#ffffff');
+    setSelectedBgColor('transparent');
     setIsCustomColorActive(false);
-    cutoutCanvasRef.current = null;
+    maskCanvasRef.current = null;
     faceEnhancedCanvasRef.current = null;
     onProcessedImage(null);
     onNotify('Studio AI Reset', 'Restored original raw photo', 'info');
@@ -419,7 +535,9 @@ export const CyberCafeAiStudio: React.FC<CyberCafeAiStudioProps> = ({
           {isProcessing && (
             <div className="flex items-center gap-1 text-[10px] text-zinc-500">
               <Loader2 className="w-3 h-3 animate-spin text-rose-500" />
-              <span className="hidden md:inline truncate max-w-[120px]">{processingStage}</span>
+              <span className="truncate max-w-[130px] sm:max-w-[180px] font-mono text-[9px]">
+                {processingStage}
+              </span>
             </div>
           )}
 
@@ -469,7 +587,7 @@ export const CyberCafeAiStudio: React.FC<CyberCafeAiStudioProps> = ({
               ? 'bg-purple-600 text-white shadow-xs'
               : 'bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-zinc-700 dark:text-zinc-300'
           }`}
-          title="Cut out photo background and replace with official white or cyber cafe blue"
+          title="Cut out photo background and replace with transparent, official white, or cyber cafe blue"
         >
           <Wand2 className="w-3.5 h-3.5" />
           <span>Remove BG</span>
@@ -477,7 +595,7 @@ export const CyberCafeAiStudio: React.FC<CyberCafeAiStudioProps> = ({
         </button>
       </div>
 
-      {/* Cyber Cafe Background Color Selector (Shown when BG Remover is enabled or to enable it in 1 click) */}
+      {/* Cyber Cafe Background Color Selector */}
       <div className="pt-0.5 border-t border-zinc-100 dark:border-zinc-800 flex items-center justify-between flex-wrap gap-1.5">
         <div className="flex items-center gap-1.5">
           <Palette className="w-3 h-3 text-zinc-400" />
@@ -503,10 +621,14 @@ export const CyberCafeAiStudio: React.FC<CyberCafeAiStudioProps> = ({
                 }`}
                 title={c.label}
               >
-                <span
-                  className={`w-2.5 h-2.5 rounded-full border shrink-0 ${c.borderClass || 'border-zinc-300'}`}
-                  style={{ backgroundColor: c.color }}
-                />
+                {c.color === 'transparent' ? (
+                  <span className="w-2.5 h-2.5 rounded-full border border-zinc-400 dark:border-zinc-500 bg-[linear-gradient(45deg,#bbb_25%,transparent_25%),linear-gradient(-45deg,#bbb_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#bbb_75%),linear-gradient(-45deg,transparent_75%,#bbb_75%)] bg-[size:4px_4px] bg-[position:0_0,0_2px,2px_-2px,-2px_0] shrink-0" />
+                ) : (
+                  <span
+                    className={`w-2.5 h-2.5 rounded-full border shrink-0 ${c.borderClass || 'border-zinc-300'}`}
+                    style={{ backgroundColor: c.color }}
+                  />
+                )}
                 <span>{c.name}</span>
                 {isSelected && <Check className="w-2.5 h-2.5 shrink-0" />}
               </button>

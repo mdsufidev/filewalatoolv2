@@ -827,7 +827,7 @@ export const SscResizer: React.FC<SscResizerProps> = ({
             {/* Fixed Aspect Ratio Crop Box */}
             <div
               ref={viewportRef}
-              className="relative overflow-hidden border-2 border-zinc-900/90 dark:border-white rounded-xs shadow-xl bg-white pointer-events-none ring-4 ring-zinc-950/5 dark:ring-white/10"
+              className="relative overflow-hidden border-2 border-zinc-900/90 dark:border-white rounded-xs shadow-xl bg-[linear-gradient(45deg,#e4e4e7_25%,transparent_25%),linear-gradient(-45deg,#e4e4e7_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#e4e4e7_75%),linear-gradient(-45deg,transparent_75%,#e4e4e7_75%)] bg-[size:12px_12px] bg-[position:0_0,0_6px,6px_-6px,-6px_0] bg-white dark:bg-zinc-900 pointer-events-none ring-4 ring-zinc-950/5 dark:ring-white/10"
               style={{
                 width: `${boxW}px`,
                 height: `${boxH}px`,
