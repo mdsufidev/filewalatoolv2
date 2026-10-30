@@ -96,6 +96,7 @@ self.onmessage = function(e) {
     var contrast = Math.max(-50, Math.min(50, settings.contrast || 0));
     var eyeTeethClarity = Math.max(0, Math.min(100, settings.eyeTeethClarity || 0)) / 100;
     var isMono = !!settings.monochrome;
+    var isSamsungVivid = settings.samsungVivid !== undefined ? !!settings.samsungVivid : true;
     var contrastMult = (259 * (contrast * 1.5 + 255)) / (255 * (259 - contrast * 1.5));
 
     self.postMessage({ type: 'progress', id: id, percent: 50, stage: 'Reconstructing eye pupils, lips & facial clarity...' });
@@ -215,6 +216,54 @@ self.onmessage = function(e) {
         cr = clamp(contrastMult * (cr - 128) + 128);
         cg = clamp(contrastMult * (cg - 128) + 128);
         cb = clamp(contrastMult * (cb - 128) + 128);
+      }
+
+      // Samsung ProVisual Vivid Engine (Shadow lift + Sky Cyan Pop + Warm Skin + S-Curve pop)
+      if (isSamsungVivid && !isMono) {
+        // 1. Dynamic Shadow Lifting (prevent dark muddy hair & clothes)
+        if (targetL < 90) {
+          var shadowLift = (1.0 - targetL / 90) * 14;
+          cr = clamp(cr + shadowLift);
+          cg = clamp(cg + shadowLift);
+          cb = clamp(cb + shadowLift);
+        }
+
+        // 2. Intelligent Skin vs Sky/Background Vibrance Isolation
+        var isSkin = (cr > cg) && (cg > cb) && ((cr - cg) >= 10) && ((cr - cg) <= 120);
+        var maxChannel = Math.max(cr, Math.max(cg, cb));
+        var minChannel = Math.min(cr, Math.min(cg, cb));
+        var delta = maxChannel - minChannel;
+        var currentSat = maxChannel > 0 ? delta / maxChannel : 0;
+
+        if (isSkin) {
+          // Warm healthy portrait tone: boost lips & cheeks naturally without oversaturating
+          var skinVibe = 0.12 * (1.0 - currentSat * 0.5);
+          cr = clamp(cr * (1 + skinVibe * 1.15));
+          cg = clamp(cg * (1 + skinVibe * 0.85));
+          cb = clamp(cb * (1 + skinVibe * 0.45));
+        } else {
+          // Background, sky, clothes, foliage: Samsung signature rich punchy vibrance
+          var isCyanOrBlue = (cb > cr * 0.85) && (cb > 60);
+          var vibranceAmount = isCyanOrBlue ? 0.35 : 0.22;
+          var vFactor = vibranceAmount * (1.0 - currentSat * 0.65);
+          var avg = (cr + cg + cb) / 3;
+          cr = clamp(cr + (cr - avg) * vFactor);
+          cg = clamp(cg + (cg - avg) * vFactor);
+          cb = clamp(cb + (cb - avg) * vFactor);
+          if (isCyanOrBlue) {
+            // Samsung signature vibrant blue/cyan pop
+            cb = clamp(cb * 1.1 + 6);
+          }
+        }
+
+        // 3. S-Curve Dynamic Contrast
+        var normL = (0.299 * cr + 0.587 * cg + 0.114 * cb) / 255;
+        var sL = normL * normL * (3 - 2 * normL);
+        var sWeight = 0.18;
+        var lScale = 1.0 + (sL - normL) * sWeight * (255 / Math.max(1, normL * 255));
+        cr = clamp(cr * lScale);
+        cg = clamp(cg * lScale);
+        cb = clamp(cb * lScale);
       }
 
       // Monochrome

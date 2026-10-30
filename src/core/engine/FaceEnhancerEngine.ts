@@ -17,19 +17,21 @@ export interface FaceEnhanceSettings {
   contrast: number;        // -50 to +50 (Dynamic contrast & pop)
   eyeTeethClarity: number; // 0 to 100 (Eye whitening & teeth brightening)
   monochrome?: boolean;    // Black & White portrait mode
+  samsungVivid?: boolean;  // Samsung ProVisual HDR Color & Vibrance
 }
 
 export const DEFAULT_ENHANCE_SETTINGS: FaceEnhanceSettings = {
-  deblur: 65,
-  clarity: 55,
-  smooth: 45,
-  sharpness: 60,
-  glow: 25,
+  deblur: 70,
+  clarity: 60,
+  smooth: 35,
+  sharpness: 65,
+  glow: 20,
   warmth: 5,
   brightness: 12,
   contrast: 18,
   eyeTeethClarity: 45,
   monochrome: false,
+  samsungVivid: true,
 };
 
 export interface FacePreset {
@@ -42,6 +44,26 @@ export interface FacePreset {
 }
 
 export const FACE_ENHANCER_PRESETS: FacePreset[] = [
+  {
+    id: 'samsung-ai',
+    name: 'Samsung AI ProVisual',
+    tagline: 'Vibrant pop colors, crystal clear hair & photorealistic face restoration',
+    iconName: 'Sparkles',
+    badge: 'Pro AI',
+    settings: {
+      deblur: 75,
+      clarity: 65,
+      smooth: 30,
+      sharpness: 70,
+      glow: 25,
+      warmth: 6,
+      brightness: 12,
+      contrast: 20,
+      eyeTeethClarity: 50,
+      monochrome: false,
+      samsungVivid: true,
+    },
+  },
   {
     id: 'unblur-focus',
     name: 'AI Unblur & Clear Focus',
@@ -274,6 +296,7 @@ export class FaceEnhancerEngine {
     const contrast = settings.contrast || 0;
     const eyeTeethClarity = (settings.eyeTeethClarity || 0) / 100;
     const isMono = !!settings.monochrome;
+    const isSamsungVivid = settings.samsungVivid !== undefined ? !!settings.samsungVivid : true;
     const contrastMult = (259 * (contrast * 1.5 + 255)) / (255 * (259 - contrast * 1.5));
 
     // Reconstruct enhanced luminance map
@@ -378,6 +401,54 @@ export class FaceEnhancerEngine {
         r = this.clamp(contrastMult * (r - 128) + 128);
         g = this.clamp(contrastMult * (g - 128) + 128);
         b = this.clamp(contrastMult * (b - 128) + 128);
+      }
+
+      // Samsung ProVisual Vivid Engine (Shadow lift + Sky Cyan Pop + Warm Skin + S-Curve pop)
+      if (isSamsungVivid && !isMono) {
+        // 1. Dynamic Shadow Lifting (prevent dark muddy hair & clothes)
+        if (targetL < 90) {
+          const shadowLift = (1.0 - targetL / 90) * 14;
+          r = this.clamp(r + shadowLift);
+          g = this.clamp(g + shadowLift);
+          b = this.clamp(b + shadowLift);
+        }
+
+        // 2. Intelligent Skin vs Sky/Background Vibrance Isolation
+        const isSkin = (r > g) && (g > b) && ((r - g) >= 10) && ((r - g) <= 120);
+        const maxChannel = Math.max(r, Math.max(g, b));
+        const minChannel = Math.min(r, Math.min(g, b));
+        const delta = maxChannel - minChannel;
+        const currentSat = maxChannel > 0 ? delta / maxChannel : 0;
+
+        if (isSkin) {
+          // Warm healthy portrait tone: boost lips & cheeks naturally without oversaturating
+          const skinVibe = 0.12 * (1.0 - currentSat * 0.5);
+          r = this.clamp(r * (1 + skinVibe * 1.15));
+          g = this.clamp(g * (1 + skinVibe * 0.85));
+          b = this.clamp(b * (1 + skinVibe * 0.45));
+        } else {
+          // Background, sky, clothes, foliage: Samsung signature rich punchy vibrance
+          const isCyanOrBlue = (b > r * 0.85) && (b > 60);
+          const vibranceAmount = isCyanOrBlue ? 0.35 : 0.22;
+          const vFactor = vibranceAmount * (1.0 - currentSat * 0.65);
+          const avg = (r + g + b) / 3;
+          r = this.clamp(r + (r - avg) * vFactor);
+          g = this.clamp(g + (g - avg) * vFactor);
+          b = this.clamp(b + (b - avg) * vFactor);
+          if (isCyanOrBlue) {
+            // Samsung signature vibrant blue/cyan pop
+            b = this.clamp(b * 1.1 + 6);
+          }
+        }
+
+        // 3. S-Curve Dynamic Contrast
+        const normL = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+        const sL = normL * normL * (3 - 2 * normL);
+        const sWeight = 0.18;
+        const lScale = 1.0 + (sL - normL) * sWeight * (255 / Math.max(1, normL * 255));
+        r = this.clamp(r * lScale);
+        g = this.clamp(g * lScale);
+        b = this.clamp(b * lScale);
       }
 
       // Monochrome

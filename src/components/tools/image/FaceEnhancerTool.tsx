@@ -70,8 +70,9 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
   const [neuralBlendStrength, setNeuralBlendStrength] = useState<number>(100);
   // Settings & Presets
   const [settings, setSettings] = useState<FaceEnhanceSettings>(DEFAULT_ENHANCE_SETTINGS);
-  const [activePresetId, setActivePresetId] = useState<string>('smart-auto');
-  const [upscaleFactor, setUpscaleFactor] = useState<1 | 2 | 4>(1);
+  const [activePresetId, setActivePresetId] = useState<string>('samsung-ai');
+  const [upscaleFactor, setUpscaleFactor] = useState<1 | 2 | 4>(2);
+  const [showAdvancedSliders, setShowAdvancedSliders] = useState<boolean>(false);
 
   // Export settings
   const [exportFormat, setExportFormat] = useState<OutputFormat>('image/jpeg');
@@ -163,8 +164,8 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
     // Use instant blob preview URL (zero memory churn, zero main-thread block)
     setOriginalSrc(currentImage.previewUrl);
 
-    // Apply default preset
-    applyPreset('smart-auto');
+    // Apply default preset: Samsung AI ProVisual + 2x Super-Resolution
+    applyPreset('samsung-ai');
   }, [currentImage]);
 
   // Execute Face Enhancement pipeline (Always preserves neural face restoration if active)
@@ -525,11 +526,11 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
   const handleRevertToOriginal = () => {
     neuralRestoredCanvasRef.current = null;
     setHasNeuralRestoration(false);
-    setActivePresetId('smart-auto');
+    setActivePresetId('samsung-ai');
     setSettings(DEFAULT_ENHANCE_SETTINGS);
-    setUpscaleFactor(1);
-    runEnhancement(DEFAULT_ENHANCE_SETTINGS, 1, null);
-    onNotify('Reverted to Raw', 'Restored original photo without AI modifications', 'info');
+    setUpscaleFactor(2);
+    runEnhancement(DEFAULT_ENHANCE_SETTINGS, 2, null);
+    onNotify('Reverted AI Face', 'Restored to Samsung AI ProVisual working base', 'info');
   };
 
   // Handle upscale factor change
@@ -577,9 +578,10 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
 
   // Reset to original settings
   const handleReset = () => {
-    applyPreset('smart-auto');
-    setUpscaleFactor(1);
-    onNotify('Settings Reset', 'Restored to Smart Auto AI defaults', 'info');
+    applyPreset('samsung-ai');
+    setUpscaleFactor(2);
+    setZoomLevel(1);
+    onNotify('Settings Reset', 'Restored to Samsung AI ProVisual defaults', 'info');
   };
 
   return (
@@ -647,51 +649,45 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
           </div>
         </div>
       ) : (
-        <div className="space-y-2 sm:space-y-2.5">
+        <div className="space-y-3 animate-in fade-in duration-200">
           {/* Top Inline Hero Row */}
-          <div className="flex items-center justify-between gap-2 px-1 py-0.5">
+          <div className="flex items-center justify-between gap-2 px-1 py-1 flex-wrap">
             <div className="flex items-center gap-2 min-w-0">
-              <span className="text-xs sm:text-sm font-bold text-zinc-900 dark:text-zinc-100 truncate">
-                AI Face Enhancer &amp; Retouch
+              <span className="text-xs sm:text-sm font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                <Sparkles className="w-4 h-4 text-rose-500 shrink-0" />
+                <span className="truncate">AI Photo &amp; Face Enhancer</span>
               </span>
-              <span className="hidden md:inline-block text-[11px] font-mono text-zinc-400 truncate max-w-[120px]">
+              <span className="hidden md:inline-block text-[11px] font-mono text-zinc-400 truncate max-w-[130px]">
                 {currentImage.file.name}
               </span>
-              <span className="hidden sm:inline-block text-[10px] font-mono text-zinc-400">
-                ({enhancedDimensions ? `${enhancedDimensions.width}×${enhancedDimensions.height}` : `${currentImage.width}×${currentImage.height}`})
+              <span className="hidden sm:inline-block text-[10px] font-mono px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500">
+                {enhancedDimensions ? `${enhancedDimensions.width}×${enhancedDimensions.height}` : `${currentImage.width}×${currentImage.height}`}
               </span>
             </div>
 
-            <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
-              {/* AI Model switcher */}
-              <div className="flex items-center rounded-lg border border-zinc-200 dark:border-zinc-800 p-0.5 bg-zinc-100/60 dark:bg-zinc-900">
-                <button
-                  type="button"
-                  onClick={() => setNeuralModelKey('gfpgan-v14')}
-                  className={`px-2 py-0.5 rounded text-[11px] font-semibold cursor-pointer transition flex items-center gap-1 ${
-                    neuralModelKey === 'gfpgan-v14'
-                      ? 'bg-rose-500 text-white shadow-xs'
-                      : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'
-                  }`}
-                  title="GFPGAN v1.4: Photorealistic clean face prior"
-                >
-                  <Sparkles className="w-2.5 h-2.5" />
-                  <span>GFPGAN</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setNeuralModelKey('codeformer')}
-                  className={`px-2 py-0.5 rounded text-[11px] font-semibold cursor-pointer transition flex items-center gap-1 ${
-                    neuralModelKey === 'codeformer'
-                      ? 'bg-rose-500 text-white shadow-xs'
-                      : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'
-                  }`}
-                  title="CodeFormer: Discrete codebook transformer for heavy blur"
-                >
-                  <Wand2 className="w-2.5 h-2.5" />
-                  <span>CodeFormer</span>
-                </button>
-              </div>
+            <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
+              {/* Samsung Vivid Color Engine Toggle Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  const nextVivid = !settings.samsungVivid;
+                  updateSetting('samsungVivid', nextVivid);
+                  onNotify(
+                    nextVivid ? '⚡ Samsung Vivid AI Enabled' : 'Samsung Vivid Disabled',
+                    nextVivid ? 'ProVisual vibrant color engine & dynamic contrast active' : 'Natural raw color profile',
+                    'info'
+                  );
+                }}
+                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold cursor-pointer transition select-none ${
+                  settings.samsungVivid
+                    ? 'bg-gradient-to-r from-amber-500 to-rose-500 text-white shadow-xs'
+                    : 'bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300'
+                }`}
+                title="Toggle Samsung ProVisual Vivid Color & Dynamic Contrast"
+              >
+                <Zap className="w-3.5 h-3.5" />
+                <span>Samsung Vivid {settings.samsungVivid ? 'ON' : 'OFF'}</span>
+              </button>
 
               {/* Hold for Original Button */}
               <button
@@ -700,38 +696,40 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
                 onMouseUp={() => setIsHoldingOriginal(false)}
                 onTouchStart={() => setIsHoldingOriginal(true)}
                 onTouchEnd={() => setIsHoldingOriginal(false)}
-                className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium cursor-pointer transition select-none ${
+                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium cursor-pointer transition select-none ${
                   isHoldingOriginal
                     ? 'bg-rose-500 text-white'
                     : 'bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300'
                 }`}
                 title="Press and hold to see raw image"
               >
-                <Eye className="w-3 h-3" />
-                <span className="hidden sm:inline">Hold</span>
+                <Eye className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Hold Raw</span>
               </button>
 
               {/* View Mode Toggle */}
-              <div className="flex items-center rounded-lg border border-zinc-200 dark:border-zinc-800 p-0.5">
+              <div className="flex items-center rounded-lg border border-zinc-200 dark:border-zinc-800 p-0.5 bg-zinc-50 dark:bg-zinc-900">
                 <button
                   type="button"
                   onClick={() => setViewMode('split')}
-                  className={`px-1.5 py-0.5 rounded text-xs font-medium cursor-pointer transition ${
+                  className={`px-2 py-0.5 rounded text-xs font-medium cursor-pointer transition flex items-center gap-1 ${
                     viewMode === 'split' ? 'bg-rose-500 text-white' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'
                   }`}
-                  title="Split Comparison"
+                  title="Split Comparison Slider"
                 >
                   <Columns className="w-3 h-3" />
+                  <span className="text-[11px]">Compare</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setViewMode('enhanced-only')}
-                  className={`px-1.5 py-0.5 rounded text-xs font-medium cursor-pointer transition ${
+                  className={`px-2 py-0.5 rounded text-xs font-medium cursor-pointer transition flex items-center gap-1 ${
                     viewMode === 'enhanced-only' ? 'bg-rose-500 text-white' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'
                   }`}
                   title="Enhanced Only"
                 >
                   <Sparkles className="w-3 h-3" />
+                  <span className="text-[11px]">Enhanced</span>
                 </button>
               </div>
 
@@ -740,7 +738,7 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
                 type="button"
                 onClick={handleReset}
                 className="p-1 rounded-lg text-zinc-500 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer"
-                title="Reset to Smart Auto Defaults"
+                title="Reset to Samsung AI Defaults"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
               </button>
@@ -749,122 +747,266 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
               <button
                 type="button"
                 onClick={resetImage}
-                className="inline-flex items-center gap-1 py-1 px-2 rounded-lg text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:text-rose-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                className="inline-flex items-center gap-1 py-1 px-2.5 rounded-lg text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:text-rose-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
               >
-                <Upload className="w-3 h-3" />
-                <span className="hidden sm:inline">Change</span>
+                <Upload className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">New Photo</span>
               </button>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 sm:gap-4 items-stretch">
-            {/* Left Column (Canvas & 1-line presets): lg:col-span-7 xl:col-span-8 - Equal Height */}
-            <div className="lg:col-span-7 xl:col-span-8 flex flex-col h-full space-y-2">
-              {/* Viewport Clamped Canvas */}
-              <div
-                className="relative w-full h-[360px] sm:h-[410px] lg:h-[460px] xl:h-[490px] flex-1 min-h-[340px] sm:min-h-[390px] lg:min-h-[440px] xl:min-h-[470px] rounded-xl overflow-hidden border border-zinc-200/80 dark:border-zinc-800/80 bg-zinc-100/70 dark:bg-zinc-950/70 flex items-center justify-center transition-colors shadow-xs"
-                style={{
-                  backgroundImage: isDark
-                    ? 'radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px)'
-                    : 'radial-gradient(circle, rgba(0,0,0,0.07) 1px, transparent 1px)',
-                  backgroundSize: '16px 16px',
-                }}
+          {/* Full-Width Expansive Canvas Hero (Dominant Viewport matching Screenshot) */}
+          <div
+            className="relative w-full h-[440px] sm:h-[500px] lg:h-[560px] xl:h-[600px] rounded-2xl overflow-hidden border border-zinc-200/80 dark:border-zinc-800/80 bg-zinc-100/70 dark:bg-zinc-950/70 flex items-center justify-center transition-colors shadow-sm select-none"
+            style={{
+              backgroundImage: isDark
+                ? 'radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px)'
+                : 'radial-gradient(circle, rgba(0,0,0,0.07) 1px, transparent 1px)',
+              backgroundSize: '16px 16px',
+            }}
+          >
+            {/* Vertical Zoom Controls (Floating on Left edge like Reference Image) */}
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 z-30 flex flex-col items-center bg-black/60 dark:bg-black/75 backdrop-blur-md border border-white/20 rounded-full py-2.5 px-1 shadow-lg select-none">
+              <button
+                type="button"
+                onClick={() => setZoomLevel((prev) => Math.min(3, +(prev + 0.25).toFixed(2)))}
+                className="w-7 h-7 rounded-full flex items-center justify-center text-white/90 hover:text-white hover:bg-white/20 transition cursor-pointer"
+                title="Zoom In"
               >
-                {isProcessing && (
-                  <HumanLoadingOverlay
-                    title="Loading"
-                    stage={progressStage}
-                    percent={progressPercent}
-                    accentColor="rose"
-                  />
-                )}
+                <ZoomIn className="w-3.5 h-3.5" />
+              </button>
 
-                {isHoldingOriginal && originalSrc ? (
-                  <div className="relative w-full h-full flex items-center justify-center p-2">
-                    <img
-                      src={originalSrc}
-                      alt="Original Raw"
-                      className="max-h-[330px] sm:max-h-[380px] lg:max-h-[420px] xl:max-h-[450px] w-auto max-w-full object-contain rounded-lg shadow-md"
-                    />
-                    <div className="absolute top-2 left-2 px-2 py-0.5 bg-black/70 backdrop-blur-md text-white text-[10px] font-semibold rounded-full border border-white/20">
-                      RAW ORIGINAL
-                    </div>
-                  </div>
-                ) : viewMode === 'split' && originalSrc && previewSrc ? (
-                  <div className="w-full h-full p-1.5 flex items-center justify-center">
-                    <ComparisonSlider
-                      originalSrc={originalSrc}
-                      processedSrc={previewSrc}
-                      originalLabel="Original"
-                      processedLabel={upscaleFactor > 1 ? `Enhanced (${upscaleFactor}x HD)` : 'AI Enhanced'}
-                      maxHeightClass="max-h-[330px] sm:max-h-[380px] lg:max-h-[420px] xl:max-h-[450px]"
-                      className="max-h-[340px] sm:max-h-[390px] lg:max-h-[430px] xl:max-h-[460px] w-full rounded-lg overflow-hidden shadow-md"
-                    />
-                  </div>
-                ) : previewSrc ? (
-                  <div className="relative w-full h-full flex items-center justify-center p-2">
-                    <img
-                      src={previewSrc}
-                      alt="AI Enhanced Portrait"
-                      className="max-h-[330px] sm:max-h-[380px] lg:max-h-[420px] xl:max-h-[450px] w-auto max-w-full object-contain rounded-lg shadow-md"
-                    />
-                    <div className="absolute top-2 left-2 px-2 py-0.5 bg-rose-500 text-white text-[10px] font-semibold rounded-full shadow-xs">
-                      {upscaleFactor > 1 ? `ENHANCED (${upscaleFactor}x HD)` : 'AI ENHANCED'}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center gap-2 text-zinc-400">
-                    <Loader2 className="w-6 h-6 animate-spin text-rose-500" />
-                    <span className="text-xs">Initializing Face Engine...</span>
-                  </div>
-                )}
+              <div className="py-8 relative flex items-center justify-center w-6">
+                <input
+                  type="range"
+                  min={1}
+                  max={3}
+                  step={0.1}
+                  value={zoomLevel}
+                  onChange={(e) => setZoomLevel(Number(e.target.value))}
+                  className="absolute w-16 h-1 accent-rose-500 cursor-pointer -rotate-90 origin-center"
+                  title={`Zoom: ${Math.round(zoomLevel * 100)}%`}
+                />
               </div>
 
-              {/* Compact Under-Canvas Strip: Presets & Upscale in single compact row */}
-              <div className="flex items-center justify-between flex-wrap gap-1.5 p-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
-                {/* 1-Click AI Presets Pills */}
-                <div className="flex items-center gap-1 overflow-x-auto py-0.5 scrollbar-none">
-                  {FACE_ENHANCER_PRESETS.map((p) => {
-                    const isActive = activePresetId === p.id;
-                    const shortName =
-                      p.id === 'unblur-focus' ? 'Unblur' :
-                      p.id === 'smart-auto' ? 'Smart Auto' :
-                      p.id === 'studio-glamour' ? 'Glamour' :
-                      p.id === 'passport-id' ? 'Passport' :
-                      p.id === 'golden-hour' ? 'Glow' :
-                      p.id === 'dramatic-bw' ? 'B&W' : p.name;
-                    return (
-                      <button
-                        key={p.id}
-                        type="button"
-                        onClick={() => applyPreset(p.id)}
-                        className={`px-2 py-0.5 rounded text-[11px] font-medium transition cursor-pointer shrink-0 ${
-                          isActive
-                            ? 'bg-rose-500 text-white font-semibold shadow-xs'
-                            : 'bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-zinc-700 dark:text-zinc-300'
-                        }`}
-                      >
-                        {shortName}
-                      </button>
-                    );
-                  })}
-                </div>
+              <button
+                type="button"
+                onClick={() => setZoomLevel((prev) => Math.max(1, +(prev - 0.25).toFixed(2)))}
+                className="w-7 h-7 rounded-full flex items-center justify-center text-white/90 hover:text-white hover:bg-white/20 transition cursor-pointer"
+                title="Zoom Out"
+              >
+                <ZoomOut className="w-3.5 h-3.5" />
+              </button>
 
-                {/* Upscale Pills */}
-                <div className="flex items-center gap-1 shrink-0">
-                  <span className="text-[10px] font-mono text-zinc-400 hidden sm:inline">Scale:</span>
-                  {([1, 2, 4] as const).map((factor) => {
-                    const label = factor === 1 ? '1x' : factor === 2 ? '2x HD' : '4x UHD';
-                    const isSelected = upscaleFactor === factor;
+              {zoomLevel > 1 && (
+                <button
+                  type="button"
+                  onClick={() => setZoomLevel(1)}
+                  className="mt-1 px-1.5 py-0.5 text-[9px] font-mono font-bold text-rose-400 hover:text-rose-300 transition cursor-pointer rounded-full bg-rose-500/20"
+                  title="Reset 1x Zoom"
+                >
+                  1x
+                </button>
+              )}
+            </div>
+
+            {isProcessing && (
+              <HumanLoadingOverlay
+                title="Loading"
+                stage={progressStage}
+                percent={progressPercent}
+                accentColor="rose"
+              />
+            )}
+
+            <div
+              className="w-full h-full flex items-center justify-center transition-transform duration-100 ease-out"
+              style={{
+                transform: `scale(${zoomLevel})`,
+                transformOrigin: 'center center',
+              }}
+            >
+              {isHoldingOriginal && originalSrc ? (
+                <div className="relative w-full h-full flex items-center justify-center p-2">
+                  <img
+                    src={originalSrc}
+                    alt="Original Raw"
+                    className="max-h-[420px] sm:max-h-[480px] lg:max-h-[530px] xl:max-h-[570px] w-auto max-w-full object-contain rounded-xl shadow-md"
+                  />
+                  <div className="absolute top-2 left-2 px-2.5 py-0.5 bg-black/70 backdrop-blur-md text-white text-[10px] font-bold rounded-full border border-white/20">
+                    RAW ORIGINAL
+                  </div>
+                </div>
+              ) : viewMode === 'split' && originalSrc && previewSrc ? (
+                <div className="w-full h-full p-2 flex items-center justify-center">
+                  <ComparisonSlider
+                    originalSrc={originalSrc}
+                    processedSrc={previewSrc}
+                    originalLabel="Original (Raw)"
+                    processedLabel={
+                      settings.samsungVivid
+                        ? `Samsung AI (${upscaleFactor}x HD)`
+                        : `Enhanced (${upscaleFactor}x HD)`
+                    }
+                    maxHeightClass="max-h-[420px] sm:max-h-[480px] lg:max-h-[530px] xl:max-h-[570px]"
+                    className="max-h-[430px] sm:max-h-[490px] lg:max-h-[540px] xl:max-h-[580px] w-full rounded-xl overflow-hidden shadow-md"
+                  />
+                </div>
+              ) : previewSrc ? (
+                <div className="relative w-full h-full flex items-center justify-center p-2">
+                  <img
+                    src={previewSrc}
+                    alt="AI Enhanced Portrait"
+                    className="max-h-[420px] sm:max-h-[480px] lg:max-h-[530px] xl:max-h-[570px] w-auto max-w-full object-contain rounded-xl shadow-md"
+                  />
+                  <div className="absolute top-2 left-2 px-2.5 py-0.5 bg-gradient-to-r from-amber-500 to-rose-500 text-white text-[10px] font-bold rounded-full shadow-xs">
+                    {settings.samsungVivid
+                      ? `SAMSUNG AI (${upscaleFactor}x HD)`
+                      : `ENHANCED (${upscaleFactor}x HD)`}
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center gap-2 text-zinc-400">
+                  <Loader2 className="w-6 h-6 animate-spin text-rose-500" />
+                  <span className="text-xs">Initializing AI Engine...</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Streamlined 1-Click AI Control Deck */}
+          <div className="space-y-2.5">
+            {/* Quick Strip: 1-Click AI Presets + Scale Pills */}
+            <div className="flex items-center justify-between flex-wrap gap-2 p-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-xs">
+              {/* Presets */}
+              <div className="flex items-center gap-1.5 overflow-x-auto py-0.5 scrollbar-none">
+                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-400 mr-1 hidden sm:inline">
+                  AI Presets:
+                </span>
+                {FACE_ENHANCER_PRESETS.map((p) => {
+                  const isActive = activePresetId === p.id;
+                  const shortName =
+                    p.id === 'samsung-ai' ? '⚡ Samsung ProVisual' :
+                    p.id === 'unblur-focus' ? 'AI Unblur Focus' :
+                    p.id === 'smart-auto' ? 'Smart Auto' :
+                    p.id === 'studio-glamour' ? 'Studio Glamour' :
+                    p.id === 'passport-id' ? 'Passport ID' :
+                    p.id === 'golden-hour' ? 'Warm Glow' :
+                    p.id === 'dramatic-bw' ? 'B&W Portrait' : p.name;
+                  return (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => applyPreset(p.id)}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-medium transition cursor-pointer shrink-0 ${
+                        isActive
+                          ? 'bg-rose-500 text-white font-semibold shadow-xs'
+                          : 'bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-zinc-700 dark:text-zinc-300'
+                      }`}
+                    >
+                      {shortName}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Super-Resolution Scale (1x, 2x HD, 4x UHD) */}
+              <div className="flex items-center gap-1.5 shrink-0">
+                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-400 hidden md:inline">
+                  Resolution:
+                </span>
+                {([1, 2, 4] as const).map((factor) => {
+                  const label = factor === 1 ? '1x Standard' : factor === 2 ? '2x HD' : '4x Ultra HD';
+                  const isSelected = upscaleFactor === factor;
+                  return (
+                    <button
+                      key={factor}
+                      type="button"
+                      onClick={() => handleUpscaleChange(factor)}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                        isSelected
+                          ? 'bg-blue-600 text-white shadow-xs'
+                          : 'bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-zinc-600 dark:text-zinc-400'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Neural AI Face Restoration + Export & Download Action Bar */}
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-2.5 items-center p-3 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-xs">
+              {/* Studio Neural Face Restoration CTA (col-span-5) */}
+              <div className="md:col-span-5 flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={runNeuralRestoration}
+                  disabled={isProcessing}
+                  className="flex-1 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-semibold bg-gradient-to-r from-purple-600 to-rose-600 hover:from-purple-700 hover:to-rose-700 active:scale-[0.99] text-white flex items-center justify-center gap-2 transition shadow-xs cursor-pointer disabled:opacity-50"
+                >
+                  {isProcessing ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Running Neural Engine...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Wand2 className="w-4 h-4" />
+                      <span>{hasNeuralRestoration ? 'Re-run Studio Neural Face' : 'Deep Neural Face Restoration'}</span>
+                    </>
+                  )}
+                </button>
+
+                {/* Model Selector */}
+                <div className="flex items-center rounded-lg border border-zinc-200 dark:border-zinc-800 p-0.5 bg-zinc-100 dark:bg-zinc-800">
+                  <button
+                    type="button"
+                    onClick={() => setNeuralModelKey('gfpgan-v14')}
+                    className={`px-2 py-1 rounded text-[11px] font-semibold cursor-pointer transition ${
+                      neuralModelKey === 'gfpgan-v14'
+                        ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white shadow-xs'
+                        : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'
+                    }`}
+                    title="GFPGAN v1.4: Natural face restoration"
+                  >
+                    GFPGAN
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setNeuralModelKey('codeformer')}
+                    className={`px-2 py-1 rounded text-[11px] font-semibold cursor-pointer transition ${
+                      neuralModelKey === 'codeformer'
+                        ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white shadow-xs'
+                        : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'
+                    }`}
+                    title="CodeFormer: Heavy blur reconstruction"
+                  >
+                    CodeFormer
+                  </button>
+                </div>
+              </div>
+
+              {/* Export format + Primary Download Button (col-span-7) */}
+              <div className="md:col-span-7 flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                {/* Format Pills */}
+                <div className="flex items-center gap-1 rounded-xl border border-zinc-200 dark:border-zinc-800 p-1 bg-zinc-50 dark:bg-zinc-950">
+                  {(['image/jpeg', 'image/png', 'image/webp'] as OutputFormat[]).map((fmt) => {
+                    const label = fmt === 'image/jpeg' ? 'JPG' : fmt === 'image/png' ? 'PNG' : 'WebP';
+                    const isSelected = exportFormat === fmt;
                     return (
                       <button
-                        key={factor}
+                        key={fmt}
                         type="button"
-                        onClick={() => handleUpscaleChange(factor)}
-                        className={`px-2 py-0.5 rounded text-[11px] font-semibold transition cursor-pointer ${
+                        onClick={() => {
+                          setExportFormat(fmt);
+                          reencodeExportBlob(fmt, exportQuality);
+                        }}
+                        className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
                           isSelected
-                            ? 'bg-blue-600 text-white shadow-xs'
-                            : 'bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-zinc-600 dark:text-zinc-400'
+                            ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-xs'
+                            : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
                         }`}
                       >
                         {label}
@@ -872,220 +1014,194 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
                     );
                   })}
                 </div>
-              </div>
-            </div>
 
-            {/* Right Column: Controls & Export (lg:col-span-5 xl:col-span-4) - Equal Height */}
-            <div className="lg:col-span-5 xl:col-span-4 flex flex-col gap-3 h-full">
-              {/* Retouch Controls Card */}
-              <div
-                className={`p-3 sm:p-3.5 rounded-2xl border flex flex-col justify-between flex-1 space-y-3 transition-colors ${
-                  isDark ? 'bg-zinc-900/90 border-zinc-800 shadow-xs' : 'bg-white border-zinc-200 shadow-xs'
-                }`}
-              >
-                <div className="space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 flex items-center gap-1">
-                      <Sliders className="w-3 h-3 text-emerald-500" />
-                      <span>Facial Retouch</span>
-                    </span>
-                    <div className="flex items-center gap-1.5">
-                      {hasNeuralRestoration && (
-                        <button
-                          type="button"
-                          onClick={handleRevertToOriginal}
-                          className="text-[10px] text-zinc-400 hover:text-rose-500 cursor-pointer"
-                          title="Revert neural face"
-                        >
-                          Revert AI
-                        </button>
-                      )}
-                      <button
-                        type="button"
-                        onClick={handleResetSettings}
-                        className="text-[10px] text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 cursor-pointer flex items-center gap-0.5"
-                      >
-                        <RotateCcw className="w-2.5 h-2.5" />
-                        <span>Reset</span>
-                      </button>
-                    </div>
-                  </div>
-
-                {/* Compact Sliders Grid */}
-                <div className="grid grid-cols-2 gap-x-2 gap-y-1">
-                  <div>
-                    <div className="flex justify-between text-[10px] font-medium text-zinc-600 dark:text-zinc-400 mb-0.5">
-                      <span>Skin Smooth</span>
-                      <span className="font-mono text-zinc-400">{settings.smooth}%</span>
-                    </div>
-                    <input
-                      type="range"
-                      min={0}
-                      max={100}
-                      value={settings.smooth}
-                      onChange={(e) => updateSetting('smooth', Number(e.target.value))}
-                      className="w-full h-1 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-rose-500"
-                    />
-                  </div>
-                  <div>
-                    <div className="flex justify-between text-[10px] font-medium text-zinc-600 dark:text-zinc-400 mb-0.5">
-                      <span>AI Clarity</span>
-                      <span className="font-mono text-zinc-400">{settings.clarity}%</span>
-                    </div>
-                    <input
-                      type="range"
-                      min={0}
-                      max={100}
-                      value={settings.clarity}
-                      onChange={(e) => updateSetting('clarity', Number(e.target.value))}
-                      className="w-full h-1 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-rose-500"
-                    />
-                  </div>
-                  <div>
-                    <div className="flex justify-between text-[10px] font-medium text-zinc-600 dark:text-zinc-400 mb-0.5">
-                      <span>AI Deblur</span>
-                      <span className="font-mono text-zinc-400">{settings.deblur}%</span>
-                    </div>
-                    <input
-                      type="range"
-                      min={0}
-                      max={100}
-                      value={settings.deblur}
-                      onChange={(e) => updateSetting('deblur', Number(e.target.value))}
-                      className="w-full h-1 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-rose-500"
-                    />
-                  </div>
-                  <div>
-                    <div className="flex justify-between text-[10px] font-medium text-zinc-600 dark:text-zinc-400 mb-0.5">
-                      <span>Eye &amp; Smile</span>
-                      <span className="font-mono text-zinc-400">{settings.eyeTeethClarity}%</span>
-                    </div>
-                    <input
-                      type="range"
-                      min={0}
-                      max={100}
-                      value={settings.eyeTeethClarity}
-                      onChange={(e) => updateSetting('eyeTeethClarity', Number(e.target.value))}
-                      className="w-full h-1 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-rose-500"
-                    />
-                  </div>
-                </div>
-
-                {/* AI Generative Restore Button */}
+                {/* Primary Download Button */}
                 <button
                   type="button"
-                  onClick={runNeuralRestoration}
-                  disabled={isProcessing}
-                  className="w-full py-1.5 px-2.5 rounded-lg text-xs font-semibold bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 active:scale-[0.99] text-white flex items-center justify-center gap-1.5 transition shadow-xs cursor-pointer disabled:opacity-50"
+                  onClick={handleDownload}
+                  disabled={!processedBlob || isProcessing}
+                  className="flex-1 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold bg-red-600 hover:bg-red-700 active:scale-[0.99] text-white flex items-center justify-center gap-2 transition-all shadow-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isProcessing ? (
-                    <>
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      <span>Processing AI Model...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="w-3.5 h-3.5" />
-                      <span>{hasNeuralRestoration ? 'Re-run Neural AI Face' : 'Restore Face with Studio AI'}</span>
-                    </>
-                  )}
-                </button>
-              </div>
-
-              {/* Export & Download Card */}
-              <div className="p-2 sm:p-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-                    Export Settings
-                  </span>
+                  <Download className="w-4 h-4 stroke-[2.5]" />
+                  <span>Download HD ({upscaleFactor}x)</span>
                   {processedBlob && (
-                    <span className="text-[10px] font-mono font-semibold text-emerald-500">
-                      {formatBytes(processedBlob.size)}
+                    <span className="text-[11px] font-mono opacity-80 font-normal">
+                      · {formatBytes(processedBlob.size)}
                     </span>
                   )}
-                </div>
+                </button>
 
-                {/* Format Pills + Quality slider in one line */}
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-1">
-                    {(['image/jpeg', 'image/png', 'image/webp'] as OutputFormat[]).map((fmt) => {
-                      const label = fmt === 'image/jpeg' ? 'JPG' : fmt === 'image/png' ? 'PNG' : 'WebP';
-                      const isSelected = exportFormat === fmt;
-                      return (
-                        <button
-                          key={fmt}
-                          type="button"
-                          onClick={() => {
-                            setExportFormat(fmt);
-                            reencodeExportBlob(fmt, exportQuality);
-                          }}
-                          className={`px-2 py-0.5 rounded text-[11px] font-semibold transition cursor-pointer ${
-                            isSelected
-                              ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-xs'
-                              : 'bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-400'
-                          }`}
-                        >
-                          {label}
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  {exportFormat !== 'image/png' && (
-                    <div className="flex-1 flex items-center gap-1.5">
-                      <span className="text-[9px] font-mono text-zinc-400 shrink-0">Q: {exportQuality}%</span>
-                      <input
-                        type="range"
-                        min={70}
-                        max={100}
-                        value={exportQuality}
-                        onChange={(e) => {
-                          const val = Number(e.target.value);
-                          setExportQuality(val);
-                          reencodeExportBlob(exportFormat, val);
-                        }}
-                        className="w-full h-1 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-zinc-900 dark:accent-zinc-100"
-                      />
-                    </div>
-                  )}
-                </div>
-                </div>
-
-                {/* Primary Download Button (Red Brand CTA) */}
-                <div className="pt-2 shrink-0">
-                  <button
-                    type="button"
-                    onClick={handleDownload}
-                    disabled={!processedBlob || isProcessing}
-                    className="w-full py-2.5 px-4 rounded-xl text-xs sm:text-sm font-semibold bg-red-600 hover:bg-red-700 active:scale-[0.99] text-white flex items-center justify-center gap-2 transition-all shadow-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <Download className="w-4 h-4 stroke-[2.5]" />
-                    <span>Download Enhanced Portrait</span>
-                  </button>
-                </div>
-
-                {/* Secondary Copy / Share */}
-                <div className="grid grid-cols-2 gap-1.5 pt-0.5">
+                {/* Copy / Share Quick Icons */}
+                <div className="flex items-center gap-1">
                   <button
                     type="button"
                     onClick={handleCopy}
                     disabled={!processedBlob || isProcessing}
-                    className="py-1 px-2 rounded-lg text-[11px] font-medium flex items-center justify-center gap-1 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-zinc-700 dark:text-zinc-300 transition cursor-pointer disabled:opacity-40"
+                    className="p-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 transition cursor-pointer disabled:opacity-40"
+                    title="Copy to Clipboard"
                   >
-                    <Copy className="w-3 h-3 text-zinc-400" />
-                    <span>Copy</span>
+                    <Copy className="w-4 h-4 text-zinc-500 dark:text-zinc-400" />
                   </button>
                   <button
                     type="button"
                     onClick={handleShare}
                     disabled={!processedBlob || isProcessing}
-                    className="py-1 px-2 rounded-lg text-[11px] font-medium flex items-center justify-center gap-1 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-zinc-700 dark:text-zinc-300 transition cursor-pointer disabled:opacity-40"
+                    className="p-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 transition cursor-pointer disabled:opacity-40"
+                    title="Share"
                   >
-                    <Share2 className="w-3 h-3 text-zinc-400" />
-                    <span>Share</span>
+                    <Share2 className="w-4 h-4 text-zinc-500 dark:text-zinc-400" />
                   </button>
                 </div>
               </div>
+            </div>
+
+            {/* Collapsible Advanced Manual Sliders Toggle */}
+            <div className="border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden bg-white dark:bg-zinc-900 transition-colors">
+              <button
+                type="button"
+                onClick={() => setShowAdvancedSliders(!showAdvancedSliders)}
+                className="w-full px-3 py-2 flex items-center justify-between text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition cursor-pointer"
+              >
+                <span className="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-wider font-semibold">
+                  <Sliders className="w-3.5 h-3.5 text-zinc-500" />
+                  <span>Advanced Manual Sliders</span>
+                </span>
+                <span className="text-[11px] text-zinc-400 flex items-center gap-1">
+                  {showAdvancedSliders ? 'Hide Sliders' : 'Fine-Tune Sliders'}
+                  <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showAdvancedSliders ? 'rotate-180' : ''}`} />
+                </span>
+              </button>
+
+              {showAdvancedSliders && (
+                <div className="p-3.5 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/50 space-y-3">
+                  <div className="flex items-center justify-between text-xs text-zinc-500">
+                    <span>Fine-tune deblur, clarity, skin smooth &amp; exposure</span>
+                    <button
+                      type="button"
+                      onClick={handleResetSettings}
+                      className="text-[11px] text-zinc-500 hover:text-rose-500 cursor-pointer flex items-center gap-1"
+                    >
+                      <RotateCcw className="w-3 h-3" />
+                      <span>Reset Sliders</span>
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                    <div>
+                      <div className="flex justify-between text-[11px] font-medium text-zinc-600 dark:text-zinc-400 mb-1">
+                        <span>Deblur</span>
+                        <span className="font-mono text-zinc-400">{settings.deblur}%</span>
+                      </div>
+                      <input
+                        type="range"
+                        min={0}
+                        max={100}
+                        value={settings.deblur}
+                        onChange={(e) => updateSetting('deblur', Number(e.target.value))}
+                        className="w-full h-1.5 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-rose-500"
+                      />
+                    </div>
+                    <div>
+                      <div className="flex justify-between text-[11px] font-medium text-zinc-600 dark:text-zinc-400 mb-1">
+                        <span>AI Clarity</span>
+                        <span className="font-mono text-zinc-400">{settings.clarity}%</span>
+                      </div>
+                      <input
+                        type="range"
+                        min={0}
+                        max={100}
+                        value={settings.clarity}
+                        onChange={(e) => updateSetting('clarity', Number(e.target.value))}
+                        className="w-full h-1.5 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-rose-500"
+                      />
+                    </div>
+                    <div>
+                      <div className="flex justify-between text-[11px] font-medium text-zinc-600 dark:text-zinc-400 mb-1">
+                        <span>Skin Smooth</span>
+                        <span className="font-mono text-zinc-400">{settings.smooth}%</span>
+                      </div>
+                      <input
+                        type="range"
+                        min={0}
+                        max={100}
+                        value={settings.smooth}
+                        onChange={(e) => updateSetting('smooth', Number(e.target.value))}
+                        className="w-full h-1.5 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-rose-500"
+                      />
+                    </div>
+                    <div>
+                      <div className="flex justify-between text-[11px] font-medium text-zinc-600 dark:text-zinc-400 mb-1">
+                        <span>Eye &amp; Teeth</span>
+                        <span className="font-mono text-zinc-400">{settings.eyeTeethClarity}%</span>
+                      </div>
+                      <input
+                        type="range"
+                        min={0}
+                        max={100}
+                        value={settings.eyeTeethClarity}
+                        onChange={(e) => updateSetting('eyeTeethClarity', Number(e.target.value))}
+                        className="w-full h-1.5 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-rose-500"
+                      />
+                    </div>
+                    <div>
+                      <div className="flex justify-between text-[11px] font-medium text-zinc-600 dark:text-zinc-400 mb-1">
+                        <span>Sharpness</span>
+                        <span className="font-mono text-zinc-400">{settings.sharpness}%</span>
+                      </div>
+                      <input
+                        type="range"
+                        min={0}
+                        max={100}
+                        value={settings.sharpness}
+                        onChange={(e) => updateSetting('sharpness', Number(e.target.value))}
+                        className="w-full h-1.5 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-rose-500"
+                      />
+                    </div>
+                    <div>
+                      <div className="flex justify-between text-[11px] font-medium text-zinc-600 dark:text-zinc-400 mb-1">
+                        <span>Studio Glow</span>
+                        <span className="font-mono text-zinc-400">{settings.glow}%</span>
+                      </div>
+                      <input
+                        type="range"
+                        min={0}
+                        max={100}
+                        value={settings.glow}
+                        onChange={(e) => updateSetting('glow', Number(e.target.value))}
+                        className="w-full h-1.5 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-rose-500"
+                      />
+                    </div>
+                    <div>
+                      <div className="flex justify-between text-[11px] font-medium text-zinc-600 dark:text-zinc-400 mb-1">
+                        <span>Warmth</span>
+                        <span className="font-mono text-zinc-400">{settings.warmth}</span>
+                      </div>
+                      <input
+                        type="range"
+                        min={-50}
+                        max={50}
+                        value={settings.warmth}
+                        onChange={(e) => updateSetting('warmth', Number(e.target.value))}
+                        className="w-full h-1.5 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-rose-500"
+                      />
+                    </div>
+                    <div>
+                      <div className="flex justify-between text-[11px] font-medium text-zinc-600 dark:text-zinc-400 mb-1">
+                        <span>Contrast</span>
+                        <span className="font-mono text-zinc-400">{settings.contrast}</span>
+                      </div>
+                      <input
+                        type="range"
+                        min={-50}
+                        max={50}
+                        value={settings.contrast}
+                        onChange={(e) => updateSetting('contrast', Number(e.target.value))}
+                        className="w-full h-1.5 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-rose-500"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
