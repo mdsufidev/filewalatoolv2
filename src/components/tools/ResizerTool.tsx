@@ -257,11 +257,13 @@ export const ResizerTool: React.FC<ResizerToolProps> = ({ onNotify, initialFile 
         setCustomFilename(file.name.replace(/\.[^/.]+$/, ''));
         setResizedResult(null);
 
-        onNotify(
-          'Image Loaded',
-          `Original: ${originalWidth} × ${originalHeight} px (${formatBytes(file.size)})`,
-          'info'
-        );
+        setTimeout(() => {
+          onNotify(
+            'Image Loaded',
+            `Original: ${originalWidth} × ${originalHeight} px (${formatBytes(file.size)})`,
+            'info'
+          );
+        }, 300);
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : 'Failed to decode image file.';
         setErrorMessage(msg);
@@ -591,9 +593,12 @@ export const ResizerTool: React.FC<ResizerToolProps> = ({ onNotify, initialFile 
   useEffect(() => {
     if (!sourceImage) return;
 
+    // Allow CSS workspace entry animation (duration-200) to settle smoothly before canvas render
     const timer = setTimeout(() => {
-      executeResize(true);
-    }, 220);
+      requestAnimationFrame(() => {
+        executeResize(true);
+      });
+    }, 240);
 
     return () => clearTimeout(timer);
   }, [width, height, lockRatio, fitMode, outputFormat, quality, sourceImage, executeResize]);

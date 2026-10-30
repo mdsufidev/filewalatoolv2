@@ -277,7 +277,10 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
 
       setUploadingFileMeta(null);
       setIsProcessing(false);
-      onNotify?.('Image Loaded', `${file.name} (${formatFileSize(file.size)}) ready to compress.`, 'info');
+      // Defer toast so root App re-render does not collide with workspace CSS entry animation
+      setTimeout(() => {
+        onNotify?.('Image Loaded', `${file.name} (${formatFileSize(file.size)}) ready to compress.`, 'info');
+      }, 300);
     } catch (err: any) {
       setUploadingFileMeta(null);
       setIsProcessing(false);
@@ -579,11 +582,13 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
   useEffect(() => {
     if (!sourceImage || !imageElement) return;
 
-    // Fast 40ms initial compression on fresh image load, 400ms debounce for slider adjustments
-    const delay = isInitialCompressRef.current ? 40 : 400;
+    // Allow CSS workspace entry animation (duration-200 = 200ms) to settle smoothly at 60fps before heavy canvas work
+    const delay = isInitialCompressRef.current ? 240 : 400;
     const timer = setTimeout(() => {
       isInitialCompressRef.current = false;
-      executeCompression();
+      requestAnimationFrame(() => {
+        executeCompression();
+      });
     }, delay);
 
     return () => clearTimeout(timer);
@@ -1030,25 +1035,14 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
                 </div>
               )}
 
-              {compressedResult ? (
-                <ComparisonSlider
-                  originalSrc={sourceImage.previewUrl}
-                  processedSrc={compressedResult.url}
-                  originalLabel={`Original`}
-                  processedLabel={`Compressed`}
-                  maxHeightClass="max-h-[250px] sm:max-h-[280px] lg:max-h-[300px]"
-                  className="max-h-[260px] sm:max-h-[290px] lg:max-h-[310px] w-full"
-                />
-              ) : (
-                <div className="relative max-h-full max-w-full flex items-center justify-center overflow-hidden">
-                  <img
-                    src={sourceImage.previewUrl}
-                    alt="Original Preview"
-                    draggable={false}
-                    className="max-h-[250px] sm:max-h-[280px] lg:max-h-[300px] max-w-full object-contain select-none"
-                  />
-                </div>
-              )}
+              <ComparisonSlider
+                originalSrc={sourceImage.previewUrl}
+                processedSrc={compressedResult?.url || sourceImage.previewUrl}
+                originalLabel="Original"
+                processedLabel="Compressed"
+                maxHeightClass="max-h-[250px] sm:max-h-[280px] lg:max-h-[300px]"
+                className="max-h-[260px] sm:max-h-[290px] lg:max-h-[310px] w-full"
+              />
             </div>
 
             {/* Quick Action footer inside left card */}
@@ -1179,18 +1173,25 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
               </div>
             </div>
 
-            {/* Highlight Banner */}
-            {isReduced && compressedResult ? (
-              <div className="px-2.5 py-1.5 rounded-lg bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200/80 dark:border-zinc-700/50 text-[11px] font-medium text-zinc-700 dark:text-zinc-200 flex items-center gap-2">
-                <Sparkles className="w-3.5 h-3.5 text-red-500 shrink-0" />
-                <span>+ You save <strong>{formatFileSize(compressedResult.savedBytes)}</strong> with this setting</span>
-              </div>
-            ) : isIncreased ? (
-              <div className="px-2.5 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-500 flex items-center gap-1.5">
-                <Info className="w-3.5 h-3.5 shrink-0" />
-                <span>Re-encoding produced a larger output. Lower quality or choose WebP.</span>
-              </div>
-            ) : null}
+            {/* Highlight Banner (Reserved min-height to prevent layout shift) */}
+            <div className="min-h-[30px] flex items-center">
+              {isReduced && compressedResult ? (
+                <div className="w-full px-2.5 py-1.5 rounded-lg bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200/80 dark:border-zinc-700/50 text-[11px] font-medium text-zinc-700 dark:text-zinc-200 flex items-center gap-2 animate-in fade-in duration-150">
+                  <Sparkles className="w-3.5 h-3.5 text-red-500 shrink-0" />
+                  <span>+ You save <strong>{formatFileSize(compressedResult.savedBytes)}</strong> with this setting</span>
+                </div>
+              ) : isIncreased ? (
+                <div className="w-full px-2.5 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-500 flex items-center gap-1.5 animate-in fade-in duration-150">
+                  <Info className="w-3.5 h-3.5 shrink-0" />
+                  <span>Re-encoding produced a larger output. Lower quality or choose WebP.</span>
+                </div>
+              ) : (
+                <div className="w-full px-2.5 py-1.5 rounded-lg bg-zinc-50/50 dark:bg-zinc-850/40 border border-transparent text-[11px] text-zinc-400 flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-zinc-300 dark:bg-zinc-600 animate-pulse" />
+                  <span>Computing compression savings...</span>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Card 2: FINE TUNE */}

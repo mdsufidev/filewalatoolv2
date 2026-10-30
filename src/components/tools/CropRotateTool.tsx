@@ -352,9 +352,12 @@ export const CropRotateTool: React.FC<CropRotateToolProps> = ({ onNotify, initia
   useEffect(() => {
     if (!sourceImage) return;
 
+    // Allow CSS workspace entry animation (duration-200) to settle smoothly before canvas render
     const timer = setTimeout(() => {
-      updateCropPreview();
-    }, 120);
+      requestAnimationFrame(() => {
+        updateCropPreview();
+      });
+    }, 240);
 
     return () => clearTimeout(timer);
   }, [cropBox, rotation, flipH, flipV, outputFormat, quality, sourceImage, updateCropPreview]);
@@ -410,7 +413,9 @@ export const CropRotateTool: React.FC<CropRotateToolProps> = ({ onNotify, initia
         setCropBox({ x: 0.05, y: 0.05, w: 0.9, h: 0.9 });
         setLastCroppedBlob(null);
 
-        onNotify('Image Loaded', `${meta.width} × ${meta.height} px (${formatBytes(meta.sizeBytes)})`, 'info');
+        setTimeout(() => {
+          onNotify('Image Loaded', `${meta.width} × ${meta.height} px (${formatBytes(meta.sizeBytes)})`, 'info');
+        }, 300);
       } catch (err: any) {
         const msg = err?.message || 'Failed to decode image file.';
         setErrorMessage(msg);
