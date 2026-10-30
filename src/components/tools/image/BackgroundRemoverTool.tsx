@@ -107,6 +107,10 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
   // Viewport Zoom & Pan State
   const [zoom, setZoom] = useState<number>(1.0);
   const [pan, setPan] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const zoomRef = useRef<number>(1.0);
+  zoomRef.current = zoom;
+  const panRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  panRef.current = pan;
   const [isPanning, setIsPanning] = useState<boolean>(false);
   const panStartRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
@@ -1007,27 +1011,45 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
     return { x, y };
   };
 
-  // Mouse wheel zoom centered at cursor
-  const handleViewportWheel = (e: React.WheelEvent) => {
-    e.preventDefault();
-    if (!viewportRef.current) return;
+  // Native non-passive wheel listener: strictly prevents browser page scrolling while zooming on canvas
+  useEffect(() => {
+    const el = viewportRef.current;
+    if (!el) return;
 
-    const rect = viewportRef.current.getBoundingClientRect();
-    const cx = e.clientX - rect.left;
-    const cy = e.clientY - rect.top;
+    const handleNativeWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
 
-    const zoomFactor = e.deltaY < 0 ? 1.15 : 0.87;
-    const newZoom = Math.min(5.0, Math.max(0.25, +(zoom * zoomFactor).toFixed(2)));
+      const rect = el.getBoundingClientRect();
+      const cx = e.clientX - rect.left;
+      const cy = e.clientY - rect.top;
 
-    const ix = (cx - pan.x) / zoom;
-    const iy = (cy - pan.y) / zoom;
+      const currentZoom = zoomRef.current;
+      const currentPan = panRef.current;
 
-    setPan({
-      x: Math.round(cx - ix * newZoom),
-      y: Math.round(cy - iy * newZoom),
-    });
-    setZoom(newZoom);
-  };
+      const zoomFactor = e.deltaY < 0 ? 1.15 : 0.87;
+      const newZoom = Math.min(5.0, Math.max(0.25, +(currentZoom * zoomFactor).toFixed(2)));
+
+      const ix = (cx - currentPan.x) / currentZoom;
+      const iy = (cy - currentPan.y) / currentZoom;
+
+      const newPan = {
+        x: Math.round(cx - ix * newZoom),
+        y: Math.round(cy - iy * newZoom),
+      };
+
+      zoomRef.current = newZoom;
+      panRef.current = newPan;
+
+      setPan(newPan);
+      setZoom(newZoom);
+    };
+
+    el.addEventListener('wheel', handleNativeWheel, { passive: false });
+    return () => {
+      el.removeEventListener('wheel', handleNativeWheel);
+    };
+  }, [currentImage]);
 
   const handleViewportMouseDown = (e: React.MouseEvent) => {
     // 1. Hand / Pan tool or Spacebar drag
@@ -1697,7 +1719,6 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
                 {/* Interactive Zoom/Pan Canvas Viewport (Viewport-filling height matching Compressor) */}
                 <div
                   ref={viewportRef}
-                  onWheel={handleViewportWheel}
                   onMouseDown={handleViewportMouseDown}
                   onMouseMove={handleViewportMouseMove}
                   onMouseUp={handleViewportMouseUp}
@@ -1706,7 +1727,7 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
                   onTouchMove={handleViewportTouchMove}
                   onTouchEnd={handleViewportTouchEnd}
                   onTouchCancel={handleViewportTouchEnd}
-                  className="relative rounded-xl border border-zinc-200/80 dark:border-zinc-800/80 overflow-hidden h-[380px] sm:h-[430px] lg:h-[480px] xl:h-[510px] flex-1 min-h-[360px] sm:min-h-[400px] lg:min-h-[460px] xl:min-h-[490px] select-none touch-none"
+                  className="relative rounded-xl border border-zinc-200/80 dark:border-zinc-800/80 overflow-hidden h-[380px] sm:h-[430px] lg:h-[480px] xl:h-[510px] flex-1 min-h-[360px] sm:min-h-[400px] lg:min-h-[460px] xl:min-h-[490px] select-none touch-none overscroll-none"
                   style={{
                     cursor: isPanning
                       ? 'grabbing'
