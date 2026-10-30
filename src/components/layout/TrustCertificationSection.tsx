@@ -11,7 +11,7 @@ export const TrustCertificationSection: React.FC = () => {
     {
       id: 'govt-spec',
       icon: Award,
-      gradient: 'from-amber-500 to-orange-600 shadow-orange-500/20',
+      bgColor: 'bg-amber-500',
       tag: 'PAN • UPSC • SSC',
       title: language === 'hi' ? 'सरकारी मानक अनुरूप' : 'Govt Spec Calibrated',
       description:
@@ -22,7 +22,7 @@ export const TrustCertificationSection: React.FC = () => {
     {
       id: 'ssl-encryption',
       icon: Lock,
-      gradient: 'from-blue-600 to-indigo-700 shadow-indigo-500/20',
+      bgColor: 'bg-indigo-500',
       tag: 'TLS 1.3 • HSTS',
       title: language === 'hi' ? '256-बिट SSL सुरक्षित' : '256-Bit SSL Encrypted',
       description:
@@ -33,7 +33,7 @@ export const TrustCertificationSection: React.FC = () => {
     {
       id: 'in-browser',
       icon: Cpu,
-      gradient: 'from-teal-500 to-emerald-600 shadow-teal-500/20',
+      bgColor: 'bg-emerald-500',
       tag: language === 'hi' ? 'शून्य क्लाउड' : 'Zero Cloud Uploads',
       title: language === 'hi' ? '100% इन-ब्राउज़र रैम' : '100% In-Browser RAM',
       description:
@@ -44,7 +44,7 @@ export const TrustCertificationSection: React.FC = () => {
     {
       id: 'dpdp-gdpr',
       icon: ShieldCheck,
-      gradient: 'from-purple-600 to-violet-700 shadow-purple-500/20',
+      bgColor: 'bg-violet-500',
       tag: 'DPDP Act 2023',
       title: language === 'hi' ? 'DPDP अनुपालन' : 'Privacy Law Compliant',
       description:
@@ -75,24 +75,24 @@ export const TrustCertificationSection: React.FC = () => {
         </p>
       </div>
 
-      {/* 2x2 Grid on Mobile, 4 Columns on Desktop */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 text-left">
+      {/* 2x2 Grid on Mobile, 4 Columns on Desktop - Centered & 2D Flat */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 text-center">
         {trustPillars.map((pillar) => {
           const Icon = pillar.icon;
           return (
             <div
               key={pillar.id}
-              className="group flex flex-col items-start p-3 sm:p-4 rounded-2xl bg-zinc-50/70 dark:bg-zinc-900/40 hover:bg-zinc-100/80 dark:hover:bg-zinc-850/60 transition-colors select-none"
+              className="group flex flex-col items-center text-center p-3.5 sm:p-5 rounded-2xl bg-zinc-50/70 dark:bg-zinc-900/40 hover:bg-zinc-100/80 dark:hover:bg-zinc-850/60 transition-colors select-none"
             >
-              {/* App-Tile Gradient Badge with smooth zoom-in on hover */}
+              {/* App-Tile 2D Flat Badge */}
               <div
-                className={`w-10 h-10 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl bg-gradient-to-br ${pillar.gradient} shadow-md text-white flex items-center justify-center shrink-0 mb-3 transition-transform duration-200 ease-out group-hover:scale-105`}
+                className={`w-11 h-11 sm:w-12 sm:h-12 rounded-xl ${pillar.bgColor} text-white flex items-center justify-center shrink-0 mb-3 transition-transform duration-200 ease-out group-hover:scale-105`}
               >
-                <Icon className="w-5 h-5 stroke-[2.2]" />
+                <Icon className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2]" />
               </div>
 
               {/* Minimalist Spec Tag */}
-              <div className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] sm:text-[10px] font-mono font-medium tracking-wide uppercase bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 mb-1.5">
+              <div className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] sm:text-[10px] font-mono font-medium tracking-wide uppercase bg-zinc-100 dark:bg-zinc-850 text-zinc-600 dark:text-zinc-400 mb-1.5">
                 {pillar.tag}
               </div>
 

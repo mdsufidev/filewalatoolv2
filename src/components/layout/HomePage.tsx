@@ -468,12 +468,12 @@ export const HomePage: React.FC<HomePageProps> = ({
           </p>
         </div>
 
-        {/* 3 Architectural Columns */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 text-left mb-10 sm:mb-12">
+        {/* 3 Architectural Columns - Centered & 2D Flat */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-12 text-center mb-10 sm:mb-14">
           {/* Feature 1: 100% Private & Safe */}
-          <div className="group flex flex-col items-start space-y-2.5 select-none">
-            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 shadow-md shadow-emerald-500/20 text-white flex items-center justify-center shrink-0 transition-transform duration-200 ease-out group-hover:scale-105">
-              <ShieldCheck className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.2]" />
+          <div className="group flex flex-col items-center text-center space-y-2 select-none">
+            <div className="w-12 h-12 rounded-xl bg-emerald-500 text-white flex items-center justify-center shrink-0 transition-transform duration-200 ease-out group-hover:scale-110">
+              <ShieldCheck className="w-6 h-6 stroke-[2]" />
             </div>
             <div className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono font-medium tracking-wide uppercase bg-zinc-100 dark:bg-zinc-850 text-zinc-600 dark:text-zinc-400">
               {language === 'hi' ? 'नो क्लाउड' : 'Zero Uploads'}
@@ -481,17 +481,18 @@ export const HomePage: React.FC<HomePageProps> = ({
             <h3 className="text-base sm:text-lg font-semibold text-zinc-950 dark:text-zinc-50 tracking-tight">
               {language === 'hi' ? '100% प्राइवेट व सुरक्षित' : '100% Private & Safe'}
             </h3>
-            <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 font-normal">
+            {/* Hidden semantic text for SEO without cluttering visual UI */}
+            <span className="sr-only">
               {language === 'hi'
                 ? 'लोकल ब्राउज़र RAM में प्रोसेसिंग। फाइल्स कभी सर्वर पर नहीं जातीं।'
                 : 'Processed strictly in local browser memory. Files never leave your device.'}
-            </p>
+            </span>
           </div>
 
           {/* Feature 2: Govt Forms Calibrated */}
-          <div className="group flex flex-col items-start space-y-2.5 select-none">
-            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 shadow-md shadow-orange-500/20 text-white flex items-center justify-center shrink-0 transition-transform duration-200 ease-out group-hover:scale-105">
-              <BadgeCheck className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.2]" />
+          <div className="group flex flex-col items-center text-center space-y-2 select-none">
+            <div className="w-12 h-12 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 transition-transform duration-200 ease-out group-hover:scale-110">
+              <BadgeCheck className="w-6 h-6 stroke-[2]" />
             </div>
             <div className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono font-medium tracking-wide uppercase bg-zinc-100 dark:bg-zinc-850 text-zinc-600 dark:text-zinc-400">
               {language === 'hi' ? 'पोर्टल मानक' : 'Portal Compliant'}
@@ -499,17 +500,18 @@ export const HomePage: React.FC<HomePageProps> = ({
             <h3 className="text-base sm:text-lg font-semibold text-zinc-950 dark:text-zinc-50 tracking-tight">
               {language === 'hi' ? 'सरकारी फॉर्म्स मानक' : 'Govt Portal Ready'}
             </h3>
-            <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 font-normal">
+            {/* Hidden semantic text for SEO without cluttering visual UI */}
+            <span className="sr-only">
               {language === 'hi'
                 ? 'UPSC, SSC, PAN व Passport Seva के सटीक KB, DPI व पिक्सेल मानक।'
                 : 'Built-in official dimensions, DPI & KB limits for UPSC, SSC, PAN & Passport.'}
-            </p>
+            </span>
           </div>
 
           {/* Feature 3: Instant & Free Forever */}
-          <div className="group flex flex-col items-start space-y-2.5 select-none">
-            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-sky-400 to-blue-600 shadow-md shadow-blue-500/20 text-white flex items-center justify-center shrink-0 transition-transform duration-200 ease-out group-hover:scale-105">
-              <Zap className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.2] fill-current" />
+          <div className="group flex flex-col items-center text-center space-y-2 select-none">
+            <div className="w-12 h-12 rounded-xl bg-blue-500 text-white flex items-center justify-center shrink-0 transition-transform duration-200 ease-out group-hover:scale-110">
+              <Zap className="w-6 h-6 stroke-[2]" />
             </div>
             <div className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono font-medium tracking-wide uppercase bg-zinc-100 dark:bg-zinc-850 text-zinc-600 dark:text-zinc-400">
               {language === 'hi' ? 'हमेशा मुफ़्त' : 'Free Forever'}
@@ -517,11 +519,12 @@ export const HomePage: React.FC<HomePageProps> = ({
             <h3 className="text-base sm:text-lg font-semibold text-zinc-950 dark:text-zinc-50 tracking-tight">
               {language === 'hi' ? 'सुपरफास्ट व मुफ़्त' : 'Instant & Free'}
             </h3>
-            <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 font-normal">
+            {/* Hidden semantic text for SEO without cluttering visual UI */}
+            <span className="sr-only">
               {language === 'hi'
                 ? 'बिना कतार, बिना वॉटरमार्क, बिना फीस। असीमित तेज़ प्रोसेसिंग।'
                 : 'No wait queues, no watermarks, no fees. Unlimited fast processing.'}
-            </p>
+            </span>
           </div>
         </div>
 
