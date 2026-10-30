@@ -185,6 +185,7 @@ self.onmessage = async function(e) {
     }
 
     var results = null;
+    var usedWebGPU = hasWebGPU;
     try {
       results = await executeWorkerInference(session, feeds);
     } catch (runErr) {
@@ -192,98 +193,164 @@ self.onmessage = async function(e) {
       sendProgress(75, 'Switching to CPU WebAssembly in background...');
       var wasmSession = await getSessionInWorker(modelKey, modelUrl, false, sendProgress);
       results = await executeWorkerInference(wasmSession, feeds);
+      usedWebGPU = false;
     }
 
     sendProgress(90, 'Unpacking photorealistic facial features...');
 
-    // Intelligently locate the face image tensor among all returned outputs
-    var outputTensor = null;
-    if (results['output']) outputTensor = results['output'];
-    else if (results['y']) outputTensor = results['y'];
-    else if (results['graph_output_cast_0']) outputTensor = results['graph_output_cast_0'];
+    // Function to extract output tensor and decode with automatic layout & stripe correction
+    async function decodeInferenceResults(currResults, currSession, isWebGpuAttempt) {
+      var outputTensor = null;
+      if (currResults['output']) outputTensor = currResults['output'];
+      else if (currResults['y']) outputTensor = currResults['y'];
+      else if (currResults['graph_output_cast_0']) outputTensor = currResults['graph_output_cast_0'];
 
-    if (!outputTensor) {
-      for (var outKey in results) {
-        var cand = results[outKey];
-        if (cand && cand.data && cand.data.length >= patchDim * patchDim * 3) {
-          outputTensor = cand;
-          break;
+      if (!outputTensor) {
+        for (var outKey in currResults) {
+          var cand = currResults[outKey];
+          if (cand && cand.data && cand.data.length >= patchDim * patchDim * 3) {
+            outputTensor = cand;
+            break;
+          }
         }
       }
-    }
 
-    if (!outputTensor) {
-      outputTensor = results[session.outputNames[0]];
-    }
-
-    var outData = outputTensor.data;
-    var dims = outputTensor.dims || [];
-
-    var outPatchW = patchDim;
-    var outPatchH = patchDim;
-    var isNHWC = false;
-
-    if (dims && dims.length === 4) {
-      if (dims[3] === 3) {
-        isNHWC = true;
-        outPatchH = dims[1];
-        outPatchW = dims[2];
-      } else if (dims[1] === 3) {
-        isNHWC = false;
-        outPatchH = dims[2];
-        outPatchW = dims[3];
+      if (!outputTensor) {
+        outputTensor = currResults[currSession.outputNames[0]];
       }
-    }
 
-    // Dynamic output range detection (handles [-1, 1], [0, 1] and [0, 255])
-    var minVal = 999999;
-    var maxVal = -999999;
-    var testCount = Math.min(500, outData.length);
-    for (var m = 0; m < testCount; m++) {
-      var val = outData[m];
-      if (val < minVal) minVal = val;
-      if (val > maxVal) maxVal = val;
-    }
+      var outData = outputTensor.data;
+      var dims = outputTensor.dims || [];
 
-    var isMinusOne = minVal < -0.1;
-    var isZeroOne = !isMinusOne && maxVal <= 1.5;
+      var outPatchW = patchDim;
+      var outPatchH = patchDim;
+      var explicitNHWC = false;
 
-    function toU8(v) {
-      var px;
-      if (isMinusOne) {
-        px = Math.round((v + 1.0) * 127.5);
-      } else if (isZeroOne) {
-        px = Math.round(v * 255.0);
-      } else {
-        px = Math.round(v);
+      if (dims && dims.length === 4) {
+        if (dims[3] === 3) {
+          explicitNHWC = true;
+          outPatchH = dims[1];
+          outPatchW = dims[2];
+        } else if (dims[1] === 3) {
+          explicitNHWC = false;
+          outPatchH = dims[2];
+          outPatchW = dims[3];
+        }
       }
-      return px < 0 ? 0 : px > 255 ? 255 : px;
+
+      // Dynamic output range detection (handles [-1, 1], [0, 1] and [0, 255])
+      var minVal = 999999;
+      var maxVal = -999999;
+      var testCount = Math.min(500, outData.length);
+      for (var m = 0; m < testCount; m++) {
+        var val = outData[m];
+        if (val < minVal) minVal = val;
+        if (val > maxVal) maxVal = val;
+      }
+
+      var isMinusOne = minVal < -0.1;
+      var isZeroOne = !isMinusOne && maxVal <= 1.5;
+
+      function toU8(v) {
+        var px;
+        if (isMinusOne) {
+          px = Math.round((v + 1.0) * 127.5);
+        } else if (isZeroOne) {
+          px = Math.round(v * 255.0);
+        } else {
+          px = Math.round(v);
+        }
+        return px < 0 ? 0 : px > 255 ? 255 : px;
+      }
+
+      var totalPixels = outPatchW * outPatchH;
+
+      function unpackPlanarNCHW() {
+        var buf = new Uint8ClampedArray(totalPixels * 4);
+        var pSize = totalPixels;
+        for (var p = 0; p < pSize; p++) {
+          var d = p * 4;
+          buf[d]     = toU8(outData[p]);
+          buf[d + 1] = toU8(outData[pSize + p]);
+          buf[d + 2] = toU8(outData[pSize * 2 + p]);
+          buf[d + 3] = 255;
+        }
+        return buf;
+      }
+
+      function unpackInterleavedNHWC() {
+        var buf = new Uint8ClampedArray(totalPixels * 4);
+        for (var p = 0; p < totalPixels; p++) {
+          var s = p * 3;
+          var d = p * 4;
+          buf[d]     = toU8(outData[s]);
+          buf[d + 1] = toU8(outData[s + 1]);
+          buf[d + 2] = toU8(outData[s + 2]);
+          buf[d + 3] = 255;
+        }
+        return buf;
+      }
+
+      function measureStripeRatio(buf) {
+        var sampleYStart = Math.round(outPatchH * 0.35);
+        var sampleYEnd = Math.round(outPatchH * 0.65);
+        var horizGrad = 0;
+        var vertGrad = 0;
+        var count = 0;
+
+        for (var y = sampleYStart; y < sampleYEnd; y += 4) {
+          for (var x = 64; x < outPatchW - 64; x += 4) {
+            var idx = (y * outPatchW + x) * 4;
+            var idxRight = (y * outPatchW + (x + 1)) * 4;
+            var idxDown = ((y + 1) * outPatchW + x) * 4;
+
+            var lum = 0.299 * buf[idx] + 0.587 * buf[idx + 1] + 0.114 * buf[idx + 2];
+            var lumRight = 0.299 * buf[idxRight] + 0.587 * buf[idxRight + 1] + 0.114 * buf[idxRight + 2];
+            var lumDown = 0.299 * buf[idxDown] + 0.587 * buf[idxDown + 1] + 0.114 * buf[idxDown + 2];
+
+            horizGrad += Math.abs(lum - lumRight);
+            vertGrad += Math.abs(lum - lumDown);
+            count++;
+          }
+        }
+        if (count === 0) return 1.0;
+        var avgH = horizGrad / count;
+        var avgV = vertGrad / count;
+        if (avgV < 1.0) return avgH > 10.0 ? 99.0 : 1.0;
+        return avgH / avgV;
+      }
+
+      var outRgba = explicitNHWC ? unpackInterleavedNHWC() : unpackPlanarNCHW();
+      var stripeRatio = measureStripeRatio(outRgba);
+
+      // If stripes detected (> 3.5), test alternate layout!
+      if (stripeRatio > 3.5) {
+        var altRgba = explicitNHWC ? unpackPlanarNCHW() : unpackInterleavedNHWC();
+        var altStripeRatio = measureStripeRatio(altRgba);
+        if (altStripeRatio < stripeRatio) {
+          outRgba = altRgba;
+          stripeRatio = altStripeRatio;
+        }
+      }
+
+      // If still severely striped and WebGPU was used, re-run with safe WASM!
+      if (isWebGpuAttempt && stripeRatio > 4.0) {
+        console.warn('[NeuralWorker] WebGPU driver shader produced vertical striped distortion (ratio ' + stripeRatio.toFixed(1) + '). Re-running on clean CPU WASM...');
+        sendProgress(76, 'Switching to Clean CPU Engine (clearing GPU lines)...');
+        var wasmSafeSession = await getSessionInWorker(modelKey, modelUrl, false, sendProgress);
+        var wasmSafeResults = await executeWorkerInference(wasmSafeSession, feeds);
+        return await decodeInferenceResults(wasmSafeResults, wasmSafeSession, false);
+      }
+
+      return { outRgba: outRgba, width: outPatchW, height: outPatchH };
     }
 
-    var totalPixels = outPatchW * outPatchH;
-    var outRgba = new Uint8ClampedArray(totalPixels * 4);
+    var decoded = await decodeInferenceResults(results, session, usedWebGPU);
+    var outRgba = decoded.outRgba;
+    var outPatchW = decoded.width;
+    var outPatchH = decoded.height;
 
-    if (isNHWC) {
-      for (var p = 0; p < totalPixels; p++) {
-        var s = p * 3;
-        var d = p * 4;
-        outRgba[d] = toU8(outData[s]);
-        outRgba[d + 1] = toU8(outData[s + 1]);
-        outRgba[d + 2] = toU8(outData[s + 2]);
-        outRgba[d + 3] = 255;
-      }
-    } else {
-      var pSize = totalPixels;
-      for (var p = 0; p < pSize; p++) {
-        var d = p * 4;
-        outRgba[d] = toU8(outData[p]);
-        outRgba[d + 1] = toU8(outData[pSize + p]);
-        outRgba[d + 2] = toU8(outData[pSize * 2 + p]);
-        outRgba[d + 3] = 255;
-      }
-    }
-
-    sendProgress(96, 'Finalizing Studio-grade restored face...');
+        sendProgress(96, 'Finalizing Studio-grade restored face...');
 
     self.postMessage(
       {

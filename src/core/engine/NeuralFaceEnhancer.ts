@@ -577,6 +577,14 @@ export class NeuralFaceEnhancer {
 
     // 3. In-thread fallback if Worker is unavailable or failed
     if (!restoredPatchCanvas) {
+      const isMobile =
+        typeof navigator !== 'undefined' &&
+        /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+      if (isMobile) {
+        throw new Error(
+          'Mobile memory limit reached for heavy deep neural model. Please use the high-performance Smart AI filters.'
+        );
+      }
       const planeSize = patchInputDim * patchInputDim;
       const plane2 = planeSize * 2;
       const float32Data = new Float32Array(3 * planeSize);
@@ -706,25 +714,71 @@ export class NeuralFaceEnhancer {
 
       const restoredImgData = rctx.createImageData(outPatchW, outPatchH);
       const rPixels = restoredImgData.data;
+      const totalPixels = outPatchW * outPatchH;
 
-      if (isNHWC) {
-        const totalPixels = outPatchW * outPatchH;
+      const unpackPlanar = (target: Uint8ClampedArray) => {
+        const pSize = totalPixels;
+        for (let i = 0; i < pSize; i++) {
+          const d = i * 4;
+          target[d]     = toU8(outData[i]);
+          target[d + 1] = toU8(outData[pSize + i]);
+          target[d + 2] = toU8(outData[pSize * 2 + i]);
+          target[d + 3] = 255;
+        }
+      };
+
+      const unpackInterleaved = (target: Uint8ClampedArray) => {
         for (let i = 0; i < totalPixels; i++) {
           const s = i * 3;
           const d = i * 4;
-          rPixels[d]     = toU8(outData[s]);
-          rPixels[d + 1] = toU8(outData[s + 1]);
-          rPixels[d + 2] = toU8(outData[s + 2]);
-          rPixels[d + 3] = 255;
+          target[d]     = toU8(outData[s]);
+          target[d + 1] = toU8(outData[s + 1]);
+          target[d + 2] = toU8(outData[s + 2]);
+          target[d + 3] = 255;
         }
+      };
+
+      const measureStripes = (target: Uint8ClampedArray): number => {
+        const sampleYStart = Math.round(outPatchH * 0.35);
+        const sampleYEnd = Math.round(outPatchH * 0.65);
+        let horizGrad = 0;
+        let vertGrad = 0;
+        let count = 0;
+
+        for (let y = sampleYStart; y < sampleYEnd; y += 4) {
+          for (let x = 64; x < outPatchW - 64; x += 4) {
+            const idx = (y * outPatchW + x) * 4;
+            const idxRight = (y * outPatchW + (x + 1)) * 4;
+            const idxDown = ((y + 1) * outPatchW + x) * 4;
+
+            const lum = 0.299 * target[idx] + 0.587 * target[idx + 1] + 0.114 * target[idx + 2];
+            const lumRight = 0.299 * target[idxRight] + 0.587 * target[idxRight + 1] + 0.114 * target[idxRight + 2];
+            const lumDown = 0.299 * target[idxDown] + 0.587 * target[idxDown + 1] + 0.114 * target[idxDown + 2];
+
+            horizGrad += Math.abs(lum - lumRight);
+            vertGrad += Math.abs(lum - lumDown);
+            count++;
+          }
+        }
+        if (count === 0) return 1.0;
+        const avgH = horizGrad / count;
+        const avgV = vertGrad / count;
+        if (avgV < 1.0) return avgH > 10.0 ? 99.0 : 1.0;
+        return avgH / avgV;
+      };
+
+      if (isNHWC) {
+        unpackInterleaved(rPixels);
       } else {
-        const planeSize = outPatchW * outPatchH;
-        for (let i = 0; i < planeSize; i++) {
-          const d = i * 4;
-          rPixels[d]     = toU8(outData[i]);
-          rPixels[d + 1] = toU8(outData[planeSize + i]);
-          rPixels[d + 2] = toU8(outData[planeSize * 2 + i]);
-          rPixels[d + 3] = 255;
+        unpackPlanar(rPixels);
+        const stripeRatio = measureStripes(rPixels);
+        if (stripeRatio > 3.5) {
+          const altPixels = new Uint8ClampedArray(totalPixels * 4);
+          unpackInterleaved(altPixels);
+          const altRatio = measureStripes(altPixels);
+          if (altRatio < stripeRatio) {
+            rPixels.set(altPixels);
+          }
         }
       }
 
@@ -734,8 +788,11 @@ export class NeuralFaceEnhancer {
     if (onProgress) onProgress(95, 'Blending photorealistic face onto portrait...');
 
     // 4. Construct Final Output Canvas
-    const maxAllowedDim = 4096;
-    const naturalTargetScale = 2; // High-definition 2x clarity upscale
+    const isMobileDevice =
+      typeof navigator !== 'undefined' &&
+      /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+    const maxAllowedDim = isMobileDevice ? 2048 : 4096;
+    const naturalTargetScale = isMobileDevice ? 1 : 2; // Keep mobile lightweight & responsive
     const targetScale = (Math.max(w, h) * naturalTargetScale > maxAllowedDim)
       ? Math.max(1, maxAllowedDim / Math.max(w, h))
       : naturalTargetScale;

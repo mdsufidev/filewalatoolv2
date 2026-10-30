@@ -34,9 +34,9 @@ self.onmessage = function(e) {
       lum[i] = 0.299 * srcData[idx] + 0.587 * srcData[idx + 1] + 0.114 * srcData[idx + 2];
     }
 
-    // Separable Fast Box Blur (O(1) moving accumulator per pixel)
+    // Separable Fast Box Blur (O(1) moving accumulator per pixel) with zero-allocation reused temp buffer
+    var sharedTempBuf = new Float32Array(totalPixels);
     function fastBoxBlur(src, dst, w, h, radius) {
-      var temp = new Float32Array(w * h);
       var scale = 1.0 / (2 * radius + 1);
 
       // Horizontal pass
@@ -48,7 +48,7 @@ self.onmessage = function(e) {
           sum += src[row + px];
         }
         for (var x = 0; x < w; x++) {
-          temp[row + x] = sum * scale;
+          sharedTempBuf[row + x] = sum * scale;
           var left = x - radius;
           var right = x + radius + 1;
           var pLeft = left < 0 ? 0 : left >= w ? w - 1 : left;
@@ -62,7 +62,7 @@ self.onmessage = function(e) {
         var sum = 0;
         for (var k = -radius; k <= radius; k++) {
           var py = k < 0 ? 0 : k >= h ? h - 1 : k;
-          sum += temp[py * w + x];
+          sum += sharedTempBuf[py * w + x];
         }
         for (var y = 0; y < h; y++) {
           dst[y * w + x] = sum * scale;
@@ -70,7 +70,7 @@ self.onmessage = function(e) {
           var bottom = y + radius + 1;
           var pTop = top < 0 ? 0 : top >= h ? h - 1 : top;
           var pBottom = bottom < 0 ? 0 : bottom >= h ? h - 1 : bottom;
-          sum += temp[pBottom * w + x] - temp[pTop * w + x];
+          sum += sharedTempBuf[pBottom * w + x] - sharedTempBuf[pTop * w + x];
         }
       }
     }

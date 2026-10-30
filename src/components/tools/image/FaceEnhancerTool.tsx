@@ -189,6 +189,11 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
         const origW = img.naturalWidth || img.width;
         const origH = img.naturalHeight || img.height;
 
+        const isMobile =
+          typeof navigator !== 'undefined' &&
+          /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+        const maxWorkingDim = isMobile ? 1600 : 2560;
+
         let sourceW: number;
         let sourceH: number;
         let effectiveScale = targetUpscale;
@@ -228,11 +233,23 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
         } else {
           sourceW = origW;
           sourceH = origH;
+          if (origW > maxWorkingDim || origH > maxWorkingDim) {
+            const ratio = maxWorkingDim / Math.max(origW, origH);
+            sourceW = Math.round(origW * ratio);
+            sourceH = Math.round(origH * ratio);
+          }
+
+          // Mobile guard: prevent super-resolution memory blowups on camera images
+          const maxAllowedUpscaledPixels = isMobile ? 2400 * 2400 : 4096 * 4096;
+          if (sourceW * effectiveScale * (sourceH * effectiveScale) > maxAllowedUpscaledPixels) {
+            effectiveScale = 1;
+          }
+
           canvas.width = sourceW;
           canvas.height = sourceH;
           const ctx = canvas.getContext('2d', { willReadFrequently: true });
           if (!ctx) throw new Error('Could not create canvas context');
-          ctx.drawImage(img, 0, 0);
+          ctx.drawImage(img, 0, 0, sourceW, sourceH);
         }
 
         const sourceImageData = canvas.getContext('2d')!.getImageData(0, 0, sourceW, sourceH);
@@ -434,7 +451,7 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
       console.error('Neural restoration failed:', err);
       setIsProcessing(false);
       onNotify('AI Notice', 'Switched to high-performance local engine: ' + (err.message || ''), 'info');
-      runEnhancement(settings, 4);
+      runEnhancement(settings, upscaleFactor);
     }
   }, [
     currentImage,
@@ -446,6 +463,7 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
     onNotify,
     runEnhancement,
     settings,
+    upscaleFactor,
   ]);
 
   // Debounced auto-run when sliders or upscale change
