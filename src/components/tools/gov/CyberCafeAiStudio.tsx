@@ -12,6 +12,7 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import { FaceEnhancerEngine, DEFAULT_ENHANCE_SETTINGS } from '../../../core/engine/FaceEnhancerEngine';
+import { NeuralFaceEnhancer } from '../../../core/engine/NeuralFaceEnhancer';
 import { BriaRmbgWorkerClient } from '../../../core/engine/BriaRmbgWorkerClient';
 
 export interface CyberCafeColorOption {
@@ -60,8 +61,10 @@ export const CyberCafeAiStudio: React.FC<CyberCafeAiStudioProps> = ({
   const rmbgWorkerRef = useRef<BriaRmbgWorkerClient | null>(null);
   const activeBlobUrlRef = useRef<string | null>(null);
 
-  // Check WebGPU on mount
+  // Check WebGPU & Preload Neural AI on mount
   useEffect(() => {
+    NeuralFaceEnhancer.preload();
+
     async function checkWebGPU() {
       if (typeof window !== 'undefined' && 'navigator' in window && 'gpu' in navigator && (navigator as any).gpu) {
         try {
@@ -125,30 +128,74 @@ export const CyberCafeAiStudio: React.FC<CyberCafeAiStudioProps> = ({
 
         if (targetFaceEnhance) {
           if (!faceEnhancedCanvasRef.current) {
-            setProcessingStage('AI Enhancing facial clarity & skin tones...');
-            const temp = document.createElement('canvas');
-            temp.width = w;
-            temp.height = h;
-            const tctx = temp.getContext('2d');
-            if (!tctx) throw new Error('Failed to create canvas context');
-            tctx.drawImage(rawImage, 0, 0);
+            setProcessingStage('AI Neural Model: Detecting face & landmarks...');
 
-            // Execute Samsung ProVisual Face Enhancement
-            faceEnhancedCanvasRef.current = FaceEnhancerEngine.processImage(temp, {
-              ...DEFAULT_ENHANCE_SETTINGS,
-              deblur: 70,
-              clarity: 60,
-              smooth: 35,
-              sharpness: 65,
-              glow: 20,
-              warmth: 6,
-              brightness: 12,
-              contrast: 18,
-              eyeTeethClarity: 45,
-              samsungVivid: true,
-            });
-            temp.width = 0;
-            temp.height = 0;
+            try {
+              // 1. Run true Generative Facial Prior Neural AI (GFPGAN ONNX Model)
+              const aiRestoredCanvas = await NeuralFaceEnhancer.restoreFacePatch(rawImage, {
+                modelKey: 'gfpgan-v14',
+                hasWebGPU: !!hasWebGPU,
+                blendStrength: 1.0,
+                onProgress: (pct, stage) => {
+                  setProcessingStage(`${stage} (${Math.round(pct)}%)`);
+                },
+              });
+
+              // 2. Exact dimension normalization to preserve portal pixel-alignment
+              const exactCanvas = document.createElement('canvas');
+              exactCanvas.width = w;
+              exactCanvas.height = h;
+              const ectx = exactCanvas.getContext('2d');
+              if (!ectx) throw new Error('Failed to create exact canvas context');
+              ectx.imageSmoothingEnabled = true;
+              ectx.imageSmoothingQuality = 'high';
+              ectx.drawImage(aiRestoredCanvas, 0, 0, w, h);
+              aiRestoredCanvas.width = 0;
+              aiRestoredCanvas.height = 0;
+
+              // 3. ProVisual Finish on AI Subject: subtle micro-contrast & skin glow (no heavy colorization tint)
+              faceEnhancedCanvasRef.current = FaceEnhancerEngine.processImage(exactCanvas, {
+                ...DEFAULT_ENHANCE_SETTINGS,
+                deblur: 0, // already restored by GFPGAN deep neural network
+                clarity: 20,
+                smooth: 20,
+                sharpness: 20,
+                glow: 10,
+                warmth: 2,
+                brightness: 4,
+                contrast: 8,
+                eyeTeethClarity: 25,
+                samsungVivid: true,
+              });
+              exactCanvas.width = 0;
+              exactCanvas.height = 0;
+            } catch (neuralErr: any) {
+              console.warn('Neural face enhancer fallback to smart frequency engine:', neuralErr);
+              // Fallback: If device memory or environment prevents WebGPU/WASM neural model,
+              // run multi-scale frequency deconvolution
+              const temp = document.createElement('canvas');
+              temp.width = w;
+              temp.height = h;
+              const tctx = temp.getContext('2d');
+              if (!tctx) throw new Error('Failed to create canvas context');
+              tctx.drawImage(rawImage, 0, 0);
+
+              faceEnhancedCanvasRef.current = FaceEnhancerEngine.processImage(temp, {
+                ...DEFAULT_ENHANCE_SETTINGS,
+                deblur: 65,
+                clarity: 50,
+                smooth: 30,
+                sharpness: 55,
+                glow: 15,
+                warmth: 4,
+                brightness: 8,
+                contrast: 14,
+                eyeTeethClarity: 35,
+                samsungVivid: true,
+              });
+              temp.width = 0;
+              temp.height = 0;
+            }
           }
           workingBaseCanvas = faceEnhancedCanvasRef.current;
         } else {
@@ -292,8 +339,8 @@ export const CyberCafeAiStudio: React.FC<CyberCafeAiStudioProps> = ({
     setIsFaceEnhanceActive(nextState);
     compositeAndEmit(nextState, isBgRemoved, isCustomColorActive ? customColor : selectedBgColor);
     onNotify(
-      nextState ? '⚡ AI Face Enhancer ON' : 'AI Face Enhancer OFF',
-      nextState ? 'Samsung ProVisual clarity & skin smoothing active' : 'Reverted to natural photo',
+      nextState ? '⚡ AI Neural Face Restorer ON' : 'AI Face Enhancer OFF',
+      nextState ? 'GFPGAN neural model: reconstructing eyes, lips, skin & facial clarity' : 'Reverted to natural raw photo',
       'success'
     );
   };
@@ -403,11 +450,13 @@ export const CyberCafeAiStudio: React.FC<CyberCafeAiStudioProps> = ({
               ? 'bg-gradient-to-r from-amber-500 to-rose-500 text-white shadow-xs'
               : 'bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-zinc-700 dark:text-zinc-300'
           }`}
-          title="Enhance facial clarity, smooth skin & brighten eyes (Samsung ProVisual Engine)"
+          title="Restore eyes, lips, teeth & natural skin details with GFPGAN Generative AI prior"
         >
           <Sparkles className={`w-3.5 h-3.5 ${isFaceEnhanceActive ? 'fill-white' : 'text-amber-500'}`} />
-          <span>AI Face Enhance</span>
-          <span className="text-[10px] opacity-80">{isFaceEnhanceActive ? 'ON' : 'OFF'}</span>
+          <span>AI Face Restore</span>
+          <span className="text-[9px] font-mono font-bold px-1 py-0.2 rounded bg-amber-500/20 text-amber-600 dark:text-amber-300">
+            {isFaceEnhanceActive ? 'ON' : 'AI'}
+          </span>
         </button>
 
         {/* 2. AI BG Remover Toggle */}
