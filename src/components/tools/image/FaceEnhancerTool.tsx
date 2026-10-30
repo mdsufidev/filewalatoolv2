@@ -94,6 +94,7 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
   const workerClientRef = useRef<FaceEnhanceWorkerClient | null>(null);
   const debounceTimerRef = useRef<any>(null);
   const activeBlobUrlRef = useRef<string | null>(null);
+  const isInitialLoadRef = useRef<boolean>(true);
   const neuralRestoredCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const lastProcessedCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const [hasNeuralRestoration, setHasNeuralRestoration] = useState<boolean>(false);
@@ -150,9 +151,11 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
       setEnhancedDimensions(null);
       neuralRestoredCanvasRef.current = null;
       setHasNeuralRestoration(false);
+      isInitialLoadRef.current = true;
       return;
     }
 
+    isInitialLoadRef.current = true;
     const img = currentImage.imageElement;
     const w = img.naturalWidth || img.width;
     const h = img.naturalHeight || img.height;
@@ -345,6 +348,15 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
 
     try {
       const img = currentImage.imageElement;
+      let lastReportedPct = -1;
+      const reportProgress = (val: number) => {
+        const rounded = Math.round(val);
+        if (rounded !== lastReportedPct) {
+          lastReportedPct = rounded;
+          setProgressPercent(rounded);
+        }
+      };
+
       const restoredCanvas = await NeuralFaceEnhancer.restoreFacePatch(img, {
         modelKey: neuralModelKey,
         hasWebGPU: !!hasWebGPU,
@@ -354,18 +366,18 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
           if (pct >= 70) {
             stopProgressTimer();
             currentPct = Math.max(currentPct, 72);
-            setProgressPercent(Math.round(currentPct));
+            reportProgress(currentPct);
             // During heavy neural inference, continuously advance progress towards 94%
-            // so the user never experiences a frozen progress bar
+            // with 200ms interval to eliminate 14/sec component re-renders
             progressTimer = setInterval(() => {
               if (currentPct < 94) {
                 currentPct += (94.5 - currentPct) * 0.05;
-                setProgressPercent(Math.round(currentPct));
+                reportProgress(currentPct);
               }
-            }, 70);
+            }, 200);
           } else {
             currentPct = Math.max(currentPct, pct);
-            setProgressPercent(Math.round(currentPct));
+            reportProgress(currentPct);
           }
         },
       });
@@ -440,9 +452,11 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
   const scheduleEnhancement = useCallback(
     (newSettings: FaceEnhanceSettings, newUpscale: 1 | 2 | 4) => {
       if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+      const delay = isInitialLoadRef.current ? 240 : 150;
       debounceTimerRef.current = setTimeout(() => {
+        isInitialLoadRef.current = false;
         runEnhancement(newSettings, newUpscale);
-      }, 150);
+      }, delay);
     },
     [runEnhancement]
   );
@@ -730,7 +744,7 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
             <div className="lg:col-span-7 xl:col-span-8 flex flex-col h-full space-y-2">
               {/* Viewport Clamped Canvas */}
               <div
-                className="relative w-full h-[260px] sm:h-[300px] lg:h-auto flex-1 min-h-[220px] rounded-xl overflow-hidden border border-zinc-200/80 dark:border-zinc-800/80 bg-zinc-100/70 dark:bg-zinc-950/70 flex items-center justify-center transition-colors shadow-xs"
+                className="relative w-full h-[360px] sm:h-[410px] lg:h-[460px] xl:h-[490px] flex-1 min-h-[340px] sm:min-h-[390px] lg:min-h-[440px] xl:min-h-[470px] rounded-xl overflow-hidden border border-zinc-200/80 dark:border-zinc-800/80 bg-zinc-100/70 dark:bg-zinc-950/70 flex items-center justify-center transition-colors shadow-xs"
                 style={{
                   backgroundImage: isDark
                     ? 'radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px)'
@@ -752,7 +766,7 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
                     <img
                       src={originalSrc}
                       alt="Original Raw"
-                      className="max-h-[220px] sm:max-h-[250px] lg:max-h-[270px] xl:max-h-[290px] w-auto max-w-full object-contain rounded-lg shadow-md"
+                      className="max-h-[330px] sm:max-h-[380px] lg:max-h-[420px] xl:max-h-[450px] w-auto max-w-full object-contain rounded-lg shadow-md"
                     />
                     <div className="absolute top-2 left-2 px-2 py-0.5 bg-black/70 backdrop-blur-md text-white text-[10px] font-semibold rounded-full border border-white/20">
                       RAW ORIGINAL
@@ -765,7 +779,8 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
                       processedSrc={previewSrc}
                       originalLabel="Original"
                       processedLabel={upscaleFactor > 1 ? `Enhanced (${upscaleFactor}x HD)` : 'AI Enhanced'}
-                      className="max-h-[220px] sm:max-h-[250px] lg:max-h-[270px] xl:max-h-[290px] rounded-lg overflow-hidden shadow-md"
+                      maxHeightClass="max-h-[330px] sm:max-h-[380px] lg:max-h-[420px] xl:max-h-[450px]"
+                      className="max-h-[340px] sm:max-h-[390px] lg:max-h-[430px] xl:max-h-[460px] w-full rounded-lg overflow-hidden shadow-md"
                     />
                   </div>
                 ) : previewSrc ? (
@@ -773,7 +788,7 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
                     <img
                       src={previewSrc}
                       alt="AI Enhanced Portrait"
-                      className="max-h-[220px] sm:max-h-[250px] lg:max-h-[270px] xl:max-h-[290px] w-auto max-w-full object-contain rounded-lg shadow-md"
+                      className="max-h-[330px] sm:max-h-[380px] lg:max-h-[420px] xl:max-h-[450px] w-auto max-w-full object-contain rounded-lg shadow-md"
                     />
                     <div className="absolute top-2 left-2 px-2 py-0.5 bg-rose-500 text-white text-[10px] font-semibold rounded-full shadow-xs">
                       {upscaleFactor > 1 ? `ENHANCED (${upscaleFactor}x HD)` : 'AI ENHANCED'}

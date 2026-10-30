@@ -142,6 +142,14 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
   const splitDragRef = useRef<boolean>(false);
   const blobDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isHoveringDivider, setIsHoveringDivider] = useState<boolean>(false);
+  const isHoveringDividerRef = useRef<boolean>(false);
+  const cursorRingRef = useRef<HTMLDivElement>(null);
+  const renderCompositedResultRef = useRef<() => void>(() => {});
+  const pushHistorySnapshotRef = useRef<() => void>(() => {});
+  const runAiInferenceRef = useRef<() => Promise<void>>(async () => {});
+  const runFastPerimeterCleanRef = useRef<(img: HTMLImageElement, mask: HTMLCanvasElement, tol: number) => void>(() => {});
+  const lastInitImageIdRef = useRef<string | null>(null);
+  const lastInitEngineModeRef = useRef<RemovalEngine | null>(null);
   const srcDataCacheRef = useRef<Uint8ClampedArray | null>(null);
 
   // Detect WebGPU hardware availability on mount
@@ -410,6 +418,13 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
       ctx.drawImage(fgCanvas, 0, 0);
     }
 
+    fgCanvas.width = 0;
+    fgCanvas.height = 0;
+    if (activeMask !== maskCanvasRef.current) {
+      activeMask.width = 0;
+      activeMask.height = 0;
+    }
+
     // 5. Debounced High-Res Clean Export Blob Generation (200ms debounce prevents CPU thrashing)
     if (blobDebounceRef.current) {
       clearTimeout(blobDebounceRef.current);
@@ -432,6 +447,9 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
     splitPos,
     generateCleanExportBlob,
   ]);
+
+  renderCompositedResultRef.current = renderCompositedResult;
+  pushHistorySnapshotRef.current = pushHistorySnapshot;
 
   // Helper: Draw Background onto 2D Context
   function drawBackgroundToContext(
@@ -503,6 +521,25 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
       ctx.restore();
     }
   }
+
+  /* -------------------------------------------------------------
+     ZOOM UTILITIES: FIT TO SCREEN
+  ------------------------------------------------------------- */
+  const handleFitToScreen = useCallback(() => {
+    if (!viewportRef.current || !currentImage || !currentImage.width || !currentImage.height) return;
+    const rect = viewportRef.current.getBoundingClientRect();
+    const w = currentImage.width;
+    const h = currentImage.height;
+    const padding = 36;
+    const scaleX = (rect.width - padding) / w;
+    const scaleY = (rect.height - padding) / h;
+    const fitZoom = Math.min(1.0, Math.max(0.2, Math.min(scaleX, scaleY)));
+    setZoom(+fitZoom.toFixed(2));
+    setPan({
+      x: Math.round((rect.width - w * fitZoom) / 2),
+      y: Math.round((rect.height - h * fitZoom) / 2),
+    });
+  }, [currentImage]);
 
   /* -------------------------------------------------------------
      FAST MODE: BFS FLOOD-FILL PERIMETER CLEAN
@@ -603,9 +640,11 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
     tempCanvas.height = 0;
 
     mctx.putImageData(maskImgData, 0, 0);
-    pushHistorySnapshot();
-    renderCompositedResult();
-  }, [renderCompositedResult, pushHistorySnapshot]);
+    pushHistorySnapshotRef.current();
+    renderCompositedResultRef.current();
+  }, []);
+
+  runFastPerimeterCleanRef.current = runFastPerimeterClean;
 
   /* -------------------------------------------------------------
      BRIA RMBG-1.4 AI NEURAL BACKGROUND REMOVAL (OFFLOADED WORKER)
@@ -623,6 +662,15 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
       if (progressTimer) {
         clearInterval(progressTimer);
         progressTimer = null;
+      }
+    };
+
+    let lastReportedPct = -1;
+    const reportProgress = (val: number) => {
+      const rounded = Math.round(val);
+      if (rounded !== lastReportedPct) {
+        lastReportedPct = rounded;
+        setAiProgress(rounded);
       }
     };
 
@@ -658,18 +706,18 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
           if (pct >= 70) {
             stopProgressTimer();
             currentPct = Math.max(currentPct, 72);
-            setAiProgress(Math.round(currentPct));
+            reportProgress(currentPct);
             // During neural inference (session.run), smoothly glide progress towards 93%
-            // so the progress bar never sits frozen or stalled
+            // with 200ms interval to eliminate 14/sec component re-renders
             progressTimer = setInterval(() => {
               if (currentPct < 93) {
                 currentPct += (93.5 - currentPct) * 0.05;
-                setAiProgress(Math.round(currentPct));
+                reportProgress(currentPct);
               }
-            }, 70);
+            }, 200);
           } else {
             currentPct = Math.max(currentPct, pct);
-            setAiProgress(Math.round(currentPct));
+            reportProgress(currentPct);
           }
         },
       });
@@ -712,11 +760,11 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
       lowResMaskCanvas.width = 0;
       lowResMaskCanvas.height = 0;
 
-      pushHistorySnapshot();
+      pushHistorySnapshotRef.current();
       setAiProgress(100);
       setAiStatus('Complete');
       setAiInferenceTimeMs(result.elapsedMs);
-      renderCompositedResult();
+      renderCompositedResultRef.current();
       onNotify('AI Cutout Complete', `BRIA RMBG-1.4 isolated subject in ${result.elapsedMs}ms with 8-bit soft alpha.`, 'success');
     } catch (err: any) {
       console.error('BRIA RMBG-1.4 AI inference failed:', err);
@@ -730,16 +778,18 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
   }, [
     currentImage,
     hasWebGPU,
-    pushHistorySnapshot,
-    renderCompositedResult,
     onNotify,
   ]);
+
+  runAiInferenceRef.current = runAiInference;
 
   /* -------------------------------------------------------------
      INITIALIZE ON IMAGE LOAD OR ENGINE SWITCH
   ------------------------------------------------------------- */
   useEffect(() => {
     if (!currentImage) {
+      lastInitImageIdRef.current = null;
+      lastInitEngineModeRef.current = null;
       maskCanvasRef.current = null;
       setResultBlob(null);
       setCustomBackdropImg(null);
@@ -750,6 +800,13 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
       setCanRedo(false);
       return;
     }
+
+    const imageKey = currentImage.previewUrl || currentImage.name || 'image';
+    if (lastInitImageIdRef.current === imageKey && lastInitEngineModeRef.current === engineMode) {
+      return;
+    }
+    lastInitImageIdRef.current = imageKey;
+    lastInitEngineModeRef.current = engineMode;
 
     const img = currentImage.imageElement;
     const w = img.naturalWidth;
@@ -770,13 +827,17 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
       handleFitToScreen();
     });
 
-    if (engineMode === 'fast') {
-      runFastPerimeterClean(img, mask, tolerance);
-    } else {
-      // Direct high-performance AI inference with zero main-thread block
-      runAiInference();
-    }
-  }, [currentImage, engineMode, runAiInference]);
+    // 220ms scheduled delay allows workspace entry animation (duration-200) to settle at 60fps
+    const startTimer = setTimeout(() => {
+      if (engineMode === 'fast') {
+        runFastPerimeterCleanRef.current(img, mask, tolerance);
+      } else {
+        runAiInferenceRef.current();
+      }
+    }, 220);
+
+    return () => clearTimeout(startTimer);
+  }, [currentImage, engineMode, handleFitToScreen, tolerance]);
 
   /* -------------------------------------------------------------
      INTERACTIVE BRUSH ENGINE: CONTINUOUS PATH INTERPOLATION
@@ -1001,14 +1062,14 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
   };
 
   const handleViewportMouseMove = (e: React.MouseEvent) => {
-    // Track cursor ring position in viewport coordinates
-    if (viewportRef.current) {
+    // Track cursor ring position in viewport coordinates via direct DOM to eliminate React re-renders on mousemove
+    if (cursorRingRef.current && viewportRef.current) {
       const vRect = viewportRef.current.getBoundingClientRect();
-      setCursorPos({
-        x: e.clientX - vRect.left,
-        y: e.clientY - vRect.top,
-        visible: true,
-      });
+      const x = e.clientX - vRect.left;
+      const y = e.clientY - vRect.top;
+      cursorRingRef.current.style.transform = `translate(${x}px, ${y}px)`;
+      cursorRingRef.current.style.display =
+        activeToolMode === 'erase' || activeToolMode === 'restore' ? 'block' : 'none';
     }
 
     // Split slider hover detection for tactile cursor style
@@ -1020,7 +1081,10 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
         isOver = true;
       }
     }
-    setIsHoveringDivider(isOver);
+    if (isHoveringDividerRef.current !== isOver) {
+      isHoveringDividerRef.current = isOver;
+      setIsHoveringDivider(isOver);
+    }
 
     // Pan execution
     if (isPanning) {
@@ -1069,21 +1133,26 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
     if (isDrawingRef.current) {
       isDrawingRef.current = false;
       lastDrawPosRef.current = null;
-      pushHistorySnapshot();
-      renderCompositedResult();
+      pushHistorySnapshotRef.current();
+      renderCompositedResultRef.current();
     }
   };
 
   const handleViewportMouseLeave = () => {
-    setCursorPos((prev) => ({ ...prev, visible: false }));
-    setIsHoveringDivider(false);
+    if (cursorRingRef.current) {
+      cursorRingRef.current.style.display = 'none';
+    }
+    if (isHoveringDividerRef.current) {
+      isHoveringDividerRef.current = false;
+      setIsHoveringDivider(false);
+    }
     if (isPanning) setIsPanning(false);
     if (splitDragRef.current) splitDragRef.current = false;
     if (isDrawingRef.current) {
       isDrawingRef.current = false;
       lastDrawPosRef.current = null;
-      pushHistorySnapshot();
-      renderCompositedResult();
+      pushHistorySnapshotRef.current();
+      renderCompositedResultRef.current();
     }
   };
 
@@ -1173,22 +1242,6 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
     });
     setZoom(newZoom);
   };
-
-  const handleFitToScreen = useCallback(() => {
-    if (!viewportRef.current || !currentImage || !currentImage.width || !currentImage.height) return;
-    const rect = viewportRef.current.getBoundingClientRect();
-    const w = currentImage.width;
-    const h = currentImage.height;
-    const padding = 36;
-    const scaleX = (rect.width - padding) / w;
-    const scaleY = (rect.height - padding) / h;
-    const fitZoom = Math.min(1.0, Math.max(0.2, Math.min(scaleX, scaleY)));
-    setZoom(+fitZoom.toFixed(2));
-    setPan({
-      x: Math.round((rect.width - w * fitZoom) / 2),
-      y: Math.round((rect.height - h * fitZoom) / 2),
-    });
-  }, [currentImage]);
 
   const handle100Percent = () => {
     if (!viewportRef.current || !currentImage) return;
@@ -1641,7 +1694,7 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
                   </div>
                 )}
 
-                {/* Interactive Zoom/Pan Canvas Viewport (clamped to 280px standard) */}
+                {/* Interactive Zoom/Pan Canvas Viewport (Viewport-filling height matching Compressor) */}
                 <div
                   ref={viewportRef}
                   onWheel={handleViewportWheel}
@@ -1653,7 +1706,7 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
                   onTouchMove={handleViewportTouchMove}
                   onTouchEnd={handleViewportTouchEnd}
                   onTouchCancel={handleViewportTouchEnd}
-                  className="relative rounded-xl border border-zinc-200/80 dark:border-zinc-800/80 overflow-hidden h-[260px] sm:h-[300px] lg:h-auto flex-1 min-h-[220px] select-none touch-none"
+                  className="relative rounded-xl border border-zinc-200/80 dark:border-zinc-800/80 overflow-hidden h-[380px] sm:h-[430px] lg:h-[480px] xl:h-[510px] flex-1 min-h-[360px] sm:min-h-[400px] lg:min-h-[460px] xl:min-h-[490px] select-none touch-none"
                   style={{
                     cursor: isPanning
                       ? 'grabbing'
@@ -1683,23 +1736,19 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
                     />
                   )}
 
-                  {/* Floating Circular Brush Cursor */}
-                  {cursorPos.visible &&
-                    (activeToolMode === 'erase' || activeToolMode === 'restore') && (
-                      <div
-                        className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 rounded-full border border-white shadow-[0_0_0_1px_rgba(0,0,0,0.7)] transition-transform duration-75 z-30"
-                        style={{
-                          left: cursorPos.x,
-                          top: cursorPos.y,
-                          width: Math.max(8, brushSize * zoom),
-                          height: Math.max(8, brushSize * zoom),
-                          backgroundColor:
-                            activeToolMode === 'erase'
-                              ? 'rgba(239, 68, 68, 0.15)'
-                              : 'rgba(59, 130, 246, 0.15)',
-                        }}
-                      />
-                    )}
+                  {/* Floating Circular Brush Cursor (Direct DOM driven for 120fps performance) */}
+                  <div
+                    ref={cursorRingRef}
+                    className="pointer-events-none absolute top-0 left-0 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white shadow-[0_0_0_1px_rgba(0,0,0,0.7)] z-30 hidden"
+                    style={{
+                      width: Math.max(8, brushSize * zoom),
+                      height: Math.max(8, brushSize * zoom),
+                      backgroundColor:
+                        activeToolMode === 'erase'
+                          ? 'rgba(239, 68, 68, 0.15)'
+                          : 'rgba(59, 130, 246, 0.15)',
+                    }}
+                  />
 
                   {/* Canvas Transform Wrapper */}
                   <div
@@ -1805,7 +1854,7 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
                     </h3>
                   </div>
 
-                {/* Brush Size & Hardness */}
+                {/* Brush Size, Softness & Wand Tolerance */}
                 <div className="space-y-1">
                   <Slider
                     label="Brush Size"
@@ -1814,6 +1863,18 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
                     step={1}
                     value={brushSize}
                     onChange={setBrushSize}
+                    unit="px"
+                  />
+                  <Slider
+                    label="Edge Softness"
+                    min={0}
+                    max={10}
+                    step={1}
+                    value={feather}
+                    onChange={(v) => {
+                      setFeather(v);
+                      renderCompositedResult();
+                    }}
                     unit="px"
                   />
                   {activeToolMode === 'wand' && (
@@ -1902,6 +1963,14 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
                       />
                       <span className="text-[9px] font-mono text-zinc-500">Color</span>
                     </div>
+                  </div>
+
+                  {/* Engine Info Badge */}
+                  <div className="mt-2 p-2 rounded-xl bg-zinc-50 dark:bg-zinc-850 border border-zinc-200/70 dark:border-zinc-800 text-[11px] flex items-center justify-between">
+                    <span className="text-zinc-500 font-medium">Model Engine</span>
+                    <span className="font-mono font-semibold text-zinc-700 dark:text-zinc-300">
+                      {engineMode === 'ai' ? (hasWebGPU ? 'BRIA WebGPU ⚡' : 'BRIA WASM') : 'Chroma Keyer'}
+                    </span>
                   </div>
                 </div>
                 </div>
