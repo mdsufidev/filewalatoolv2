@@ -1252,7 +1252,7 @@ export const CropRotateTool: React.FC<CropRotateToolProps> = ({ onNotify, initia
 
             {/* Canvas Interactive Viewport with Unified Virtual Stage (Dot-Grid Background) */}
             <div
-              className="relative select-none overflow-hidden rounded-xl border border-zinc-200/80 dark:border-zinc-800/80 bg-zinc-100/70 dark:bg-zinc-950/70 h-[260px] sm:h-[300px] lg:h-auto flex-1 min-h-[220px] flex items-center justify-center p-2.5"
+              className="relative select-none overflow-hidden rounded-xl border border-zinc-200/80 dark:border-zinc-800/80 bg-zinc-100/70 dark:bg-zinc-950/70 h-[380px] sm:h-[430px] lg:h-[480px] xl:h-[510px] flex-1 min-h-[360px] sm:min-h-[400px] lg:min-h-[460px] xl:min-h-[490px] flex items-center justify-center p-2.5"
               style={{
                 backgroundImage: isDark
                   ? 'radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px)'

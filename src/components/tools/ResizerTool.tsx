@@ -985,7 +985,7 @@ export const ResizerTool: React.FC<ResizerToolProps> = ({ onNotify, initialFile 
 
             {/* Canvas Area (Designer Dot-Grid - Equalized Viewport Safe) */}
             <div
-              className="relative rounded-xl overflow-hidden bg-zinc-100/70 dark:bg-zinc-950/70 h-[260px] sm:h-[300px] lg:h-auto flex-1 min-h-[220px] flex items-center justify-center border border-zinc-200/80 dark:border-zinc-800/80"
+              className="relative rounded-xl overflow-hidden bg-zinc-100/70 dark:bg-zinc-950/70 h-[380px] sm:h-[430px] lg:h-[480px] xl:h-[510px] flex-1 min-h-[360px] sm:min-h-[400px] lg:min-h-[460px] xl:min-h-[490px] flex items-center justify-center border border-zinc-200/80 dark:border-zinc-800/80"
               style={{
                 backgroundImage: isDark
                   ? 'radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px)'
@@ -1006,7 +1006,7 @@ export const ResizerTool: React.FC<ResizerToolProps> = ({ onNotify, initialFile 
                 src={resizedResult ? resizedResult.url : sourceImage.previewUrl}
                 alt="Output preview"
                 draggable={false}
-                className="max-h-[250px] sm:max-h-[280px] lg:max-h-[300px] max-w-full object-contain select-none transition-all"
+                className="max-h-[340px] sm:max-h-[390px] lg:max-h-[440px] xl:max-h-[470px] max-w-full object-contain select-none transition-all"
               />
             </div>
 

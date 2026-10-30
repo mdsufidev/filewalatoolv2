@@ -322,11 +322,11 @@ export const ConverterTool: React.FC<{
               </div>
             </div>
 
-            <div className="rounded-md border border-zinc-200 bg-zinc-50 p-4 flex items-center justify-center min-h-[300px]">
+            <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 p-4 flex items-center justify-center min-h-[380px] sm:min-h-[420px] lg:min-h-[460px]">
               <img
                 src={result ? result.url : currentImage.previewUrl}
                 alt="Converted Preview"
-                className="max-h-[340px] max-w-full object-contain rounded-lg shadow-sm"
+                className="max-h-[340px] sm:max-h-[380px] lg:max-h-[420px] max-w-full object-contain rounded-lg shadow-sm"
               />
             </div>
 
@@ -355,7 +355,7 @@ export const ConverterTool: React.FC<{
                   size="xl"
                   variant="primary"
                   onClick={handleDownload}
-                  className="w-full bg-emerald-600 hover:bg-emerald-700 border-emerald-600 text-white"
+                  className="w-full bg-red-600 hover:bg-red-700 border-red-600 active:scale-[0.99] text-white cursor-pointer shadow-xs"
                   leftIcon={<Download className="w-5 h-5" />}
                 >
                   Download {currentFormatMeta.name} Image

@@ -389,7 +389,7 @@ export const RotatePdfTool: React.FC<RotatePdfToolProps> = ({ onNotify }) => {
                   variant="outline"
                   size="sm"
                   onClick={() => setPreviewModalOpen(true)}
-                  className="text-xs border-emerald-700/60 hover:bg-emerald-900/30"
+                  className="text-xs border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800"
                 >
                   <Eye className="w-3.5 h-3.5 mr-1.5" /> Preview PDF
                 </Button>
@@ -399,7 +399,7 @@ export const RotatePdfTool: React.FC<RotatePdfToolProps> = ({ onNotify }) => {
                     const outName = `${file.name.replace(/\.[^/.]+$/, '')}-rotated.pdf`;
                     triggerFileDownload(rotatedPdfBlob, outName);
                   }}
-                  className="text-xs bg-emerald-600 hover:bg-emerald-500"
+                  className="text-xs bg-red-600 hover:bg-red-700 text-white cursor-pointer shadow-xs"
                 >
                   <Download className="w-3.5 h-3.5 mr-1.5" /> Download PDF
                 </Button>

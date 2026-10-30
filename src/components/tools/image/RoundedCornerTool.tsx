@@ -252,7 +252,7 @@ export const RoundedCornerTool: React.FC<{
 
                 {/* Checkerboard background container */}
                 <div
-                  className="rounded-xl border border-zinc-200/80 dark:border-zinc-800/80 p-2 flex items-center justify-center h-[260px] sm:h-[300px] lg:h-auto flex-1 min-h-[220px]"
+                  className="rounded-xl border border-zinc-200/80 dark:border-zinc-800/80 p-2 flex items-center justify-center h-[380px] sm:h-[430px] lg:h-[480px] xl:h-[510px] flex-1 min-h-[360px] sm:min-h-[400px] lg:min-h-[460px] xl:min-h-[490px]"
                   style={{
                     backgroundImage: `linear-gradient(45deg, #f0f0f0 25%, transparent 25%), linear-gradient(-45deg, #f0f0f0 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #f0f0f0 75%), linear-gradient(-45deg, transparent 75%, #f0f0f0 75%)`,
                     backgroundSize: `16px 16px`,
@@ -263,7 +263,7 @@ export const RoundedCornerTool: React.FC<{
                     <img
                       src={resultUrl}
                       alt="Rounded preview"
-                      className="max-h-[250px] sm:max-h-[280px] lg:max-h-[300px] max-w-full object-contain drop-shadow-sm"
+                      className="max-h-[340px] sm:max-h-[390px] lg:max-h-[440px] xl:max-h-[470px] max-w-full object-contain drop-shadow-sm"
                     />
                   )}
                 </div>

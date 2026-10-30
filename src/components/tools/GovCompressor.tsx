@@ -907,7 +907,7 @@ export const GovCompressor: React.FC<GovCompressorProps> = ({ initialFile, onNot
         <div className="lg:col-span-7 xl:col-span-8 flex flex-col h-full space-y-2">
           {/* Studio Canvas / Preview Card */}
           <div
-            className="relative overflow-hidden rounded-xl border border-zinc-200/80 dark:border-zinc-800/80 bg-zinc-100/70 dark:bg-zinc-950/70 flex items-center justify-center select-none transition-colors h-[260px] sm:h-[300px] lg:h-auto flex-1 min-h-[220px]"
+            className="relative overflow-hidden rounded-xl border border-zinc-200/80 dark:border-zinc-800/80 bg-zinc-100/70 dark:bg-zinc-950/70 flex items-center justify-center select-none transition-colors h-[380px] sm:h-[430px] lg:h-[480px] xl:h-[510px] flex-1 min-h-[360px] sm:min-h-[400px] lg:min-h-[460px] xl:min-h-[490px]"
             style={{
               backgroundImage: isDark
                 ? 'radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px)'
@@ -920,7 +920,7 @@ export const GovCompressor: React.FC<GovCompressorProps> = ({ initialFile, onNot
                 <img
                   src={resultThumbUrl || previewUrl || ''}
                   alt="Document Preview"
-                  className="max-h-[250px] sm:max-h-[280px] lg:max-h-[300px] w-auto object-contain rounded-md shadow-xs border border-zinc-200 dark:border-zinc-700 bg-white"
+                  className="max-h-[340px] sm:max-h-[390px] lg:max-h-[440px] xl:max-h-[470px] w-auto object-contain rounded-md shadow-xs border border-zinc-200 dark:border-zinc-700 bg-white"
                 />
                 <button
                   type="button"

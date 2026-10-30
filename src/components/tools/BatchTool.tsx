@@ -282,7 +282,7 @@ export const BatchTool: React.FC<{
               </div>
 
               {/* Scrollable list */}
-              <div className="divide-y divide-zinc-100 dark:divide-zinc-800 h-[220px] sm:h-[240px] lg:h-auto flex-1 min-h-[180px] overflow-y-auto pr-1">
+              <div className="divide-y divide-zinc-100 dark:divide-zinc-800 h-[320px] sm:h-[370px] lg:h-[420px] xl:h-[450px] flex-1 min-h-[300px] sm:min-h-[350px] lg:min-h-[400px] xl:min-h-[430px] overflow-y-auto pr-1">
                 {items.map((item) => (
                   <div
                     key={item.id}

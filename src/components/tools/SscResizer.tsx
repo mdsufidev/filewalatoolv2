@@ -100,8 +100,8 @@ export const SscResizer: React.FC<SscResizerProps> = ({
 
   // Viewport Box Dimensions (Strictly proportional to targetW / targetH)
   const cropAspectRatio = targetW / targetH;
-  const BOX_MAX_W = itemType === 'photo' ? 180 : 260;
-  const BOX_MAX_H = itemType === 'photo' ? 220 : 120;
+  const BOX_MAX_W = itemType === 'photo' ? 250 : 340;
+  const BOX_MAX_H = itemType === 'photo' ? 310 : 160;
   let boxW = BOX_MAX_W;
   let boxH = Math.round(boxW / cropAspectRatio);
   if (boxH > BOX_MAX_H) {
@@ -770,7 +770,7 @@ export const SscResizer: React.FC<SscResizerProps> = ({
           <div
             ref={canvasContainerRef}
             tabIndex={0}
-            className="relative overflow-hidden rounded-xl border border-zinc-200/80 dark:border-zinc-800/80 bg-zinc-100/70 dark:bg-zinc-950/70 flex items-center justify-center select-none cursor-grab active:cursor-grabbing focus:outline-none transition-colors touch-none h-[260px] sm:h-[300px] lg:h-auto flex-1 min-h-[220px]"
+            className="relative overflow-hidden rounded-xl border border-zinc-200/80 dark:border-zinc-800/80 bg-zinc-100/70 dark:bg-zinc-950/70 flex items-center justify-center select-none cursor-grab active:cursor-grabbing focus:outline-none transition-colors touch-none h-[380px] sm:h-[430px] lg:h-[480px] xl:h-[510px] flex-1 min-h-[360px] sm:min-h-[400px] lg:min-h-[460px] xl:min-h-[490px]"
             style={{
               backgroundImage: isDark
                 ? 'radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px)'
