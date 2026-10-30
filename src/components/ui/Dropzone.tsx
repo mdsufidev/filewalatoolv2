@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { UploadCloud, Image as ImageIcon, Sparkles, AlertCircle } from 'lucide-react';
+import { UploadCloud, Image as ImageIcon, Sparkles, AlertCircle, Loader2 } from 'lucide-react';
 import { isValidImageFile } from '../../utils/memory';
 import { useTheme } from '../../core/themeContext';
 import { useLanguage } from '../../core/languageContext';
@@ -12,6 +12,7 @@ export interface DropzoneProps {
   compact?: boolean;
   title?: string;
   description?: string;
+  isLoading?: boolean;
 }
 
 export const Dropzone: React.FC<DropzoneProps> = ({
@@ -22,9 +23,11 @@ export const Dropzone: React.FC<DropzoneProps> = ({
   compact = false,
   title = 'Drag & drop image here',
   description = 'or browse files from your computer',
+  isLoading = false,
 }) => {
   const [isDragOver, setIsDragOver] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [uploadingMeta, setUploadingMeta] = useState<{ name: string; size: number } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { theme } = useTheme();
@@ -62,6 +65,7 @@ export const Dropzone: React.FC<DropzoneProps> = ({
       }
 
       const filesToPass = multiple ? validFiles : [validFiles[0]];
+      setUploadingMeta({ name: filesToPass[0].name, size: filesToPass[0].size });
       onFilesSelected(filesToPass);
     },
     [accept, multiple, onFilesSelected]
@@ -149,55 +153,87 @@ export const Dropzone: React.FC<DropzoneProps> = ({
           className="hidden"
         />
 
-        <div className="flex flex-col items-center text-center max-w-md">
-          <div
-            className={`rounded-md border flex items-center justify-center transition-colors duration-150 ${
-              compact ? 'w-10 h-10 mb-2.5' : 'w-12 h-12 mb-3.5'
-            } ${
-              isDark
-                ? 'bg-zinc-850 border-zinc-750 text-zinc-300'
-                : 'bg-white border-zinc-200 text-zinc-700'
-            }`}
-          >
-            <UploadCloud className="w-5 h-5 stroke-[1.8]" />
+        {isLoading || uploadingMeta ? (
+          <div className="flex flex-col items-center text-center max-w-md animate-in fade-in duration-200 py-1">
+            <div
+              className={`rounded-xl border flex items-center justify-center transition-colors mb-3 relative ${
+                compact ? 'w-10 h-10' : 'w-12 h-12'
+              } bg-red-500/10 dark:bg-red-500/20 border-red-500/30 text-red-600 dark:text-red-400`}
+            >
+              <Loader2 className={`${compact ? 'w-5 h-5' : 'w-6 h-6'} animate-spin`} />
+              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full animate-ping" />
+            </div>
+
+            <div className="space-y-1">
+              <div className="inline-flex items-center gap-1.5 text-xs font-mono font-semibold uppercase tracking-wider text-red-600 dark:text-red-400">
+                <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                <span>Loading into browser memory...</span>
+              </div>
+              <h4 className="text-sm font-semibold truncate max-w-[280px] sm:max-w-xs text-zinc-900 dark:text-zinc-100">
+                {uploadingMeta?.name || 'Selected file'}
+              </h4>
+              {uploadingMeta?.size ? (
+                <p className="text-[11px] font-mono text-zinc-400">
+                  {(uploadingMeta.size / (1024 * 1024)).toFixed(2)} MB · 100% Client-Side RAM
+                </p>
+              ) : null}
+            </div>
+
+            <div className="w-44 sm:w-52 h-1.5 bg-zinc-200 dark:bg-zinc-800 rounded-full overflow-hidden mt-3 relative">
+              <div className="h-full bg-red-600 rounded-full w-full animate-pulse transition-all duration-300" />
+            </div>
           </div>
+        ) : (
+          <div className="flex flex-col items-center text-center max-w-md">
+            <div
+              className={`rounded-md border flex items-center justify-center transition-transform duration-200 group-hover:scale-105 ${
+                compact ? 'w-10 h-10 mb-2.5' : 'w-12 h-12 mb-3.5'
+              } ${
+                isDark
+                  ? 'bg-zinc-850 border-zinc-750 text-zinc-300'
+                  : 'bg-white border-zinc-200 text-zinc-700'
+              }`}
+            >
+              <UploadCloud className="w-5 h-5 stroke-[1.8]" />
+            </div>
 
-          <h3
-            className={`text-sm md:text-base font-semibold tracking-tight ${
-              isDark ? 'text-zinc-100' : 'text-zinc-900'
-            }`}
-          >
-            {isDragOver
-              ? language === 'hi'
-                ? 'फ़ाइल अभी यहाँ छोड़ें'
-                : 'Drop files here right now'
-              : displayTitle}
-          </h3>
+            <h3
+              className={`text-sm md:text-base font-semibold tracking-tight ${
+                isDark ? 'text-zinc-100' : 'text-zinc-900'
+              }`}
+            >
+              {isDragOver
+                ? language === 'hi'
+                  ? 'फ़ाइल अभी यहाँ छोड़ें'
+                  : 'Drop files here right now'
+                : displayTitle}
+            </h3>
 
-          {displayDesc && (
-            <p className={`text-xs mt-1 max-w-sm ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
-              {displayDesc}
-            </p>
-          )}
+            {displayDesc && (
+              <p className={`text-xs mt-1 max-w-sm ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                {displayDesc}
+              </p>
+            )}
 
-          <div
-            className={`flex items-center justify-center gap-2 mt-3 text-[11px] font-mono ${
-              isDark ? 'text-zinc-500' : 'text-zinc-400'
-            }`}
-          >
-            <span>
-              {language === 'hi'
-                ? 'पेस्ट करने के लिए Ctrl+V दबाएं'
-                : 'Press Ctrl+V to paste'}
-            </span>
-            <span>·</span>
-            <span className="text-emerald-600 dark:text-emerald-400 font-medium">
-              {language === 'hi'
-                ? '🔒 100% प्राइवेट (डिवाइस में)'
-                : '🔒 100% Private (In-Browser)'}
-            </span>
+            <div
+              className={`flex items-center justify-center gap-2 mt-3 text-[11px] font-mono ${
+                isDark ? 'text-zinc-500' : 'text-zinc-400'
+              }`}
+            >
+              <span>
+                {language === 'hi'
+                  ? 'पेस्ट करने के लिए Ctrl+V दबाएं'
+                  : 'Press Ctrl+V to paste'}
+              </span>
+              <span>·</span>
+              <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                {language === 'hi'
+                  ? '🔒 100% प्राइवेट (डिवाइस में)'
+                  : '🔒 100% Private (In-Browser)'}
+              </span>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {errorMessage && (

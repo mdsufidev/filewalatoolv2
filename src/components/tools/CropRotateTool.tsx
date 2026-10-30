@@ -17,6 +17,7 @@ import {
   Share2,
   Maximize2,
   Minimize2,
+  Loader2,
 } from 'lucide-react';
 import { useTheme } from '../../core/themeContext';
 import { ImageToolGuideSection } from './image/ImageToolGuideSection';
@@ -121,6 +122,7 @@ export const CropRotateTool: React.FC<CropRotateToolProps> = ({ onNotify, initia
 
   // Processing & Live Preview
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
+  const [uploadingFileMeta, setUploadingFileMeta] = useState<{ name: string; size: number } | null>(null);
   const [previewBlobUrl, setPreviewBlobUrl] = useState<string | null>(null);
   const [previewSizeBytes, setPreviewSizeBytes] = useState<number | null>(null);
   const [lastCroppedBlob, setLastCroppedBlob] = useState<Blob | null>(null);
@@ -361,9 +363,11 @@ export const CropRotateTool: React.FC<CropRotateToolProps> = ({ onNotify, initia
   const validateAndLoadFile = useCallback(
     async (file: File) => {
       setErrorMessage(null);
+      setUploadingFileMeta({ name: file.name, size: file.size });
 
       const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/bmp'];
       if (!validTypes.includes(file.type) && !/\.(jpe?g|png|webp|avif|bmp)$/i.test(file.name)) {
+        setUploadingFileMeta(null);
         const msg = 'Unsupported file format. Please upload PNG, JPEG, WebP, or AVIF image.';
         setErrorMessage(msg);
         onNotify('Invalid File', msg, 'error');
@@ -371,6 +375,7 @@ export const CropRotateTool: React.FC<CropRotateToolProps> = ({ onNotify, initia
       }
 
       if (file.size > 50 * 1024 * 1024) {
+        setUploadingFileMeta(null);
         const msg = 'File size exceeds 50MB maximum limit.';
         setErrorMessage(msg);
         onNotify('File Too Large', msg, 'error');
@@ -412,6 +417,7 @@ export const CropRotateTool: React.FC<CropRotateToolProps> = ({ onNotify, initia
         onNotify('Load Error', msg, 'error');
       } finally {
         setIsProcessing(false);
+        setUploadingFileMeta(null);
       }
     },
     [onNotify, registerObjectUrl, revokeAllTrackedUrls]
@@ -1047,40 +1053,68 @@ export const CropRotateTool: React.FC<CropRotateToolProps> = ({ onNotify, initia
               }}
             />
 
-            <div className="flex flex-col items-center justify-center space-y-2.5 max-w-sm">
-              <div className="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-850 text-zinc-600 dark:text-zinc-300 flex items-center justify-center shrink-0 transition-transform duration-200 ease-out group-hover:scale-110 border border-zinc-200/60 dark:border-zinc-800">
-                <UploadCloud className="w-5 h-5 stroke-[2]" />
-              </div>
+            {uploadingFileMeta || isProcessing ? (
+              <div className="flex flex-col items-center justify-center space-y-3 max-w-sm animate-in fade-in duration-200">
+                <div className="relative w-12 h-12 rounded-2xl bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center border border-indigo-500/30">
+                  <Loader2 className="w-6 h-6 animate-spin text-indigo-600 dark:text-indigo-400" />
+                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-indigo-500 rounded-full animate-ping" />
+                </div>
 
-              <div className="space-y-0.5">
-                <h3 className="text-sm sm:text-base font-semibold text-zinc-900 dark:text-zinc-100">
-                  Drop an image here or browse
-                </h3>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                  Supports PNG, JPEG, WebP, AVIF · Press Ctrl+V to paste
-                </p>
-              </div>
+                <div className="space-y-1 text-center">
+                  <div className="inline-flex items-center gap-1.5 text-xs font-mono font-semibold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
+                    <span>Loading into browser memory...</span>
+                  </div>
+                  <h3 className="text-sm font-semibold truncate max-w-[280px] sm:max-w-xs text-zinc-900 dark:text-zinc-100">
+                    {uploadingFileMeta?.name || 'Selected image'}
+                  </h3>
+                  {uploadingFileMeta?.size ? (
+                    <p className="text-[11px] font-mono text-zinc-400">
+                      {formatBytes(uploadingFileMeta.size)} · 100% Client-Side RAM
+                    </p>
+                  ) : null}
+                </div>
 
-              <div className="pt-0.5">
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleLoadSample();
-                  }}
-                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-zinc-700 dark:text-zinc-300 transition-colors cursor-pointer border border-zinc-200/60 dark:border-zinc-700/60"
-                >
-                  <Sparkles className="w-3.5 h-3.5 text-blue-500" />
-                  <span>Try Sample Image</span>
-                </button>
+                <div className="w-48 sm:w-56 h-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden relative">
+                  <div className="h-full bg-indigo-600 rounded-full w-full animate-pulse transition-all duration-300" />
+                </div>
               </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center space-y-2.5 max-w-sm">
+                <div className="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-850 text-zinc-600 dark:text-zinc-300 flex items-center justify-center shrink-0 transition-transform duration-200 ease-out group-hover:scale-110 border border-zinc-200/60 dark:border-zinc-800">
+                  <UploadCloud className="w-5 h-5 stroke-[2]" />
+                </div>
 
-              <div className="pt-1 flex items-center gap-2 text-[10px] font-mono text-zinc-400">
-                <span>Max 50MB</span>
-                <span>·</span>
-                <span>Direct RAM Processing</span>
+                <div className="space-y-0.5">
+                  <h3 className="text-sm sm:text-base font-semibold text-zinc-900 dark:text-zinc-100">
+                    Drop an image here or browse
+                  </h3>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                    Supports PNG, JPEG, WebP, AVIF · Press Ctrl+V to paste
+                  </p>
+                </div>
+
+                <div className="pt-0.5">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleLoadSample();
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-zinc-700 dark:text-zinc-300 transition-colors cursor-pointer border border-zinc-200/60 dark:border-zinc-700/60"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-blue-500" />
+                    <span>Try Sample Image</span>
+                  </button>
+                </div>
+
+                <div className="pt-1 flex items-center gap-2 text-[10px] font-mono text-zinc-400">
+                  <span>Max 50MB</span>
+                  <span>·</span>
+                  <span>Direct RAM Processing</span>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
 

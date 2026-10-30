@@ -41,7 +41,8 @@ import {
   HelpCircle,
   TrendingDown,
   TrendingUp,
-  Info
+  Info,
+  Loader2
 } from 'lucide-react';
 import { ComparisonSlider } from '../ui/ComparisonSlider';
 import { useTheme } from '../../core/themeContext';
@@ -124,6 +125,7 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
   // View & Processing State
   const [viewMode, setViewMode] = useState<ViewMode>('split');
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
+  const [uploadingFileMeta, setUploadingFileMeta] = useState<{ name: string; size: number } | null>(null);
   const [compressedResult, setCompressedResult] = useState<CompressedResult | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isDragOver, setIsDragOver] = useState<boolean>(false);
@@ -135,6 +137,7 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
 
   // Concurrency & race condition guard
   const executionIdRef = useRef<number>(0);
+  const isInitialCompressRef = useRef<boolean>(true);
   const loadedInitialFileRef = useRef<File | null>(null);
   const lastCompressedUrlRef = useRef<string | null>(null);
   const currentSourceUrlRef = useRef<string | null>(null);
@@ -177,6 +180,7 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
   // Validate incoming file
   const validateAndLoadFile = useCallback(async (file: File) => {
     setErrorMessage(null);
+    setUploadingFileMeta({ name: file.name, size: file.size });
 
     // 1. Check for Apple iOS HEIC / HEIF photos
     const isHeic =
@@ -198,6 +202,7 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
         validateAndLoadFile(convertedFile);
       } catch (err: unknown) {
         setIsProcessing(false);
+        setUploadingFileMeta(null);
         const msg = err instanceof Error ? err.message : 'Failed to decode iPhone HEIC photo.';
         setErrorMessage(msg);
         onNotify?.('HEIC Decode Failed', msg, 'error');
@@ -210,6 +215,7 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
     const validExtensions = /\.(jpe?g|png|webp|avif)$/i;
 
     if (!validMimes.includes(file.type.toLowerCase()) && !validExtensions.test(file.name)) {
+      setUploadingFileMeta(null);
       const err = 'Invalid file format. Please upload a JPG, PNG, WebP, AVIF, or iPhone HEIC image.';
       setErrorMessage(err);
       onNotify?.('Invalid File Format', err, 'error');
@@ -219,6 +225,7 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
     // 3. Validate File Size (Limit to 50MB to prevent browser tab crash)
     const maxSizeBytes = 50 * 1024 * 1024;
     if (file.size > maxSizeBytes) {
+      setUploadingFileMeta(null);
       const err = `File exceeds 50MB limit (${formatFileSize(file.size)}). Please choose a smaller image.`;
       setErrorMessage(err);
       onNotify?.('File Too Large', err, 'error');
@@ -261,15 +268,18 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
 
       setSourceImage(metadata);
       setImageElement(img);
+      isInitialCompressRef.current = true;
 
       // Intelligently set initial target KB (approx 35% of original size, clamped between 30KB and 5000KB)
       const initialTargetKb = Math.min(5000, Math.max(30, Math.round((file.size / 1024) * 0.35)));
       setTargetKb(initialTargetKb);
       setTargetKbInput(String(initialTargetKb));
 
+      setUploadingFileMeta(null);
       setIsProcessing(false);
       onNotify?.('Image Loaded', `${file.name} (${formatFileSize(file.size)}) ready to compress.`, 'info');
     } catch (err: any) {
+      setUploadingFileMeta(null);
       setIsProcessing(false);
       const msg = err?.message || 'Failed to decode image data. The file might be corrupted.';
       setErrorMessage(msg);
@@ -304,6 +314,8 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
     setImageElement(null);
     setCompressedResult(null);
     setErrorMessage(null);
+    setUploadingFileMeta(null);
+    isInitialCompressRef.current = true;
     if (fileInputRef.current) fileInputRef.current.value = '';
     if (workspaceFileInputRef.current) workspaceFileInputRef.current.value = '';
     onNotify?.('Reset', 'Cleared loaded image and cache.', 'info');
@@ -567,9 +579,12 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
   useEffect(() => {
     if (!sourceImage || !imageElement) return;
 
+    // Fast 40ms initial compression on fresh image load, 400ms debounce for slider adjustments
+    const delay = isInitialCompressRef.current ? 40 : 400;
     const timer = setTimeout(() => {
+      isInitialCompressRef.current = false;
       executeCompression();
-    }, 400);
+    }, delay);
 
     return () => clearTimeout(timer);
   }, [quality, targetKb, outputFormat, scalePercentage, mode, sourceImage, imageElement, executeCompression]);
@@ -814,34 +829,62 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
               }}
             />
 
-            <div className="flex flex-col items-center justify-center space-y-2.5 max-w-sm">
-              <div className="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-850 text-zinc-600 dark:text-zinc-300 flex items-center justify-center shrink-0 transition-transform duration-200 ease-out group-hover:scale-105 border border-zinc-200/60 dark:border-zinc-800">
-                <UploadCloud className="w-5 h-5 stroke-[1.75]" />
-              </div>
+            {uploadingFileMeta || isProcessing ? (
+              <div className="flex flex-col items-center justify-center space-y-3 max-w-sm animate-in fade-in duration-200">
+                <div className="relative w-12 h-12 rounded-2xl bg-red-500/10 dark:bg-red-500/20 text-red-600 dark:text-red-400 flex items-center justify-center border border-red-500/30">
+                  <Loader2 className="w-6 h-6 animate-spin text-red-600 dark:text-red-400" />
+                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full animate-ping" />
+                </div>
 
-              <div className="space-y-0.5">
-                <h3 className="text-sm sm:text-[15px] font-semibold text-zinc-900 dark:text-zinc-100">
-                  Drop an image here or browse
-                </h3>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                  Supports PNG, JPG, WebP, AVIF, HEIC · Press Ctrl+V to paste
-                </p>
-              </div>
+                <div className="space-y-1 text-center">
+                  <div className="inline-flex items-center gap-1.5 text-xs font-mono font-semibold uppercase tracking-wider text-red-600 dark:text-red-400">
+                    <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                    <span>Loading into browser memory...</span>
+                  </div>
+                  <h3 className="text-sm font-semibold truncate max-w-[280px] sm:max-w-xs text-zinc-900 dark:text-zinc-100">
+                    {uploadingFileMeta?.name || 'Selected image'}
+                  </h3>
+                  {uploadingFileMeta?.size ? (
+                    <p className="text-[11px] font-mono text-zinc-400">
+                      {formatFileSize(uploadingFileMeta.size)} · 100% Client-Side RAM
+                    </p>
+                  ) : null}
+                </div>
 
-              <div className="pt-0.5">
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleLoadSample();
-                  }}
-                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-zinc-700 dark:text-zinc-300 transition-colors cursor-pointer border border-zinc-200 dark:border-zinc-700"
-                >
-                  <Sparkles className="w-3.5 h-3.5 text-blue-500" />
-                  <span>Try Sample Image</span>
-                </button>
+                <div className="w-48 sm:w-56 h-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden relative">
+                  <div className="h-full bg-red-600 rounded-full w-full animate-pulse transition-all duration-300" />
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center space-y-2.5 max-w-sm">
+                <div className="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-850 text-zinc-600 dark:text-zinc-300 flex items-center justify-center shrink-0 transition-transform duration-200 ease-out group-hover:scale-105 border border-zinc-200/60 dark:border-zinc-800">
+                  <UploadCloud className="w-5 h-5 stroke-[1.75]" />
+                </div>
+
+                <div className="space-y-0.5">
+                  <h3 className="text-sm sm:text-[15px] font-semibold text-zinc-900 dark:text-zinc-100">
+                    Drop an image here or browse
+                  </h3>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                    Supports PNG, JPG, WebP, AVIF, HEIC · Press Ctrl+V to paste
+                  </p>
+                </div>
+
+                <div className="pt-0.5">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleLoadSample();
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-zinc-700 dark:text-zinc-300 transition-colors cursor-pointer border border-zinc-200 dark:border-zinc-700"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-blue-500" />
+                    <span>Try Sample Image</span>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -1068,17 +1111,24 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
                 </h3>
               </div>
 
-              {isReduced ? (
-                <span className="px-2 py-0.5 rounded-full text-xs font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/80 dark:border-emerald-800/50">
-                  {savedPercentage}% smaller
-                </span>
-              ) : isIncreased ? (
-                <span className="px-2 py-0.5 rounded-full text-xs font-semibold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 border border-rose-200/80 dark:border-rose-800/50">
-                  +{Math.abs(savedPercentage)}% larger
-                </span>
+              {compressedResult ? (
+                isReduced ? (
+                  <span className="px-2 py-0.5 rounded-full text-xs font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/80 dark:border-emerald-800/50">
+                    {savedPercentage}% smaller
+                  </span>
+                ) : isIncreased ? (
+                  <span className="px-2 py-0.5 rounded-full text-xs font-semibold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 border border-rose-200/80 dark:border-rose-800/50">
+                    +{Math.abs(savedPercentage)}% larger
+                  </span>
+                ) : (
+                  <span className="px-2 py-0.5 rounded-full text-xs font-semibold text-zinc-600 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800">
+                    Optimized
+                  </span>
+                )
               ) : (
-                <span className="px-2 py-0.5 rounded-full text-xs font-semibold text-zinc-600 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800">
-                  Optimized
+                <span className="px-2 py-0.5 rounded-full text-xs font-semibold text-zinc-500 bg-zinc-100 dark:bg-zinc-800 animate-pulse flex items-center gap-1.5">
+                  <Loader2 className="w-3 h-3 animate-spin text-red-500" />
+                  <span>Optimizing...</span>
                 </span>
               )}
             </div>
@@ -1120,7 +1170,11 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
                   </div>
                 </div>
                 <span className={`text-xs font-mono font-bold ${isReduced ? 'text-emerald-600 dark:text-emerald-400' : isDark ? 'text-white' : 'text-zinc-950'}`}>
-                  {compressedResult ? formatFileSize(compressedResult.size) : 'Calculating...'}
+                  {compressedResult ? (
+                    formatFileSize(compressedResult.size)
+                  ) : (
+                    <span className="text-zinc-400 dark:text-zinc-500 animate-pulse">Calculating...</span>
+                  )}
                 </span>
               </div>
             </div>
@@ -1373,12 +1427,19 @@ export const CompressorTool: React.FC<CompressorToolProps> = ({ onNotify, initia
                 type="button"
                 disabled={!compressedResult || isProcessing}
                 onClick={handleDownload}
-                className="w-full py-2.5 px-4 rounded-xl text-xs sm:text-sm font-semibold bg-red-600 hover:bg-red-700 active:scale-[0.99] text-white flex items-center justify-center gap-2 transition-all shadow-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full py-2.5 px-4 rounded-xl text-xs sm:text-sm font-semibold bg-red-600 hover:bg-red-700 active:scale-[0.99] text-white flex items-center justify-center gap-2 transition-all shadow-xs cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                <Download className="w-4 h-4 stroke-[2.5]" />
-                <span>
-                  {compressedResult ? `Download (${formatFileSize(compressedResult.size)})` : 'Download Image'}
-                </span>
+                {!compressedResult || isProcessing ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin text-white" />
+                    <span>Optimizing in Browser RAM...</span>
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4 stroke-[2.5]" />
+                    <span>Download ({formatFileSize(compressedResult.size)})</span>
+                  </>
+                )}
               </button>
             </div>
           </div>
