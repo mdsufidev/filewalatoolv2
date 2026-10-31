@@ -15,6 +15,7 @@ import {
   HelpCircle,
   Clock,
   Sparkles,
+  ExternalLink,
 } from 'lucide-react';
 import { useLanguage } from '../../core/languageContext';
 
@@ -235,15 +236,92 @@ export const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({ onBackHome, onNavi
           </div>
           <div className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 space-y-3 leading-relaxed">
             <p>
-              FileWala is served via standard static hosting infrastructure and CDN delivery. The CDN distributes compiled client-side JavaScript, CSS, and web fonts. We do not use third-party user behavioral tracking pixels, biometric surveillance scripts, or invasive data brokers.
+              FileWala is served via standard static hosting infrastructure and CDN delivery. The CDN distributes compiled client-side JavaScript, CSS, and web fonts. We do not sell user personal data, and we do not deploy invasive biometric surveillance scripts or unauthorized data brokers.
             </p>
           </div>
         </section>
 
-        {/* Section 8 */}
+        {/* Section 8: Google AdSense & Advertising Cookies */}
         <section className="space-y-3 border-t border-zinc-200 dark:border-zinc-800 pt-8">
           <div className="flex items-center gap-2 text-zinc-950 dark:text-zinc-50 font-bold text-base sm:text-lg">
             <span className="font-mono text-zinc-400 dark:text-zinc-600 text-sm">08.</span>
+            <h2>Google AdSense, Advertising Cookies &amp; User Privacy Controls</h2>
+          </div>
+          <div className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 space-y-3 leading-relaxed">
+            <p>
+              To keep our core client-side document utilities 100% free for all students, job applicants, and cyber café operators without charging subscription fees or paywalls, FileWala partners with Google AdSense to serve online advertisements.
+            </p>
+            <p>
+              In accordance with Google&apos;s advertising policies and statutory transparency requirements:
+            </p>
+            <ul className="list-disc pl-5 space-y-1.5 text-zinc-700 dark:text-zinc-300">
+              <li>
+                <strong>Third-Party Vendor Cookies:</strong> Third-party vendors, including Google, use cookies to serve ads based on a user&apos;s prior visits to this website or other websites on the Internet.
+              </li>
+              <li>
+                <strong>DoubleClick &amp; Advertising Cookies:</strong> Google&apos;s use of advertising cookies enables it and its partners to serve personalized ads to users based on their visits to FileWala and/or other sites across the Internet.
+              </li>
+              <li>
+                <strong>Strict Client-Side Document Isolation:</strong> Advertising scripts and third-party cookies execute strictly in standard webpage sandboxes and <em>never</em> have access to your local files, image buffers, PDFs, or handwritten signatures. All document calculations occur exclusively in volatile browser RAM and remain completely air-gapped from advertising partners.
+              </li>
+            </ul>
+
+            <div className="p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-850/50 space-y-2.5">
+              <span className="font-semibold block text-zinc-900 dark:text-zinc-100 text-xs sm:text-sm">
+                How to Opt Out of Personalized Advertising:
+              </span>
+              <p className="text-xs text-zinc-600 dark:text-zinc-400">
+                You have full control over your privacy and advertising preferences. You can opt out of personalized advertising through any of the following official mechanisms:
+              </p>
+              <ul className="list-disc pl-5 space-y-1.5 text-xs text-zinc-700 dark:text-zinc-300">
+                <li>
+                  <strong>Google Ads Settings:</strong> You can opt out of personalized Google advertising anytime by visiting{' '}
+                  <a
+                    href="https://adssettings.google.com/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 inline-flex items-center gap-0.5"
+                  >
+                    Google Ads Settings
+                    <ExternalLink className="w-3 h-3 ml-0.5" />
+                  </a>.
+                </li>
+                <li>
+                  <strong>AboutAds Consumer Choice:</strong> You can opt out of third-party vendors&apos; use of cookies for personalized advertising by visiting{' '}
+                  <a
+                    href="https://www.aboutads.info/choices/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 inline-flex items-center gap-0.5"
+                  >
+                    AboutAds.info Choice Tool
+                    <ExternalLink className="w-3 h-3 ml-0.5" />
+                  </a>.
+                </li>
+                <li>
+                  <strong>Network Advertising Initiative (NAI):</strong> You can also opt out of participating ad networks via the{' '}
+                  <a
+                    href="https://www.networkadvertising.org/choices/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 inline-flex items-center gap-0.5"
+                  >
+                    NAI Consumer Opt-Out Portal
+                    <ExternalLink className="w-3 h-3 ml-0.5" />
+                  </a>.
+                </li>
+                <li>
+                  <strong>Browser Cookie Controls:</strong> You may also configure your web browser (Google Chrome, Mozilla Firefox, Apple Safari, Microsoft Edge) to reject or delete cookies. Note that blocking all cookies may disable theme or language persistence.
+                </li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        {/* Section 9 */}
+        <section className="space-y-3 border-t border-zinc-200 dark:border-zinc-800 pt-8">
+          <div className="flex items-center gap-2 text-zinc-950 dark:text-zinc-50 font-bold text-base sm:text-lg">
+            <span className="font-mono text-zinc-400 dark:text-zinc-600 text-sm">09.</span>
             <h2>Privacy Officer &amp; Inquiries</h2>
           </div>
           <div className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 space-y-2 leading-relaxed">
