@@ -100,12 +100,39 @@ User Device (Browser RAM)
 
 ## 🖥️ FileWala Desktop for Windows (v1.0.0)
 
-For heavy bulk workflows and offline workstations (cyber cafés, photography studios, and enrollment centers), FileWala also offers a native Windows 64-bit application:
-* **AI Picture Enhancer [Hybrid Pro]**: Neural preview engine for facial clarity.
-* **4x Ultra HD Upscaling**: Reconstruct skin pore details and text on low-resolution scans.
-* **Offline Background Cutout**: GPU-accelerated background removal without internet.
-* **Hardware Acceleration**: Automatic NVIDIA CUDA / Tensor & multi-core CPU detection.
-* **Download Setup**: [Download Setup .EXE](https://www.filewalatool.com/download/v1.0.0/FileWala-TOOL-Setup-1.0.0.exe) (~80 MB)
+<p align="center">
+  <a href="https://www.filewalatool.com/download/v1.0.0/FileWala-TOOL-Setup-1.0.0.exe" target="_blank" rel="noopener noreferrer">
+    <img src="public/og-image.png" alt="FileWala Desktop & AI Studio" width="100%" style="border-radius: 8px; border: 1px solid #e2e8f0;" />
+  </a>
+</p>
+
+<p align="center">
+  <a href="https://www.filewalatool.com/download/v1.0.0/FileWala-TOOL-Setup-1.0.0.exe">
+    <img src="https://img.shields.io/badge/Download_Setup-.EXE_(80.4_MB)-dc2626?style=for-the-badge&logo=windows&logoColor=white" alt="Download FileWala Desktop .EXE" />
+  </a>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/OS-Windows%2010%20%2F%2011%20(64--bit)-0078D6?style=flat-square&logo=windows" alt="Windows 10/11" />
+  <img src="https://img.shields.io/badge/Release-v1.0.0%20Stable-10B981?style=flat-square" alt="Version 1.0.0" />
+  <img src="https://img.shields.io/badge/Architecture-x64%20Native-6366F1?style=flat-square" alt="x64 Native" />
+  <img src="https://img.shields.io/badge/AI%20Inference-100%25%20Offline-success?style=flat-square" alt="100% Offline" />
+  <img src="https://img.shields.io/badge/Acceleration-NVIDIA%20CUDA%20%2F%20CPU-76B900?style=flat-square&logo=nvidia" alt="NVIDIA CUDA" />
+</p>
+
+For high-throughput, offline batch processing across **cyber cafés, CSC digital service centers, photography studios, and enrollment offices**, FileWala provides a dedicated Windows 64-bit desktop workstation application:
+
+| Native Capability | Offline Neural Engine | Operational Benefit |
+| :--- | :--- | :--- |
+| **🧠 AI Picture Enhancer [Hybrid Pro]** | Ultra-Fast Preview V3 Neural Model | Real-time facial clarity restoration and edge denoising without cloud calls |
+| **🔍 4x Ultra HD Upscaling** | Deep Texture & Pixel Synthesizer | Reconstructs skin pores, iris details, and fine marksheet typography from low-res scans |
+| **✂️ U2Net Offline BG Remover** | GPU-Accelerated Salient Matting | Sub-second foreground isolation with zero internet connection required |
+| **⚡ Hardware Acceleration** | Automatic CUDA, Tensor & Multi-Core Detection | Automatically switches between dedicated NVIDIA GPU and AVX2 CPU threads for maximum throughput |
+
+#### 📥 Download & Specifications
+* **Direct Installer**: [Download FileWala-TOOL-Setup-1.0.0.exe (80.4 MB)](https://www.filewalatool.com/download/v1.0.0/FileWala-TOOL-Setup-1.0.0.exe)
+* **System Requirements**: Windows 10 / 11 (64-bit), 4 GB RAM (8 GB recommended), Optional NVIDIA GPU (CUDA-compatible) for accelerated neural inference.
+* **100% Air-Gapped Security**: Operates completely offline with zero telemetry, zero external network queries, and zero cloud dependencies.
 
 ---
 
