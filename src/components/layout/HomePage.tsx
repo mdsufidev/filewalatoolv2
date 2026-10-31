@@ -234,8 +234,8 @@ export const HomePage: React.FC<HomePageProps> = ({
             <div
               className={`relative flex items-center h-11 rounded-xl px-3.5 border transition-all ${
                 isDark
-                  ? 'bg-zinc-900/60 border-zinc-800 focus-within:border-zinc-600 focus-within:bg-zinc-900'
-                  : 'bg-zinc-50/60 border-zinc-200 focus-within:border-zinc-400 focus-within:bg-white'
+                  ? 'bg-zinc-900 border-zinc-800 focus-within:border-zinc-600 focus-within:bg-zinc-900'
+                  : 'bg-zinc-50 border-zinc-200 focus-within:border-zinc-400 focus-within:bg-white'
               }`}
             >
               <Search className="w-4 h-4 shrink-0 mr-2.5 text-zinc-400" />

@@ -708,7 +708,7 @@ function MainApp({ initialPath, toolComponents }: { initialPath?: string; toolCo
       <main id="main-content" tabIndex={-1} className="relative flex-1 w-full focus:outline-none">
         {/* Full Application Ambient Background Artwork (Everywhere between Navbar and Footer) */}
         <div
-          className="fixed inset-0 top-13 sm:top-14 pointer-events-none select-none z-0 overflow-hidden flex items-center justify-center opacity-25 dark:opacity-[0.07] dark:invert transition-opacity duration-300"
+          className="fixed inset-0 top-13 sm:top-14 pointer-events-none select-none z-0 overflow-hidden flex items-center justify-center opacity-[0.06] dark:opacity-[0.03] dark:invert transition-opacity duration-300"
           aria-hidden="true"
         >
           <img
@@ -716,7 +716,6 @@ function MainApp({ initialPath, toolComponents }: { initialPath?: string; toolCo
             alt=""
             className="w-full h-full object-cover object-center"
           />
-          <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.75)_0%,rgba(255,255,255,0.1)_70%,transparent_100%)] dark:bg-[radial-gradient(ellipse_at_center,rgba(9,9,11,0.75)_0%,rgba(9,9,11,0.1)_70%,transparent_100%)]" />
         </div>
 
         <div className="relative z-10 w-full">
