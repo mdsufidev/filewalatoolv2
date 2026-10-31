@@ -101,6 +101,26 @@ export const GovToolGuideSection: React.FC<GovToolGuideSectionProps> = ({ toolId
         </div>
       </div>
 
+      {/* Visual SEO Infographic for KB Resizer */}
+      {toolId === 'kb-resizer' && (
+        <figure className="w-full my-6 flex flex-col items-center">
+          <div className="w-full max-w-2xl overflow-hidden rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white p-3 sm:p-5 shadow-sm">
+            <img
+              src="/image-compress-to-kb.png"
+              alt="Image Compress to KB - FileWala Tool Before and After File Size Reduction (1MB to 300KB)"
+              loading="lazy"
+              decoding="async"
+              width={1024}
+              height={512}
+              className="w-full h-auto object-contain rounded-xl"
+            />
+          </div>
+          <figcaption className="mt-2.5 text-xs text-zinc-500 dark:text-zinc-400 text-center font-mono">
+            Figure: Reduce 1MB photo down to 300KB (or custom target KB) with instant in-browser compression.
+          </figcaption>
+        </figure>
+      )}
+
       {/* ========================================================= */}
       {/* 3. STEP-BY-STEP ACTIONABLE GUIDE (Unboxed Open Columns) */}
       {/* ========================================================= */}
