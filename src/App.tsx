@@ -702,7 +702,7 @@ function MainApp({ initialPath, toolComponents }: { initialPath?: string; toolCo
       <main id="main-content" tabIndex={-1} className="relative flex-1 w-full focus:outline-none">
         {/* Full Application Ambient Background Artwork (Everywhere between Navbar and Footer) */}
         <div
-          className="fixed inset-0 top-13 sm:top-14 pointer-events-none select-none z-0 overflow-hidden flex items-center justify-center opacity-[0.06] dark:opacity-[0.03] transition-opacity duration-300"
+          className="fixed inset-0 top-13 sm:top-14 pointer-events-none select-none z-0 overflow-hidden flex items-center justify-center opacity-[0.03] dark:opacity-[0.015] transition-opacity duration-300"
           style={{ transform: 'translateZ(0)', willChange: 'transform', backfaceVisibility: 'hidden' }}
           aria-hidden="true"
         >
