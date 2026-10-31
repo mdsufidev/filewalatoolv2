@@ -2,3 +2,4 @@ User-agent: *
 Allow: /
 
 Sitemap: https://www.filewalatool.com/sitemap.xml
+Sitemap: https://www.filewalatool.com/image-sitemap.xml

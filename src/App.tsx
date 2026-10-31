@@ -711,11 +711,14 @@ function MainApp({ initialPath, toolComponents }: { initialPath?: string; toolCo
           className="fixed inset-0 top-13 sm:top-14 pointer-events-none select-none z-0 overflow-hidden flex items-center justify-center opacity-[0.06] dark:opacity-[0.03] dark:invert transition-opacity duration-300"
           aria-hidden="true"
         >
-          <img
-            src="/og-image.png"
-            alt=""
-            className="w-full h-full object-cover object-center"
-          />
+          <picture className="w-full h-full flex items-center justify-center">
+            <source srcSet="/og-image.webp?v=10" type="image/webp" />
+            <img
+              src="/og-image.png?v=10"
+              alt=""
+              className="w-full h-full object-cover object-center"
+            />
+          </picture>
         </div>
 
         <div className="relative z-10 w-full">
