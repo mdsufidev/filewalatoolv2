@@ -539,7 +539,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                 className="w-full h-full object-cover select-none"
                 onError={(e) => {
                   e.currentTarget.onerror = null;
-                  e.currentTarget.src = "/logo.png";
+                  e.currentTarget.src = "/logo.webp";
                 }}
               />
             </div>

@@ -168,17 +168,18 @@ export const Navbar: React.FC<NavbarProps> = ({
           title="FileWala Tool - Free In-Browser File Utilities"
           aria-label="FileWala Tool Home"
         >
-          {/* Public Logo Image acting as [F] */}
-          <img
-            src="/favicon-192x192.png?v=8"
-            alt="FileWala Tool Logo"
-            draggable={false}
-            className="w-8 h-8 sm:w-8.5 sm:h-8.5 object-contain select-none shrink-0 transition-transform duration-150 group-hover:scale-105"
-            onError={(e) => {
-              e.currentTarget.onerror = null;
-              e.currentTarget.src = '/logo.png?v=8';
-            }}
-          />
+          {/* Public Logo Image */}
+          <picture className="shrink-0 flex items-center">
+            <source srcSet="/logo.webp?v=9" type="image/webp" />
+            <img
+              src="/logo.png?v=9"
+              alt="FileWala Tool Logo"
+              width={34}
+              height={28}
+              draggable={false}
+              className="w-8.5 h-7 sm:w-9 sm:h-7.5 object-contain select-none shrink-0 transition-transform duration-150 group-hover:scale-105"
+            />
+          </picture>
 
           {/* Typography: FileWala TOOL */}
           <span className="font-bold text-lg sm:text-xl tracking-tight text-zinc-950 dark:text-white leading-none">

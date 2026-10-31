@@ -42,17 +42,18 @@ export const Footer: React.FC<FooterProps> = ({
               title="FileWala Tool Home"
               aria-label="FileWala Tool Home"
             >
-              {/* Public Logo Image acting as [F] */}
-              <img
-                src="/favicon-192x192.png?v=8"
-                alt="FileWala Tool Logo"
-                draggable={false}
-                className="w-9 h-9 sm:w-10 sm:h-10 object-contain select-none shrink-0 transition-transform duration-150 group-hover:scale-105"
-                onError={(e) => {
-                  e.currentTarget.onerror = null;
-                  e.currentTarget.src = '/logo.png?v=8';
-                }}
-              />
+              {/* Public Logo Image */}
+              <picture className="shrink-0 flex items-center">
+                <source srcSet="/logo.webp?v=9" type="image/webp" />
+                <img
+                  src="/logo.png?v=9"
+                  alt="FileWala Tool Logo"
+                  width={40}
+                  height={32}
+                  draggable={false}
+                  className="w-9 h-7.5 sm:w-10 sm:h-8 object-contain select-none shrink-0 transition-transform duration-150 group-hover:scale-105"
+                />
+              </picture>
 
               {/* Typography: FileWala TOOL */}
               <span className="font-bold text-xl sm:text-2xl tracking-tight text-white leading-none">

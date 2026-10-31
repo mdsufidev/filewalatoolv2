@@ -16,19 +16,22 @@ export const LogoIcon: React.FC<{ size?: number; className?: string }> = ({
   className = '',
 }) => {
   return (
-    <img
-      src="/favicon-96x96.png"
-      width={size}
-      height={size}
-      alt="FileWalaTool Logo"
-      draggable={false}
-      style={{ width: `${size}px`, height: `${size}px` }}
-      className={`shrink-0 object-contain select-none ${className}`}
-      onError={(e) => {
-        e.currentTarget.onerror = null;
-        e.currentTarget.src = "/logo.png";
-      }}
-    />
+    <picture className="shrink-0 inline-flex items-center">
+      <source srcSet="/favicon-96x96.webp?v=9" type="image/webp" />
+      <img
+        src="/favicon-96x96.png?v=9"
+        width={size}
+        height={size}
+        alt="FileWalaTool Logo"
+        draggable={false}
+        style={{ width: `${size}px`, height: `${size}px` }}
+        className={`shrink-0 object-contain select-none ${className}`}
+        onError={(e) => {
+          e.currentTarget.onerror = null;
+          e.currentTarget.src = "/logo.png?v=9";
+        }}
+      />
+    </picture>
   );
 };
 
@@ -61,9 +64,9 @@ export const Logo: React.FC<LogoProps> = ({
     return () => window.removeEventListener('filewala_logo_updated', handleUpdate);
   }, []);
 
-  const logoRender = (
+  const logoRender = customLogo ? (
     <img
-      src={customLogo || '/web-app-manifest-192x192.png'}
+      src={customLogo}
       alt="FileWalaTool Logo"
       width={size}
       height={size}
@@ -72,9 +75,26 @@ export const Logo: React.FC<LogoProps> = ({
       className={`shrink-0 object-contain select-none ${className}`}
       onError={(e) => {
         e.currentTarget.onerror = null;
-        e.currentTarget.src = "/logo.png";
+        e.currentTarget.src = "/logo.png?v=9";
       }}
     />
+  ) : (
+    <picture className={`shrink-0 inline-flex items-center ${className}`}>
+      <source srcSet="/web-app-manifest-192x192.webp?v=9" type="image/webp" />
+      <img
+        src="/web-app-manifest-192x192.png?v=9"
+        alt="FileWalaTool Logo"
+        width={size}
+        height={size}
+        draggable={false}
+        style={{ width: `${size}px`, height: `${size}px` }}
+        className="shrink-0 object-contain select-none"
+        onError={(e) => {
+          e.currentTarget.onerror = null;
+          e.currentTarget.src = "/logo.png?v=9";
+        }}
+      />
+    </picture>
   );
 
   if (showText) {
