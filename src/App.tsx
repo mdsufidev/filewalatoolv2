@@ -705,12 +705,26 @@ function MainApp({ initialPath, toolComponents }: { initialPath?: string; toolCo
       )}
 
       {/* Main Content Area */}
-      <main id="main-content" tabIndex={-1} className="flex-1 w-full focus:outline-none">
-        <AppErrorBoundary
-          fallbackTitle="Page Display Error"
-          onReset={() => handleGoHome('all')}
+      <main id="main-content" tabIndex={-1} className="relative flex-1 w-full focus:outline-none">
+        {/* Full Application Ambient Background Artwork (Everywhere between Navbar and Footer) */}
+        <div
+          className="fixed inset-0 top-13 sm:top-14 pointer-events-none select-none z-0 overflow-hidden flex items-center justify-center opacity-25 dark:opacity-[0.07] dark:invert transition-opacity duration-300"
+          aria-hidden="true"
         >
-          {activePage !== null ? (
+          <img
+            src="/og-image.png"
+            alt=""
+            className="w-full h-full object-cover object-center"
+          />
+          <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.75)_0%,rgba(255,255,255,0.1)_70%,transparent_100%)] dark:bg-[radial-gradient(ellipse_at_center,rgba(9,9,11,0.75)_0%,rgba(9,9,11,0.1)_70%,transparent_100%)]" />
+        </div>
+
+        <div className="relative z-10 w-full">
+          <AppErrorBoundary
+            fallbackTitle="Page Display Error"
+            onReset={() => handleGoHome('all')}
+          >
+            {activePage !== null ? (
             /* =========================================================================
                INFORMATIONAL & LEGAL PAGES (About Us, Disclaimer, Terms, Contact)
             ========================================================================= */
@@ -822,6 +836,7 @@ function MainApp({ initialPath, toolComponents }: { initialPath?: string; toolCo
             </div>
           )}
         </AppErrorBoundary>
+        </div>
       </main>
 
       {/* Lazy Modals with Suspense wrappers */}

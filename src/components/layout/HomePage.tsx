@@ -209,17 +209,7 @@ export const HomePage: React.FC<HomePageProps> = ({
       {/* =========================================================================
           HERO SECTION (Compact, Practical, Human-Crafted Utility Hero)
       ========================================================================= */}
-      <section className="relative w-full bg-white dark:bg-zinc-950 py-8 sm:py-10 overflow-hidden">
-        {/* Subtle Ambient Application Artwork in Background */}
-        <div className="absolute inset-0 pointer-events-none select-none overflow-hidden flex items-center justify-center opacity-15 dark:opacity-[0.06]">
-          <img
-            src="/app-illustration.png"
-            alt=""
-            className="w-full max-w-7xl h-full object-cover sm:object-contain object-center"
-            aria-hidden="true"
-          />
-        </div>
-
+      <section className="relative w-full bg-transparent py-8 sm:py-10 overflow-hidden">
         <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 text-center">
           
           {/* Status Label (Hidden on clean home wireframe, visible on category hubs) */}

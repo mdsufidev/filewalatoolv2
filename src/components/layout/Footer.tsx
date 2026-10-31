@@ -28,7 +28,7 @@ export const Footer: React.FC<FooterProps> = ({
   };
 
   return (
-    <footer className="bg-zinc-950 text-zinc-400 border-t border-zinc-800/80 pt-20 pb-16 sm:pt-28 sm:pb-24 mt-28 sm:mt-36 select-none">
+    <footer className="relative z-20 bg-zinc-950 text-zinc-400 border-t border-zinc-800/80 pt-20 pb-16 sm:pt-28 sm:pb-24 mt-28 sm:mt-36 select-none">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Main Grid: Generous column layout with ample breathing distance */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-12 sm:gap-14 lg:gap-20 mb-20">
