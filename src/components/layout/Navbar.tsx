@@ -10,7 +10,7 @@ import {
   LogOut,
   ShieldCheck,
 } from 'lucide-react';
-import { checkIsAdmin } from '../../core/firebase';
+import { checkIsAdmin } from '../../core/authStorage';
 import { UserAvatar } from '../ui/UserAvatar';
 import { useTheme } from '../../core/themeContext';
 import { useLanguage } from '../../core/languageContext';

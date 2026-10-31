@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect } from 'react';
+import React, { createContext, useContext, useEffect, useMemo } from 'react';
 
 export type Theme = 'light' | 'dark';
 
@@ -10,6 +10,13 @@ interface ThemeContextType {
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
+
+const STATIC_THEME_VALUE: ThemeContextType = Object.freeze({
+  theme: 'light',
+  isDark: false,
+  setTheme: () => {},
+  toggleTheme: () => {},
+});
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   useEffect(() => {
@@ -25,14 +32,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, []);
 
   return (
-    <ThemeContext.Provider
-      value={{
-        theme: 'light',
-        isDark: false,
-        setTheme: () => {},
-        toggleTheme: () => {},
-      }}
-    >
+    <ThemeContext.Provider value={STATIC_THEME_VALUE}>
       {children}
     </ThemeContext.Provider>
   );

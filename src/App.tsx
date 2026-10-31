@@ -45,14 +45,7 @@ import { ToolSelectorModal } from './components/navigation/ToolSelectorModal';
 import { DetectedToolTarget, DetectedFileSummary } from './utils/fileTypeDetector';
 import { ToolSeoHead } from './components/seo/ToolSeoHead';
 import type { UserProfile } from './components/auth/SignInModal';
-import {
-  subscribeToAuth,
-  getStoredAuthUser,
-  logoutUser,
-  sendUserVerificationEmail,
-  verifyEmailWithActionCode,
-  recoverUserEmail,
-} from './core/firebase';
+import { getStoredAuthUser } from './core/authStorage';
 
 // Code-split secondary pages and modals for optimal Core Web Vitals (FCP, LCP)
 const AboutUs = lazy(() => import('./components/pages/AboutUs').then((m) => ({ default: m.AboutUs })));
@@ -485,41 +478,36 @@ function MainApp({ initialPath, toolComponents }: { initialPath?: string; toolCo
     };
   }, []);
 
-  // Preload heavy tool engine suites during idle time so tool workspace switches & drops are instantaneous
+  // Subscribe to live Firebase Auth state ONLY when a session exists or auth action is active
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    const preloadSuites = () => {
-      import('./components/tools/ImageToolsWrapper').catch(() => {});
-      import('./components/tools/FormatConverterSuite').catch(() => {});
-      import('./components/tools/PdfTools').catch(() => {});
-      import('./components/tools/DocumentTools').catch(() => {});
-    };
+    const storedUser = getStoredAuthUser();
+    const params = new URLSearchParams(window.location.search);
+    const hasAuthParam = params.has('mode') && params.has('oobCode');
 
-    if ('requestIdleCallback' in window) {
-      const winWithIdle = window as Window & {
-        requestIdleCallback: (cb: () => void, opts?: { timeout: number }) => number;
-        cancelIdleCallback: (id: number) => void;
-      };
-      const handle = winWithIdle.requestIdleCallback(preloadSuites, { timeout: 2500 });
-      return () => {
-        if ('cancelIdleCallback' in winWithIdle) {
-          winWithIdle.cancelIdleCallback(handle);
-        }
-      };
-    } else {
-      const timerId = setTimeout(preloadSuites, 1200);
-      return () => clearTimeout(timerId);
+    // For anonymous visitors, NEVER eagerly load the Firebase bundle!
+    if (!storedUser && !hasAuthParam) {
+      return;
     }
-  }, []);
 
-  // Subscribe to live Firebase Auth state
-  useEffect(() => {
-    const unsubscribe = subscribeToAuth((user) => {
-      setCurrentUser(user);
-    });
+    let isMounted = true;
+    let unsubscribe: (() => void) | undefined;
+
+    import('./core/firebase')
+      .then((m) => {
+        if (!isMounted) return;
+        unsubscribe = m.subscribeToAuth((user) => {
+          if (isMounted) setCurrentUser(user);
+        });
+      })
+      .catch((err) => {
+        console.warn('Deferred auth subscription error:', err);
+      });
+
     return () => {
-      unsubscribe();
+      isMounted = false;
+      if (unsubscribe) unsubscribe();
     };
   }, []);
 
@@ -531,7 +519,8 @@ function MainApp({ initialPath, toolComponents }: { initialPath?: string; toolCo
       const oobCode = params.get('oobCode');
 
       if (mode === 'verifyEmail' && oobCode) {
-        verifyEmailWithActionCode(oobCode)
+        import('./core/firebase')
+          .then((m) => m.verifyEmailWithActionCode(oobCode))
           .then(() => {
             addToast(
               'Email Verified Successfully',
@@ -554,7 +543,8 @@ function MainApp({ initialPath, toolComponents }: { initialPath?: string; toolCo
         const cleanUrl = window.location.pathname + window.location.hash;
         window.history.replaceState({}, document.title, cleanUrl);
       } else if (mode === 'recoverEmail' && oobCode) {
-        recoverUserEmail(oobCode)
+        import('./core/firebase')
+          .then((m) => m.recoverUserEmail(oobCode))
           .then((restoredEmail) => {
             addToast(
               'Email Restored',
@@ -594,6 +584,7 @@ function MainApp({ initialPath, toolComponents }: { initialPath?: string; toolCo
     if (isResendingVerification) return;
     setIsResendingVerification(true);
     try {
+      const { sendUserVerificationEmail } = await import('./core/firebase');
       await sendUserVerificationEmail();
       addToast(
         'Verification Email Sent',
@@ -614,10 +605,13 @@ function MainApp({ initialPath, toolComponents }: { initialPath?: string; toolCo
 
   const handleSignOut = async () => {
     try {
+      const { logoutUser } = await import('./core/firebase');
       await logoutUser();
       setCurrentUser(null);
       addToast('Signed Out', 'You have been logged out of FileWala', 'info');
     } catch {
+      const { clearStoredAuthUser } = await import('./core/authStorage');
+      clearStoredAuthUser();
       setCurrentUser(null);
       addToast('Signed Out', 'Session cleared', 'info');
     }
@@ -708,14 +702,17 @@ function MainApp({ initialPath, toolComponents }: { initialPath?: string; toolCo
       <main id="main-content" tabIndex={-1} className="relative flex-1 w-full focus:outline-none">
         {/* Full Application Ambient Background Artwork (Everywhere between Navbar and Footer) */}
         <div
-          className="fixed inset-0 top-13 sm:top-14 pointer-events-none select-none z-0 overflow-hidden flex items-center justify-center opacity-[0.06] dark:opacity-[0.03] dark:invert transition-opacity duration-300"
+          className="fixed inset-0 top-13 sm:top-14 pointer-events-none select-none z-0 overflow-hidden flex items-center justify-center opacity-[0.06] dark:opacity-[0.03] transition-opacity duration-300"
+          style={{ transform: 'translateZ(0)', willChange: 'transform', backfaceVisibility: 'hidden' }}
           aria-hidden="true"
         >
-          <picture className="w-full h-full flex items-center justify-center">
+          <picture className="w-full h-full flex items-center justify-center pointer-events-none">
             <source srcSet="/og-image.webp?v=10" type="image/webp" />
             <img
               src="/og-image.png?v=10"
               alt=""
+              decoding="async"
+              loading="eager"
               className="w-full h-full object-cover object-center"
             />
           </picture>
