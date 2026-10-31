@@ -13,6 +13,8 @@ import {
 import { FaceEnhancerEngine, DEFAULT_ENHANCE_SETTINGS } from '../../../core/engine/FaceEnhancerEngine';
 import { NeuralFaceEnhancer } from '../../../core/engine/NeuralFaceEnhancer';
 import { BriaRmbgWorkerClient } from '../../../core/engine/BriaRmbgWorkerClient';
+import { FastPortraitSegmenter } from '../../../core/engine/FastPortraitSegmenter';
+import { FastGuidedFilter } from '../../../core/engine/FastGuidedFilter';
 
 export interface CyberCafeColorOption {
   id: string;
@@ -166,9 +168,10 @@ export const CyberCafeAiStudio: React.FC<CyberCafeAiStudioProps> = ({
   const rmbgWorkerRef = useRef<BriaRmbgWorkerClient | null>(null);
   const activeBlobUrlRef = useRef<string | null>(null);
 
-  // Check WebGPU & Preload Neural AI on mount
+  // Check WebGPU & Preload Neural AI Engines on mount
   useEffect(() => {
     NeuralFaceEnhancer.preload();
+    FastPortraitSegmenter.preload();
 
     async function checkWebGPU() {
       if (typeof window !== 'undefined' && 'navigator' in window && 'gpu' in navigator && (navigator as any).gpu) {
@@ -331,63 +334,56 @@ export const CyberCafeAiStudio: React.FC<CyberCafeAiStudioProps> = ({
         if (targetBgRemoved) {
           // Check if we need to compute the alpha cutout mask
           if (!maskCanvasRef.current) {
-            setProcessingStage('AI Removing background (RMBG neural inference)...');
+            setProcessingStage('AI Removing background (Lightning Portrait Matting)...');
             try {
-              if (!rmbgWorkerRef.current) {
-                rmbgWorkerRef.current = new BriaRmbgWorkerClient();
+              // Priority Engine: Ultra-Fast Portrait AI (<80ms) + Fast Guided Filter hair matting
+              maskCanvasRef.current = await FastPortraitSegmenter.segment(
+                workingSubjectCanvas || rawImage,
+                (_pct, stage) => setProcessingStage(stage)
+              );
+            } catch (fastErr: any) {
+              console.warn('[CyberCafeStudio] Fast portrait segmenter fallback to RMBG worker:', fastErr);
+              setProcessingStage('Running Studio RMBG Neural Matting...');
+              try {
+                if (!rmbgWorkerRef.current) {
+                  rmbgWorkerRef.current = new BriaRmbgWorkerClient();
+                }
+
+                const INPUT_SIZE = 1024;
+                const tempSmall = document.createElement('canvas');
+                tempSmall.width = INPUT_SIZE;
+                tempSmall.height = INPUT_SIZE;
+                const sctx = tempSmall.getContext('2d');
+                if (!sctx) throw new Error('Small canvas error');
+                sctx.imageSmoothingEnabled = true;
+                sctx.imageSmoothingQuality = 'high';
+                sctx.drawImage(rawImage, 0, 0, INPUT_SIZE, INPUT_SIZE);
+                const imgData = sctx.getImageData(0, 0, INPUT_SIZE, INPUT_SIZE);
+                tempSmall.width = 0;
+                tempSmall.height = 0;
+
+                const res = await rmbgWorkerRef.current.removeBackground({
+                  imageBuffer: imgData.data.buffer,
+                  hasWebGPU: !!hasWebGPU,
+                  onProgress: (_pct, stage) => setProcessingStage(stage),
+                });
+
+                // Apply Fast Guided Filter to preserve single hair strands from RMBG
+                maskCanvasRef.current = FastGuidedFilter.refine(
+                  workingSubjectCanvas || rawImage,
+                  new Uint8Array(res.alphaBuffer),
+                  INPUT_SIZE,
+                  INPUT_SIZE,
+                  w,
+                  h,
+                  4,
+                  1e-3
+                );
+              } catch (rmbgErr: any) {
+                console.warn('[CyberCafeStudio] RMBG worker failed, running edge fallback:', rmbgErr);
+                setProcessingStage('Running fast edge cutout fallback...');
+                maskCanvasRef.current = generateFastMaskFallback(rawImage, w, h);
               }
-
-              const INPUT_SIZE = 1024;
-              const tempSmall = document.createElement('canvas');
-              tempSmall.width = INPUT_SIZE;
-              tempSmall.height = INPUT_SIZE;
-              const sctx = tempSmall.getContext('2d');
-              if (!sctx) throw new Error('Small canvas error');
-              sctx.imageSmoothingEnabled = true;
-              sctx.imageSmoothingQuality = 'high';
-              sctx.drawImage(rawImage, 0, 0, INPUT_SIZE, INPUT_SIZE);
-              const imgData = sctx.getImageData(0, 0, INPUT_SIZE, INPUT_SIZE);
-              tempSmall.width = 0;
-              tempSmall.height = 0;
-
-              const res = await rmbgWorkerRef.current.removeBackground({
-                imageBuffer: imgData.data.buffer,
-                hasWebGPU: !!hasWebGPU,
-                onProgress: (_pct, stage) => setProcessingStage(stage),
-              });
-
-              // Bilinear mask upsample back to natural width/height
-              const lowResMask = document.createElement('canvas');
-              lowResMask.width = INPUT_SIZE;
-              lowResMask.height = INPUT_SIZE;
-              const lrCtx = lowResMask.getContext('2d');
-              if (!lrCtx) throw new Error('Mask canvas error');
-
-              const lrImgData = lrCtx.createImageData(INPUT_SIZE, INPUT_SIZE);
-              const lr32 = new Uint32Array(lrImgData.data.buffer);
-              const alphaArr = new Uint8Array(res.alphaBuffer);
-              const total = INPUT_SIZE * INPUT_SIZE;
-              for (let i = 0; i < total; i++) {
-                lr32[i] = (alphaArr[i] << 24) | 0x00ffffff;
-              }
-              lrCtx.putImageData(lrImgData, 0, 0);
-
-              const mask = document.createElement('canvas');
-              mask.width = w;
-              mask.height = h;
-              const mctx = mask.getContext('2d');
-              if (!mctx) throw new Error('Full mask error');
-              mctx.imageSmoothingEnabled = true;
-              mctx.imageSmoothingQuality = 'high';
-              mctx.drawImage(lowResMask, 0, 0, w, h);
-              lowResMask.width = 0;
-              lowResMask.height = 0;
-
-              maskCanvasRef.current = mask;
-            } catch (rmbgErr: any) {
-              console.warn('RMBG neural worker failed, running high-speed fallback:', rmbgErr);
-              setProcessingStage('Running fast edge cutout fallback...');
-              maskCanvasRef.current = generateFastMaskFallback(rawImage, w, h);
             }
           }
 

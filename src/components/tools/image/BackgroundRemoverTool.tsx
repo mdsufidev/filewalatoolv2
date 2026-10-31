@@ -40,6 +40,8 @@ import {
 import { useTheme } from '../../../core/themeContext';
 import { CanvasEngine } from '../../../core/engine/CanvasEngine';
 import { BriaRmbgWorkerClient } from '../../../core/engine/BriaRmbgWorkerClient';
+import { FastPortraitSegmenter } from '../../../core/engine/FastPortraitSegmenter';
+import { FastGuidedFilter } from '../../../core/engine/FastGuidedFilter';
 import { HumanLoadingOverlay } from '../../ui/HumanLoadingOverlay';
 
 interface BackgroundRemoverToolProps {
@@ -175,6 +177,7 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
 
   // Initialize isolated background worker with proactive pre-warming
   useEffect(() => {
+    FastPortraitSegmenter.preload();
     briaWorkerRef.current = new BriaRmbgWorkerClient();
     if (hasWebGPU !== null) {
       briaWorkerRef.current.warmup(!!hasWebGPU);
@@ -678,98 +681,107 @@ export const BackgroundRemoverTool: React.FC<BackgroundRemoverToolProps> = ({
       }
     };
 
+    const startTime = performance.now();
     try {
-      if (!briaWorkerRef.current) {
-        briaWorkerRef.current = new BriaRmbgWorkerClient();
-      }
-
       const img = currentImage.imageElement;
-      const INPUT_SIZE = 1024;
-
-      // 1. Prepare 1024x1024 intermediate canvas for RMBG-1.4 model
-      const tempCanvas = document.createElement('canvas');
-      tempCanvas.width = INPUT_SIZE;
-      tempCanvas.height = INPUT_SIZE;
-      const tctx = tempCanvas.getContext('2d');
-      if (!tctx) throw new Error('Failed to create intermediate AI canvas context');
-
-      tctx.imageSmoothingEnabled = true;
-      tctx.imageSmoothingQuality = 'high';
-      tctx.drawImage(img, 0, 0, INPUT_SIZE, INPUT_SIZE);
-
-      const imgData = tctx.getImageData(0, 0, INPUT_SIZE, INPUT_SIZE);
-      tempCanvas.width = 0;
-      tempCanvas.height = 0;
-
-      // 2. Offload to background worker for local WebGPU / WASM execution
-      const result = await briaWorkerRef.current.removeBackground({
-        imageBuffer: imgData.data.buffer,
-        hasWebGPU: !!hasWebGPU,
-        onProgress: (pct, stage) => {
-          setAiStatus(stage);
-          if (pct >= 70) {
-            stopProgressTimer();
-            currentPct = Math.max(currentPct, 72);
-            reportProgress(currentPct);
-            // During neural inference (session.run), smoothly glide progress towards 93%
-            // with 200ms interval to eliminate 14/sec component re-renders
-            progressTimer = setInterval(() => {
-              if (currentPct < 93) {
-                currentPct += (93.5 - currentPct) * 0.05;
-                reportProgress(currentPct);
-              }
-            }, 200);
-          } else {
-            currentPct = Math.max(currentPct, pct);
-            reportProgress(currentPct);
-          }
-        },
-      });
-
-      stopProgressTimer();
-      setAiProgress(96);
-      setAiStatus('Compositing 8-bit continuous soft alpha...');
-
-      // 3. Bilinear upsample the 1024x1024 mask back to full original image resolution
       const w = img.naturalWidth;
       const h = img.naturalHeight;
-      const maskCanvas = maskCanvasRef.current;
-      maskCanvas.width = w;
-      maskCanvas.height = h;
-      const mctx = maskCanvas.getContext('2d');
-      if (!mctx) return;
 
-      const lowResMaskCanvas = document.createElement('canvas');
-      lowResMaskCanvas.width = INPUT_SIZE;
-      lowResMaskCanvas.height = INPUT_SIZE;
-      const lctx = lowResMaskCanvas.getContext('2d');
-      if (!lctx) return;
+      let refinedMaskCanvas: HTMLCanvasElement | null = null;
+      let engineUsed = 'Portrait AI';
 
-      const lowResImgData = lctx.createImageData(INPUT_SIZE, INPUT_SIZE);
-      const lData32 = new Uint32Array(lowResImgData.data.buffer);
-      const alphaArray = new Uint8Array(result.alphaBuffer);
-      const totalPixels = INPUT_SIZE * INPUT_SIZE;
-
-      // Ultra-fast 32-bit single-instruction write (0xAABBGGRR in little endian: R=255, G=255, B=255, A=alpha)
-      // Drops main-thread execution from ~180ms down to ~2ms, eliminating UI frame drops!
-      for (let i = 0; i < totalPixels; i++) {
-        lData32[i] = (alphaArray[i] << 24) | 0x00ffffff;
+      // 1. First attempt Ultra-Fast Portrait Segmenter (<80ms) with Fast Guided Filter
+      try {
+        setAiStatus('Running Ultra-Fast Neural Matting...');
+        refinedMaskCanvas = await FastPortraitSegmenter.segment(img, (pct, stage) => {
+          setAiProgress(pct);
+          setAiStatus(stage);
+        });
+        engineUsed = 'Ultra-Fast Portrait AI';
+      } catch (portraitErr) {
+        console.warn('[BackgroundRemoverTool] Fast portrait segmenter fallback to Studio RMBG:', portraitErr);
+        refinedMaskCanvas = null;
       }
-      lctx.putImageData(lowResImgData, 0, 0);
 
-      mctx.clearRect(0, 0, w, h);
-      mctx.imageSmoothingEnabled = true;
-      mctx.imageSmoothingQuality = 'high';
-      mctx.drawImage(lowResMaskCanvas, 0, 0, w, h);
-      lowResMaskCanvas.width = 0;
-      lowResMaskCanvas.height = 0;
+      // 2. If not a portrait or fast segmenter skipped, run Studio Deep RMBG-1.4
+      if (!refinedMaskCanvas) {
+        engineUsed = 'BRIA RMBG-1.4';
+        if (!briaWorkerRef.current) {
+          briaWorkerRef.current = new BriaRmbgWorkerClient();
+        }
 
+        const INPUT_SIZE = 1024;
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = INPUT_SIZE;
+        tempCanvas.height = INPUT_SIZE;
+        const tctx = tempCanvas.getContext('2d');
+        if (!tctx) throw new Error('Failed to create intermediate AI canvas context');
+
+        tctx.imageSmoothingEnabled = true;
+        tctx.imageSmoothingQuality = 'high';
+        tctx.drawImage(img, 0, 0, INPUT_SIZE, INPUT_SIZE);
+
+        const imgData = tctx.getImageData(0, 0, INPUT_SIZE, INPUT_SIZE);
+        tempCanvas.width = 0;
+        tempCanvas.height = 0;
+
+        const result = await briaWorkerRef.current.removeBackground({
+          imageBuffer: imgData.data.buffer,
+          hasWebGPU: !!hasWebGPU,
+          onProgress: (pct, stage) => {
+            setAiStatus(stage);
+            if (pct >= 70) {
+              stopProgressTimer();
+              currentPct = Math.max(currentPct, 72);
+              reportProgress(currentPct);
+              progressTimer = setInterval(() => {
+                if (currentPct < 93) {
+                  currentPct += (93.5 - currentPct) * 0.05;
+                  reportProgress(currentPct);
+                }
+              }, 200);
+            } else {
+              currentPct = Math.max(currentPct, pct);
+              reportProgress(currentPct);
+            }
+          },
+        });
+
+        stopProgressTimer();
+        setAiProgress(96);
+        setAiStatus('Applying Fast Guided Filter for fine hair strands...');
+
+        refinedMaskCanvas = FastGuidedFilter.refine(
+          img,
+          new Uint8Array(result.alphaBuffer),
+          INPUT_SIZE,
+          INPUT_SIZE,
+          w,
+          h,
+          4,
+          1e-3
+        );
+      }
+
+      // 3. Render refined mask to maskCanvas
+      const maskCanvas = maskCanvasRef.current;
+      if (maskCanvas && refinedMaskCanvas) {
+        maskCanvas.width = w;
+        maskCanvas.height = h;
+        const mctx = maskCanvas.getContext('2d');
+        if (mctx) {
+          mctx.clearRect(0, 0, w, h);
+          mctx.drawImage(refinedMaskCanvas, 0, 0, w, h);
+        }
+      }
+
+      const elapsed = Math.round(performance.now() - startTime);
       pushHistorySnapshotRef.current();
       setAiProgress(100);
       setAiStatus('Complete');
-      setAiInferenceTimeMs(result.elapsedMs);
+      setAiInferenceTimeMs(elapsed);
       renderCompositedResultRef.current();
-      onNotify('AI Cutout Complete', `BRIA RMBG-1.4 isolated subject in ${result.elapsedMs}ms with 8-bit soft alpha.`, 'success');
+      onNotify('AI Cutout Complete', `${engineUsed} isolated subject in ${elapsed}ms with sub-pixel hair matting.`, 'success');
     } catch (err: any) {
       console.error('BRIA RMBG-1.4 AI inference failed:', err);
       const msg = (err && err.message) || 'Model execution failed';

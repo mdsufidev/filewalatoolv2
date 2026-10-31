@@ -135,7 +135,7 @@ async function getRmbgSession(hasWebGPU, onProgress) {
     try {
       session = await ort.InferenceSession.create(buffer, {
         executionProviders: ['webgpu', 'wasm'],
-        graphOptimizationLevel: 'basic'
+        graphOptimizationLevel: 'all'
       });
     } catch (err) {
       console.warn('Worker WebGPU session init failed, falling back to WASM:', err);
@@ -145,7 +145,7 @@ async function getRmbgSession(hasWebGPU, onProgress) {
   if (!session) {
     session = await ort.InferenceSession.create(wasmBackupBuffer, {
       executionProviders: ['wasm'],
-      graphOptimizationLevel: 'basic'
+      graphOptimizationLevel: 'all'
     });
   }
 
@@ -223,7 +223,7 @@ self.onmessage = async function(e) {
       var wasmBuffer = await getRmbgModelBuffer(sendProgress);
       var wasmSession = await ortWasm.InferenceSession.create(wasmBuffer, {
         executionProviders: ['wasm'],
-        graphOptimizationLevel: 'basic'
+        graphOptimizationLevel: 'all'
       });
       rmbgSession = wasmSession;
       results = await wasmSession.run(feeds);
