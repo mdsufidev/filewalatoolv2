@@ -57,6 +57,7 @@ import {
 } from '../../utils/clipboardAndShare';
 import { GovToolGuideSection } from './gov/GovToolGuideSection';
 import { CyberCafeAiStudio } from './gov/CyberCafeAiStudio';
+import { HumanLoadingOverlay } from '../ui/HumanLoadingOverlay';
 
 export type PhotoPortalPreset = 'protean-197x276' | 'utiitsl-213x213' | 'custom';
 
@@ -147,6 +148,10 @@ export const PanPhotoResizer: React.FC<PanPhotoResizerProps> = ({ onNotify }) =>
     width: 0,
     height: 0,
   });
+
+  const [studioProcessing, setStudioProcessing] = useState<boolean>(false);
+  const [studioStage, setStudioStage] = useState<string>('');
+  const [studioProgress, setStudioProgress] = useState<number>(0);
 
   const handleStudioProcessedImage = useCallback((processedImg: HTMLImageElement | null) => {
     if (processedImg) {
@@ -910,6 +915,15 @@ export const PanPhotoResizer: React.FC<PanPhotoResizerProps> = ({ onNotify }) =>
                 height: `${boxH}px`,
               }}
             >
+              {/* Studio AI Loading Overlay */}
+              {studioProcessing && (
+                <HumanLoadingOverlay
+                  stage={studioStage}
+                  percent={studioProgress}
+                  accentColor="rose"
+                />
+              )}
+
               {/* Viewport Image Canvas Rendering */}
               <div
                 className="absolute inset-0 flex items-center justify-center origin-center pointer-events-none"
@@ -1068,6 +1082,11 @@ export const PanPhotoResizer: React.FC<PanPhotoResizerProps> = ({ onNotify }) =>
                 rawImage={rawImageElement}
                 onProcessedImage={handleStudioProcessedImage}
                 onNotify={onNotify}
+                onProcessingChange={(processing, stage, pct) => {
+                  setStudioProcessing(processing);
+                  if (stage) setStudioStage(stage);
+                  if (typeof pct === 'number') setStudioProgress(pct);
+                }}
               />
 
               <div className="flex items-center justify-between pb-1 border-b border-zinc-100 dark:border-zinc-800">

@@ -13,8 +13,6 @@ import {
 import { FaceEnhancerEngine, DEFAULT_ENHANCE_SETTINGS } from '../../../core/engine/FaceEnhancerEngine';
 import { NeuralFaceEnhancer } from '../../../core/engine/NeuralFaceEnhancer';
 import { BriaRmbgWorkerClient } from '../../../core/engine/BriaRmbgWorkerClient';
-import { FastPortraitSegmenter } from '../../../core/engine/FastPortraitSegmenter';
-import { FastGuidedFilter } from '../../../core/engine/FastGuidedFilter';
 
 export interface CyberCafeColorOption {
   id: string;
@@ -142,6 +140,7 @@ interface CyberCafeAiStudioProps {
   rawImage: HTMLImageElement | null;
   onProcessedImage: (processedImg: HTMLImageElement | null) => void;
   onNotify: (title: string, desc?: string, type?: 'success' | 'error' | 'info') => void;
+  onProcessingChange?: (isProcessing: boolean, stage?: string, percent?: number) => void;
   className?: string;
 }
 
@@ -149,6 +148,7 @@ export const CyberCafeAiStudio: React.FC<CyberCafeAiStudioProps> = ({
   rawImage,
   onProcessedImage,
   onNotify,
+  onProcessingChange,
   className = '',
 }) => {
   const [isFaceEnhanceActive, setIsFaceEnhanceActive] = useState<boolean>(false);
@@ -171,7 +171,6 @@ export const CyberCafeAiStudio: React.FC<CyberCafeAiStudioProps> = ({
   // Check WebGPU & Preload Neural AI Engines on mount
   useEffect(() => {
     NeuralFaceEnhancer.preload();
-    FastPortraitSegmenter.preload();
 
     async function checkWebGPU() {
       if (typeof window !== 'undefined' && 'navigator' in window && 'gpu' in navigator && (navigator as any).gpu) {
@@ -232,11 +231,13 @@ export const CyberCafeAiStudio: React.FC<CyberCafeAiStudioProps> = ({
       // If both AI tools are turned off, revert directly to original raw image
       if (!targetFaceEnhance && !targetBgRemoved) {
         onProcessedImage(null);
+        onProcessingChange?.(false);
         return;
       }
 
       setIsProcessing(true);
       setProcessingStage('Compositing studio photo...');
+      onProcessingChange?.(true, 'Compositing studio photo...', 10);
 
       try {
         const w = rawImage.naturalWidth || rawImage.width;
@@ -248,6 +249,7 @@ export const CyberCafeAiStudio: React.FC<CyberCafeAiStudioProps> = ({
         if (targetFaceEnhance) {
           if (!faceEnhancedCanvasRef.current) {
             setProcessingStage('AI Neural Model: Detecting face & landmarks...');
+            onProcessingChange?.(true, 'AI Neural Model: Detecting face & landmarks...', 25);
 
             try {
               // 1. Run true Generative Facial Prior Neural AI (GFPGAN ONNX Model)
@@ -256,7 +258,9 @@ export const CyberCafeAiStudio: React.FC<CyberCafeAiStudioProps> = ({
                 hasWebGPU: !!hasWebGPU,
                 blendStrength: 1.0,
                 onProgress: (pct, stage) => {
-                  setProcessingStage(`${stage} (${Math.round(pct)}%)`);
+                  const stageText = `${stage} (${Math.round(pct)}%)`;
+                  setProcessingStage(stageText);
+                  onProcessingChange?.(true, stageText, pct);
                 },
               });
 
@@ -334,56 +338,69 @@ export const CyberCafeAiStudio: React.FC<CyberCafeAiStudioProps> = ({
         if (targetBgRemoved) {
           // Check if we need to compute the alpha cutout mask
           if (!maskCanvasRef.current) {
-            setProcessingStage('AI Removing background (Lightning Portrait Matting)...');
+            setProcessingStage('AI Removing background with BRIA RMBG-1.4...');
+            onProcessingChange?.(true, 'AI Removing background...', 50);
             try {
-              // Priority Engine: Ultra-Fast Portrait AI (<80ms) + Fast Guided Filter hair matting
-              maskCanvasRef.current = await FastPortraitSegmenter.segment(
-                workingSubjectCanvas || rawImage,
-                (_pct, stage) => setProcessingStage(stage)
-              );
-            } catch (fastErr: any) {
-              console.warn('[CyberCafeStudio] Fast portrait segmenter fallback to RMBG worker:', fastErr);
-              setProcessingStage('Running Studio RMBG Neural Matting...');
-              try {
-                if (!rmbgWorkerRef.current) {
-                  rmbgWorkerRef.current = new BriaRmbgWorkerClient();
-                }
-
-                const INPUT_SIZE = 1024;
-                const tempSmall = document.createElement('canvas');
-                tempSmall.width = INPUT_SIZE;
-                tempSmall.height = INPUT_SIZE;
-                const sctx = tempSmall.getContext('2d');
-                if (!sctx) throw new Error('Small canvas error');
-                sctx.imageSmoothingEnabled = true;
-                sctx.imageSmoothingQuality = 'high';
-                sctx.drawImage(rawImage, 0, 0, INPUT_SIZE, INPUT_SIZE);
-                const imgData = sctx.getImageData(0, 0, INPUT_SIZE, INPUT_SIZE);
-                tempSmall.width = 0;
-                tempSmall.height = 0;
-
-                const res = await rmbgWorkerRef.current.removeBackground({
-                  imageBuffer: imgData.data.buffer,
-                  hasWebGPU: !!hasWebGPU,
-                  onProgress: (_pct, stage) => setProcessingStage(stage),
-                });
-
-                // Apply Fast Guided Filter to preserve single hair strands from RMBG
-                maskCanvasRef.current = FastGuidedFilter.refine(
-                  workingSubjectCanvas || rawImage,
-                  new Uint8Array(res.alphaBuffer),
-                  INPUT_SIZE,
-                  INPUT_SIZE,
-                  w,
-                  h,
-                  4,
-                  1e-3
-                );
-              } catch (rmbgErr: any) {
-                console.warn('[CyberCafeStudio] RMBG worker failed, running edge fallback:', rmbgErr);
-                setProcessingStage('Running fast edge cutout fallback...');
-                maskCanvasRef.current = generateFastMaskFallback(rawImage, w, h);
+              if (!rmbgWorkerRef.current) {
+                rmbgWorkerRef.current = new BriaRmbgWorkerClient();
               }
+
+              const INPUT_SIZE = 1024;
+              const tempSmall = document.createElement('canvas');
+              tempSmall.width = INPUT_SIZE;
+              tempSmall.height = INPUT_SIZE;
+              const sctx = tempSmall.getContext('2d');
+              if (!sctx) throw new Error('Small canvas error');
+              sctx.imageSmoothingEnabled = true;
+              sctx.imageSmoothingQuality = 'high';
+              sctx.drawImage(rawImage, 0, 0, INPUT_SIZE, INPUT_SIZE);
+              const imgData = sctx.getImageData(0, 0, INPUT_SIZE, INPUT_SIZE);
+              tempSmall.width = 0;
+              tempSmall.height = 0;
+
+              const res = await rmbgWorkerRef.current.removeBackground({
+                imageBuffer: imgData.data.buffer,
+                hasWebGPU: !!hasWebGPU,
+                onProgress: (pct, stage) => {
+                  setProcessingStage(stage);
+                  onProcessingChange?.(true, stage, pct);
+                },
+              });
+
+              // Clean 32-bit hardware upsampling back to original resolution (0 artifacts, sub-millisecond)
+              const lowResMaskCanvas = document.createElement('canvas');
+              lowResMaskCanvas.width = INPUT_SIZE;
+              lowResMaskCanvas.height = INPUT_SIZE;
+              const lctx = lowResMaskCanvas.getContext('2d');
+              if (!lctx) throw new Error('Mask canvas context error');
+
+              const lowResImgData = lctx.createImageData(INPUT_SIZE, INPUT_SIZE);
+              const lData32 = new Uint32Array(lowResImgData.data.buffer);
+              const alphaArray = new Uint8Array(res.alphaBuffer);
+              const totalPixels = INPUT_SIZE * INPUT_SIZE;
+
+              for (let i = 0; i < totalPixels; i++) {
+                lData32[i] = (alphaArray[i] << 24) | 0x00ffffff;
+              }
+              lctx.putImageData(lowResImgData, 0, 0);
+
+              const fullMask = document.createElement('canvas');
+              fullMask.width = w;
+              fullMask.height = h;
+              const fmctx = fullMask.getContext('2d');
+              if (!fmctx) throw new Error('Full mask context error');
+              fmctx.imageSmoothingEnabled = true;
+              fmctx.imageSmoothingQuality = 'high';
+              fmctx.drawImage(lowResMaskCanvas, 0, 0, w, h);
+              lowResMaskCanvas.width = 0;
+              lowResMaskCanvas.height = 0;
+
+              maskCanvasRef.current = fullMask;
+            } catch (rmbgErr: any) {
+              console.warn('[CyberCafeStudio] RMBG worker failed, running edge fallback:', rmbgErr);
+              setProcessingStage('Running fast edge cutout fallback...');
+              onProcessingChange?.(true, 'Running fast edge cutout fallback...', 85);
+              maskCanvasRef.current = generateFastMaskFallback(rawImage, w, h);
             }
           }
 
@@ -417,6 +434,7 @@ export const CyberCafeAiStudio: React.FC<CyberCafeAiStudioProps> = ({
           (blob) => {
             if (!blob) {
               setIsProcessing(false);
+              onProcessingChange?.(false);
               return;
             }
             if (activeBlobUrlRef.current) {
@@ -429,6 +447,7 @@ export const CyberCafeAiStudio: React.FC<CyberCafeAiStudioProps> = ({
             processedImg.onload = () => {
               onProcessedImage(processedImg);
               setIsProcessing(false);
+              onProcessingChange?.(false);
             };
             processedImg.src = blobUrl;
           },
@@ -437,10 +456,11 @@ export const CyberCafeAiStudio: React.FC<CyberCafeAiStudioProps> = ({
       } catch (err: any) {
         console.error('CyberCafe Studio processing failed:', err);
         setIsProcessing(false);
+        onProcessingChange?.(false);
         onNotify('AI Notice', err?.message || 'Processing fallback used', 'info');
       }
     },
-    [rawImage, hasWebGPU, onProcessedImage, onNotify]
+    [rawImage, hasWebGPU, onProcessedImage, onNotify, onProcessingChange]
   );
 
   // Toggle Face Enhancer

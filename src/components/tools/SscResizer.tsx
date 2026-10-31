@@ -53,6 +53,7 @@ import {
 } from '../../utils/clipboardAndShare';
 import { GovToolGuideSection } from './gov/GovToolGuideSection';
 import { CyberCafeAiStudio } from './gov/CyberCafeAiStudio';
+import { HumanLoadingOverlay } from '../ui/HumanLoadingOverlay';
 
 export type SscItemType = 'photo' | 'signature';
 
@@ -160,6 +161,9 @@ export const SscResizer: React.FC<SscResizerProps> = ({
 
   // Processing state
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
+  const [studioProcessing, setStudioProcessing] = useState<boolean>(false);
+  const [studioStage, setStudioStage] = useState<string>('');
+  const [studioProgress, setStudioProgress] = useState<number>(0);
   const [resultBlob, setResultBlob] = useState<Blob | null>(null);
   const [resultUrl, setResultUrl] = useState<string | null>(null);
   const [verifiedDpi, setVerifiedDpi] = useState<number | null>(null);
@@ -833,6 +837,15 @@ export const SscResizer: React.FC<SscResizerProps> = ({
                 height: `${boxH}px`,
               }}
             >
+              {/* Studio AI Loading Overlay */}
+              {studioProcessing && (
+                <HumanLoadingOverlay
+                  stage={studioStage}
+                  percent={studioProgress}
+                  accentColor="rose"
+                />
+              )}
+
               {/* Viewport Image Canvas Rendering */}
               <div
                 className="absolute inset-0 flex items-center justify-center origin-center pointer-events-none"
@@ -1002,6 +1015,11 @@ export const SscResizer: React.FC<SscResizerProps> = ({
                   rawImage={rawImageElement}
                   onProcessedImage={handleStudioProcessedImage}
                   onNotify={onNotify}
+                  onProcessingChange={(processing, stage, pct) => {
+                    setStudioProcessing(processing);
+                    if (stage) setStudioStage(stage);
+                    if (typeof pct === 'number') setStudioProgress(pct);
+                  }}
                 />
               )}
 

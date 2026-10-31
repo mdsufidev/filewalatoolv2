@@ -118,15 +118,44 @@
     background: #3f3f46;
   }
 
-  /* Reduced Motion Safety */
+  /* Reduced Motion Safety (Exempt essential loading spinners so users don't perceive the app as hung/broken) */
   @media (prefers-reduced-motion: reduce) {
-    *, ::before, ::after {
+    *:not(.animate-spin):not([data-spin]):not(.spin-exempt):not(.spin-ring):not(.spin-ring-reverse), ::before, ::after {
       animation-duration: 0.01ms !important;
       animation-iteration-count: 1 !important;
       transition-duration: 0.01ms !important;
       scroll-behavior: auto !important;
     }
   }
+}
+
+/* Explicit Circular Spinner Animations (Guaranteed cross-browser 60fps rotation) */
+@keyframes circularSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes circularSpinReverse {
+  from {
+    transform: rotate(360deg);
+  }
+  to {
+    transform: rotate(0deg);
+  }
+}
+
+.spin-ring {
+  animation: circularSpin 0.9s linear infinite !important;
+  transform-origin: center center;
+}
+
+.spin-ring-reverse {
+  animation: circularSpinReverse 2.2s linear infinite !important;
+  transform-origin: center center;
 }
 
 /* Right-to-Left Slide-Over Drawer Animations */
