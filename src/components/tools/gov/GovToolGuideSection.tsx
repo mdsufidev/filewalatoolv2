@@ -68,57 +68,93 @@ export const GovToolGuideSection: React.FC<GovToolGuideSectionProps> = ({ toolId
       {/* ========================================================= */}
       {/* 2. OVERVIEW & TARGET AUDIENCE */}
       {/* ========================================================= */}
-      <div className="space-y-4">
-        <div>
-          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-1">
-            <Sparkles className="w-4 h-4 text-blue-500" />
-            <span>Official Portal Guidelines &amp; Standards</span>
-          </div>
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-950 dark:text-zinc-50">
-            About {data.toolName}
-          </h2>
-          <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 mt-1.5 leading-relaxed max-w-4xl">
-            {data.whatItDoes}
-          </p>
-        </div>
+      {toolId === 'kb-resizer' ? (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+          {/* Left Column: About KB Resizer */}
+          <div className="lg:col-span-7 space-y-4">
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-1">
+              <Sparkles className="w-4 h-4 text-blue-500" />
+              <span>Official Portal Guidelines &amp; Standards</span>
+            </div>
+            <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-zinc-950 dark:text-zinc-50">
+              About {data.toolName}
+            </h2>
+            <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 mt-1.5 leading-relaxed">
+              {data.whatItDoes}
+            </p>
 
-        {/* Target Audience Badges */}
-        <div className="pt-1">
-          <div className="text-[11px] font-mono uppercase tracking-wider text-zinc-500 dark:text-zinc-400 font-semibold mb-2">
-            Applicable Portals &amp; Candidate Categories:
+            {/* Target Audience Badges */}
+            <div className="pt-1">
+              <div className="text-[11px] font-mono uppercase tracking-wider text-zinc-500 dark:text-zinc-400 font-semibold mb-2">
+                Applicable Portals &amp; Candidate Categories:
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {data.targetAudience.map((audience, idx) => (
+                  <span
+                    key={idx}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-zinc-100/80 dark:bg-zinc-850/80 text-zinc-800 dark:text-zinc-200"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                    <span>{audience}</span>
+                  </span>
+                ))}
+              </div>
+            </div>
           </div>
-          <div className="flex flex-wrap gap-2">
-            {data.targetAudience.map((audience, idx) => (
-              <span
-                key={idx}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-zinc-100/80 dark:bg-zinc-850/80 text-zinc-800 dark:text-zinc-200"
-              >
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                <span>{audience}</span>
-              </span>
-            ))}
+
+          {/* Right Column: Visual Infographic Card */}
+          <div className="lg:col-span-5">
+            <figure className="w-full flex flex-col items-center">
+              <div className="w-full overflow-hidden rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white p-3 sm:p-4 shadow-sm hover:shadow-md transition-shadow">
+                <img
+                  src="/image-compress-to-kb.png"
+                  alt="Image Compress to KB - FileWala Tool Before and After File Size Reduction (1MB to 300KB)"
+                  loading="lazy"
+                  decoding="async"
+                  width={1024}
+                  height={512}
+                  className="w-full h-auto object-contain rounded-xl"
+                />
+              </div>
+              <figcaption className="mt-2 text-[11px] text-zinc-500 dark:text-zinc-400 text-center font-mono">
+                Figure: Reduce 1MB photo down to 300KB (or custom target KB) with instant in-browser compression.
+              </figcaption>
+            </figure>
           </div>
         </div>
-      </div>
-
-      {/* Visual SEO Infographic for KB Resizer */}
-      {toolId === 'kb-resizer' && (
-        <figure className="w-full my-6 flex flex-col items-center">
-          <div className="w-full max-w-2xl overflow-hidden rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white p-3 sm:p-5 shadow-sm">
-            <img
-              src="/image-compress-to-kb.png"
-              alt="Image Compress to KB - FileWala Tool Before and After File Size Reduction (1MB to 300KB)"
-              loading="lazy"
-              decoding="async"
-              width={1024}
-              height={512}
-              className="w-full h-auto object-contain rounded-xl"
-            />
+      ) : (
+        <div className="space-y-4">
+          <div>
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-1">
+              <Sparkles className="w-4 h-4 text-blue-500" />
+              <span>Official Portal Guidelines &amp; Standards</span>
+            </div>
+            <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-950 dark:text-zinc-50">
+              About {data.toolName}
+            </h2>
+            <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 mt-1.5 leading-relaxed max-w-4xl">
+              {data.whatItDoes}
+            </p>
           </div>
-          <figcaption className="mt-2.5 text-xs text-zinc-500 dark:text-zinc-400 text-center font-mono">
-            Figure: Reduce 1MB photo down to 300KB (or custom target KB) with instant in-browser compression.
-          </figcaption>
-        </figure>
+
+          {/* Target Audience Badges */}
+          <div className="pt-1">
+            <div className="text-[11px] font-mono uppercase tracking-wider text-zinc-500 dark:text-zinc-400 font-semibold mb-2">
+              Applicable Portals &amp; Candidate Categories:
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {data.targetAudience.map((audience, idx) => (
+                <span
+                  key={idx}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-zinc-100/80 dark:bg-zinc-850/80 text-zinc-800 dark:text-zinc-200"
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                  <span>{audience}</span>
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
       )}
 
       {/* ========================================================= */}

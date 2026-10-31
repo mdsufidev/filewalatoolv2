@@ -107,38 +107,72 @@ export const ImageToolGuideSection: React.FC<ImageToolGuideSectionProps> = ({
       {/* 2. OVERVIEW & WHAT IT DOES */}
       {/* ========================================================= */}
       {contentData && (
-        <div className="space-y-3">
-          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-            <Sparkles className="w-4 h-4 text-blue-500" />
-            <span>Educational Guide &amp; Technical Capabilities</span>
-          </div>
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-950 dark:text-zinc-50">
-            About {toolName}
-          </h2>
-          <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed max-w-4xl">
-            {contentData.whatItDoes}
-          </p>
-        </div>
-      )}
+        toolId === 'compress-image' ? (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+            {/* Left Column: About Image Compressor */}
+            <div className="lg:col-span-7 space-y-4">
+              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                <Sparkles className="w-4 h-4 text-blue-500" />
+                <span>Educational Guide &amp; Technical Capabilities</span>
+              </div>
+              <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-zinc-950 dark:text-zinc-50">
+                About {toolName}
+              </h2>
+              <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                {contentData.whatItDoes}
+              </p>
 
-      {/* Visual SEO Infographic for Image Compressor */}
-      {toolId === 'compress-image' && (
-        <figure className="w-full my-6 flex flex-col items-center">
-          <div className="w-full max-w-2xl overflow-hidden rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white p-3 sm:p-5 shadow-sm">
-            <img
-              src="/image-compress-to-kb.png"
-              alt="Image Compress to KB - FileWala Tool Before and After File Size Reduction (1MB to 300KB)"
-              loading="lazy"
-              decoding="async"
-              width={1024}
-              height={512}
-              className="w-full h-auto object-contain rounded-xl"
-            />
+              {/* Key Highlights / Feature Chips */}
+              <div className="pt-2 space-y-2.5">
+                <div className="flex items-start gap-2 text-xs text-zinc-700 dark:text-zinc-300">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                  <span><strong>Target KB Quota Solving:</strong> Set exact file sizes (20KB, 50KB, 100KB) with automatic binary search quantization.</span>
+                </div>
+                <div className="flex items-start gap-2 text-xs text-zinc-700 dark:text-zinc-300">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                  <span><strong>100% Client-Side Privacy:</strong> Execution occurs inside local browser RAM—zero files are ever sent to a server.</span>
+                </div>
+                <div className="flex items-start gap-2 text-xs text-zinc-700 dark:text-zinc-300">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                  <span><strong>Live Split Slider Inspection:</strong> Drag the interactive comparison bar to verify pixel sharpness before downloading.</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Column: Visual Infographic Card */}
+            <div className="lg:col-span-5">
+              <figure className="w-full flex flex-col items-center">
+                <div className="w-full overflow-hidden rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white p-3 sm:p-4 shadow-sm hover:shadow-md transition-shadow">
+                  <img
+                    src="/image-compress-to-kb.png"
+                    alt="Image Compress to KB - FileWala Tool Before and After File Size Reduction (1MB to 300KB)"
+                    loading="lazy"
+                    decoding="async"
+                    width={1024}
+                    height={512}
+                    className="w-full h-auto object-contain rounded-xl"
+                  />
+                </div>
+                <figcaption className="mt-2 text-[11px] text-zinc-500 dark:text-zinc-400 text-center font-mono">
+                  Figure: Reduce 1MB photo down to 300KB (or custom target KB) with instant in-browser compression.
+                </figcaption>
+              </figure>
+            </div>
           </div>
-          <figcaption className="mt-2.5 text-xs text-zinc-500 dark:text-zinc-400 text-center font-mono">
-            Figure: Reduce 1MB photo down to 300KB (or custom target KB) with instant in-browser compression.
-          </figcaption>
-        </figure>
+        ) : (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+              <Sparkles className="w-4 h-4 text-blue-500" />
+              <span>Educational Guide &amp; Technical Capabilities</span>
+            </div>
+            <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-950 dark:text-zinc-50">
+              About {toolName}
+            </h2>
+            <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed max-w-4xl">
+              {contentData.whatItDoes}
+            </p>
+          </div>
+        )
       )}
 
       {/* ========================================================= */}
