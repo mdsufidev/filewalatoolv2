@@ -52,7 +52,7 @@ export const ToolCard: React.FC<ToolCardProps> = ({
       onClick={handleClick}
       onKeyDown={handleKeyDown}
       aria-label={`Open ${title}`}
-      className="group flex flex-col justify-between p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors duration-150 cursor-pointer min-h-[140px] select-none text-left no-underline focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950 dark:focus-visible:ring-zinc-100"
+      className="group flex flex-col justify-between p-3.5 sm:p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-zinc-400 dark:hover:border-zinc-600 transition-all duration-150 cursor-pointer min-h-[112px] select-none text-left no-underline focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950 dark:focus-visible:ring-zinc-100 hover:shadow-xs"
     >
       <div>
         {/* Top Header: Signature Red Icon + Optional subtle Badge */}
@@ -71,12 +71,12 @@ export const ToolCard: React.FC<ToolCardProps> = ({
         </div>
 
         {/* Tool Name */}
-        <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 tracking-tight mt-3 group-hover:text-[#E11D2A] transition-colors">
+        <h3 className="text-sm sm:text-[15px] font-semibold text-zinc-900 dark:text-zinc-100 tracking-tight mt-2.5 group-hover:text-[#E11D2A] transition-colors line-clamp-1">
           {title}
         </h3>
 
-        {/* Short, readable description matching wireframe */}
-        <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400 leading-normal line-clamp-2 font-normal">
+        {/* Short, crisp 1-line description keeping UI ultra clean */}
+        <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400 leading-normal line-clamp-1 font-normal">
           {description}
         </p>
       </div>

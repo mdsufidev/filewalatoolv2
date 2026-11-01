@@ -2,18 +2,11 @@ import React, { useState, useMemo } from 'react';
 import {
   Search,
   X,
-  Zap,
   ShieldCheck,
-  BadgeCheck,
-  Linkedin,
-  Instagram,
   ArrowUpRight,
   Filter,
-  ArrowRight,
   CheckCircle2,
   Clock,
-  Download,
-  Sparkles,
 } from 'lucide-react';
 import {
   ALL_TOOLS,
@@ -24,9 +17,7 @@ import {
 import { useTheme } from '../../core/themeContext';
 import { useLanguage } from '../../core/languageContext';
 import { ToolCategoryFilter } from '../tools/ToolCategoryFilter';
-import { RedditIcon } from '../ui/RedditIcon';
 import { ToolGrid } from '../tools/ToolGrid';
-import { TrustCertificationSection } from './TrustCertificationSection';
 import { GovtToolsSeoGuide } from '../seo/GovtToolsSeoGuide';
 import { CategoryHubGuide } from '../seo/CategoryHubGuide';
 
@@ -447,94 +438,15 @@ export const HomePage: React.FC<HomePageProps> = ({
       </section>
 
       {/* =========================================================
-          WHY CHOOSE FILEWALATOOL (Streamlined, Crisp 1-Line Text, Authentic Gradient Tiles)
+          CREATOR & BRAND TRUST STRIP (Minimal, Compact & Clean)
       ========================================================= */}
-      <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14 select-none">
-        {/* Section Header */}
-        <div className="text-center max-w-3xl mx-auto space-y-2 mb-8 sm:mb-10">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-medium uppercase tracking-wider text-zinc-600 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-850">
-            <span>{language === 'hi' ? 'मुख्य विशेषताएं' : 'Core Advantages'}</span>
-          </div>
-
-          <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-zinc-950 dark:text-zinc-50 tracking-tight">
-            {language === 'hi'
-              ? 'FileWalaTool क्यों चुनें?'
-              : 'Why Choose FileWalaTool?'}
-          </h2>
-          <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 max-w-lg mx-auto font-normal">
-            {language === 'hi'
-              ? 'ब्राउज़र से सीधे अपने दस्तावेज़ सुरक्षित और तुरंत तैयार करें।'
-              : 'Prepare form-ready documents safely in seconds directly from your browser.'}
-          </p>
-        </div>
-
-        {/* 3 Architectural Columns - Centered & 2D Flat */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-12 text-center mb-10 sm:mb-14">
-          {/* Feature 1: 100% Private & Safe */}
-          <div className="group flex flex-col items-center text-center space-y-2 select-none">
-            <div className="w-12 h-12 rounded-xl bg-emerald-500 text-white flex items-center justify-center shrink-0 transition-transform duration-200 ease-out group-hover:scale-110">
-              <ShieldCheck className="w-6 h-6 stroke-[2]" />
-            </div>
-            <div className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono font-medium tracking-wide uppercase bg-zinc-100 dark:bg-zinc-850 text-zinc-600 dark:text-zinc-400">
-              {language === 'hi' ? 'नो क्लाउड' : 'Zero Uploads'}
-            </div>
-            <h3 className="text-base sm:text-lg font-semibold text-zinc-950 dark:text-zinc-50 tracking-tight">
-              {language === 'hi' ? '100% प्राइवेट व सुरक्षित' : '100% Private & Safe'}
-            </h3>
-            {/* Hidden semantic text for SEO without cluttering visual UI */}
-            <span className="sr-only">
-              {language === 'hi'
-                ? 'लोकल ब्राउज़र RAM में प्रोसेसिंग। फाइल्स कभी सर्वर पर नहीं जातीं।'
-                : 'Processed strictly in local browser memory. Files never leave your device.'}
-            </span>
-          </div>
-
-          {/* Feature 2: Govt Forms Calibrated */}
-          <div className="group flex flex-col items-center text-center space-y-2 select-none">
-            <div className="w-12 h-12 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 transition-transform duration-200 ease-out group-hover:scale-110">
-              <BadgeCheck className="w-6 h-6 stroke-[2]" />
-            </div>
-            <div className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono font-medium tracking-wide uppercase bg-zinc-100 dark:bg-zinc-850 text-zinc-600 dark:text-zinc-400">
-              {language === 'hi' ? 'पोर्टल मानक' : 'Portal Compliant'}
-            </div>
-            <h3 className="text-base sm:text-lg font-semibold text-zinc-950 dark:text-zinc-50 tracking-tight">
-              {language === 'hi' ? 'सरकारी फॉर्म्स मानक' : 'Govt Portal Ready'}
-            </h3>
-            {/* Hidden semantic text for SEO without cluttering visual UI */}
-            <span className="sr-only">
-              {language === 'hi'
-                ? 'UPSC, SSC, PAN व Passport Seva के सटीक KB, DPI व पिक्सेल मानक।'
-                : 'Built-in official dimensions, DPI & KB limits for UPSC, SSC, PAN & Passport.'}
-            </span>
-          </div>
-
-          {/* Feature 3: Instant & Free Forever */}
-          <div className="group flex flex-col items-center text-center space-y-2 select-none">
-            <div className="w-12 h-12 rounded-xl bg-blue-500 text-white flex items-center justify-center shrink-0 transition-transform duration-200 ease-out group-hover:scale-110">
-              <Zap className="w-6 h-6 stroke-[2]" />
-            </div>
-            <div className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono font-medium tracking-wide uppercase bg-zinc-100 dark:bg-zinc-850 text-zinc-600 dark:text-zinc-400">
-              {language === 'hi' ? 'हमेशा मुफ़्त' : 'Free Forever'}
-            </div>
-            <h3 className="text-base sm:text-lg font-semibold text-zinc-950 dark:text-zinc-50 tracking-tight">
-              {language === 'hi' ? 'सुपरफास्ट व मुफ़्त' : 'Instant & Free'}
-            </h3>
-            {/* Hidden semantic text for SEO without cluttering visual UI */}
-            <span className="sr-only">
-              {language === 'hi'
-                ? 'बिना कतार, बिना वॉटरमार्क, बिना फीस। असीमित तेज़ प्रोसेसिंग।'
-                : 'No wait queues, no watermarks, no fees. Unlimited fast processing.'}
-            </span>
-          </div>
-        </div>
-
-        {/* Creator & Mission Spotlight Strip with Authentic Brand Logos */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-6 border-t border-zinc-100 dark:border-zinc-850/80">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full overflow-hidden shrink-0 ring-2 ring-zinc-100 dark:ring-zinc-800 bg-zinc-100 dark:bg-zinc-850">
+      <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 select-none border-t border-zinc-200/80 dark:border-zinc-800/80">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-zinc-500 dark:text-zinc-400">
+          <div className="flex items-center gap-2.5 flex-wrap justify-center sm:justify-start">
+            <div className="w-6 h-6 rounded-full overflow-hidden shrink-0 ring-1 ring-zinc-200 dark:ring-zinc-700 bg-zinc-100 dark:bg-zinc-800">
               <img
                 src="/founder-muhammad-sufiyan.webp"
-                alt="Mohammad Sufiyan (@mdsufidev)"
+                alt="Mohammad Sufiyan"
                 draggable={false}
                 className="w-full h-full object-cover select-none"
                 onError={(e) => {
@@ -543,92 +455,78 @@ export const HomePage: React.FC<HomePageProps> = ({
                 }}
               />
             </div>
-            <div>
-              <p className="text-xs sm:text-sm font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-2 flex-wrap">
-                <span>Handcrafted by Mohammad Sufiyan</span>
-                <span className="font-mono text-zinc-500 text-xs">(@mdsufidev)</span>
-                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400">
-                  Kushinagar, UP
-                </span>
-              </p>
-              <p className="text-[11px] sm:text-xs text-zinc-500 dark:text-zinc-400">
-                {language === 'hi'
-                  ? 'भारतीय छात्रों और नौकरी आवेदकों के लिए समर्पित निःशुल्क टूल।'
-                  : 'Minimalist browser utilities for Indian students and applicants.'}
-              </p>
-            </div>
+            <span className="font-medium text-zinc-800 dark:text-zinc-200">Mohammad Sufiyan</span>
+            <span className="font-mono text-zinc-400">(@mdsufidev)</span>
+            <span className="text-zinc-300 dark:text-zinc-700">•</span>
+            <span>Kushinagar, UP</span>
           </div>
 
-          <div className="flex items-center gap-2.5 shrink-0 self-end sm:self-center">
-            {/* Reddit: Official Brand Icon */}
+          <div className="flex items-center gap-3 shrink-0">
+            {/* Reddit */}
             <a
               href="https://www.reddit.com/r/filewalatool/"
               target="_blank"
               rel="noopener noreferrer"
-              className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[#FF4500] hover:bg-[#e03d00] flex items-center justify-center shadow-sm shadow-[#FF4500]/25 transition-transform hover:scale-105 active:scale-95"
+              className="text-zinc-500 hover:text-[#FF4500] dark:text-zinc-400 dark:hover:text-[#FF4500] transition-colors"
               title="Reddit Community (r/filewalatool)"
               aria-label="Reddit Community (r/filewalatool)"
             >
-              <svg className="w-4.5 h-4.5 sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none">
-                <circle cx="12" cy="12" r="12" fill="#FF4500" />
-                <path
-                  d="M16.67 11.5c-.32 0-.6.13-.81.33-1-.69-2.38-1.14-3.92-1.19l.74-3.48 2.42.51c.02.59.5 1.07 1.1 1.07.61 0 1.1-.49 1.1-1.1s-.49-1.1-1.1-1.1c-.44 0-.82.26-.99.63l-2.72-.57a.3.3 0 0 0-.35.23l-.86 4.02c-1.57.04-2.98.49-4 1.18-.21-.2-.49-.32-.8-.32-.65 0-1.18.53-1.18 1.18 0 .46.26.85.64 1.05a2.7 2.7 0 0 0-.03.41c0 2.07 2.41 3.75 5.38 3.75s5.38-1.68 5.38-3.75c0-.14-.01-.27-.04-.4.4-.2.67-.6.67-1.06 0-.65-.53-1.18-1.18-1.18zm-6.92 1.42c.38 0 .7.31.7.7s-.32.7-.7.7-.7-.31-.7-.7.31-.7.7-.7zm4.5 2.82c-.65.65-1.9.7-2.25.7-.35 0-1.6-.05-2.25-.7a.26.26 0 0 1 .37-.37c.45.45 1.38.53 1.88.53.5 0 1.43-.08 1.88-.53a.26.26 0 0 1 .37.37zm-.25-2.12c-.38 0-.7-.31-.7-.7s.31-.7.7-.7.7.31.7.7-.32.7-.7.7z"
-                  fill="#FFFFFF"
-                />
-              </svg>
+              Reddit
             </a>
+            <span className="text-zinc-300 dark:text-zinc-700">•</span>
 
-            {/* LinkedIn: Official Brand Icon */}
+            {/* LinkedIn */}
             <a
               href="https://linkedin.com/in/mdsufidev"
               target="_blank"
               rel="noopener noreferrer"
-              className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[#0A66C2] hover:bg-[#084e96] flex items-center justify-center shadow-sm shadow-[#0A66C2]/25 transition-transform hover:scale-105 active:scale-95"
+              className="text-zinc-500 hover:text-[#0A66C2] dark:text-zinc-400 dark:hover:text-[#0A66C2] transition-colors"
               title="LinkedIn (@mdsufidev)"
               aria-label="LinkedIn profile"
             >
-              <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-white" viewBox="0 0 24 24">
-                <path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.46 10.9v8.37H9.2V10.9H6.46M7.83 6.45a1.67 1.67 0 1 0 0 3.34 1.67 1.67 0 0 0 0-3.34Z" />
-              </svg>
+              LinkedIn
             </a>
+            <span className="text-zinc-300 dark:text-zinc-700">•</span>
 
-            {/* Instagram: Official Brand Icon with authentic sunset gradient */}
+            {/* Instagram */}
             <a
               href="https://instagram.com/mdsufidev"
               target="_blank"
               rel="noopener noreferrer"
-              className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-tr from-[#f9ce34] via-[#ee2a7b] to-[#6228d7] hover:opacity-95 flex items-center justify-center shadow-sm shadow-[#ee2a7b]/25 transition-transform hover:scale-105 active:scale-95"
+              className="text-zinc-500 hover:text-[#ee2a7b] dark:text-zinc-400 dark:hover:text-[#ee2a7b] transition-colors"
               title="Instagram (@mdsufidev)"
               aria-label="Instagram profile"
             >
-              <svg className="w-4 h-4 sm:w-4.5 sm:h-4.5 fill-none stroke-white stroke-[2]" viewBox="0 0 24 24">
-                <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
-                <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
-                <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
-              </svg>
+              Instagram
             </a>
+            <span className="text-zinc-300 dark:text-zinc-700">•</span>
 
-            {/* About Navigation Pill */}
+            {/* About Navigation */}
             <a
               href="/about"
               onClick={(e) => {
-                if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) {
-                  return;
-                }
+                if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
                 e.preventDefault();
                 onNavigatePage?.('about');
               }}
-              className="h-8 sm:h-9 px-3 sm:px-3.5 rounded-xl bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-800 dark:hover:bg-zinc-200 text-white dark:text-zinc-900 text-xs font-semibold flex items-center gap-1.5 transition-transform hover:scale-105 active:scale-95 shadow-sm no-underline cursor-pointer"
+              className="font-medium text-zinc-800 dark:text-zinc-200 hover:underline flex items-center gap-1"
             >
-              <span>About</span>
-              <ArrowUpRight className="w-3.5 h-3.5" />
+              About
+              <ArrowUpRight className="w-3 h-3" />
             </a>
           </div>
         </div>
-      </section>
 
-      {/* Security, Trust & Certifications (SSL 256-Bit, In-Browser RAM, DPDP) */}
-      <TrustCertificationSection />
+        {/* Semantic SEO Keywords & Indexation (Hidden from visual UI to keep interface spotless, 100% indexed by Search Bots) */}
+        <div className="sr-only">
+          <h2>100% Private In-Browser File Utilities & Indian Government Form Photo Resizer</h2>
+          <p>
+            FileWala Tool is a fast, 100% client-side web utility suite. Resize photos and signatures for UPSC, SSC, PAN Card (Protean NSDL, UTIITSL),
+            Passport Seva, merge PDF, split PDF, compress PDF, convert image formats (HEIC, WebP, PNG, JPG, AVIF), compress images to 20KB, 50KB, 100KB,
+            and edit documents with zero cloud uploads. All processing executes securely in your local browser memory.
+          </p>
+        </div>
+      </section>
     </div>
   );
 };
