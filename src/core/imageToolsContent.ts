@@ -1062,7 +1062,7 @@ export const IMAGE_TOOLS_CONTENT: Record<string, ImageToolContentData> = {
     toolName: 'AI Face Enhancer & Photo Retouch',
     h1: 'AI Face Enhancer & Photo Retouch',
     tagline: 'Instant In-Browser Portrait Enhancement, Skin Smoothing, Eye Clarity & 2x/4x Super-Resolution with Zero Uploads',
-    whatItDoes: 'High-performance in-browser facial enhancement engine powered by client-side WebGPU and WebAssembly. Combines edge-preserving bilateral skin smoothing to diminish blemishes and rough pore grain with high-pass unsharp mask convolution for razor-sharp eyes, pupils, eyelashes, and hair texture. Built on generative facial priors (GFPGAN & CodeFormer architecture) and Google MediaPipe BlazeFace detection. Features 2x and 4x AI Super-Resolution upscaling, studio skin radiance bloom, teeth and eye sclera brightening, and dynamic exposure correction—running 100% locally on your device hardware with zero cloud transmission.',
+    whatItDoes: 'High-performance in-browser facial enhancement engine powered by client-side WebGPU and WebAssembly. Combines edge-preserving bilateral skin smoothing to diminish blemishes and rough pore grain with high-pass unsharp mask convolution for razor-sharp eyes, pupils, eyelashes, and hair texture. Built on generative facial priors (GFPGAN v1.4 architecture) and Google MediaPipe BlazeFace detection. Features 2x and 4x AI Super-Resolution upscaling, studio skin radiance bloom, teeth and eye sclera brightening, and dynamic exposure correction—running 100% locally on your device hardware with zero cloud transmission.',
     targetAudience: [
       'Government job applicants (UPSC, SSC, Passport, Visa)',
       'Content creators & influencers',
@@ -1134,7 +1134,7 @@ export const IMAGE_TOOLS_CONTENT: Record<string, ImageToolContentData> = {
       },
       {
         question: 'What open-source neural network models and technologies power this tool?',
-        answer: "FileWala Face Enhancer leverages state-of-the-art open research, including Tencent ARC's GFPGAN architecture (under Apache License 2.0), S-Lab NTU's CodeFormer discrete codebook transformer, Google's MediaPipe BlazeFace, and Microsoft's ONNX Runtime Web. These models are compiled to run locally in browser memory with WebGPU shader pipelines and WASM CPU threading.",
+        answer: "FileWala Face Enhancer leverages state-of-the-art open research, including Tencent ARC's GFPGAN architecture (under Apache License 2.0), Google's MediaPipe BlazeFace, and Microsoft's ONNX Runtime Web. These models are compiled to run locally in browser memory with WebGPU shader pipelines and WASM CPU threading.",
       },
     ],
     relatedTools: [
@@ -1143,7 +1143,7 @@ export const IMAGE_TOOLS_CONTENT: Record<string, ImageToolContentData> = {
       { name: 'Image Compressor', url: '/compress-image', desc: 'Compress portrait photos to exact KB limits for online job portals.' },
       { name: 'Image Resizer', url: '/image-resizer', desc: 'Scale image dimensions by exact pixels or millimeters.' },
     ],
-    disclaimer: 'FileWala AI Face Enhancer operates 100% locally in browser memory with zero cloud transmission. No photographs, facial biometric vectors, or metadata leave your device. All third-party trademarks (including Remini®) belong to their respective owners and are mentioned strictly for nominative comparative purposes under fair use. Open-source neural model architectures (GFPGAN under Apache 2.0, CodeFormer, MediaPipe under Apache 2.0, ONNX Runtime under MIT) are credited to their respective researchers and authors.',
+    disclaimer: 'FileWala AI Face Enhancer operates 100% locally in browser memory with zero cloud transmission. No photographs, facial biometric vectors, or metadata leave your device. All third-party trademarks (including Remini®) belong to their respective owners and are mentioned strictly for nominative comparative purposes under fair use. Open-source neural model architectures (GFPGAN under Apache 2.0, MediaPipe under Apache 2.0, ONNX Runtime under MIT) are credited to their respective researchers and authors.',
   },
 };
 

@@ -1,6 +1,6 @@
 /**
  * neuralWorkerScript.ts
- * Background Web Worker script for 100% client-side GFPGAN & CodeFormer face restoration.
+ * Background Web Worker script for 100% client-side GFPGAN face restoration.
  * Offloads heavy generative neural networks to an isolated worker thread using WebGPU / WASM,
  * ensuring the main UI thread never freezes.
  */
@@ -136,7 +136,7 @@ self.onmessage = async function(e) {
     var float32Data = new Float32Array(3 * planeSize);
     var inv1275 = 1.0 / 127.5;
 
-    // GFPGAN & CodeFormer expect [-1.0, 1.0] range
+    // GFPGAN expects [-1.0, 1.0] range
     for (var i = 0; i < planeSize; i++) {
       var idx = i * 4;
       float32Data[i] = patchData[idx] * inv1275 - 1.0;
@@ -155,8 +155,7 @@ self.onmessage = async function(e) {
     var feeds = {};
     feeds[inputName] = inputTensor;
 
-    // Handle extra inputs (e.g. CodeFormer fidelity weight w)
-    // CodeFormer PyTorch export requires tensor(double) [float64]
+    // Handle extra inputs if any
     if (session.inputNames.length > 1) {
       for (var k = 1; k < session.inputNames.length; k++) {
         var extraName = session.inputNames[k];

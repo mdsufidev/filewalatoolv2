@@ -6,8 +6,8 @@
  * 1. MediaPipe Face Extraction + Smart Canvas Fallback:
  *    Detects facial landmark bounding boxes via MediaPipe BlazeFace (229KB) with
  *    automatic fallback to Canvas skin-tone centroid analysis.
- * 2. Generative Facial Prior Models (GFPGAN v1.4 & CodeFormer):
- *    Uses quantized ONNX models (GFPGAN Clean Face Prior & CodeFormer Discrete Codebook Transformer)
+ * 2. Generative Facial Prior Model (GFPGAN v1.4):
+ *    Uses quantized ONNX model (GFPGAN Clean Face Prior)
  *    to photorealistically reconstruct human eyes, iris, eyelashes, lips, teeth, and natural skin pores.
  * 3. Offloaded Background Web Worker:
  *    Executes ONNX Runtime Web in a background worker with WebGPU acceleration and CPU WASM fallback,
@@ -23,7 +23,7 @@ import { NeuralWorkerClient } from './NeuralWorkerClient';
 export const ORT_CDN_URL = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/ort.all.min.js';
 export const ORT_WASM_PATH = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/';
 
-export type NeuralModelKey = 'gfpgan-v14' | 'codeformer';
+export type NeuralModelKey = 'gfpgan-v14';
 
 export interface AIModelConfig {
   id: NeuralModelKey;
@@ -41,14 +41,6 @@ export const AI_MODEL_CONFIGS: Record<NeuralModelKey, AIModelConfig> = {
     tagline: 'Quantized w16, photorealistic skin pores, natural eyes, teeth & smile',
     url: 'https://huggingface.co/opiumuseless/gfpgan-v1.4-w16/resolve/main/GFPGANv1.4-w16.onnx',
     sizeBytes: 170289207,
-    inputDim: 512,
-  },
-  'codeformer': {
-    id: 'codeformer',
-    name: 'CodeFormer (Discrete Codebook Transformer)',
-    tagline: 'Deep transformer codebook prior for heavily blurry & vintage faces',
-    url: 'https://huggingface.co/facefusion/models-3.0.0/resolve/main/codeformer.onnx',
-    sizeBytes: 376951650,
     inputDim: 512,
   },
 };
@@ -461,7 +453,7 @@ export class NeuralFaceEnhancer {
   }
 
   /**
-   * Executes 100% Client-Side Generative Face Prior Restoration (GFPGAN / CodeFormer)
+   * Executes 100% Client-Side Generative Face Prior Restoration (GFPGAN v1.4)
    * 1. MediaPipe Face Extraction crops the 512x512 face patch (keeps RAM < 100MB).
    * 2. Offloads to background Web Worker using WebGPU / WASM.
    * 3. Seamlessly blends 512x512 photorealistic face back into the portrait.

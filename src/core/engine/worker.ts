@@ -262,7 +262,7 @@ function preprocessPatchToTensor(imageData: ImageData, patchDim = 512): Float32A
 
   for (let i = 0; i < planeSize; i++) {
     const idx = i * 4;
-    // GFPGAN / CodeFormer standard: [-1.0, 1.0]
+    // GFPGAN standard: [-1.0, 1.0]
     float32Data[i] = data[idx] / 127.5 - 1.0; // R
     float32Data[planeSize + i] = data[idx + 1] / 127.5 - 1.0; // G
     float32Data[planeSize * 2 + i] = data[idx + 2] / 127.5 - 1.0; // B
@@ -415,7 +415,7 @@ self.onmessage = async (e: MessageEvent<WorkerMessage>) => {
       [inputName]: inputTensor,
     };
 
-    // Handle CodeFormer fidelity weight if required
+    // Handle optional fidelity weight tensor if required
     if (session.inputNames.length > 1) {
       for (let k = 1; k < session.inputNames.length; k++) {
         const extraName = session.inputNames[k];

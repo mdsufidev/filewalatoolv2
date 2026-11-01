@@ -1,7 +1,7 @@
 /**
  * NeuralWorkerClient.ts
  * Manages background Web Worker for ONNX Runtime Web.
- * Keeps heavy GFPGAN v1.4 and CodeFormer quantized model processing
+ * Keeps heavy GFPGAN v1.4 quantized model processing
  * off the main UI thread to eliminate browser freezes and "Page Not Responding" alerts.
  */
 

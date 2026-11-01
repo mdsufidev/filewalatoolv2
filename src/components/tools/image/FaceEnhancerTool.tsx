@@ -999,31 +999,10 @@ export const FaceEnhancerTool: React.FC<FaceEnhancerToolProps> = ({ onNotify, in
                         <Wand2 className="w-3 h-3 text-purple-500" />
                         <span>Neural Face Restoration</span>
                       </span>
-                      {/* Model Selector */}
-                      <div className="flex items-center rounded-lg border border-zinc-200 dark:border-zinc-800 p-0.5 bg-zinc-100 dark:bg-zinc-900">
-                        <button
-                          type="button"
-                          onClick={() => setNeuralModelKey('gfpgan-v14')}
-                          className={`px-1.5 py-0.5 rounded text-[10px] font-semibold cursor-pointer transition ${
-                            neuralModelKey === 'gfpgan-v14'
-                              ? 'bg-purple-600 text-white shadow-xs'
-                              : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'
-                          }`}
-                        >
-                          GFPGAN
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setNeuralModelKey('codeformer')}
-                          className={`px-1.5 py-0.5 rounded text-[10px] font-semibold cursor-pointer transition ${
-                            neuralModelKey === 'codeformer'
-                              ? 'bg-purple-600 text-white shadow-xs'
-                              : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'
-                          }`}
-                        >
-                          CodeFormer
-                        </button>
-                      </div>
+                      {/* Active Model Badge */}
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 font-semibold border border-purple-200 dark:border-purple-850">
+                        GFPGAN v1.4
+                      </span>
                     </div>
 
                     <button

@@ -184,7 +184,7 @@ export const FLAGSHIP_SEO_TOOLS: Record<string, FlagshipSeoConfig> = {
       },
       {
         question: 'What open-source neural network models and technologies power this tool?',
-        answer: 'FileWala Face Enhancer leverages state-of-the-art open research, including Tencent ARC\'s GFPGAN architecture (under Apache License 2.0), S-Lab NTU\'s CodeFormer discrete codebook transformer, Google\'s MediaPipe BlazeFace, and Microsoft\'s ONNX Runtime Web. These models are compiled to run locally in browser memory with WebGPU shader pipelines and WASM CPU threading.',
+        answer: 'FileWala Face Enhancer leverages state-of-the-art open research, including Tencent ARC\'s GFPGAN architecture (under Apache License 2.0), Google\'s MediaPipe BlazeFace, and Microsoft\'s ONNX Runtime Web. These models are compiled to run locally in browser memory with WebGPU shader pipelines and WASM CPU threading.',
       },
     ],
     schema: {
@@ -210,7 +210,7 @@ export const FLAGSHIP_SEO_TOOLS: Record<string, FlagshipSeoConfig> = {
           featureList: [
             '100% Client-Side In-Browser Execution (Zero Cloud Uploads)',
             'WebGPU Hardware Acceleration with WASM Multi-Thread Fallback',
-            'Generative Facial Prior Restoration (GFPGAN & CodeFormer)',
+            'Generative Facial Prior Restoration (GFPGAN v1.4)',
             '2x and 4x AI Super-Resolution High-DPI Upscaling',
             'Adaptive Skin Smoothing & Blemish Diminishing',
             'Eye, Eyelash & Iris Contrast Sharpening',
@@ -318,7 +318,7 @@ export const FLAGSHIP_SEO_TOOLS: Record<string, FlagshipSeoConfig> = {
               name: 'What open-source neural network models and technologies power this tool?',
               acceptedAnswer: {
                 '@type': 'Answer',
-                text: 'FileWala Face Enhancer leverages state-of-the-art open research, including Tencent ARC\'s GFPGAN architecture (under Apache License 2.0), S-Lab NTU\'s CodeFormer discrete codebook transformer, Google\'s MediaPipe BlazeFace, and Microsoft\'s ONNX Runtime Web. These models are compiled to run locally in browser memory with WebGPU shader pipelines and WASM CPU threading.',
+                text: 'FileWala Face Enhancer leverages state-of-the-art open research, including Tencent ARC\'s GFPGAN architecture (under Apache License 2.0), Google\'s MediaPipe BlazeFace, and Microsoft\'s ONNX Runtime Web. These models are compiled to run locally in browser memory with WebGPU shader pipelines and WASM CPU threading.',
               },
             },
           ],
