@@ -170,14 +170,14 @@ export const Navbar: React.FC<NavbarProps> = ({
         >
           {/* Public Logo Image */}
           <picture className="shrink-0 flex items-center">
-            <source srcSet="/logo.webp?v=9" type="image/webp" />
+            <source srcSet="/logo.webp?v=11" type="image/webp" />
             <img
-              src="/logo.png?v=9"
+              src="/logo.png?v=11"
               alt="FileWala Tool Logo"
               width={34}
-              height={28}
+              height={34}
               draggable={false}
-              className="w-8.5 h-7 sm:w-9 sm:h-7.5 object-contain select-none shrink-0 transition-transform duration-150 group-hover:scale-105"
+              className="w-8.5 h-8.5 sm:w-9 sm:h-9 object-contain select-none shrink-0 transition-transform duration-150 group-hover:scale-105"
             />
           </picture>
 

@@ -17,9 +17,9 @@ export const LogoIcon: React.FC<{ size?: number; className?: string }> = ({
 }) => {
   return (
     <picture className="shrink-0 inline-flex items-center">
-      <source srcSet="/favicon-96x96.webp?v=9" type="image/webp" />
+      <source srcSet="/favicon-96x96.webp?v=11" type="image/webp" />
       <img
-        src="/favicon-96x96.png?v=9"
+        src="/favicon-96x96.png?v=11"
         width={size}
         height={size}
         alt="FileWalaTool Logo"
@@ -28,7 +28,7 @@ export const LogoIcon: React.FC<{ size?: number; className?: string }> = ({
         className={`shrink-0 object-contain select-none ${className}`}
         onError={(e) => {
           e.currentTarget.onerror = null;
-          e.currentTarget.src = "/logo.png?v=9";
+          e.currentTarget.src = "/logo.png?v=11";
         }}
       />
     </picture>
@@ -75,14 +75,14 @@ export const Logo: React.FC<LogoProps> = ({
       className={`shrink-0 object-contain select-none ${className}`}
       onError={(e) => {
         e.currentTarget.onerror = null;
-        e.currentTarget.src = "/logo.png?v=9";
+        e.currentTarget.src = "/logo.png?v=11";
       }}
     />
   ) : (
     <picture className={`shrink-0 inline-flex items-center ${className}`}>
-      <source srcSet="/web-app-manifest-192x192.webp?v=9" type="image/webp" />
+      <source srcSet="/web-app-manifest-192x192.webp?v=11" type="image/webp" />
       <img
-        src="/web-app-manifest-192x192.png?v=9"
+        src="/web-app-manifest-192x192.png?v=11"
         alt="FileWalaTool Logo"
         width={size}
         height={size}
@@ -91,7 +91,7 @@ export const Logo: React.FC<LogoProps> = ({
         className="shrink-0 object-contain select-none"
         onError={(e) => {
           e.currentTarget.onerror = null;
-          e.currentTarget.src = "/logo.png?v=9";
+          e.currentTarget.src = "/logo.png?v=11";
         }}
       />
     </picture>

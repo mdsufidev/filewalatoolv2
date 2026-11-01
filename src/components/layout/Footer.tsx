@@ -44,14 +44,14 @@ export const Footer: React.FC<FooterProps> = ({
             >
               {/* Public Logo Image */}
               <picture className="shrink-0 flex items-center">
-                <source srcSet="/logo.webp?v=9" type="image/webp" />
+                <source srcSet="/logo.webp?v=11" type="image/webp" />
                 <img
-                  src="/logo.png?v=9"
+                  src="/logo.png?v=11"
                   alt="FileWala Tool Logo"
-                  width={40}
-                  height={32}
+                  width={38}
+                  height={38}
                   draggable={false}
-                  className="w-9 h-7.5 sm:w-10 sm:h-8 object-contain select-none shrink-0 transition-transform duration-150 group-hover:scale-105"
+                  className="w-9 h-9 sm:w-10 sm:h-10 object-contain select-none shrink-0 transition-transform duration-150 group-hover:scale-105"
                 />
               </picture>
 
