@@ -56,9 +56,14 @@ export const Footer: React.FC<FooterProps> = ({
               </picture>
 
               {/* Typography: FileWala TOOL */}
-              <span className="font-bold text-xl sm:text-2xl tracking-tight text-white leading-none">
-                FileWala <span className="font-bold">TOOL</span>
-              </span>
+              <div className="flex items-baseline gap-1 select-none leading-none">
+                <span className="font-brand-filewala text-[#7ED957] font-extrabold text-2xl sm:text-3xl tracking-tight">
+                  FileWala
+                </span>
+                <span className="font-brand-tool text-[#FF3131] font-black text-2xl sm:text-3xl tracking-normal">
+                  TOOL
+                </span>
+              </div>
             </a>
 
             <p className="text-xs leading-relaxed text-zinc-400 max-w-sm">

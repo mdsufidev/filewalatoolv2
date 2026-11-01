@@ -182,9 +182,14 @@ export const Navbar: React.FC<NavbarProps> = ({
           </picture>
 
           {/* Typography: FileWala TOOL */}
-          <span className="font-bold text-lg sm:text-xl tracking-tight text-zinc-950 dark:text-white leading-none">
-            FileWala <span className="font-bold">TOOL</span>
-          </span>
+          <div className="flex items-baseline gap-1 select-none leading-none">
+            <span className="font-brand-filewala text-[#7ED957] font-extrabold text-xl sm:text-2xl tracking-tight">
+              FileWala
+            </span>
+            <span className="font-brand-tool text-[#FF3131] font-black text-xl sm:text-2xl tracking-normal">
+              TOOL
+            </span>
+          </div>
         </a>
 
         {/* ========================================================= */}

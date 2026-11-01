@@ -2,6 +2,16 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* Brand Wordmark Typography */
+.font-brand-filewala {
+  font-family: 'Sniglet', 'Fredoka', cursive, sans-serif;
+}
+
+.font-brand-tool {
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-weight: 900;
+}
+
 @layer base {
   :root {
     --canvas: #ffffff;

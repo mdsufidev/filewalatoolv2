@@ -101,9 +101,9 @@ export const Logo: React.FC<LogoProps> = ({
     return (
       <div className={`inline-flex items-center gap-3 select-none ${className}`}>
         {logoRender}
-        <span className="inline-flex items-baseline gap-1.5 font-sans">
-          <span className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">Filewala</span>
-          <span className="text-xs font-semibold tracking-[0.14em] text-slate-700 dark:text-slate-300">TOOL</span>
+        <span className="inline-flex items-baseline gap-1 select-none leading-none">
+          <span className="font-brand-filewala text-[#7ED957] font-extrabold text-xl tracking-tight">FileWala</span>
+          <span className="font-brand-tool text-[#FF3131] font-black text-xl tracking-normal">TOOL</span>
         </span>
       </div>
     );
