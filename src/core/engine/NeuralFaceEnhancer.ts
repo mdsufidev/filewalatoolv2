@@ -82,14 +82,42 @@ export class NeuralFaceEnhancer {
 
   /**
    * Preloads MediaPipe BlazeFace & ONNX Runtime in background idle time
+   * and automatically cleans up deprecated neural models (CodeFormer ~377MB)
    */
   public static preload(): void {
     if (typeof window === 'undefined') return;
     try {
+      this.purgeLegacyModels().catch(() => {});
       this.getMediaPipeDetector().catch(() => {});
       this.loadOrt().catch(() => {});
     } catch (e) {
       // ignore
+    }
+  }
+
+  /**
+   * Automatically purges deprecated model weights (e.g. CodeFormer 376.9MB) from
+   * CacheStorage to free up user device storage immediately.
+   */
+  public static async purgeLegacyModels(): Promise<void> {
+    if (typeof window === 'undefined' || !('caches' in window)) return;
+    try {
+      const targetCaches = [MODEL_CACHE_NAME, 'filewalatool-face-models-v1'];
+      for (const cName of targetCaches) {
+        const exists = await caches.has(cName).catch(() => false);
+        if (exists) {
+          const cache = await caches.open(cName);
+          const requests = await cache.keys();
+          for (const req of requests) {
+            if (req.url.toLowerCase().includes('codeformer')) {
+              await cache.delete(req);
+              console.info('[NeuralFaceEnhancer] Automatically purged legacy model cache:', req.url);
+            }
+          }
+        }
+      }
+    } catch {
+      // Non-fatal cache sweep failure
     }
   }
 
